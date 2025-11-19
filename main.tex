@@ -1,0 +1,74 @@
+%--------------------------------------------------------%
+% Journal Article Manuscript Template
+%--------------------------------------------------------%
+
+\input{sections/preamble} % Edit preamble.tex to change the overall layout
+
+% Header from Page Three on: Edit below for left and right headers
+% \lhead{}
+% \rhead{}
+
+%--------------------------------------------------------%
+% BEGIN DOCUMENT
+%--------------------------------------------------------%
+
+\begin{document}
+
+% COVER PAGE
+
+\input{sections/coverpage} % Comment out to remove cover page
+
+\thispagestyle{empty} % Removes header on page two.
+
+% NOTE: Comment out the lines below to remove line numbers
+  % Running line numbers:
+  \linenumbers
+  \setlength\linenumbersep{15pt}
+  \renewcommand\linenumberfont{\normalfont\footnotesize\sffamily\color{gray}}
+  %\pagewiselinenumbers % Same, but that reset on every page:
+  \modulolinenumbers[1] % Number only every line. Change for fewer.
+
+%--------------------------------------------------------%
+%   CONTENT
+%--------------------------------------------------------%
+
+% ABSTRACT
+\input{sections/abstract.tex}
+
+\doublespacing
+
+% INTRODUCTION
+\input{sections/introduction.tex}
+
+% RESULTS
+\input{sections/results.tex}
+
+% DISCUSSION
+\input{sections/discussion.tex}
+
+% METHODS
+\input{sections/methods.tex}
+
+% ACKNOWLEDGMENTS
+\input{sections/acknowledgements.tex}
+
+%--------------------------------------------------------%
+%   REFERENCE LIST
+%--------------------------------------------------------%
+\newpage
+\singlespacing
+\printbibliography
+
+%--------------------------------------------------------%
+%   APPENDIX
+%--------------------------------------------------------%
+
+\input{sections/acronyms.tex}
+\input{sections/tables_figures.tex}
+\input{sections/supplementary.tex}
+
+%--------------------------------------------------------%
+%   END DOCUMENT
+%--------------------------------------------------------%
+
+\end{document}
