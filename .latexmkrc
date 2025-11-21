@@ -4,15 +4,16 @@ $dvi_mode = $postscript_mode = 0;
 $out_dir = 'build';
 $pdf_previewer = 'zathura';
 
+# Force continuation on errors and set interaction mode
+$pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error -halt-on-error %O %S';
+
 # Custom dependency and function for nomencl package
 add_cus_dep( 'nlo', 'nls', 0, 'makenlo2nls' );
 sub makenlo2nls {
     system( "makeindex -s nomencl.ist -o \"$_[0].nls\" \"$_[0].nlo\"" );
 }
-
 add_cus_dep('glo', 'gls', 0, 'run_makeglossaries');
 add_cus_dep('acn', 'acr', 0, 'run_makeglossaries');
-
 sub run_makeglossaries {
   if ( $silent ) {
     system "makeglossaries -s build/main.ist -q $_[0]";
@@ -21,7 +22,6 @@ sub run_makeglossaries {
     system "makeglossaries -s build/main.ist $_[0]";
   };
 }
-
 push @generated_exts, 'glo', 'gls', 'glg';
 push @generated_exts, 'acn', 'acr', 'alg';
 $clean_ext .= ' %R.ist %R.xdy';
