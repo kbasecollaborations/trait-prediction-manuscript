@@ -2,5 +2,28 @@
 
 \section*{Results}
 
+\subsection*{Dataset Compilation and Characterization}
+
+We assembled four distinct binary growth datasets to capture microbial nutrient utilization across diverse phylogenetic lineages and ecological contexts.
+The ATLeaf dataset comprised 224 bacterial strains tested across 45 carbon substrates using minimal media on agar plates, with growth assessed through colony counting.
+The Literature dataset encompassed 362 bacterial genomes with growth data across 64 carbon sources compiled from published studies spanning multiple decades and employing diverse experimental methodologies.
+The Marine dataset contained high-throughput growth profiling of 186 marine heterotrophic bacteria assessed across 135 carbon substrates through optical density measurements.
+The PMI dataset included metabolic characterization of 55 bacterial isolates across 191 carbon sources using MOPS minimal media supplemented with individual test compounds.
+After filtering for complete annotations and phenotypic data, our final integrated dataset contained growth profiles for 810 unique microbial genomes across 242 carbon sources, providing a comprehensive foundation for comparative analysis of metabolic prediction approaches.
+% NOTE: Continue editing from here
+The phylogenetic distribution of strains spanned major bacterial classes including Gammaproteobacteria, Alphaproteobacteria, Actinomycetia, Bacilli, and Bacteroidia, with representation from diverse ecological niches ranging from marine environments to terrestrial soils and host-associated microbiomes.
+The taxonomic composition varied substantially across datasets, with the ATLeaf collection emphasizing well-studied model organisms from Enterobacteriaceae and Pseudomonadaceae families, the Marine dataset focusing on obligate marine bacteria including members of the SAR11 clade and Roseobacter group, and the Literature compilation encompassing broader phylogenetic breadth including representatives from Firmicutes and Actinobacteria.
+This phylogenetic heterogeneity across datasets provided an opportunity to assess how models trained on one taxonomic distribution perform when applied to different phylogenetic contexts.
+
+For our primary analyses, we focused on 16 carbon sources that were measured consistently across multiple datasets, enabling direct cross-dataset validation.
+These compounds included amino acids such as alanine, arginine, histidine, and serine, which serve as both nitrogen and carbon sources and require complex catabolic pathways involving multiple enzymatic steps and regulatory mechanisms.
+The sugar substrates included fructose, galactose, glucose, maltose, mannose, and sucrose, representing both monosaccharides and disaccharides with varying degrees of pathway complexity and evolutionary conservation.
+Additional compounds included glycerol and mannitol as polyol carbon sources, myo-inositol as a cyclic polyol with specialized degradation pathways, galacturonic acid as a sugar acid derived from pectin degradation, and cellobiose as a beta-linked glucose disaccharide from cellulose breakdown.
+The phenotypic distribution varied considerably across these substrates, with glucose and fructose showing predominantly positive growth outcomes reflecting their roles as preferred carbon sources in most bacteria, while specialized compounds such as myo-inositol and galacturonic acid exhibited more balanced distributions between growth and no-growth phenotypes consistent with their restricted utilization by bacteria possessing specific catabolic gene clusters.
+
+We processed all bacterial genomes through a standardized annotation pipeline utilizing multiple complementary resources to capture diverse aspects of metabolic potential. We generated feature representations from KOFAM for enzyme-level annotations, providing detailed characterization of individual catalytic functions through assignment of KEGG Orthology identifiers based on hidden Markov model profiles with stringent score thresholds.
+RAST subsystem annotations provided coarse-grained functional categories organized hierarchically into metabolic subsystems, cellular processes, and information processing modules. KOFAM modules offered pathway completeness scores quantifying the proportion of genes present for multi-step metabolic pathways, enabling assessment of whether organisms possessed complete functional routes rather than isolated enzymatic activities. UniRef clusters at multiple identity thresholds provided protein family assignments capturing functional homologs across diverse sequence space, with UniRef90 emphasizing recent evolutionary relationships and UniRef50 capturing deeper homology across distantly related organisms.
+This multi-source annotation strategy was designed to mitigate the limitations of any single annotation approach, including database incompleteness, homology detection sensitivity thresholds, and taxonomic biases in reference sequence collections.
+
 
 % NOTE: Notes about different features and transformer models in Notion (https://www.notion.so/Carbon-utilization-phenotype-manuscript-2b163464074580139536f278f1828c72?source=copy_link)
