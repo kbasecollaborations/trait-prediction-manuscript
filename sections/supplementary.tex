@@ -2,22 +2,32 @@
 
 \section*{Supplementary Material}
 
-Additional Analyses
-Analysis 1: Systematic Misclassification Characterization
-Per-genome misclassification analysis: Calculate the misclassification rate for each genome across all phenotypes where GapMind made predictions. Identify the top 10-20% of genomes with highest misclassification rates. For these problematic genomes, investigate whether misclassifications are concentrated in specific directions (GapMind predicts growth but no growth observed versus opposite pattern). This analysis reveals whether certain genomes have systematic annotation quality issues or were tested under suboptimal experimental conditions.
-Per-phenotype misclassification analysis: Calculate the concordance rate between GapMind predictions and experimental outcomes for each carbon source across all genomes. Identify phenotypes with lowest concordance rates. For these problematic phenotypes, examine whether misclassifications show directional bias. High rates of "GapMind predicts no growth but growth observed" suggest alternative pathways not captured in GapMind's curated rules. High rates of "GapMind predicts growth but no growth observed" suggest regulatory repression, missing cofactors, or measurement sensitivity issues.
-Directional misclassification patterns: For each dataset separately, quantify the proportion of misclassifications falling into each category: false positives (GapMind predicts growth, experiments show no growth) versus false negatives (GapMind predicts no growth, experiments show growth). Different datasets may show different error profiles, revealing dataset-specific experimental or annotation biases.
-Analysis 2: GapMind Confidence Threshold Analysis
+\subsection*{Additional Analyses}
+
+\subsubsection*{Analysis 1: Systematic Misclassification Characterization}
+\textbf{Per-genome misclassification analysis:} Calculate the misclassification rate for each genome across all phenotypes where GapMind made predictions. Identify the top 10--20\% of genomes with highest misclassification rates. For these problematic genomes, investigate whether misclassifications are concentrated in specific directions (GapMind predicts growth but no growth observed versus opposite pattern). This analysis reveals whether certain genomes have systematic annotation quality issues or were tested under suboptimal experimental conditions.
+
+\textbf{Per-phenotype misclassification analysis:} Calculate the concordance rate between GapMind predictions and experimental outcomes for each carbon source across all genomes. Identify phenotypes with lowest concordance rates. For these problematic phenotypes, examine whether misclassifications show directional bias. High rates of ``GapMind predicts no growth but growth observed'' suggest alternative pathways not captured in GapMind's curated rules. High rates of ``GapMind predicts growth but no growth observed'' suggest regulatory repression, missing cofactors, or measurement sensitivity issues.
+
+\textbf{Directional misclassification patterns:} For each dataset separately, quantify the proportion of misclassifications falling into each category: false positives (GapMind predicts growth, experiments show no growth) versus false negatives (GapMind predicts no growth, experiments show growth). Different datasets may show different error profiles, revealing dataset-specific experimental or annotation biases.
+
+\subsubsection*{Analysis 2: GapMind Confidence Threshold Analysis}
 GapMind assigns pathway completeness categories: complete, mostly complete, and likely complete. Perform a threshold sweep analysis where you train models on samples filtered at different confidence levels (only complete pathways, complete plus mostly complete, all three categories). For each threshold, measure both the number of retained training samples and the resulting model performance across within-dataset, cross-dataset, and out-of-clade evaluation scenarios. This quantifies the trade-off between data quantity and data quality, revealing the optimal balance point.
-Analysis 3: Training Set Size Requirements
-Conduct a learning curve analysis for GapMind-concordant samples. For 4-6 representative phenotypes spanning different concordance rates, subsample the GapMind-filtered training data at various fractions (25%, 50%, 75%, 100%). Train models on each subsample size and evaluate generalization performance. This establishes minimum sample size requirements for the filtering approach to be practical and reveals whether very small concordant training sets can still produce generalizable models.
-Analysis 4: Phenotype-Specific Pathway Complexity Analysis
+
+\subsubsection*{Analysis 3: Training Set Size Requirements}
+Conduct a learning curve analysis for GapMind-concordant samples. For 4--6 representative phenotypes spanning different concordance rates, subsample the GapMind-filtered training data at various fractions (25\%, 50\%, 75\%, 100\%). Train models on each subsample size and evaluate generalization performance. This establishes minimum sample size requirements for the filtering approach to be practical and reveals whether very small concordant training sets can still produce generalizable models.
+
+\subsubsection*{Analysis 4: Phenotype-Specific Pathway Complexity Analysis}
 Categorize carbon sources by pathway characteristics: Classify phenotypes based on pathway complexity (number of enzymatic steps), pathway redundancy (presence of alternative routes in KEGG or MetaCyc databases), and phylogenetic conservation (based on published literature or phylogenetic signal analysis). Test whether phenotypes with simpler, non-redundant, highly conserved pathways show higher GapMind concordance rates and better model generalization even without filtering. This analysis reveals which types of metabolic traits are most amenable to genomic prediction.
-Analysis 5: Cost-Benefit Quantification of Filtering
-Calculate the data retention rate when filtering to GapMind-concordant samples across all phenotypes and datasets. Quantify both the absolute number of samples lost and the proportion retained. For phenotypes where filtering removes substantial training data (>50% loss), assess whether aggregating multiple datasets can compensate for the sample loss. Compare the generalization performance gain from filtering against the sample size reduction to establish when filtering provides net benefit.
-Analysis 6: Feature Stability Across Filtered versus Unfiltered Models
-Extend your existing feature importance analysis by quantifying feature overlap across different training scenarios more systematically. For 6-8 representative phenotypes, calculate Jaccard similarity coefficients for the top 20 features identified by models trained on: full data from Dataset A, full data from Dataset B, GapMind-filtered data from Dataset A, and GapMind-filtered data from Dataset B. Statistical comparison of overlap rates between filtered and unfiltered conditions quantifies whether filtering increases identification of consistently important (presumably mechanistic) features.
-Analysis 7: Hybrid Training Strategy Evaluation
+
+\subsubsection*{Analysis 5: Cost-Benefit Quantification of Filtering}
+Calculate the data retention rate when filtering to GapMind-concordant samples across all phenotypes and datasets. Quantify both the absolute number of samples lost and the proportion retained. For phenotypes where filtering removes substantial training data ($>50\%$ loss), assess whether aggregating multiple datasets can compensate for the sample loss. Compare the generalization performance gain from filtering against the sample size reduction to establish when filtering provides net benefit.
+
+\subsubsection*{Analysis 6: Feature Stability Across Filtered versus Unfiltered Models}
+Extend your existing feature importance analysis by quantifying feature overlap across different training scenarios more systematically. For 6--8 representative phenotypes, calculate Jaccard similarity coefficients for the top 20 features identified by models trained on: full data from Dataset A, full data from Dataset B, GapMind-filtered data from Dataset A, and GapMind-filtered data from Dataset B. Statistical comparison of overlap rates between filtered and unfiltered conditions quantifies whether filtering increases identification of consistently important (presumably mechanistic) features.
+
+\subsubsection*{Analysis 7: Hybrid Training Strategy Evaluation}
 Test a two-stage training approach: First train on GapMind-concordant samples to learn mechanistic features, then fine-tune on all available data to potentially recover useful signal from discordant samples. Compare this hybrid approach against pure filtered training and pure unfiltered training across multiple phenotypes and evaluation scenarios. This tests whether initial mechanistic training provides robustness even when subsequently exposed to noisy data.
-Analysis 8: Phylogenetic Distance Quantification for Misclassifications
+
+\subsubsection*{Analysis 8: Phylogenetic Distance Quantification for Misclassifications}
 Calculate phylogenetic distances between each test genome and its nearest training genome separately for GapMind-concordant and GapMind-discordant samples. Test whether discordant samples tend to be phylogenetically distant from any concordant samples, which would suggest that certain clades systematically lack high-quality annotations or utilize divergent metabolic strategies.
