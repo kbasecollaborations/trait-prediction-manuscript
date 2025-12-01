@@ -4,18 +4,20 @@
 \begin{abstract}
   {
     \noindent
-Predicting microbial nutrient utilization from genomic data is crucial yet challenging due to complex regulatory interactions and incomplete mechanistic understanding.
-Current mechanistic models are limited by incomplete annotations and unknown pathways, while phylogenetic inference, though commonly used, is restricted to evolutionary proximity and fails to generalize across distant contexts.
-To investigate these limitations, we employed a mechanism-agnostic machine learning approach to predict microbial growth across 242 carbon sources using a comprehensive dataset of 819 microbial genomes from four independent collections.
-While this approach enables phenotype prediction, feature importance analysis revealed that models trained on complete datasets frequently identified phylogenetically correlated features rather than mechanistically relevant genes.
+Predicting microbial carbon utilization from genomic data remains challenging despite well-characterized metabolic pathways.
+Mechanistic approaches achieve only modest accuracy ($\sim$0.65--0.70 balanced accuracy), while phylogeny-based methods fail to generalize beyond training distributions.
+Here, we compiled growth phenotypes for 819 microbial genomes across 242 carbon sources from four independent experimental collections and developed phenotype-specific classifiers to systematically diagnose generalization failures.
 
-Our dataset integrated genomic annotations from multiple sources including metabolic pathway features (RAST, KOFAM) and protein functional data (UniProt), and we developed phenotype-specific classifiers using gradient-boosted decision trees.
-Cross-dataset prediction accuracy was significantly lower than intra-dataset accuracy, a discrepancy we analyzed by systematically disentangling dataset-specific biases from phylogenetic distance.
-Integrating multiple annotation sources improved performance for 82\% of phenotypes; however, neither improved annotation coverage nor biologically informed feature selection resolved generalizability failures.
+Machine learning models achieved strong within-dataset accuracy (0.80--0.90) but exhibited substantially reduced cross-dataset and out-of-clade performance (drops of 0.15--0.25).
+Feature importance analysis revealed that models trained on complete datasets identified phylogenetically correlated rather than mechanistically relevant genes, with different datasets yielding almost entirely different top features for identical phenotypes.
+This instability explains why high within-dataset accuracy fails to translate to robust generalization.
 
-Crucially, when we restricted training to samples where mechanism-based predictions (GapMind) matched experimental outcomes, models achieved near-perfect accuracy and robust generalizability across datasets and clades.
-This revealed that poor generalizability stems primarily from incomplete genome annotations, experimental measurement variability, and genuine biological pathway differences rather than algorithmic inadequacy.
-Our findings demonstrate that under controlled conditions with high-quality data, machine learning successfully identifies mechanistically relevant genomic features, emphasizing that future improvements must focus on data quality and determining optimal confidence thresholds rather than model architecture alone.
+Critically, when we restricted training to samples where mechanistic predictions (GapMind) correctly matched experimental outcomes, models achieved near-perfect accuracy (>0.95) that generalized robustly across datasets, phylogenetic clades, and evaluation scenarios.
+These models consistently identified established pathway genes as top features.
+Systematic characterization of prediction discordances revealed that models trained on concordant data could partially predict discordant samples (balanced accuracy 0.18--0.4), suggesting that discordances arise from a mixture of annotation gaps, regulatory complexity, and measurement variability.
+
+Our findings establish that generalization failures in microbial phenotype prediction stem primarily from data quality limitations rather than algorithmic inadequacy.
+We provide a practical framework for building generalizable models through rigorous cross-dataset evaluation, feature stability assessment, and sample quality diagnostics which are applicable even when mechanistic knowledge is unavailable.
   }
 \end{abstract}
 
