@@ -12,9 +12,46 @@ We expected predicting carbon utilization to be straightforward given well-chara
 
 \begin{figure}[h]
 \centering
-% TODO: Insert figure here
-\caption{\textbf{Dataset characteristics and baseline prediction approaches.} (A) Overview of data collection: growth phenotypes measured across microbial isolates and carbon sources, yielding binary outcomes for ML training. (B) Phylogenetic distribution of 819 genomes across four datasets (ATLeaf, Literature, Marine, PMI), showing distinct taxonomic compositions. (C) Phenotypic distribution for 16 carbon sources common across training datasets. (D) GapMind mechanism-based prediction achieves only modest accuracy ($\sim$0.65 strict, $\sim$0.70 permissive). (E) Phylogeny-based prediction shows high within-dataset but poor cross-dataset performance.}
+\begin{subfigure}[b]{0.95\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1a.pdf}
+    \caption{Overview of data collection and phenotype measurement.}
+\end{subfigure}
+
+\vspace{0.5cm}
+
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1b.png}
+    \caption{Phylogenetic distribution of 819 genomes across four datasets (ATLeaf, Literature, Marine, PMI).}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1c.png}
+    \caption{Phenotypic distribution for 16 carbon sources common across training datasets.}
+\end{subfigure}
+
+\caption{\textbf{Dataset characteristics.} (A) Overview of data collection: growth phenotypes measured across microbial isolates and carbon sources, yielding binary outcomes for ML training. (B) Phylogenetic distribution of 819 genomes across four datasets (ATLeaf, Literature, Marine, PMI), showing distinct taxonomic compositions. (C) Phenotypic distribution for 16 carbon sources common across training datasets.}
 \label{fig:dataset_characteristics}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1d.png}
+    \caption{GapMind mechanism-based prediction accuracy (strict and permissive).}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1e.png}
+    \caption{Phylogeny-based prediction performance within and across datasets.}
+\end{subfigure}
+
+\caption{\textbf{Baseline prediction approaches.} (A) GapMind mechanism-based prediction achieves only modest accuracy ($\sim$0.65 strict, $\sim$0.70 permissive). (B) Phylogeny-based prediction shows high within-dataset but poor cross-dataset performance.}
+\label{fig:baseline_predictions}
 \end{figure}
 
 \subsection{Machine Learning Achieves High Within-Dataset Accuracy but Fails to Generalize}

@@ -327,6 +327,7 @@ TSWLatexianTemp*
 
 # misc
 .stfolder/
+.DS_Store
 
 # Data and pdfs
 data/
