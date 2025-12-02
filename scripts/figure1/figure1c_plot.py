@@ -62,8 +62,11 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     # Customize the plot
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Number of Genomes")
-    # ax.set_xticks(x + bar_width * (len(datasets) - 1) / 2)
+    # Center x-tick labels in the middle of the group of bars
+    ax.set_xticks(x + bar_width * (len(datasets) - 1) / 2)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
+    # Only show ticks at the bottom where labels are
+    ax.tick_params(axis="x", which="both", top=False, bottom=True)
 
     # Create legend
     # Add dataset legend
@@ -72,12 +75,13 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
         for i in range(len(datasets))
     ]
     legend1 = ax.legend(
-        dataset_handles, datasets,
+        dataset_handles,
+        datasets,
         title="Dataset",
         loc="upper left",
-        bbox_to_anchor=(0.0, -0.15),
+        bbox_to_anchor=(0.0, 1.15),
         ncol=len(datasets),
-        frameon=True
+        frameon=False,
     )
     ax.add_artist(legend1)
 
@@ -88,11 +92,11 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     ]
     ax.legend(
         handles=status_handles,
-        title="Status",
+        title="Phenotype",
         loc="upper right",
-        bbox_to_anchor=(1.0, -0.15),
+        bbox_to_anchor=(1.0, 1.15),
         ncol=2,
-        frameon=True
+        frameon=False,
     )
 
     plt.tight_layout()
@@ -103,6 +107,6 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
 
 if __name__ == "__main__":
     df = pd.read_csv("data/outputs/figure1/figure1c_data.csv")
-    output_file = Path("figures/figure1c.png")
+    output_file = Path("figures/figure1c.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     plot_data(df, output_file)
