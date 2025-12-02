@@ -1,0 +1,29 @@
+[project]
+name = "trait-prediction-manuscript"
+version = "0.1.0"
+description = "Manuscript code repository for Trait Prediction"
+readme = "README.md"
+requires-python = ">=3.12,<=3.14"
+authors = [
+    { name = "Dileep Kishore", email = "kishored@ornl.gov" },
+]
+dependencies = [
+    "pandas",
+    "matplotlib",
+    "seaborn",
+    "trait_prediction @ git+ssh://git@github.com/kbasecollaborations/trait-prediction.git@main",
+    "statsmodels",
+    "pyqt5",
+    "scikit-bio>=0.7.0",
+]
+
+
+[dependency-groups]
+dev = [
+    "watchdog>=6.0.0",
+]
+
+# ---
+
+# [tool.ruff.format]
+# exclude = ["*.ipynb"]
