@@ -63,14 +63,22 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
         return DecisionTreeClassifier(**updated_kwargs)
     elif model_type == "cb":
         default_kwargs = {
-            "random_state": 42,
-            "thread_count": -1,
-            "eval_metric": "BalancedAccuracy",
-            "od_type": "IncToDec",
-            "od_wait": 20,
+            "iterations": 1000,
+            "learning_rate": 0.03,
+            "depth": 4,
+            "l2_leaf_reg": 15,  # changed from 10 -> 15 (stronger regularization)
+            "bagging_temperature": 1,  # changed from 0.5 -> 1 (increase bootstrap intensity)
+            "rsm": 0.1,  # changed from 0.5 -> 0.1 (only look at 10% genes per split)
+            "bootstrap_type": "Bayesian",
+            "od_type": "Iter",
+            "od_wait": 50,  # changed 20 -> 50 (increased patience)
             "task_type": "CPU",
+            "eval_metric": "Logloss",
             "verbose": False,
             "allow_writing_files": False,
+            "use_best_model": True,
+            "random_state": 42,
+            "thread_count": -1,
         }
         updated_kwargs = {**default_kwargs, **kwargs}
         return CatBoostClassifier(**updated_kwargs)  # type: ignore
