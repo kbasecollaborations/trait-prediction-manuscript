@@ -9,10 +9,15 @@ import scienceplots
 import seaborn as sns
 from matplotlib.patches import Rectangle
 
-from scripts.visualization import format_dataset_names, get_dataset_color_list
+from scripts.visualization import (
+    configure_plot_style,
+    format_dataset_names,
+    get_dataset_color_list,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
+configure_plot_style()
 
 
 def plot_data(df: pd.DataFrame, output_file: Path) -> None:

@@ -2,7 +2,28 @@
 Visualization utilities and color schemes for consistent plotting across figures.
 """
 
+import matplotlib.pyplot as plt
 import seaborn as sns
+
+
+def configure_plot_style() -> None:
+    """
+    Configure matplotlib plotting parameters for consistent, publication-quality figures.
+
+    Sets font sizes for various plot elements to ensure readability and consistency
+    across all figures in the manuscript.
+    """
+    plt.rcParams.update(
+        {
+            "font.size": 12,
+            "axes.titlesize": 14,
+            "axes.labelsize": 12,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 10,
+            "legend.fontsize": 10,
+            "legend.title_fontsize": 12,
+        }
+    )
 
 
 def get_dataset_colors():
@@ -20,9 +41,9 @@ def get_dataset_colors():
     # Map datasets to colors (alphabetically sorted for consistency)
     dataset_color_map = {
         "atleaf": palette[0],  # Blue
-        "lit": palette[1],     # Orange
+        "lit": palette[1],  # Orange
         "marine": palette[2],  # Green
-        "pmi": palette[3],     # Red
+        "pmi": palette[3],  # Red
     }
 
     return dataset_color_map
