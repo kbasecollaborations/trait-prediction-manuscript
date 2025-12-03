@@ -139,26 +139,84 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
     # Define split order and model order
     split_order = ["Random", "Out-of-Clade"]
     model_order = ["identity", "bernoulli", "nearest_neighbor"]
-    model_labels = ["Identity", "Bernoulli", "Nearest Neighbor"]
+    model_labels = {"identity": "Identity", "bernoulli": "Bernoulli", "nearest_neighbor": "Nearest Neighbor"}
 
-    # Define colors for each model
-    colors = {
-        "identity": "#808080",  # Gray
-        "bernoulli": "#F18F01",  # Orange
-        "nearest_neighbor": "#06A77D",  # Green
+    # Rename models for display
+    df["model"] = df["model"].map(model_labels)
+
+    # Define colors and markers for each model
+    palette = {
+        "Identity": "#808080",  # Gray
+        "Bernoulli": "#F18F01",  # Orange
+        "Nearest Neighbor": "#06A77D",  # Green
+    }
+
+    markers = {
+        "Identity": "o",  # Circle
+        "Bernoulli": "s",  # Square
+        "Nearest Neighbor": "^",  # Triangle
     }
 
     # Get unique phenotypes across all splits
     phenotypes = sorted(df["phenotype"].unique())
 
-    # Define markers for each model
-    markers = {
-        "identity": "o",  # Circle
-        "bernoulli": "s",  # Square
-        "nearest_neighbor": "^",  # Triangle
-    }
+    # Plot each split type in a separate subplot
+    for idx, split_type in enumerate(split_order):
+        ax = axes[idx]
+        split_df = df[df["split"] == split_type]
 
-    # Create legend handles for top placement
+        # Create stripplot with seaborn (no dodge - all models on same vertical line)
+        sns.stripplot(
+            data=split_df,
+            x="phenotype",
+            y="balanced_accuracy",
+            hue="model",
+            hue_order=list(model_labels.values()),
+            palette=palette,
+            dodge=False,
+            alpha=0.6,
+            size=4,
+            ax=ax,
+            legend=False,
+            jitter=0.15,
+        )
+
+        # Add different markers for each model manually
+        for collection, (model_name, marker) in zip(ax.collections, markers.items()):
+            collection.set_paths([plt.matplotlib.markers.MarkerStyle(marker).get_path()])
+
+        # Add mean lines for each model and phenotype
+        for phenotype in phenotypes:
+            phenotype_data = split_df[split_df["phenotype"] == phenotype]
+            x_pos = phenotypes.index(phenotype)
+
+            for model_name in model_labels.values():
+                model_data = phenotype_data[phenotype_data["model"] == model_name]["balanced_accuracy"]
+                if len(model_data) > 0:
+                    mean_val = model_data.mean()
+                    ax.plot(
+                        [x_pos - 0.15, x_pos + 0.15],
+                        [mean_val, mean_val],
+                        color=palette[model_name],
+                        linewidth=2,
+                        alpha=0.9,
+                    )
+
+        # Formatting
+        ax.set_title(split_type, fontweight="bold")
+        ax.set_ylabel("Balanced Accuracy")
+        ax.set_xlabel("")
+        ax.set_ylim(0, 1)
+
+        # Only show x-tick labels on the bottom subplot
+        if idx == len(split_order) - 1:
+            ax.set_xlabel("Phenotype")
+            ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=True)
+            plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+        else:
+            ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
+
+    # Create custom legend with markers
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -167,83 +225,14 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             [0],
             marker=markers[model],
             color="w",
-            markerfacecolor=colors[model],
+            markerfacecolor=palette[model],
             markersize=8,
             alpha=0.8,
-            label=label,
+            label=model,
             linestyle="None",
         )
-        for model, label in zip(model_order, model_labels)
+        for model in model_labels.values()
     ]
-
-    # Set random seed for reproducible jitter
-    np.random.seed(42)
-
-    # Plot each split type in a separate subplot
-    for idx, split_type in enumerate(split_order):
-        ax = axes[idx]
-        split_df = df[df["split"] == split_type]
-
-        # Set up positions
-        x = np.arange(len(phenotypes))
-        jitter_width = 0.08
-        offset_scale = 0.15
-
-        # Plot strip plots for each model
-        for i, (model, label) in enumerate(zip(model_order, model_labels)):
-            model_df = split_df[split_df["model"] == model]
-
-            # Calculate offset for each model
-            offset = (i - 1) * offset_scale
-
-            # Plot points for each phenotype
-            for j, phenotype in enumerate(phenotypes):
-                phenotype_data = model_df[model_df["phenotype"] == phenotype][
-                    "balanced_accuracy"
-                ].values
-
-                if len(phenotype_data) > 0:
-                    # Add jitter
-                    jitter = np.random.uniform(
-                        -jitter_width, jitter_width, size=len(phenotype_data)
-                    )
-                    x_positions = x[j] + offset + jitter
-
-                    # Plot strip
-                    ax.scatter(
-                        x_positions,
-                        phenotype_data,
-                        color=colors[model],
-                        marker=markers[model],
-                        alpha=0.6,
-                        s=30,
-                        edgecolors="none",
-                    )
-
-                    # Calculate and plot mean line
-                    mean_val = phenotype_data.mean()
-                    ax.plot(
-                        [x[j] + offset - jitter_width * 1.5, x[j] + offset + jitter_width * 1.5],
-                        [mean_val, mean_val],
-                        color=colors[model],
-                        linewidth=2,
-                        alpha=0.9,
-                    )
-
-        # Formatting
-        ax.set_title(split_type, fontweight="bold")
-        ax.set_ylabel("Balanced Accuracy")
-        ax.set_xticks(x)
-
-        # Only show x-tick labels on the bottom subplot
-        if idx == len(split_order) - 1:
-            ax.set_xticklabels(phenotypes, rotation=45, ha="right")
-        else:
-            ax.set_xticklabels([])
-
-        ax.tick_params(axis="x", which="both", top=False, bottom=True)
-        ax.tick_params(axis="y")
-        ax.set_ylim(0, 1)
 
     # Add legend at the top in a single row (above the first subplot)
     axes[0].legend(
@@ -265,9 +254,6 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         va="top",
         ha="right",
     )
-
-    # Add x-label only to the bottom subplot
-    axes[1].set_xlabel("Phenotype")
 
 
 def create_figure(data_dir: Path, output_file: Path) -> None:
