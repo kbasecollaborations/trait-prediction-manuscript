@@ -46,29 +46,7 @@ We expected predicting carbon utilization to be straightforward given well-chara
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure3a.png}
-    \caption{Within-dataset random cross-validation performance.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure3b.png}
-    \caption{Cross-dataset evaluation performance.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure3c.png}
-    \caption{Phylogenetic partitioning performance.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure3d.png}
-    \caption{Cross-dataset phylogenetically matched evaluation.}
-\end{subfigure}
+\includegraphics[width=0.95\textwidth]{figure3.pdf}
 \caption{\textbf{Generalization failures across evaluation scenarios.} (A) Within-dataset random cross-validation shows high balanced accuracy (0.80--0.90) across phenotypes for each dataset. (B) Cross-dataset evaluation (train on one dataset, test on another) shows substantially reduced performance (drops of 0.15--0.25). (C) Phylogenetic partitioning reveals ordered performance decline: random splits $>$ in-clade splits $>$ out-of-clade splits, quantifying the independent contribution of phylogenetic distance. (D) Cross-dataset evaluation with phylogenetically matched subsets still shows performance gaps, demonstrating dataset-specific biases independent of phylogeny.}
 \label{fig:generalization_failures}
 \end{figure}
