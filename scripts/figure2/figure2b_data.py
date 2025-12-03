@@ -197,9 +197,9 @@ def main() -> None:
     Main function to generate baseline predictions.
     """
     # Define paths
-    RANDOM_SPLIT_DIR = Path("data/interim/combined_train_test_data/random_split")
-    DATASET_SPLIT_DIR = Path("data/interim/combined_train_test_data/dataset_split")
-    PHYLO_SPLIT_DIR = Path("data/interim/combined_train_test_data/phylogeny_split")
+    RANDOM_SPLIT_DIR = Path("data/processed/train_test_splits/random_split")
+    DATASET_SPLIT_DIR = Path("data/processed/train_test_splits/dataset_split")
+    PHYLO_SPLIT_DIR = Path("data/processed/train_test_splits/phylogeny_split")
     OUTPUT_DIR = Path("data/outputs/figure2")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
