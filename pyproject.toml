@@ -15,8 +15,8 @@ dependencies = [
     "statsmodels",
     "pyqt5",
     "scikit-bio>=0.7.0",
-    "proplot>=0.9.5",
     "scienceplots>=2.2.0",
+    "ultraplot>=1.66.0",
 ]
 
 
