@@ -183,6 +183,7 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             ax=ax,
             legend=False,
             jitter=0.15,
+            order=phenotypes,
         )
 
         # Add different markers for each model manually with consistent sizing
