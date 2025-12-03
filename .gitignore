@@ -505,3 +505,4 @@ pyrightconfig.json
 data/
 old_versions/
 build/
+notebooks/
