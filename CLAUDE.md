@@ -18,6 +18,7 @@
 - When creating plots, always include axis labels, titles, and legends where appropriate.
 - Ensure plots are properly sized for readability (e.g., larger fonts, appropriate figure size).
 - Use `scripts/figure1/figure1c_plot.py` as a reference for plotting style and standards.
+- Use a figure size of `figsize=(12, 6)` for a single subplot and `figsize=(12, 12)` for figures with multiple subplots unless there is a good reason to deviate.
 
 ## Machine learning guidelines
 
