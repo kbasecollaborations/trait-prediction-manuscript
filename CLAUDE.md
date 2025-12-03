@@ -17,6 +17,14 @@
 - Use `scienceplots` as the default plotting style for matplotlib.
 - When creating plots, always include axis labels, titles, and legends where appropriate.
 - Ensure plots are properly sized for readability (e.g., larger fonts, appropriate figure size).
+- Use `scripts/figure1/figure1c_plot.py` as a reference for plotting style and standards.
+
+## Machine learning guidelines
+
+- Use a correlation filtering threshold of 0.95 and variance threshold of 1% (0.01) for feature selection.
+- Use KOFAM features because it does slightly better than RAST (45 vs. 19)
+- Use CatBoost (because it does better than RF most of the time)
+- Disable `cat_features` as CatBoost handles 0/1 integers fine
 
 ## General behavior
 
