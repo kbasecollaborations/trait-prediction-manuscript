@@ -125,21 +125,25 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
     data_dir : Path
         Directory containing the baseline metrics files.
     """
-    # Load data (only Random and Out-of-Clade)
+    # Load data (only Random split and Out-of-Clade split)
     random_df = pd.read_csv(data_dir / "random_split_baselines.tsv", sep="\t")
     phylo_df = pd.read_csv(data_dir / "out_of_clade_split_baselines.tsv", sep="\t")
 
     # Add split type column
-    random_df["split"] = "Random"
-    phylo_df["split"] = "Out-of-Clade"
+    random_df["split"] = "Random split"
+    phylo_df["split"] = "Out-of-Clade split"
 
     # Combine dataframes
     df = pd.concat([random_df, phylo_df], ignore_index=True)
 
     # Define split order and model order
-    split_order = ["Random", "Out-of-Clade"]
+    split_order = ["Random split", "Out-of-Clade split"]
     model_order = ["identity", "bernoulli", "nearest_neighbor"]
-    model_labels = {"identity": "Identity", "bernoulli": "Bernoulli", "nearest_neighbor": "Nearest Neighbor"}
+    model_labels = {
+        "identity": "Identity",
+        "bernoulli": "Bernoulli",
+        "nearest_neighbor": "Nearest Neighbor",
+    }
 
     # Rename models for display
     df["model"] = df["model"].map(model_labels)
@@ -175,15 +179,20 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             palette=palette,
             dodge=False,
             alpha=0.6,
-            size=4,
+            size=5,
             ax=ax,
             legend=False,
             jitter=0.15,
         )
 
-        # Add different markers for each model manually
+        # Add different markers for each model manually with consistent sizing
         for collection, (model_name, marker) in zip(ax.collections, markers.items()):
-            collection.set_paths([plt.matplotlib.markers.MarkerStyle(marker).get_path()])
+            # Get the marker path and scale it consistently
+            marker_obj = plt.matplotlib.markers.MarkerStyle(marker)
+            marker_path = marker_obj.get_path().transformed(marker_obj.get_transform())
+            collection.set_paths([marker_path])
+            # Ensure consistent sizes
+            collection.set_sizes([25] * len(collection.get_offsets()))
 
         # Add mean lines for each model and phenotype
         for phenotype in phenotypes:
@@ -191,7 +200,9 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             x_pos = phenotypes.index(phenotype)
 
             for model_name in model_labels.values():
-                model_data = phenotype_data[phenotype_data["model"] == model_name]["balanced_accuracy"]
+                model_data = phenotype_data[phenotype_data["model"] == model_name][
+                    "balanced_accuracy"
+                ]
                 if len(model_data) > 0:
                     mean_val = model_data.mean()
                     ax.plot(
@@ -211,10 +222,14 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         # Only show x-tick labels on the bottom subplot
         if idx == len(split_order) - 1:
             ax.set_xlabel("Phenotype")
-            ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=True)
+            ax.tick_params(
+                axis="x", which="both", top=False, bottom=True, labelbottom=True
+            )
             plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
         else:
-            ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
+            ax.tick_params(
+                axis="x", which="both", top=False, bottom=True, labelbottom=False
+            )
 
     # Create custom legend with markers
     from matplotlib.lines import Line2D

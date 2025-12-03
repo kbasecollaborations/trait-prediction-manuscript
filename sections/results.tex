@@ -24,7 +24,7 @@ We expected predicting carbon utilization to be straightforward given well-chara
     \includegraphics[width=\textwidth]{figure1b.pdf}
 \end{subfigure}
 \vspace{0.5cm}
-\begin{subfigure}[b]{0.8\textwidth}
+\begin{subfigure}[b]{0.95\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure1c.pdf}
 \end{subfigure}
@@ -35,18 +35,7 @@ We expected predicting carbon utilization to be straightforward given well-chara
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure2a.png}
-    \caption{GapMind mechanism-based prediction accuracy (strict and permissive).}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure2b.png}
-    \caption{Phylogeny-based prediction performance within and across datasets.}
-\end{subfigure}
-
+\includegraphics[width=0.95\textwidth]{figure2.pdf}
 \caption{\textbf{Baseline prediction approaches.} (A) GapMind mechanism-based prediction achieves only modest accuracy ($\sim$0.65 strict, $\sim$0.70 permissive). (B) Phylogeny-based prediction shows high within-dataset but poor cross-dataset performance.}
 \label{fig:baseline_predictions}
 \end{figure}
@@ -205,6 +194,9 @@ We expected predicting carbon utilization to be straightforward given well-chara
 \caption{\textbf{Framework for evaluating and improving phenotype prediction models.} (A) Decision workflow: steps for building generalizable models, including evaluation strategy selection, quality diagnostics, and iterative refinement. (B) Evaluation hierarchy: comparison of performance estimates from random CV (inflated), cross-dataset (realistic for new experimental contexts), and out-of-clade (realistic for novel taxa). (C) Feature stability as a quality diagnostic: high cross-dataset feature overlap indicates mechanistic learning; low overlap indicates spurious correlations. (D) Sample quality assessment without mechanistic knowledge: samples consistently misclassified across multiple models/features may indicate measurement issues or unusual biology. (E) Minimum sample requirements: learning curves showing performance versus training set size for high-quality subsets.}
 \label{fig:prediction_framework}
 \end{figure}
+
+% TODO: This is important
+\todo{How little data is needed to get good performance once poor-quality samples are removed? Learning curves for representative phenotypes.}
 
 \subsection*{Tables}
 
