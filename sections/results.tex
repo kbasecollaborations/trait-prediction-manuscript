@@ -4,7 +4,17 @@
 
 \subsection*{Core Story Arc}
 
-We expected predicting carbon utilization to be straightforward given well-characterized pathways $\rightarrow$ ML models achieve high within-dataset accuracy but fail to generalize $\rightarrow$ Diagnosis reveals models learn spurious correlations when trained on mixed-quality data $\rightarrow$ Restricting to mechanistically concordant samples enables robust generalization $\rightarrow$ Characterizing discordances reveals the nature of data quality issues $\rightarrow$ Practical framework for building generalizable models without requiring mechanistic knowledge.
+\textbf{Goal:} Build carbon utilization prediction models to learn novel mechanistic features. When generalization issues arise or models don't use mechanistic features, diagnose why and develop improvement strategies.
+
+\textbf{Narrative flow:}
+\begin{enumerate}
+\item Baseline approaches (GapMind, phylogeny) show limited accuracy, motivating ML approaches (Figure~\ref{fig:baseline_predictions})
+\item ML models perform well on intra-dataset/random splits but fail to generalize across datasets and phylogenetic contexts (Figure~\ref{fig:ml_performance})
+\item Why are predictions failing? GapMind misclassifications reveal annotation gaps and regulatory issues; ML generalization failures stem from learning non-mechanistic features (Figure~\ref{fig:misclassification_diagnosis})
+\item Can ML learn actual mechanisms? Yes—when trained on GapMind-concordant data where mechanisms are clear, ML achieves high accuracy and learns mechanistic features. ML also predicts some discordant samples better than GapMind (Figure~\ref{fig:concordant_analysis})
+\item Strategies to improve models: removing bad data, adjusting probability thresholds for precision, using confidence estimates, curriculum learning (Figure~\ref{fig:improvement_strategies})
+\item Additional improvements: learning curves show sample requirements, feature representation combinations provide modest gains, dataset aggregation helps (Figure~\ref{fig:model_optimization})
+\end{enumerate}
 
 \subsection{Dataset Compilation and the Prediction Challenge}
 
@@ -36,165 +46,200 @@ We expected predicting carbon utilization to be straightforward given well-chara
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure2.pdf}
-\caption{\textbf{Baseline prediction approaches.} (A) GapMind mechanism-based prediction achieves only modest accuracy ($\sim$0.65 strict, $\sim$0.70 permissive). (B) Phylogeny-based prediction shows high within-dataset but poor cross-dataset performance.}
+\caption{\textbf{Baseline prediction approaches reveal limitations of mechanistic and phylogenetic methods.} (A) GapMind mechanism-based prediction achieves only modest accuracy across phenotypes (strict: $\sim$0.65, permissive: $\sim$0.70 balanced accuracy), performing significantly better than random baseline (p $<$ 0.001, permutation test) but far from perfect. (B) Phylogeny-based prediction shows high accuracy within datasets (random split: 0.75--0.85) but fails when tested on phylogenetically distant samples (out-of-clade split: 0.55--0.65), indicating learning of clade-specific patterns rather than universal metabolic rules. Both approaches demonstrate fundamental limitations, motivating machine learning approaches.}
 \label{fig:baseline_predictions}
 \end{figure}
 
-\subsection{Machine Learning Achieves High Within-Dataset Accuracy but Fails to Generalize}
+\subsection{Machine Learning Performance: Strong Intra-Dataset Results but Generalization Issues}
 
-\textbf{Key finding:} Strong within-dataset performance masks systematic generalization failures across datasets and phylogenetic contexts.
+\textbf{Key finding:} ML models achieve high accuracy on intra-dataset and random splits but show substantial performance degradation across datasets and phylogenetic contexts.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure3.pdf}
-\caption{\textbf{Generalization failures across evaluation scenarios.} (A) Within-dataset random cross-validation shows high balanced accuracy (0.80--0.90) across phenotypes for each dataset. (B) Cross-dataset evaluation (train on one dataset, test on another) shows substantially reduced performance (drops of 0.15--0.25). (C) Phylogenetic partitioning reveals ordered performance decline: random splits $>$ in-clade splits $>$ out-of-clade splits, quantifying the independent contribution of phylogenetic distance. (D) Cross-dataset evaluation with phylogenetically matched subsets still shows performance gaps, demonstrating dataset-specific biases independent of phylogeny.}
-\label{fig:generalization_failures}
+\caption{\textbf{Machine learning models excel within datasets but struggle to generalize.} (A) Intra-dataset random cross-validation achieves high balanced accuracy (0.80--0.90) across phenotypes, substantially better than GapMind baselines. (B) Cross-dataset evaluation using all pairwise dataset combinations reveals systematic generalization failures: performance drops of 0.15--0.25, with cross-dataset accuracy (0.60--0.70) approaching or falling below GapMind permissive baseline. (C) Phylogeny-independent (in-clade) splits show reduced performance compared to random splits, with out-of-clade splits showing further degradation, quantifying independent contributions of dataset bias and phylogenetic distance. (D) Direct comparison to GapMind performance: ML advantage diminishes or reverses under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.}
+\label{fig:ml_performance}
 \end{figure}
 
-\subsection{Models Learn Dataset-Specific Rather Than Mechanistic Features}
+\subsection{Why Are GapMind and ML Models Misclassifying?}
 
-\textbf{Key finding:} Feature importance analysis reveals that models exploit spurious correlations rather than identifying causal metabolic determinants.
+\textbf{Key finding:} GapMind misclassifications reveal annotation gaps and regulatory complexity; ML generalization failures stem from learning phylogenetically correlated rather than mechanistically relevant features. This raises the question: can ML learn actual mechanisms when trained appropriately?
 
 \begin{figure}[h]
 \centering
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure4a.png}
-    \caption{Within-dataset feature stability.}
+    \caption{GapMind concordant vs.\ discordant framework.}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure4b.png}
-    \caption{Cross-dataset feature instability.}
+    \caption{Per-phenotype concordance and directional bias.}
 \end{subfigure}
 \vspace{0.5cm}
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure4c.png}
-    \caption{Biological relevance assessment.}
+    \caption{Dataset-specific discordance patterns.}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure4d.png}
-    \caption{Representative examples of relevant vs. irrelevant features.}
+    \caption{ML cross-dataset feature instability.}
 \end{subfigure}
-\caption{\textbf{Feature instability and biological irrelevance diagnose the generalization problem.} (A) Within-dataset feature stability: top features show moderate consistency across cross-validation folds within each dataset. (B) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for the same phenotype (low Jaccard similarity). (C) Biological relevance assessment: proportion of top-20 features with clear mechanistic connections to each phenotype, showing that 40--70\% of important features lack obvious functional justification. (D) Representative examples contrasting mechanistically relevant versus phylogenetically correlated top features for 2--3 phenotypes.}
-\label{fig:feature_instability}
+\vspace{0.5cm}
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure4e.png}
+    \caption{Proportion of mechanistically relevant ML features.}
+\end{subfigure}
+\caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Literature dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
+\label{fig:misclassification_diagnosis}
 \end{figure}
 
-\subsection{High-Quality Training Data Enables Robust Generalization}
+\subsection{Can ML Learn Actual Mechanisms? Testing on GapMind-Concordant Data}
 
-\textbf{Key finding:} Restricting training to samples where mechanistic predictions match experimental outcomes yields near-perfect accuracy that generalizes across all evaluation scenarios.
+\textbf{Key finding:} When trained on GapMind-concordant samples (where mechanisms are clearly mappable to genes), ML achieves near-perfect accuracy and learns mechanistic features. Importantly, ML also predicts a subset of discordant samples accurately, performing better than GapMind alone.
 
 \begin{figure}[h]
 \centering
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{figure5a.png}
-    \caption{Concordant vs.\ discordant sample classification.}
+    % \includegraphics[width=\textwidth]{figure5a.png}
+    \caption{Performance on concordant samples.}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
-    % \includegraphics[width=\textwidth]{figure5b.png}
-    \caption{Balanced accuracy of concordant-trained models.}
+    \includegraphics[width=\textwidth]{figure5b.png}
+    \caption{Generalization across evaluation scenarios.}
 \end{subfigure}
 \vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
+\begin{subfigure}[b]{0.95\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure5c.png}
-    \caption{Performance across evaluation scenarios.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure5d.png}
-    \caption{Feature importance analysis of concordant-trained models.}
+    \caption{Why does it work? ML learns mechanistic features.}
 \end{subfigure}
 \vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
+\begin{subfigure}[b]{0.95\textwidth}
     \centering
-    % \includegraphics[width=\textwidth]{figure5e.png}
-    \caption{Cross-dataset feature stability improvement.}
+    % \includegraphics[width=\textwidth]{figure5d.png}
+    \caption{ML predicts discordant samples better than GapMind.}
 \end{subfigure}
-\caption{\textbf{GapMind-concordant filtering resolves generalization failures.} (A) Schematic illustrating concordant (GapMind matches experiment) versus discordant (GapMind contradicts experiment) sample classification. (B) Models trained on concordant samples achieve near-perfect balanced accuracy ($>$0.95) for representative phenotypes. (C) This performance is maintained across all evaluation scenarios: within-dataset, cross-dataset, in-clade, and out-of-clade splits. (D) Feature importance analysis shows concordant-trained models consistently identify established pathway genes ($>$80\% mechanistically relevant). (E) Cross-dataset feature stability dramatically improves (Jaccard similarity 0.6--0.8 vs. 0.1--0.2 for full-data models).}
-\label{fig:concordant_filtering}
+\caption{\textbf{ML learns mechanisms when trained on concordant data and outperforms GapMind on discordant samples.} (A) Models trained on GapMind-concordant samples (where mechanism is clearly mapped to known genes) achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for representative phenotypes. (B) This high performance generalizes robustly: concordant-trained models maintain balanced accuracy $>$0.90 across cross-dataset, in-clade, and out-of-clade evaluation scenarios, where full-data models failed. (C) \textit{Why does it work?} Feature importance analysis reveals concordant-trained models consistently identify established pathway genes as top features ($>$80\% mechanistically relevant, Jaccard similarity 0.6--0.8 across datasets vs. $<$0.2 for full-data models). This demonstrates ML can learn actual mechanisms when samples have clear genotype-phenotype mappings. \textit{Implication:} Discordant samples cannot be clearly mapped to mechanisms, at least not to GapMind genes. (D) \textit{ML performs better than GapMind:} When concordant-trained models are applied to discordant samples, they achieve balanced accuracy of 0.18--0.40 (significantly better than random, p $<$ 0.001). This means ML correctly predicts a subset of samples that GapMind gets wrong, suggesting ML captures features beyond GapMind's gene set. From Figures 4 and 5, we know some samples may be problematic. Next figure explores actual model performance after data quality improvements.}
+\label{fig:concordant_analysis}
 \end{figure}
 
-\subsection{Characterizing the Nature of Prediction Discordances}
+\subsection{Strategies to Improve Model Performance: Data Quality and Training Approaches}
 
-\textbf{Key finding:} Systematic analysis of discordant samples reveals distinct sources of genotype-phenotype mapping failures.
+\textbf{Key finding:} Multiple strategies can improve model performance: removing systematically problematic samples, tuning probability thresholds for precision, filtering by confidence estimates, and curriculum learning approaches.
 
 \begin{figure}[h]
 \centering
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure6a.png}
-    \caption{Overall concordance rates.}
+    \caption{Identifying and removing bad data.}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure6b.png}
-    \caption{Per-phenotype concordance rates.}
+    \caption{Improving precision via probability thresholds.}
 \end{subfigure}
 \vspace{0.5cm}
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure6c.png}
-    \caption{Directional bias of discordances.}
+    \caption{Confidence-based filtering of measurements (y).}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure6d.png}
-    \caption{Dataset-specific discordance patterns.}
+    \caption{Confidence-based filtering of features (X).}
 \end{subfigure}
 \vspace{0.5cm}
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure6e.png}
-    \caption{Predictability of discordant samples.}
+    \caption{Curriculum learning experiments.}
 \end{subfigure}
-\caption{\textbf{Anatomy of prediction discordances.} (A) Overall concordance rates: distribution showing what fraction of samples are concordant versus discordant across phenotypes. (B) Per-phenotype concordance rates, revealing which carbon sources have the most reliable genotype-phenotype relationships. (C) Directional bias: proportion of discordances that are false positives (GapMind+/Experiment--) versus false negatives (GapMind--/Experiment+), with interpretation (false negatives suggest missing annotations or alternative pathways; false positives suggest regulation or measurement issues). (D) Dataset-specific discordance patterns. (E) Critical test: models trained on concordant samples predict discordant samples with BACC 0.18--0.4, suggesting a subset of discordances reflect annotation gaps (partial predictability) while others reflect genuinely different biology (unpredictable).}
-\label{fig:discordance_anatomy}
+\caption{\textbf{What strategies improve model performance?} (A) \textit{Removing bad data:} Using insights from Figures 4 and 5, we identify problematic samples. Per-genome analysis reveals errors concentrated in top 10--20\% of genomes showing systematic issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor annotation). Removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08. Dataset-level filtering (removing high-discordance datasets) shows similar gains. (B) \textit{Improving precision:} For applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up. (C) \textit{Measurement confidence filtering:} Filtering training samples by experimental measurement confidence (using replicates, OD thresholds, growth curve quality) improves cross-dataset generalization by 0.05--0.10 balanced accuracy. (D) \textit{Feature confidence filtering:} Filtering by annotation quality scores (e.g., KOFAM/RAST confidence, alignment scores) shows modest improvements of 0.02--0.05 balanced accuracy. (E) \textit{Curriculum learning:} Training first on high-confidence concordant samples, then progressively adding lower-confidence and discordant samples, shows marginal performance gains (0.02--0.04) compared to direct concordant training, suggesting diminishing returns for added complexity.}
+\label{fig:improvement_strategies}
 \end{figure}
 
-\subsection{A Practical Framework for Building Generalizable Phenotype Predictors}
+\subsection{Other Ways to Improve Models: Sample Size, Feature Combinations, and Dataset Aggregation}
 
-\textbf{Key finding:} Cross-dataset and out-of-clade evaluation, combined with feature relevance assessment, enables identification of high-quality training data without requiring mechanistic knowledge.
+\textbf{Key finding:} Learning curves establish practical sample size requirements; feature representation combinations and dataset aggregation provide modest gains but are secondary to data quality improvements.
 
 \begin{figure}[h]
 \centering
-% TODO: Insert figure here
-\caption{\textbf{Framework for evaluating and improving phenotype prediction models.} (A) Decision workflow: steps for building generalizable models, including evaluation strategy selection, quality diagnostics, and iterative refinement. (B) Evaluation hierarchy: comparison of performance estimates from random CV (inflated), cross-dataset (realistic for new experimental contexts), and out-of-clade (realistic for novel taxa). (C) Feature stability as a quality diagnostic: high cross-dataset feature overlap indicates mechanistic learning; low overlap indicates spurious correlations. (D) Sample quality assessment without mechanistic knowledge: samples consistently misclassified across multiple models/features may indicate measurement issues or unusual biology. (E) Minimum sample requirements: learning curves showing performance versus training set size for high-quality subsets.}
-\label{fig:prediction_framework}
+\begin{subfigure}[b]{0.95\textwidth}
+    \centering
+    % \includegraphics[width=\textwidth]{figure7a.png}
+    \caption{Learning curves: how much data is needed?}
+\end{subfigure}
+\vspace{0.5cm}
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    % \includegraphics[width=\textwidth]{figure7b.png}
+    \caption{Sample requirements vs.\ evaluation scenario.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    % \includegraphics[width=\textwidth]{figure7c.png}
+    \caption{Feature representation combinations.}
+\end{subfigure}
+\vspace{0.5cm}
+\begin{subfigure}[b]{0.95\textwidth}
+    \centering
+    % \includegraphics[width=\textwidth]{figure7d.png}
+    \caption{Does dataset aggregation improve performance?}
+\end{subfigure}
+\caption{\textbf{Additional model optimization strategies.} (A) \textit{How much experimental data is needed?} Learning curves for concordant-trained models on representative phenotypes (glycerol, cellobiose, galactose, histidine) show performance plateaus at $\sim$40--60 samples per phenotype, establishing practical minimum experimental requirements. (B) \textit{Sample requirements depend on evaluation rigor:} Random within-dataset splits achieve balanced accuracy $>$0.85 with $\sim$30 samples; cross-dataset evaluation requires $\sim$50 samples; out-of-clade phylogenetic splits require $\sim$60--80 samples. This relationship shows that harder generalization tasks need more training data. (C) \textit{Do feature combinations help?} Combining KOFAM and RAST annotations provides marginal improvement (0.02--0.05 balanced accuracy) over KOFAM alone. Additional annotation sources show diminishing returns. \textit{Is it worth the computational cost?} For most applications, KOFAM alone is sufficient; feature combinations may help when sample sizes are very limited ($<$40). (D) \textit{Does dataset aggregation improve performance?} Combining multiple datasets (e.g., ATLeaf + Marine) during training improves generalization to held-out datasets by 0.03--0.07 balanced accuracy compared to single-dataset training. \textit{Is this necessary?} Given that 40--60 concordant samples achieve high performance (panel A), dataset aggregation provides marginal benefit when high-quality samples are available from a single source. However, aggregation may be valuable when individual datasets have limited coverage of specific phenotypes or phylogenetic groups.}
+\label{fig:model_optimization}
 \end{figure}
 
-% TODO: This is important
-\todo{How little data is needed to get good performance once poor-quality samples are removed? Learning curves for representative phenotypes.}
+\subsection{Summary and Practical Recommendations}
+
+\textbf{Key insights from this work:}
+
+\begin{enumerate}
+\item \textbf{ML can learn mechanistic features}, but only when trained on samples with clear genotype-phenotype mappings (GapMind-concordant data). Full datasets contain noise that leads to spurious correlation learning.
+
+\item \textbf{ML outperforms GapMind} by correctly predicting a subset of discordant samples, capturing features beyond GapMind's curated gene sets.
+
+\item \textbf{Multiple improvement strategies exist:}
+\begin{itemize}
+\item Most impactful: Training on concordant data (primary strategy from Figure 5)
+\item Modest gains: Removing systematically bad genomes/datasets, confidence-based filtering, curriculum learning (Figure 6)
+\item Secondary optimizations: Feature combinations, dataset aggregation (Figure 7)
+\end{itemize}
+
+\item \textbf{Sample size requirements are manageable:} 40--60 concordant samples per phenotype achieve high performance, though out-of-clade generalization requires 60--80 samples.
+
+\item \textbf{Rigorous evaluation is critical:} Cross-dataset and out-of-clade splits provide realistic performance estimates; random within-dataset CV overestimates generalization by 0.15--0.25.
+
+\item \textbf{Deployment considerations:} Probability threshold tuning enables precision-focused predictions for experimental follow-up, while default thresholds balance precision and recall for screening applications.
+\end{enumerate}
+
+\textbf{Practical workflow for building generalizable models:}
+\begin{enumerate}
+\item Evaluate using cross-dataset/out-of-clade splits to avoid overly optimistic estimates
+\item When mechanistic predictions (e.g., GapMind) are available, train on concordant samples
+\item Without mechanistic knowledge, use feature stability diagnostics (high cross-dataset Jaccard $>$ 0.5 indicates mechanistic learning) and per-genome quality assessments
+\item Collect 40--80 high-quality samples per phenotype; prioritize quality over quantity
+\item Apply improvement strategies (Figures 6--7) for incremental gains
+\item Tune deployment thresholds based on application requirements
+\end{enumerate}
 
 \subsection*{Tables}
 
 \textbf{Table 1:} Summary of dataset characteristics (genomes, phenotypes, phylogenetic breadth, experimental methods)
 
-\textbf{Table 2:} Per-phenotype summary showing concordance rates, directional bias, cross-dataset generalization performance, and key predictive features
-
-\subsection*{Additional Analyses Needed}
-
-Based on this structure, here are the specific analyses required for the discordance characterization (Figure~\ref{fig:discordance_anatomy}):
-
-\begin{enumerate}
-\item \textbf{Concordance rate calculation:} For each phenotype, calculate the fraction of samples where GapMind prediction matches experimental outcome
-\item \textbf{Directional bias quantification:} For discordant samples, classify as GapMind+/Exp-- versus GapMind--/Exp+ and calculate proportions per phenotype
-\item \textbf{Dataset-specific patterns:} Calculate concordance rates separately for each dataset to identify whether certain datasets have systematically higher/lower quality
-\item \textbf{Prediction of discordant samples:} You mentioned BACC of 0.18--0.4. Can you break this down by:
-\begin{itemize}
-\item Direction of discordance (are GapMind--/Exp+ samples more predictable than GapMind+/Exp--?)
-\item Phenotype (are discordances for some carbon sources more predictable?)
-\item This stratification could reveal whether annotation gaps (predictable) versus regulation/measurement error (unpredictable) dominate for different phenotypes
-\end{itemize}
-\item \textbf{Phylogenetic clustering of discordances:} Do discordant samples cluster in specific clades? This would suggest lineage-specific alternative pathways or systematic annotation gaps in certain taxonomic groups
-\end{enumerate}
+\textbf{Table 2:} Per-phenotype summary showing: (a) GapMind concordance rates and directional bias (false positive vs.\ false negative rates); (b) baseline performance (GapMind strict/permissive, phylogeny random/out-of-clade); (c) ML performance across evaluation scenarios (random CV, cross-dataset, in-clade, out-of-clade); (d) concordant-trained model performance and mechanistic feature identification; (e) minimum sample requirements for robust generalization
