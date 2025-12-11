@@ -266,6 +266,7 @@ def perform_cv(
         y_test_fold = y.iloc[test_idx]
         fold_scores = _get_scores(estimator, X_test_fold, y_test_fold, scoring)
         fold_scores["fold"] = fold_idx
+        fold_scores["features"] = get_feature_importances(estimator, X)
         all_scores.append(fold_scores)
         top_features_list.append(get_feature_importances(estimator, X))
     results_df = pd.DataFrame(all_scores)
@@ -320,8 +321,10 @@ def perform_train_test(
     X_test = test_X.copy()
     y_test = test_y.copy()
     # Make sure X_test has the same columns as X_train and fill missing columns with 0
-    for col in X_train.columns.difference(X_test.columns):
-        X_test[col] = 0
+    missing_cols = X_train.columns.difference(X_test.columns)
+    if len(missing_cols) > 0:
+        missing_df = pd.DataFrame(0, index=X_test.index, columns=missing_cols)
+        X_test = pd.concat([X_test, missing_df], axis=1)
     X_test = X_test[X_train.columns]
     model.fit(X_train, y_train)  # type: ignore
     results = []
