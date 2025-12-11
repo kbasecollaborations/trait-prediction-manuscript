@@ -24,10 +24,14 @@
 
 - Use a correlation filtering threshold of 0.95 and variance threshold of 1% (0.01) for feature selection.
 - Use KOFAM features because it does slightly better than RAST (45 vs. 19)
-- Use CatBoost (because it does better than RF most of the time)
+- Use CatBoost (because it does better than RF most of the time) and make sure to use the `make_classifier` function from `scripts/ml.py` if possible, at least use the same parameters provided there.
 - Disable `cat_features` as CatBoost handles 0/1 integers fine
 
 ## General behavior
 
 - Prefer readability and maintainability over clever one-liners.
 - When modifying existing code, keep the existing style unless this file says otherwise.
+
+## Script run instructions
+
+- Use `uv run python scripts.<module>.<script>` to run scripts.
