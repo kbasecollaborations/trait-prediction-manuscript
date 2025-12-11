@@ -190,6 +190,7 @@ def perform_cv(
     y: pd.Series,
     model_type: str,
     n_splits: int = 5,
+    minority_class_min_samples: int = 10,
     scoring: list[str] = [
         "accuracy",
         "balanced_accuracy",
@@ -202,7 +203,7 @@ def perform_cv(
         "roc_auc",
     ],
     **model_kwargs,
-) -> pd.DataFrame:
+) -> pd.DataFrame | None:
     """
     Perform cross-validation on a classifier model.
 
@@ -228,13 +229,27 @@ def perform_cv(
 
     Returns
     -------
-    pd.DataFrame
+    pd.DataFrame | None
         DataFrame containing cross-validation results with columns for each scoring metric,
         fold number, and top features for each fold
     """
     random_state = model_kwargs.get("random_state", 42)
     model = make_classifier(model_type, **model_kwargs)
     kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+
+    # Check all folds before running cross-validation
+    for train_idx, test_idx in kfold.split(X, y):
+        y_train_fold = y.iloc[train_idx]
+        train_class_counts = y_train_fold.value_counts()
+
+        # Ensure there are exactly two classes
+        if len(train_class_counts) != 2:
+            return None
+
+        # Return None if minority class in training fold has fewer than minority_class_min_samples
+        if train_class_counts.min() < minority_class_min_samples:
+            return None
+
     cv_results = cross_validate(
         model,
         X,
