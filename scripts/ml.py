@@ -64,6 +64,23 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
         }
         updated_kwargs = {**default_kwargs, **kwargs}
         return DecisionTreeClassifier(**updated_kwargs)
+    elif model_type == "cb_noeval":
+        default_kwargs = {
+            "iterations": 500,  # Fixed iterations since no early stopping
+            "learning_rate": 0.03,
+            "depth": 4,
+            "l2_leaf_reg": 15,  # Stronger regularization to prevent overfitting without early stopping
+            "bagging_temperature": 1,  # Increase bootstrap intensity for better generalization
+            "rsm": 0.1,  # Only look at 10% of features per split for diversity
+            "bootstrap_type": "Bayesian",
+            "task_type": "CPU",
+            "verbose": False,
+            "allow_writing_files": False,
+            "random_state": 42,
+            "thread_count": -1,
+        }
+        updated_kwargs = {**default_kwargs, **kwargs}
+        return CatBoostClassifier(**updated_kwargs)  # type: ignore
     elif model_type == "cb":
         default_kwargs = {
             "iterations": 1000,
