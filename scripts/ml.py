@@ -259,18 +259,15 @@ def perform_cv(
         return_estimator=True,
     )
     all_scores = []
-    top_features_list: list[list[str]] = []
     for fold_idx, (train_idx, test_idx) in enumerate(kfold.split(X, y)):
         estimator = cv_results["estimator"][fold_idx]
         X_test_fold = X.iloc[test_idx]
         y_test_fold = y.iloc[test_idx]
         fold_scores = _get_scores(estimator, X_test_fold, y_test_fold, scoring)
         fold_scores["fold"] = fold_idx
-        fold_scores["features"] = get_feature_importances(estimator, X)
+        fold_scores["features"] = get_feature_importances(estimator, X).index.tolist()
         all_scores.append(fold_scores)
-        top_features_list.append(get_feature_importances(estimator, X))
     results_df = pd.DataFrame(all_scores)
-    results_df["features"] = top_features_list
     return results_df
 
 
