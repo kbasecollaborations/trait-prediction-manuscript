@@ -45,9 +45,12 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
     if model_type == "rf":
         default_kwargs = {
             "n_estimators": 1000,
-            "random_state": 42,
+            "max_depth": None,  # RF needs deep trees. Let them grow.
+            "min_samples_split": 5,  # Slight regularization to prevent leaf purity on noise
+            "min_samples_leaf": 2,  # Require at least 2 samples per leaf
             "n_jobs": -1,
-            "max_features": None,  # type: ignore
+            "max_features": "sqrt",  # Critical! distinct trees need feature subsets. 'sqrt' of 7000 is ~83 features considered per split.
+            "random_state": 42,
         }
         updated_kwargs = {**default_kwargs, **kwargs}
         return RandomForestClassifier(**updated_kwargs)
