@@ -43,8 +43,8 @@ def calculate_cv_results(
     results = []
 
     # Calculate total iterations for progress bar
-    total_iterations = len(dataset.feature_set.features) * len(
-        dataset.phenotype_set.phenotypes
+    total_iterations = len(list(dataset.feature_set.features)) * len(
+        list(dataset.phenotype_set.phenotypes)
     )
 
     with tqdm(total=total_iterations, desc="Calculating CV results") as pbar:
@@ -184,13 +184,19 @@ def calculate_test_results(
                     continue
 
                 # Perform train-test
+                if test_size >= len(test_y):
+                    updated_test_size = int(
+                        len(test_y) * 0.8
+                    )  # Use 80% of available samples
+                else:
+                    updated_test_size = test_size
                 test_results = perform_train_test(
                     train_X,
                     train_y,
                     test_X,
                     test_y,
                     model_type,
-                    test_size=test_size,
+                    test_size=updated_test_size,
                     n_repeats=n_repeats,
                 )
 
