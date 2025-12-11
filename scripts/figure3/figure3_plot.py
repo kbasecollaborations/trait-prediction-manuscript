@@ -145,11 +145,12 @@ def plot_within_dataset_performance(
 
 
 def plot_cross_dataset_performance(
-    ax: plt.Axes, data_dir: Path, phenotypes: list[str] | None = None
+    ax: plt.Axes, data_dir: Path, gapmind_dir: Path, phenotypes: list[str] | None = None
 ) -> None:
     """Plot cross-dataset test performance (train != test dataset).
 
-    Shows models trained on AtLeaf and Marine datasets tested on Literature dataset.
+    Shows models trained on AtLeaf and Marine datasets tested on Literature dataset,
+    with GapMind predictions for comparison.
 
     Parameters
     ----------
@@ -157,12 +158,17 @@ def plot_cross_dataset_performance(
         Matplotlib axes object to plot on.
     data_dir : Path
         Directory containing the figure 3 data files.
+    gapmind_dir : Path
+        Directory containing the GapMind metrics files.
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
     # Load test results and CV results for comparison
     test_df = pd.read_csv(data_dir / "intra_vs_inter" / "test_results.csv")
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
+
+    # Load GapMind results (using loose threshold)
+    gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
 
     # Filter for cross-dataset tests (train_dataset != test_dataset)
     # Only show test on Literature dataset, trained on AtLeaf and Marine
@@ -243,6 +249,25 @@ def plot_cross_dataset_performance(
                 zorder=1,
             )
 
+    # Plot GapMind predictions as dashed lines
+    # Color from figure2: loose GapMind uses #2E86AB (blue), but for consistency with
+    # GapMind being a baseline, we'll use the purple color #A23B72
+    gapmind_color = "#A23B72"  # Purple (same as strict in figure2)
+    gapmind_dict = gapmind_df.set_index("phenotype")["balanced_accuracy"].to_dict()
+
+    for phenotype in phenotypes:
+        if phenotype in gapmind_dict:
+            x_pos = x[phenotypes.index(phenotype)]
+            ax.plot(
+                [x_pos - 0.4, x_pos + 0.4],
+                [gapmind_dict[phenotype], gapmind_dict[phenotype]],
+                color=gapmind_color,
+                linestyle="--",
+                linewidth=2,
+                alpha=0.7,
+                zorder=1,
+            )
+
     # Create legend handles
     from matplotlib.lines import Line2D
 
@@ -270,6 +295,19 @@ def plot_cross_dataset_performance(
             linewidth=2,
             alpha=0.7,
             label="Literature (intra-dataset)",
+        )
+    )
+
+    # Add GapMind reference to legend
+    legend_handles.append(
+        Line2D(
+            [0],
+            [0],
+            color=gapmind_color,
+            linestyle="--",
+            linewidth=2,
+            alpha=0.7,
+            label="GapMind",
         )
     )
 
@@ -492,12 +530,12 @@ def plot_phylogeny_independent_performance(
     )
 
 
-def create_figure(data_dir: Path, output_file: Path) -> None:
+def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = None) -> None:
     """Create Figure 3 with three subplots showing generalization failures.
 
     Demonstrates progressive performance degradation:
     (A) Within-dataset CV: High performance when train/test are from same dataset
-    (B) Cross-dataset: Performance drop when testing on different dataset
+    (B) Cross-dataset: Performance drop when testing on different dataset (includes GapMind)
     (C) Phylogeny-independent: Further drop with phylogenetic control
 
     Parameters
@@ -506,11 +544,17 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         Directory containing the data files.
     output_file : Path
         Path to save the output figure.
+    gapmind_dir : Path | None
+        Directory containing GapMind metrics. If None, uses data/outputs/figure2.
     """
+    if gapmind_dir is None:
+        gapmind_dir = Path("data/outputs/figure2")
+
     # Load all data to determine common phenotypes
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
     test_df = pd.read_csv(data_dir / "intra_vs_inter" / "test_results.csv")
     phylo_df = pd.read_csv(data_dir / "phylo_indep" / "test_results.tsv", sep="\t")
+    gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
 
     # Get phenotypes from each dataset
     cv_phenotypes = set(cv_df["phenotype"].unique())
@@ -529,21 +573,24 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
             & (phylo_df["train_dataset"] == "atleaf")
         ]["phenotype"].unique()
     )
+    gapmind_phenotypes = set(gapmind_df["phenotype"].unique())
 
     # Use intersection of all phenotypes to ensure consistent x-axis
     common_phenotypes = sorted(
-        cv_phenotypes.intersection(test_phenotypes).intersection(phylo_phenotypes)
+        cv_phenotypes.intersection(test_phenotypes)
+        .intersection(phylo_phenotypes)
+        .intersection(gapmind_phenotypes)
     )
 
     # Create figure with 3 subplots arranged vertically with shared x-axis
-    fig, axes = plt.subplots(3, 1, figsize=(12, 16), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(12, 15), sharex=True)
 
     # Plot each subplot with common phenotypes
     plot_within_dataset_performance(axes[0], data_dir, common_phenotypes)
-    plot_cross_dataset_performance(axes[1], data_dir, common_phenotypes)
+    plot_cross_dataset_performance(axes[1], data_dir, gapmind_dir, common_phenotypes)
     plot_phylogeny_independent_performance(axes[2], data_dir, common_phenotypes)
 
-    # Remove x-axis labels from top and middle plots
+    # Remove x-axis labels from all but bottom plot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
 
