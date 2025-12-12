@@ -220,7 +220,7 @@ def main() -> None:
     # Define paths
     FEATURE_DIR = Path("data/processed/features_reduced")
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
-    OUTPUT_DIR = Path("data/outputs/figure3/intra_vs_inter")
+    OUTPUT_DIR = Path("data/outputs/figure3_alt/intra_vs_inter")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Define datasets to include

@@ -382,7 +382,7 @@ def plot_phylogeny_independent_performance(
     phylo_cross = phylo_full[
         (phylo_full["train_dataset"] != phylo_full["test_dataset"])
         & (phylo_full["test_dataset"] == "lit")
-        & (phylo_full["train_dataset"] == "atleaf")
+        & (phylo_full["train_dataset"] == "marine")
     ].copy()
 
     # Get dataset colors
@@ -495,7 +495,7 @@ def plot_phylogeny_independent_performance(
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_title(
-        "Phylogeny-Independent Test Performance (AtLeaf → Literature)",
+        "Phylogeny-Independent Test Performance (Marine → Literature)",
         fontweight="bold",
         pad=10,
     )
@@ -530,7 +530,9 @@ def plot_phylogeny_independent_performance(
     )
 
 
-def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = None) -> None:
+def create_figure(
+    data_dir: Path, output_file: Path, gapmind_dir: Path | None = None
+) -> None:
     """Create Figure 3 with three subplots showing generalization failures.
 
     Demonstrates progressive performance degradation:
@@ -570,12 +572,16 @@ def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = 
             (phylo_df["test_type"] == "full")
             & (phylo_df["train_dataset"] != phylo_df["test_dataset"])
             & (phylo_df["test_dataset"] == "lit")
-            & (phylo_df["train_dataset"] == "atleaf")
+            & (phylo_df["train_dataset"] == "marine")
         ]["phenotype"].unique()
     )
     gapmind_phenotypes = set(gapmind_df["phenotype"].unique())
 
     # Use intersection of all phenotypes to ensure consistent x-axis
+    print("Determining common phenotypes across all analyses...")
+    print(f" - Test phenotypes: {len(test_phenotypes)}")
+    print(f" - Phylo-independent phenotypes: {len(phylo_phenotypes)}")
+    print(f" - GapMind phenotypes: {len(gapmind_phenotypes)}")
     common_phenotypes = sorted(
         cv_phenotypes.intersection(test_phenotypes)
         .intersection(phylo_phenotypes)
@@ -606,7 +612,7 @@ def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = 
 
 
 if __name__ == "__main__":
-    data_dir = Path("data/outputs/figure3")
-    output_file = Path("figures/figure3.pdf")
+    data_dir = Path("data/outputs/figure3_alt")
+    output_file = Path("figures/figure3_alt.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     create_figure(data_dir, output_file)
