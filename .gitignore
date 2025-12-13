@@ -500,9 +500,11 @@ pyrightconfig.json
 # misc
 .stfolder/
 .DS_Store
+.stignore
 
 # Data and pdfs
 data/
 old_versions/
 build/
 notebooks/
+revisions/
