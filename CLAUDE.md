@@ -31,6 +31,7 @@
 
 - Prefer readability and maintainability over clever one-liners.
 - When modifying existing code, keep the existing style unless this file says otherwise.
+- Do not read the complete file contents of anything in data/ folder. Most of those files are large and reading them fully is inefficient. Instead read only the first couple of lines and if the number of columns is large, then read only the first couple of columns.
 
 ## Script run instructions
 
