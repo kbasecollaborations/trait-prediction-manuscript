@@ -1,14 +1,16 @@
-import matplotlib.pyplot as plt
+#!/usr/bin/env python3
+
+from pathlib import Path
+
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import scienceplots
 from matplotlib.patches import FancyBboxPatch
-import numpy as np
 
-# Set up the figure with a clean, publication-ready style
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Helvetica']
-plt.rcParams['font.size'] = 10
+# Apply publication-ready style
+plt.style.use(["science", "nature"])
 
-fig, ax = plt.subplots(figsize=(14, 10))
+fig, ax = plt.subplots(figsize=(10, 10))
 ax.set_xlim(0, 10)
 ax.set_ylim(0, 10)
 ax.set_aspect('equal')
@@ -57,10 +59,10 @@ ax.text(0.15, 2.65, 'No Growth (−)', ha='center', va='center', fontsize=12, fo
 # Top-left quadrant content (True Positive - Concordant)
 ax.text(2.65, 9.1, 'CONCORDANT', ha='center', va='center', fontsize=11, fontweight='bold', color='#1b5e20')
 ax.text(2.65, 8.65, 'True Positive', ha='center', va='center', fontsize=10, fontstyle='italic', color='#2e7d32')
-ax.text(2.65, 7.9, '✓ Genes present & functional', ha='center', va='center', fontsize=9, color='#1b5e20')
-ax.text(2.65, 7.5, '✓ Pathway correctly annotated', ha='center', va='center', fontsize=9, color='#1b5e20')
-ax.text(2.65, 7.1, '✓ Experiment accurately measured', ha='center', va='center', fontsize=9, color='#1b5e20')
-ax.text(2.65, 6.4, 'High-quality training samples', ha='center', va='center', fontsize=9, fontweight='bold', 
+ax.text(2.65, 7.9, 'Genes present and functional', ha='center', va='center', fontsize=9, color='#1b5e20')
+ax.text(2.65, 7.5, 'Pathway correctly annotated', ha='center', va='center', fontsize=9, color='#1b5e20')
+ax.text(2.65, 7.1, 'Experiment accurately measured', ha='center', va='center', fontsize=9, color='#1b5e20')
+ax.text(2.65, 6.4, 'High-quality training samples', ha='center', va='center', fontsize=9, fontweight='bold',
         color='#1b5e20', bbox=dict(boxstyle='round', facecolor='white', edgecolor='#388e3c', alpha=0.8))
 
 # Top-right quadrant content (False Negative - Discordant: GapMind-, Experiment+)
@@ -96,17 +98,17 @@ ax.text(2.65, 0.9, 'Genes present but\nnot functional', ha='center', va='center'
 # Bottom-right quadrant content (True Negative - Concordant)
 ax.text(7.35, 4.4, 'CONCORDANT', ha='center', va='center', fontsize=11, fontweight='bold', color='#0d47a1')
 ax.text(7.35, 3.95, 'True Negative', ha='center', va='center', fontsize=10, fontstyle='italic', color='#1976d2')
-ax.text(7.35, 3.2, '✓ Genes absent', ha='center', va='center', fontsize=9, color='#0d47a1')
-ax.text(7.35, 2.8, '✓ No alternative pathway', ha='center', va='center', fontsize=9, color='#0d47a1')
-ax.text(7.35, 2.4, '✓ Experiment accurately measured', ha='center', va='center', fontsize=9, color='#0d47a1')
+ax.text(7.35, 3.2, 'Genes absent', ha='center', va='center', fontsize=9, color='#0d47a1')
+ax.text(7.35, 2.8, 'No alternative pathway', ha='center', va='center', fontsize=9, color='#0d47a1')
+ax.text(7.35, 2.4, 'Experiment accurately measured', ha='center', va='center', fontsize=9, color='#0d47a1')
 ax.text(7.35, 1.7, 'High-quality training samples', ha='center', va='center', fontsize=9, fontweight='bold',
         color='#0d47a1', bbox=dict(boxstyle='round', facecolor='white', edgecolor='#1976d2', alpha=0.8))
 
 # Add a legend/key at the bottom
 legend_y = -0.5
-ax.text(2.5, legend_y, '■ Concordant (use for training)', ha='center', va='center', fontsize=10, 
+ax.text(2.5, legend_y, 'Concordant (use for training)', ha='center', va='center', fontsize=10,
         color='#1b5e20', fontweight='bold')
-ax.text(7.5, legend_y, '■ Discordant (analyze for data quality insights)', ha='center', va='center', fontsize=10,
+ax.text(7.5, legend_y, 'Discordant (analyze for data quality insights)', ha='center', va='center', fontsize=10,
         color='#b71c1c', fontweight='bold')
 
 # Add small colored squares for legend
@@ -114,8 +116,10 @@ ax.add_patch(mpatches.Rectangle((1.3, legend_y - 0.15), 0.3, 0.3, facecolor=conc
 ax.add_patch(mpatches.Rectangle((5.9, legend_y - 0.15), 0.3, 0.3, facecolor=discordant_fp_color, edgecolor='#d32f2f', linewidth=1))
 
 plt.tight_layout()
-plt.savefig('/home/claude/figure6a_quadrant.png', dpi=300, bbox_inches='tight', 
-            facecolor='white', edgecolor='none', pad_inches=0.2)
-plt.savefig('/home/claude/figure6a_quadrant.pdf', bbox_inches='tight',
-            facecolor='white', edgecolor='none', pad_inches=0.2)
-print("Figure saved successfully!")
+
+# Save output
+output_file = Path("figures/figure4a.pdf")
+output_file.parent.mkdir(parents=True, exist_ok=True)
+plt.savefig(output_file, dpi=300, bbox_inches='tight')
+print(f"Saved plot to {output_file}")
+plt.close()
