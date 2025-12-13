@@ -56,7 +56,9 @@ def load_gapmind_data(gapmind_data_dir: Path) -> pd.DataFrame:
         gapmind_data = pd.read_csv(
             gapmind_data_file, sep="\t", index_col=0, dtype={"genomeID": str}
         )
-        gapmind_data.columns = [f"{phenotype_name}-{col}" for col in gapmind_data.columns]
+        gapmind_data.columns = [
+            f"{phenotype_name}-{col}" for col in gapmind_data.columns
+        ]
         gapmind_data_dict[phenotype_name] = gapmind_data
 
     return pd.concat(gapmind_data_dict.values(), axis=1)
@@ -76,6 +78,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
         GapMind predictions (0/1 encoded).
     """
     import json
+
     from scripts.io import index_format_func
 
     marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
@@ -265,16 +268,22 @@ def identify_microbe_categories(
     )
 
 
-def create_figure4b(
-    output_file: Path,
+def create_misclassification_plots(
+    ax1: plt.Axes,
+    ax2: plt.Axes,
+    ax3: plt.Axes,
     gapmind_data_dir: Path | None = None,
 ) -> None:
-    """Create Figure 4B showing misclassification patterns.
+    """Create misclassification plots on provided axes.
 
     Parameters
     ----------
-    output_file : Path
-        Path to save the output figure.
+    ax1 : plt.Axes
+        Axes for "No Growth but GapMind predicts growth" plot.
+    ax2 : plt.Axes
+        Axes for "All Growth but GapMind incomplete" plot.
+    ax3 : plt.Axes
+        Axes for "Top 20 misclassified genomes" plot.
     gapmind_data_dir : Path | None
         Directory containing GapMind feature files. If None, uses default path.
     """
@@ -346,18 +355,13 @@ def create_figure4b(
 
     missclassified_counts = Counter(missclassified_genomes)
 
-    # Create figure with three subplots: 2 on top, 1 on bottom
-    from matplotlib.gridspec import GridSpec
-
-    fig = plt.figure(figsize=(14, 10))
-    gs = GridSpec(2, 2, figure=fig, height_ratios=[1, 1], hspace=0.3)
-
-    ax1 = fig.add_subplot(gs[0, 0])  # Top left
-    ax2 = fig.add_subplot(gs[0, 1])  # Top right
-    ax3 = fig.add_subplot(gs[1, :])  # Bottom spanning both columns
-
     datasets = ["atleaf", "lit", "pmi", "marine"]
-    dataset_colors = {"atleaf": "#1f77b4", "lit": "#ff7f0e", "pmi": "#2ca02c", "marine": "#d62728"}
+    dataset_colors = {
+        "atleaf": "#1f77b4",
+        "lit": "#ff7f0e",
+        "pmi": "#2ca02c",
+        "marine": "#d62728",
+    }
 
     # Subplot 1: No growth but GapMind predicts growth
     cat1_data = pd.DataFrame({"count": [cat1_counts.get(d, 0) for d in datasets]})
@@ -368,7 +372,7 @@ def create_figure4b(
         alpha=0.7,
         zorder=2,
     )
-    ax1.set_ylabel("Number of Genomes", fontsize=12)
+    ax1.set_ylabel("Number of Microbes", fontsize=12)
     ax1.set_xlabel("Dataset", fontsize=12)
     ax1.set_title(
         "No Experimental Growth but GapMind Predicts Growth",
@@ -378,7 +382,9 @@ def create_figure4b(
     ax1.set_xticks(range(len(datasets)))
     ax1.set_xticklabels(datasets, rotation=45, ha="right")
     ax1.grid(axis="y", alpha=0.3, zorder=0)
-    ax1.set_ylim(0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1)
+    ax1.set_ylim(
+        0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
+    )
 
     # Subplot 2: All growth but GapMind incomplete
     cat2_data = pd.DataFrame({"count": [cat2_counts.get(d, 0) for d in datasets]})
@@ -389,7 +395,7 @@ def create_figure4b(
         alpha=0.7,
         zorder=2,
     )
-    ax2.set_ylabel("Number of Genomes", fontsize=12)
+    ax2.set_ylabel("Number of Microbes", fontsize=12)
     ax2.set_xlabel("Dataset", fontsize=12)
     ax2.set_title(
         "Growth on All C Sources but GapMind Incomplete",
@@ -399,7 +405,9 @@ def create_figure4b(
     ax2.set_xticks(range(len(datasets)))
     ax2.set_xticklabels(datasets, rotation=45, ha="right")
     ax2.grid(axis="y", alpha=0.3, zorder=0)
-    ax2.set_ylim(0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1)
+    ax2.set_ylim(
+        0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
+    )
 
     # Subplot 3: Top 20 most frequently misclassified genomes
     # Get category membership for each genome
@@ -434,30 +442,33 @@ def create_figure4b(
 
     top_20_df = pd.DataFrame(top_20_data)
 
-    # Create bar plot
-    bars3 = ax3.bar(
+    # Create horizontal bar plot (vertical layout)
+    bars3 = ax3.barh(
         range(len(top_20_df)),
         top_20_df["count"],
         color=top_20_df["color"],
         alpha=0.7,
         zorder=2,
     )
-    ax3.set_ylabel("Number of Misclassifications", fontsize=12)
-    ax3.set_xlabel("Genome ID", fontsize=12)
+    ax3.set_xlabel("Number of Misclassifications", fontsize=12)
+    ax3.set_ylabel("Microbe ID", fontsize=12)
     ax3.set_title(
-        "Top 20 Most Frequently Misclassified Genomes",
+        "Top 20 Most Frequently Misclassified Microbes",
         fontsize=12,
-        pad=10,
+        pad=20,
     )
-    ax3.set_xticks(range(len(top_20_df)))
+    ax3.set_yticks(range(len(top_20_df)))
     # Shorten genome IDs for readability
-    short_labels = [
-        "_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]
-    ]
-    ax3.set_xticklabels(short_labels, rotation=90, ha="right")
-    ax3.grid(axis="y", alpha=0.3, zorder=0)
+    short_labels = ["_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]]
+    ax3.set_yticklabels(short_labels, fontsize=9)
+    ax3.invert_yaxis()  # Highest misclassified at top
+    ax3.grid(axis="x", alpha=0.3, zorder=0)
 
-    # Add legend for categories
+    # Set x-axis limit to make bars shorter
+    max_count = top_20_df["count"].max()
+    ax3.set_xlim(0, max_count * 1.1)
+
+    # Add legend for categories at the top in one line
     from matplotlib.patches import Patch
 
     category_handles = [
@@ -467,8 +478,10 @@ def create_figure4b(
     ]
     ax3.legend(
         handles=category_handles,
-        loc="upper right",
-        frameon=True,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.07),
+        ncol=3,
+        frameon=False,
         fontsize=10,
     )
 
@@ -483,7 +496,7 @@ def create_figure4b(
     overlap_123 = cat1_set.intersection(cat2_set).intersection(cat3_set)
 
     # Print summary
-    print(f"\n=== Summary ===")
+    print(f"\n=== Figure 4B Summary ===")
     print(f"Category 1 (No growth, GM predicts growth): {len(cat1_microbes)} genomes")
     print(f"Category 2 (All growth, GM incomplete): {len(cat2_microbes)} genomes")
     print(f"Category 3 (Top 20 misclassified): {len(cat3_microbes)} genomes")
@@ -491,6 +504,44 @@ def create_figure4b(
     print(f"Overlap 1-3: {len(overlap_13)} genomes")
     print(f"Overlap 2-3: {len(overlap_23)} genomes")
     print(f"Overlap 1-2-3: {len(overlap_123)} genomes")
+
+
+def create_figure4b(
+    output_file: Path,
+    gapmind_data_dir: Path | None = None,
+) -> None:
+    """Create standalone Figure 4B showing misclassification patterns.
+
+    Parameters
+    ----------
+    output_file : Path
+        Path to save the output figure.
+    gapmind_data_dir : Path | None
+        Directory containing GapMind feature files. If None, uses default path.
+    """
+    from matplotlib.gridspec import GridSpec
+
+    fig = plt.figure(figsize=(14, 10))
+    gs = GridSpec(2, 2, figure=fig, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
+
+    ax1 = fig.add_subplot(gs[0, 0])  # Top left
+    ax2 = fig.add_subplot(gs[0, 1])  # Top right
+
+    # Create a nested gridspec for the bottom row to center and narrow the third plot
+    bottom_gs = GridSpec(
+        1,
+        3,
+        figure=fig,
+        width_ratios=[0.2, 1, 0.2],
+        wspace=0,
+        left=gs[1, :].get_position(fig).x0,
+        right=gs[1, :].get_position(fig).x1,
+        bottom=gs[1, :].get_position(fig).y0,
+        top=gs[1, :].get_position(fig).y1,
+    )
+    ax3 = fig.add_subplot(bottom_gs[0, 1])  # Center column only
+
+    create_misclassification_plots(ax1, ax2, ax3, gapmind_data_dir)
 
     gs.tight_layout(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
