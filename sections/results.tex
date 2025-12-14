@@ -67,35 +67,7 @@
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure4a.png}
-    \caption{GapMind concordant vs.\ discordant framework.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure4b.png}
-    \caption{Per-phenotype concordance and directional bias.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure4c.png}
-    \caption{Dataset-specific discordance patterns.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure4d.png}
-    \caption{ML cross-dataset feature instability.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure4e.png}
-    \caption{Proportion of mechanistically relevant ML features.}
-\end{subfigure}
+\includegraphics[width=0.95\textwidth]{figure4.pdf}
 \caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Literature dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
 \label{fig:misclassification_diagnosis}
 \end{figure}
