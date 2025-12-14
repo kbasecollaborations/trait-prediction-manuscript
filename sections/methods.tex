@@ -4,6 +4,11 @@
 
 % NOTE: Incubation period of ATLeaf was 7 days (colony growth was assessed by comparing with control plate)
 
+\subsection*{Machine learning training details}
+
+1. Eval set: Used only when training on the combined dataset (>500 samples), otherwise used CV only because of small sample size
+2. Instead of RFE, we are using bootstrapping + multiple random seeds + >70\% feature importance consensus to select features
+
 \subsection*{Annotation}
 
 \subsubsection*{Protein Sequence Analysis Using UniRef Databases}
