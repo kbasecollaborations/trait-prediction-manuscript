@@ -508,3 +508,4 @@ old_versions/
 build/
 notebooks/
 revisions/
+.claude/
