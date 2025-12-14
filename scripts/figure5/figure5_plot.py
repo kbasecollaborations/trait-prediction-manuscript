@@ -197,7 +197,9 @@ def plot_dataset_split_performance(
     )
 
 
-def create_feature_comparison_plot(ax: Axes, data_dir: Path, phenotypes: list[str]) -> None:
+def create_feature_comparison_plot(
+    ax: Axes, data_dir: Path, phenotypes: list[str]
+) -> None:
     """Create grouped + stacked bar plot comparing features between datasets (concordant samples).
 
     Shows the number of features in common (intersection) and unique features
@@ -360,6 +362,8 @@ def plot_concordant_train_performance(
 ) -> None:
     """Plot performance of models trained on concordant, tested on discordant vs full.
 
+    Only uses random_split data for visualization.
+
     Parameters
     ----------
     ax : Axes
@@ -371,6 +375,9 @@ def plot_concordant_train_performance(
     """
     # Load data
     ml_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
+
+    # Filter to only random_split
+    ml_df = ml_df[ml_df["split_type"] == "random_split"].copy()
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -477,9 +484,7 @@ def plot_concordant_train_performance(
     )
 
 
-def create_figure(
-    data_dir: Path, output_file: Path
-) -> None:
+def create_figure(data_dir: Path, output_file: Path) -> None:
     """Create Figure 5 with three subplots.
 
     Parameters
@@ -499,7 +504,10 @@ def create_figure(
         ml_df[ml_df["split_type"] == "dataset_split"]["phenotype"].unique()
     )
     feature_phenotypes = set(feature_comp_df["phenotype"].unique())
-    test_phenotypes = set(test_df["phenotype"].unique())
+    # Filter test_df to only random_split for phenotype determination
+    test_phenotypes = set(
+        test_df[test_df["split_type"] == "random_split"]["phenotype"].unique()
+    )
 
     # Use intersection to ensure consistent x-axis
     print("Determining common phenotypes across all analyses...")
@@ -507,7 +515,9 @@ def create_figure(
     print(f" - Feature comparison phenotypes: {len(feature_phenotypes)}")
     print(f" - Test type phenotypes: {len(test_phenotypes)}")
     common_phenotypes = sorted(
-        dataset_phenotypes.intersection(feature_phenotypes).intersection(test_phenotypes)
+        dataset_phenotypes.intersection(feature_phenotypes).intersection(
+            test_phenotypes
+        )
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 

@@ -661,7 +661,7 @@ def main() -> None:
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
     # Parameters
-    N_SEEDS = 5  # TODO: Increase back to 20 for final runs
+    N_SEEDS = 5  # Reduced for faster execution
     THRESHOLD = 0.7
     N_FEATURES = 10
     DATASETS = ["atleaf", "lit", "marine"]
@@ -693,7 +693,7 @@ def main() -> None:
     print(f"  - Concordant samples only")
     print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
     print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in e{THRESHOLD * 100}% of runs")
+    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
     individual_results = analyze_individual_datasets(
         DATASETS,
@@ -721,7 +721,7 @@ def main() -> None:
     print(f"  - Concordant samples only")
     print(f"  - Running {N_SEEDS} random seeds per phenotype")
     print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in e{THRESHOLD * 100}% of runs")
+    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
     all_combined_results = analyze_all_datasets_combined(
         ALL_DATASETS,
@@ -767,13 +767,13 @@ def main() -> None:
     if len(summary_df) > 0:
         print("\nFeature overlap statistics:")
         print(
-            f"  Mean intersection size: {summary_df['n_intersection'].mean():.1f} ± {summary_df['n_intersection'].std():.1f}"
+            f"  Mean intersection size: {summary_df['n_intersection'].mean():.1f} +/- {summary_df['n_intersection'].std():.1f}"
         )
         print(
-            f"  Mean unique to individual: {summary_df['n_unique_to_individual'].mean():.1f} ± {summary_df['n_unique_to_individual'].std():.1f}"
+            f"  Mean unique to individual: {summary_df['n_unique_to_individual'].mean():.1f} +/- {summary_df['n_unique_to_individual'].std():.1f}"
         )
         print(
-            f"  Mean unique to combined: {summary_df['n_unique_to_combined'].mean():.1f} ± {summary_df['n_unique_to_combined'].std():.1f}"
+            f"  Mean unique to combined: {summary_df['n_unique_to_combined'].mean():.1f} +/- {summary_df['n_unique_to_combined'].std():.1f}"
         )
 
     print("\nDone!")
