@@ -452,11 +452,11 @@ def create_misclassification_plots(
     )
     ax3.set_xlabel("Number of Misclassifications", fontsize=12)
     ax3.set_ylabel("Microbe ID", fontsize=12)
-    ax3.set_title(
-        "Top 20 Most Frequently Misclassified Microbes",
-        fontsize=12,
-        pad=20,
-    )
+    # ax3.set_title(
+    #     "Top 20 Most Frequently Misclassified Microbes",
+    #     fontsize=12,
+    #     pad=20,
+    # )
     ax3.set_yticks(range(len(top_20_df)))
     # Shorten genome IDs for readability
     short_labels = ["_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]]
@@ -479,7 +479,7 @@ def create_misclassification_plots(
     ax3.legend(
         handles=category_handles,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.07),
+        bbox_to_anchor=(0.5, 1.08),
         ncol=3,
         frameon=False,
         fontsize=10,

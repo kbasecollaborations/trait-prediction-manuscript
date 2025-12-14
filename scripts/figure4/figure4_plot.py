@@ -20,16 +20,16 @@ def create_figure4(output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Create figure with three rows
-    fig = plt.figure(figsize=(20, 18))
+    # Create figure - increased height for panel C
+    fig = plt.figure(figsize=(20, 16))
 
     # Create grid: 2 rows, top row has 2 columns, bottom row spans full width
     import matplotlib.gridspec as gridspec
 
     # Main grid: 2 rows
-    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.2, 1], hspace=0.3)
+    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.2, 0.8], hspace=0.2)
 
-    # Top row grid: 2 columns for panels A and B
+    # Top row grid: 2 columns for panels A and B (unchanged from original)
     top_gs = gridspec.GridSpecFromSubplotSpec(
         1, 2, subplot_spec=main_gs[0, :], width_ratios=[1, 1.2], wspace=0.15
     )
@@ -54,13 +54,13 @@ def create_figure4(output_file: Path) -> None:
     )
     ax_b3 = fig.add_subplot(bottom_gs[0, 1])  # Center column only
 
-    # Bottom row: Figure 4C (2 vertically stacked subplots)
+    # Bottom row: Figure 4C (2 vertically stacked subplots with shared x-axis)
     bottom_panel_gs = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=main_gs[1, :], hspace=0.15
+        2, 1, subplot_spec=main_gs[1, :], hspace=0.05
     )
 
     ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])  # Top subplot
-    ax_c2 = fig.add_subplot(bottom_panel_gs[1, 0])  # Bottom subplot
+    ax_c2 = fig.add_subplot(bottom_panel_gs[1, 0], sharex=ax_c1)  # Bottom subplot, shared x-axis
 
     # Create the plots
     print("Creating Figure 4A (quadrant plot)...")
@@ -72,7 +72,7 @@ def create_figure4(output_file: Path) -> None:
     print("\nCreating Figure 4C (feature stability and comparison)...")
     create_panel_c_plots(ax_c1, ax_c2)
 
-    # Add panel labels
+    # Add panel labels (text only, no changes to positions)
     ax_quadrant.text(
         -0.1, 1.05, "(A)", transform=ax_quadrant.transAxes,
         fontsize=14, fontweight="bold", va="top", ha="right"
