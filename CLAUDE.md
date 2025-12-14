@@ -35,4 +35,4 @@
 
 ## Script run instructions
 
-- Use `uv run python scripts.<module>.<script>` to run scripts.
+- Use `uv run python -m scripts.<module>.<script>` to run scripts.
