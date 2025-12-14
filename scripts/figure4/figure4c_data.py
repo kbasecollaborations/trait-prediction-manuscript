@@ -247,6 +247,80 @@ def load_individual_dataset(
     return X, y
 
 
+def load_all_datasets_combined(
+    datasets: Sequence[str], phenotype: str
+) -> tuple[pd.DataFrame, pd.Series]:
+    """
+    Load features and phenotype from all datasets combined.
+
+    Parameters
+    ----------
+    datasets : Sequence[str]
+        List of dataset names (atleaf, lit, marine, pmi)
+    phenotype : str
+        Name of phenotype
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        Feature matrix and target variable from all datasets combined
+    """
+    # Collect all feature and phenotype files
+    feature_files = []
+    phenotype_files = []
+
+    for dataset_name in datasets:
+        features_path = (
+            Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
+        )
+        phenotype_path = (
+            Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
+        )
+
+        if features_path.exists() and phenotype_path.exists():
+            feature_files.append(features_path)
+            phenotype_files.append(phenotype_path)
+
+    # Load all features and phenotypes
+    feature_set = read_features(feature_files)
+    phenotype_set = read_phenotypes(phenotype_files)
+
+    # Create dataset which handles NaN values and alignment
+    dataset = DataSet(phenotype_set, feature_set)
+
+    # Combine all phenotype data for this phenotype across all datasets
+    all_X_list = []
+    all_y_list = []
+
+    for feature_object in dataset.feature_set.features:
+        for phenotype_object in dataset.phenotype_set.phenotypes:
+            pindex = phenotype_object.pindex
+            findex = feature_object.findex
+            phenotype_object_common, feature_object_common = dataset.get_data(
+                pindex, findex
+            )
+            phenotype_df = phenotype_object_common.phenotype_data
+            feature_df = feature_object_common.feature_data
+
+            all_X_list.append(feature_df)
+            all_y_list.append(phenotype_df)
+
+    # Concatenate all datasets
+    X_combined = pd.concat(all_X_list, axis=0)
+    y_combined = pd.concat(all_y_list, axis=0)
+
+    # Handle duplicate indices by keeping first occurrence
+    X_combined = X_combined[~X_combined.index.duplicated(keep="first")]
+    y_combined = y_combined[~y_combined.index.duplicated(keep="first")]
+
+    # Align indices
+    common_idx = X_combined.index.intersection(y_combined.index)
+    X_combined = X_combined.loc[common_idx]
+    y_combined = y_combined.loc[common_idx]
+
+    return X_combined, y_combined
+
+
 def get_test_dataset_from_key(key: str) -> str | None:
     """
     Extract the test dataset name from a dataset_split key.
@@ -419,6 +493,76 @@ def analyze_individual_datasets(
                 continue
 
         results[dataset] = dataset_results
+
+    return results
+
+
+def analyze_all_datasets_combined(
+    datasets: Sequence[str],
+    phenotypes: Sequence[str],
+    n_seeds: int = 20,
+    threshold: float = 0.7,
+    n_features: int = 10,
+) -> dict[str, list[str]]:
+    """
+    Analyze all datasets combined and get consistent top features for each phenotype.
+
+    Parameters
+    ----------
+    datasets : Sequence[str]
+        List of dataset names (atleaf, lit, marine, pmi)
+    phenotypes : Sequence[str]
+        List of phenotype names to analyze (only common phenotypes)
+    n_seeds : int, optional
+        Number of random seeds to run, by default 20
+    threshold : float, optional
+        Minimum proportion for consistent features, by default 0.7
+    n_features : int, optional
+        Number of top features per run, by default 10
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Dictionary: {phenotype: [consistent_features]}
+    """
+    results: dict[str, list[str]] = {}
+
+    for phenotype in tqdm(phenotypes, desc="Analyzing all datasets combined"):
+        try:
+            # Load data from all datasets combined
+            X, y = load_all_datasets_combined(datasets, phenotype)
+
+            # Check if we have enough samples for both classes
+            if len(y.unique()) != 2:
+                continue
+
+            # Check minimum samples per class
+            class_counts = y.value_counts()
+            if class_counts.min() < 10:
+                continue
+
+            # Run for multiple seeds
+            feature_lists = []
+            for seed in range(n_seeds):
+                try:
+                    top_features = train_and_get_top_features_individual(
+                        X, y, random_state=seed, n_features=n_features
+                    )
+                    feature_lists.append(top_features)
+                except Exception as e:
+                    print(f"Error in all_combined/{phenotype} with seed {seed}: {e}")
+                    continue
+
+            # Get consistent features
+            if len(feature_lists) > 0:
+                consistent_features = get_consistent_features(
+                    feature_lists, threshold=threshold
+                )
+                results[phenotype] = consistent_features
+
+        except Exception as e:
+            print(f"Error loading all_combined/{phenotype}: {e}")
+            continue
 
     return results
 
@@ -599,6 +743,41 @@ def main() -> None:
             json.dump(individual_results, f, indent=2)
         print(f"Saved individual results to: {individual_file}")
 
+    # Step 3.5: Analyze all datasets combined
+    all_combined_file = OUTPUT_DIR / "all_datasets_combined_shap_features.json"
+    ALL_DATASETS = ["atleaf", "lit", "marine", "pmi"]
+
+    if all_combined_file.exists():
+        print("\nStep 3.5: Loading existing all datasets combined results...")
+        with open(all_combined_file, "r") as f:
+            all_combined_results = json.load(f)
+        print(
+            f"Loaded results for {len(all_combined_results)} phenotypes from: {all_combined_file}"
+        )
+    else:
+        print(f"\nStep 3.5: Analyzing all datasets combined: {ALL_DATASETS}")
+        print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
+        print(f"  - Running {N_SEEDS} random seeds per phenotype")
+        print(f"  - Extracting top {N_FEATURES} features per run")
+        print(f"  - Keeping features appearing in ≥{THRESHOLD * 100}% of runs")
+
+        all_combined_results = analyze_all_datasets_combined(
+            ALL_DATASETS,
+            COMMON_PHENOTYPES,
+            n_seeds=N_SEEDS,
+            threshold=THRESHOLD,
+            n_features=N_FEATURES,
+        )
+
+        print(
+            f"\nCompleted analysis for all datasets combined: {len(all_combined_results)} phenotypes"
+        )
+
+        # Save all combined results
+        with open(all_combined_file, "w") as f:
+            json.dump(all_combined_results, f, indent=2)
+        print(f"Saved all combined results to: {all_combined_file}")
+
     # Step 5: Compare features
     comparison_file = OUTPUT_DIR / "feature_comparison.json"
     summary_file = OUTPUT_DIR / "feature_comparison_summary.csv"
@@ -653,6 +832,7 @@ def main() -> None:
     print(
         f"Individual dataset/phenotype combinations: {sum(len(p) for p in individual_results.values())}"
     )
+    print(f"All datasets combined phenotypes analyzed: {len(all_combined_results)}")
     print(f"Valid comparisons: {len(comparisons)}")
 
     if len(summary_df) > 0:
