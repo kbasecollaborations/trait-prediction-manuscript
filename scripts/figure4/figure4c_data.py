@@ -230,13 +230,19 @@ def load_individual_dataset(
     dataset = DataSet(phenotype_set, feature_set)
 
     # Get the specific phenotype data
-    X = list(dataset.feature_set.features)[0].feature_data
-    y = list(dataset.phenotype_set.phenotypes)[0].phenotype_data
-
-    # Remove NaN values
-    valid_indices = y.notna()
-    X = X.loc[valid_indices]
-    y = y.loc[valid_indices]
+    for feature_object in dataset.feature_set.features:
+        for phenotype_object in dataset.phenotype_set.phenotypes:
+            pindex = phenotype_object.pindex
+            findex = feature_object.findex
+            phenotype_object_common, feature_object_common = dataset.get_data(
+                pindex, findex
+            )
+            phenotype_df = phenotype_object_common.phenotype_data
+            feature_df = feature_object_common.feature_data
+            break
+        break
+    X = feature_df.copy()
+    y = phenotype_df.copy()
 
     return X, y
 
@@ -504,7 +510,7 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Parameters
-    N_SEEDS = 2  # TODO: Change back to 20 for final run
+    N_SEEDS = 20
     THRESHOLD = 0.7
     N_FEATURES = 10
     DATASETS = ["atleaf", "lit", "marine"]
@@ -522,99 +528,128 @@ def main() -> None:
     print(f"  {', '.join(COMMON_PHENOTYPES[:5])}...")
 
     # Step 1 & 2: Analyze combined train-test splits
-    print("\nStep 1-2: Analyzing combined train-test splits...")
-    print(f"  - Running {N_SEEDS} random seeds per split")
-    print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in ≥{THRESHOLD * 100}% of runs")
-
-    combined_results = analyze_combined_splits(
-        SPLITS_DIR, n_seeds=N_SEEDS, threshold=THRESHOLD, n_features=N_FEATURES
-    )
-
-    # Filter to only include common phenotypes
-    combined_results_filtered = {
-        k: v
-        for k, v in combined_results.items()
-        if k.split("_")[0] in COMMON_PHENOTYPES
-    }
-
-    print(
-        f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (filtered to common phenotypes)"
-    )
-
-    # Save combined results
     combined_file = OUTPUT_DIR / "combined_splits_shap_features.json"
-    with open(combined_file, "w") as f:
-        json.dump(combined_results_filtered, f, indent=2)
-    print(f"Saved combined results to: {combined_file}")
 
-    # Step 3 & 4: Analyze individual datasets
-    print(f"\nStep 3-4: Analyzing individual datasets: {DATASETS}")
-    print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
-    print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
-    print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in ≥{THRESHOLD * 100}% of runs")
+    if combined_file.exists():
+        print("\nStep 1-2: Loading existing combined splits results...")
+        with open(combined_file, "r") as f:
+            combined_results_filtered = json.load(f)
+        print(
+            f"Loaded {len(combined_results_filtered)} combined splits from: {combined_file}"
+        )
+    else:
+        print("\nStep 1-2: Analyzing combined train-test splits...")
+        print(f"  - Running {N_SEEDS} random seeds per split")
+        print(f"  - Extracting top {N_FEATURES} features per run")
+        print(f"  - Keeping features appearing in ≥{THRESHOLD * 100}% of runs")
 
-    individual_results = analyze_individual_datasets(
-        DATASETS,
-        COMMON_PHENOTYPES,
-        n_seeds=N_SEEDS,
-        threshold=THRESHOLD,
-        n_features=N_FEATURES,
-    )
-
-    print(f"\nCompleted analysis for individual datasets:")
-    for dataset, phenotypes in individual_results.items():
-        print(f"  - {dataset}: {len(phenotypes)} phenotypes")
-
-    # Save individual results
-    individual_file = OUTPUT_DIR / "individual_datasets_shap_features.json"
-    with open(individual_file, "w") as f:
-        json.dump(individual_results, f, indent=2)
-    print(f"Saved individual results to: {individual_file}")
-
-    # Step 5: Compare features
-    print("\nStep 5: Comparing features between combined and individual models...")
-    comparisons = compare_features(combined_results_filtered, individual_results)
-
-    print(f"\nFound {len(comparisons)} valid comparisons")
-
-    # Save comparison results
-    comparison_file = OUTPUT_DIR / "feature_comparison.json"
-    with open(comparison_file, "w") as f:
-        json.dump(comparisons, f, indent=2)
-    print(f"Saved comparison results to: {comparison_file}")
-
-    # Create summary DataFrame
-    summary_data = []
-    for comp_key, comp_data in comparisons.items():
-        summary_data.append(
-            {
-                "comparison": comp_key,
-                "phenotype": comp_data["phenotype"],
-                "test_dataset": comp_data["test_dataset"],
-                "n_combined_features": len(comp_data["combined_features"]),
-                "n_individual_features": len(comp_data["individual_features"]),
-                "n_intersection": comp_data["n_intersection"],
-                "n_unique_to_individual": comp_data["n_unique_to_individual"],
-                "n_unique_to_combined": comp_data["n_unique_to_combined"],
-                "intersection": ";".join(comp_data["intersection"]),
-                "unique_to_individual": ";".join(comp_data["unique_to_individual"]),
-                "unique_to_combined": ";".join(comp_data["unique_to_combined"]),
-            }
+        combined_results = analyze_combined_splits(
+            SPLITS_DIR, n_seeds=N_SEEDS, threshold=THRESHOLD, n_features=N_FEATURES
         )
 
-    summary_df = pd.DataFrame(summary_data)
+        # Filter to only include common phenotypes
+        combined_results_filtered = {
+            k: v
+            for k, v in combined_results.items()
+            if k.split("_")[0] in COMMON_PHENOTYPES
+        }
+
+        print(
+            f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (filtered to common phenotypes)"
+        )
+
+        # Save combined results
+        with open(combined_file, "w") as f:
+            json.dump(combined_results_filtered, f, indent=2)
+        print(f"Saved combined results to: {combined_file}")
+
+    # Step 3 & 4: Analyze individual datasets
+    individual_file = OUTPUT_DIR / "individual_datasets_shap_features.json"
+
+    if individual_file.exists():
+        print("\nStep 3-4: Loading existing individual datasets results...")
+        with open(individual_file, "r") as f:
+            individual_results = json.load(f)
+        print(
+            f"Loaded results for {len(individual_results)} datasets from: {individual_file}"
+        )
+        for dataset, phenotypes in individual_results.items():
+            print(f"  - {dataset}: {len(phenotypes)} phenotypes")
+    else:
+        print(f"\nStep 3-4: Analyzing individual datasets: {DATASETS}")
+        print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
+        print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
+        print(f"  - Extracting top {N_FEATURES} features per run")
+        print(f"  - Keeping features appearing in ≥{THRESHOLD * 100}% of runs")
+
+        individual_results = analyze_individual_datasets(
+            DATASETS,
+            COMMON_PHENOTYPES,
+            n_seeds=N_SEEDS,
+            threshold=THRESHOLD,
+            n_features=N_FEATURES,
+        )
+
+        print(f"\nCompleted analysis for individual datasets:")
+        for dataset, phenotypes in individual_results.items():
+            print(f"  - {dataset}: {len(phenotypes)} phenotypes")
+
+        # Save individual results
+        with open(individual_file, "w") as f:
+            json.dump(individual_results, f, indent=2)
+        print(f"Saved individual results to: {individual_file}")
+
+    # Step 5: Compare features
+    comparison_file = OUTPUT_DIR / "feature_comparison.json"
     summary_file = OUTPUT_DIR / "feature_comparison_summary.csv"
-    summary_df.to_csv(summary_file, index=False)
-    print(f"Saved summary to: {summary_file}")
+
+    if comparison_file.exists() and summary_file.exists():
+        print("\nStep 5: Loading existing comparison results...")
+        with open(comparison_file, "r") as f:
+            comparisons = json.load(f)
+        summary_df = pd.read_csv(summary_file)
+        print(f"Loaded {len(comparisons)} comparisons from: {comparison_file}")
+        print(f"Loaded summary from: {summary_file}")
+    else:
+        print("\nStep 5: Comparing features between combined and individual models...")
+        comparisons = compare_features(combined_results_filtered, individual_results)
+
+        print(f"\nFound {len(comparisons)} valid comparisons")
+
+        # Save comparison results
+        with open(comparison_file, "w") as f:
+            json.dump(comparisons, f, indent=2)
+        print(f"Saved comparison results to: {comparison_file}")
+
+        # Create summary DataFrame
+        summary_data = []
+        for comp_key, comp_data in comparisons.items():
+            summary_data.append(
+                {
+                    "comparison": comp_key,
+                    "phenotype": comp_data["phenotype"],
+                    "test_dataset": comp_data["test_dataset"],
+                    "n_combined_features": len(comp_data["combined_features"]),
+                    "n_individual_features": len(comp_data["individual_features"]),
+                    "n_intersection": comp_data["n_intersection"],
+                    "n_unique_to_individual": comp_data["n_unique_to_individual"],
+                    "n_unique_to_combined": comp_data["n_unique_to_combined"],
+                    "intersection": ";".join(comp_data["intersection"]),
+                    "unique_to_individual": ";".join(comp_data["unique_to_individual"]),
+                    "unique_to_combined": ";".join(comp_data["unique_to_combined"]),
+                }
+            )
+
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_csv(summary_file, index=False)
+        print(f"Saved summary to: {summary_file}")
 
     # Print summary statistics
     print("\n" + "=" * 80)
     print("Summary Statistics")
     print("=" * 80)
 
-    print(f"\nCombined splits analyzed: {len(combined_results)}")
+    print(f"\nCombined splits analyzed: {len(combined_results_filtered)}")
     print(
         f"Individual dataset/phenotype combinations: {sum(len(p) for p in individual_results.values())}"
     )
