@@ -167,8 +167,6 @@ def plot_dataset_split_performance(
     # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
-    ax.set_xticks(x)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
     ax.set_ylim(0, 1.05)
 
@@ -228,6 +226,9 @@ def create_feature_comparison_plot(
     x_pos = np.arange(len(phenotypes))
     bar_width = 0.8 / len(datasets)
 
+    # Calculate offset to center the grouped bars at each x position
+    bar_group_center = bar_width * (len(datasets) - 1) / 2
+
     # Plot for each dataset
     for i, dataset in enumerate(datasets):
         dataset_df = df[df["test_dataset"] == dataset].set_index("phenotype")
@@ -245,8 +246,8 @@ def create_feature_comparison_plot(
                 common.append(0)
                 unique_individual.append(0)
 
-        # Calculate positions for grouped bars
-        positions = x_pos + i * bar_width
+        # Calculate positions for grouped bars (centered at each x position)
+        positions = x_pos - bar_group_center + i * bar_width
 
         # Create stacked bars with dataset color and patterns
         # Bottom layer: common features (solid, alpha=0.8)
@@ -318,26 +319,19 @@ def create_feature_comparison_plot(
         frameon=False,
     )
 
-    # Calculate the center offset for grouped bars
-    bar_group_center = bar_width * (len(datasets) - 1) / 2
-
     # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):
         if i % 2 == 0:
-            center = i + bar_group_center
-            ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot
     ax.set_ylabel("Number of Stable Features\n(concordant samples)", fontsize=10)
-    ax.set_xlabel("Phenotype", fontsize=10)
-    # Center x-tick labels in the middle of the group of bars
-    ax.set_xticks(x_pos + bar_group_center)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=9)
+    ax.set_xlabel("")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y")
 
-    # Set x-axis limits to remove extra spacing
-    ax.set_xlim(bar_group_center - 0.5, len(phenotypes) - 1 + bar_group_center + 0.5)
+    # Set x-axis limits to match other panels
+    ax.set_xlim(-0.5, len(phenotypes) - 0.5)
 
     # Set y-axis limits
     ax.set_ylim(0, 10)
@@ -484,10 +478,8 @@ def plot_concordant_train_performance(
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Formatting
-    ax.set_xlabel("Phenotype")
+    ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
-    ax.set_xticks(x)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
 
@@ -553,21 +545,29 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Create figure with 3 subplots arranged vertically with shared x-axis
-    fig, axes = plt.subplots(3, 1, figsize=(12, 15), sharex=True)
+    # Create figure with 3 subplots arranged vertically
+    fig, axes = plt.subplots(3, 1, figsize=(12, 15))
 
     # Plot each subplot with common phenotypes
     plot_dataset_split_performance(axes[0], data_dir, common_phenotypes)
     create_feature_comparison_plot(axes[1], data_dir, common_phenotypes)
     plot_concordant_train_performance(axes[2], data_dir, common_phenotypes)
 
+    # Manually align x-axes to ensure consistency
+    x_pos = np.arange(len(common_phenotypes))
+    for ax in axes:
+        ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
+        ax.set_xticks(x_pos)
+
     # Remove x-axis labels from all but bottom plot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
+    axes[2].set_xlabel("Phenotype")
 
     # Only show x-tick labels on bottom plot
-    axes[0].tick_params(axis="x", labelbottom=False)
-    axes[1].tick_params(axis="x", labelbottom=False)
+    axes[0].set_xticklabels([])
+    axes[1].set_xticklabels([])
+    axes[2].set_xticklabels(common_phenotypes, rotation=45, ha="right")
 
     # Adjust layout with more space between subplots
     plt.tight_layout()
