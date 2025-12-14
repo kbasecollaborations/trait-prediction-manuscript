@@ -362,7 +362,8 @@ def plot_concordant_train_performance(
 ) -> None:
     """Plot performance of models trained on concordant, tested on discordant vs full.
 
-    Only uses random_split data for visualization.
+    Only uses random_split data for visualization. Also plots mean random split
+    accuracy from Figure 3A as a reference line.
 
     Parameters
     ----------
@@ -378,6 +379,14 @@ def plot_concordant_train_performance(
 
     # Filter to only random_split
     ml_df = ml_df[ml_df["split_type"] == "random_split"].copy()
+
+    # Load Figure 3 random split results for reference line (full data, not concordant)
+    fig3_data_dir = Path("data/outputs/figure3")
+    fig3_ml_df = pd.read_csv(fig3_data_dir / "ml_results.csv")
+    fig3_random_df = fig3_ml_df[fig3_ml_df["split_type"] == "random_split"].copy()
+
+    # Calculate mean random split performance for each phenotype
+    fig3_random_means = fig3_random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -438,12 +447,35 @@ def plot_concordant_train_performance(
         flierprops=dict(marker="o", markersize=4, alpha=0.5),
     )
 
+    # Plot Figure 3 random split mean as reference dotted line
+    for phenotype in phenotypes:
+        if phenotype in fig3_random_means:
+            x_pos = x[phenotypes.index(phenotype)]
+            ax.plot(
+                [x_pos - 0.45, x_pos + 0.45],
+                [fig3_random_means[phenotype], fig3_random_means[phenotype]],
+                color="#06A77D",
+                linestyle=":",
+                linewidth=2,
+                alpha=0.7,
+                zorder=1,
+            )
+
     # Create legend handles
     from matplotlib.patches import Patch
 
     legend_handles = [
         Patch(facecolor=colors[0], alpha=0.7, label="Test: Full"),
         Patch(facecolor=colors[1], alpha=0.7, label="Test: Discordant"),
+        Line2D(
+            [0],
+            [0],
+            color="#06A77D",
+            linestyle=":",
+            linewidth=2,
+            alpha=0.7,
+            label="Random Split (Fig 3A)",
+        ),
     ]
 
     # Add alternating background colors for x-axis categories
@@ -479,7 +511,7 @@ def plot_concordant_train_performance(
         handles=legend_handles,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
-        ncol=2,
+        ncol=3,
         frameon=False,
     )
 
