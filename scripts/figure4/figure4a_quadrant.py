@@ -99,7 +99,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     )
     ax.text(
         2.65,
-        12.3,
+        12.0,
         "Pathway Present (+)",
         ha="center",
         va="bottom",
@@ -109,7 +109,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     )
     ax.text(
         7.35,
-        12.3,
+        12.0,
         "Pathway Absent (−)",
         ha="center",
         va="bottom",

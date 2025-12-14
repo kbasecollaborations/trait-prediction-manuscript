@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
+from matplotlib.patches import Rectangle
+
+from scripts.visualization import format_dataset_names, get_dataset_colors
 
 
 def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
@@ -31,18 +34,46 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     # Calculate feature counts (stability) in the order of phenotypes
     feature_counts = [len(feature_data.get(p, [])) for p in phenotypes]
 
-    # Create bar plot
+    # Create bar plot aligned with bottom subplot
+    # Need to match the bottom subplot's bar grouping
     x_pos = np.arange(len(phenotypes))
-    bars = ax.bar(x_pos, feature_counts, color="#2E86AB", alpha=0.8, edgecolor="black", linewidth=0.5)
+    n_datasets = 3  # atleaf, lit, marine
+    bar_width_bottom = 0.8 / n_datasets  # Width used in bottom subplot
+
+    # Center the bars at the same position as the bottom subplot's grouped bars
+    bar_center_offset = bar_width_bottom * (n_datasets - 1) / 2
+    bar_width = 0.5  # Narrower bar for better appearance
+
+    bars = ax.bar(
+        x_pos + bar_center_offset,
+        feature_counts,
+        bar_width,
+        color="#2E86AB",
+        alpha=0.8,
+    )
+
+    # Add alternating background colors for x-axis categories (matching Figure 3)
+    # Center backgrounds around the bar positions
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            center = i + bar_center_offset
+            ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot
-    ax.set_ylabel("Number of Stable Features", fontsize=10)
-    ax.set_xticks(x_pos)
+    ax.set_ylabel("Number of Stable Features\n(combined)", fontsize=10)
+    # Set ticks to match bottom subplot
+    ax.set_xticks(x_pos + bar_center_offset)
     ax.set_xticklabels([])  # No labels on top plot
-    ax.tick_params(axis="x", which="both", bottom=False, top=False)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.grid(axis="y", alpha=0.3, linestyle="--", linewidth=0.5)
+    ax.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
+    ax.tick_params(axis="y")
+    # ax.spines["top"].set_visible(False)
+    # ax.spines["right"].set_visible(False)
+
+    # Set x-axis limits to remove extra spacing
+    ax.set_xlim(bar_center_offset - 0.5, len(phenotypes) - 1 + bar_center_offset + 0.5)
+
+    # Set y-axis limits
+    ax.set_ylim(0, 10)
 
     # Add value labels on bars
     for i, (bar, count) in enumerate(zip(bars, feature_counts)):
@@ -74,24 +105,22 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     data_file = Path("data/outputs/figure4/feature_comparison_summary.csv")
     df = pd.read_csv(data_file)
 
-    # Datasets and their colors
+    # Datasets and their colors (using consistent color scheme)
     datasets = ["atleaf", "lit", "marine"]
-    dataset_colors = {
-        "atleaf": "#E63946",
-        "lit": "#457B9D",
-        "marine": "#2A9D8F"
-    }
+    dataset_color_map = get_dataset_colors()
+    dataset_colors = [dataset_color_map[d] for d in datasets]
+    dataset_display_names = format_dataset_names(datasets)
 
-    # Hatching patterns for different feature types
+    # Hatching patterns for different feature types (similar to Figure 1C)
     patterns = {
-        "common": "///",
-        "unique_individual": "\\\\\\",
-        "unique_combined": ""
+        "common": "",  # Solid (like positive counts in Figure 1C)
+        "unique_individual": "//",  # Diagonal hatching (like negative counts)
+        "unique_combined": "xx",  # Cross-hatching for distinction
     }
 
-    # Prepare data for plotting
+    # Prepare data for plotting (matching Figure 1C style)
     x_pos = np.arange(len(phenotypes))
-    width = 0.25  # Width of each bar
+    bar_width = 0.8 / len(datasets)  # Match Figure 1C bar width calculation
 
     # Plot for each dataset
     for i, dataset in enumerate(datasets):
@@ -100,106 +129,115 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         # Align with phenotypes order
         common = []
         unique_individual = []
-        unique_combined = []
 
         for phenotype in phenotypes:
             if phenotype in dataset_df.index:
                 row = dataset_df.loc[phenotype]
                 common.append(row["n_intersection"])
                 unique_individual.append(row["n_unique_to_individual"])
-                unique_combined.append(row["n_unique_to_combined"])
             else:
                 common.append(0)
                 unique_individual.append(0)
-                unique_combined.append(0)
 
-        # Calculate positions for grouped bars
-        positions = x_pos + (i - 1) * width
+        # Calculate positions for grouped bars (matching Figure 1C style)
+        positions = x_pos + i * bar_width
 
-        # Create stacked bars with dataset color and patterns
+        # Create stacked bars with dataset color and patterns (matching Figure 1C)
+        # Bottom layer: common features (solid, alpha=0.8)
         p1 = ax.bar(
             positions,
             common,
-            width,
-            label=f"{dataset.upper()}" if i == 0 else "",
-            color=dataset_colors[dataset],
-            edgecolor="black",
-            linewidth=0.5,
-            hatch=patterns["common"],
-            alpha=0.8
+            bar_width,
+            color=dataset_colors[i],
+            alpha=0.8,
         )
+        # Top layer: unique to individual (hatched //, alpha=0.4)
         p2 = ax.bar(
             positions,
             unique_individual,
-            width,
+            bar_width,
             bottom=common,
-            color=dataset_colors[dataset],
-            edgecolor="black",
-            linewidth=0.5,
-            hatch=patterns["unique_individual"],
-            alpha=0.8
+            color=dataset_colors[i],
+            alpha=0.4,
+            hatch="//",
         )
 
-        # Stack unique_combined on top
-        bottom = np.array(common) + np.array(unique_individual)
-        p3 = ax.bar(
-            positions,
-            unique_combined,
-            width,
-            bottom=bottom,
-            color=dataset_colors[dataset],
-            edgecolor="black",
-            linewidth=0.5,
-            hatch=patterns["unique_combined"],
-            alpha=0.8
-        )
-
-    # Create custom legend with both datasets and feature types
-    from matplotlib.patches import Patch
-
+    # Create custom legend with both datasets and feature types (matching Figure 1C)
     # Dataset legend entries
     dataset_handles = [
-        Patch(facecolor=dataset_colors[d], edgecolor="black", label=d.upper())
-        for d in datasets
+        Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
+        for i in range(len(datasets))
     ]
 
-    # Feature type legend entries
+    # Feature type legend entries (matching Figure 1C style)
     feature_handles = [
-        Patch(facecolor="gray", edgecolor="black", hatch=patterns["common"], label="Common"),
-        Patch(facecolor="gray", edgecolor="black", hatch=patterns["unique_individual"], label="Unique to Individual"),
-        Patch(facecolor="gray", edgecolor="black", hatch=patterns["unique_combined"], label="Unique to Combined"),
+        Rectangle(
+            (0, 0),
+            1,
+            1,
+            fc="gray",
+            alpha=0.8,
+            label="Common",
+        ),
+        Rectangle(
+            (0, 0),
+            1,
+            1,
+            fc="gray",
+            alpha=0.4,
+            hatch="//",
+            label="Unique to Individual",
+        ),
     ]
 
-    # Combine legends
-    first_legend = ax.legend(
-        handles=dataset_handles,
+    # Add dataset legend (positioned left side of top)
+    legend1 = ax.legend(
+        dataset_handles,
+        dataset_display_names,
+        title="Dataset",
         loc="upper left",
-        fontsize=8,
-        frameon=True,
-        fancybox=False,
-        edgecolor="black",
-        title="Dataset"
+        bbox_to_anchor=(0.0, 1.20),
+        ncol=len(datasets),
+        frameon=False,
     )
-    ax.add_artist(first_legend)
+    ax.add_artist(legend1)
 
+    # Add feature type legend (positioned right side of top)
     ax.legend(
         handles=feature_handles,
+        title="Stable features",
         loc="upper right",
-        fontsize=8,
-        frameon=True,
-        fancybox=False,
-        edgecolor="black",
-        title="Feature Type"
+        bbox_to_anchor=(1.0, 1.20),
+        ncol=2,
+        frameon=False,
     )
 
-    # Customize plot
-    ax.set_ylabel("Number of Features", fontsize=10)
+    # Calculate the center offset for grouped bars
+    bar_group_center = bar_width * (len(datasets) - 1) / 2
+
+    # Add alternating background colors for x-axis categories (matching Figure 3)
+    # Center backgrounds around the grouped bar positions
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            center = i + bar_group_center
+            ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
+
+    # Customize plot (matching Figure 1C)
+    ax.set_ylabel("Number of Stable Features\n(individual datasets)", fontsize=10)
     ax.set_xlabel("Phenotype", fontsize=10)
-    ax.set_xticks(x_pos)
+    # Center x-tick labels in the middle of the group of bars (matching Figure 1C)
+    ax.set_xticks(x_pos + bar_group_center)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=9)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    ax.grid(axis="y", alpha=0.3, linestyle="--", linewidth=0.5)
+    ax.tick_params(axis="x", which="both", top=False, bottom=True)
+    ax.tick_params(axis="y")
+    # ax.spines["top"].set_visible(False)
+    # ax.spines["right"].set_visible(False)
+
+    # Set x-axis limits to remove extra spacing
+    ax.set_xlim(bar_group_center - 0.5, len(phenotypes) - 1 + bar_group_center + 0.5)
+
+    # Set y-axis limits
+    ax.set_ylim(0, 10)
 
 
 def create_panel_c_plots(ax_top: Axes, ax_bottom: Axes) -> None:

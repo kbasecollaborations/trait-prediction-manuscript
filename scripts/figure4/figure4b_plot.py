@@ -9,7 +9,7 @@ import pandas as pd
 import scienceplots
 import seaborn as sns
 
-from scripts.visualization import configure_plot_style
+from scripts.visualization import configure_plot_style, get_dataset_colors
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -356,12 +356,7 @@ def create_misclassification_plots(
     missclassified_counts = Counter(missclassified_genomes)
 
     datasets = ["atleaf", "lit", "pmi", "marine"]
-    dataset_colors = {
-        "atleaf": "#1f77b4",
-        "lit": "#ff7f0e",
-        "pmi": "#2ca02c",
-        "marine": "#d62728",
-    }
+    dataset_colors = get_dataset_colors()
 
     # Subplot 1: No growth but GapMind predicts growth
     cat1_data = pd.DataFrame({"count": [cat1_counts.get(d, 0) for d in datasets]})
@@ -381,7 +376,6 @@ def create_misclassification_plots(
     )
     ax1.set_xticks(range(len(datasets)))
     ax1.set_xticklabels(datasets, rotation=45, ha="right")
-    ax1.grid(axis="y", alpha=0.3, zorder=0)
     ax1.set_ylim(
         0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
     )
@@ -404,7 +398,6 @@ def create_misclassification_plots(
     )
     ax2.set_xticks(range(len(datasets)))
     ax2.set_xticklabels(datasets, rotation=45, ha="right")
-    ax2.grid(axis="y", alpha=0.3, zorder=0)
     ax2.set_ylim(
         0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
     )
@@ -462,7 +455,6 @@ def create_misclassification_plots(
     short_labels = ["_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]]
     ax3.set_yticklabels(short_labels, fontsize=9)
     ax3.invert_yaxis()  # Highest misclassified at top
-    ax3.grid(axis="x", alpha=0.3, zorder=0)
 
     # Set x-axis limit to make bars shorter
     max_count = top_20_df["count"].max()

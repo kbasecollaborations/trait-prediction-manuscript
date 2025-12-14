@@ -27,7 +27,7 @@ def create_figure4(output_file: Path) -> None:
     import matplotlib.gridspec as gridspec
 
     # Main grid: 2 rows
-    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.2, 0.8], hspace=0.2)
+    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.2, 0.8], hspace=0.12)
 
     # Top row grid: 2 columns for panels A and B (unchanged from original)
     top_gs = gridspec.GridSpecFromSubplotSpec(
@@ -56,7 +56,7 @@ def create_figure4(output_file: Path) -> None:
 
     # Bottom row: Figure 4C (2 vertically stacked subplots with shared x-axis)
     bottom_panel_gs = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=main_gs[1, :], hspace=0.05
+        2, 1, subplot_spec=main_gs[1, :], hspace=0.25
     )
 
     ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])  # Top subplot
