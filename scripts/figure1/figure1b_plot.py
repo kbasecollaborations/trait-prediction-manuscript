@@ -35,7 +35,7 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     ax.text(
         -0.05,
         1.05,
-        "(C)",
+        "(B)",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -125,7 +125,7 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data/outputs/figure1/figure1c_data.csv")
-    output_file = Path("figures/figure1c.pdf")
+    df = pd.read_csv("data/outputs/figure1/figure1b_data.csv")
+    output_file = Path("figures/figure1b.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     plot_data(df, output_file)

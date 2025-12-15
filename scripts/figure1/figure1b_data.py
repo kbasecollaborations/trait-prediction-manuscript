@@ -63,7 +63,7 @@ print("\nCounts dataframe:")
 print(counts_df)
 
 # Save to CSV
-output_file = Path("data/outputs/figure1/figure1c_data.csv")
+output_file = Path("data/outputs/figure1/figure1b_data.csv")
 output_file.parent.mkdir(parents=True, exist_ok=True)
 counts_df.to_csv(output_file, index=False)
 print(f"\nSaved to {output_file}")
