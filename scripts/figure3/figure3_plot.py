@@ -179,7 +179,6 @@ def plot_dataset_split_performance(
     # Load data
     ml_df = pd.read_csv(data_dir / "ml_results.csv")
     dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
-    random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
 
     # Load GapMind results for dataset split test sets
     gapmind_df = pd.read_csv(data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t")
@@ -225,23 +224,6 @@ def plot_dataset_split_performance(
                 zorder=2,
             )
 
-    # Calculate mean random split performance
-    random_means = random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
-
-    # Plot random split mean as reference lines
-    for phenotype in phenotypes:
-        if phenotype in random_means:
-            x_pos = x[phenotypes.index(phenotype)]
-            ax.plot(
-                [x_pos - 0.45, x_pos + 0.45],
-                [random_means[phenotype], random_means[phenotype]],
-                color="#06A77D",
-                linestyle="-",
-                linewidth=2,
-                alpha=0.7,
-                zorder=1,
-            )
-
     # Plot GapMind results as dashed lines (mean across dataset splits for each phenotype)
     gapmind_color = "#A23B72"  # Purple
     gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
@@ -276,18 +258,6 @@ def plot_dataset_split_performance(
         )
         for dataset in test_datasets
     ]
-
-    # Add random split reference to legend
-    legend_handles.append(
-        Line2D(
-            [0],
-            [0],
-            color="#06A77D",
-            linewidth=2,
-            alpha=0.7,
-            label="Random Split (mean)",
-        )
-    )
 
     # Add GapMind reference to legend
     legend_handles.append(
