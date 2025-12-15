@@ -16,9 +16,18 @@
 \item Additional improvements: learning curves show sample requirements, feature representation combinations provide modest gains, dataset aggregation helps (Figure~\ref{fig:model_optimization})
 \end{enumerate}
 
-\subsection{Dataset Compilation and the Prediction Challenge}
+\subsection*{Dataset Overview and Baseline Predictions}
 
-\textbf{Key finding:} Predicting microbial carbon utilization should be straightforward, but existing approaches show fundamental limitations.
+\textbf{Key finding:} Predicting microbial carbon utilization should be straightforward, but existing approaches  (mechanism-based or phylogeny-based) show fundamental limitations.
+
+We compiled four binary growth datasets---ATLeaf (Schäfer et al., 2023), Biolog (see supplemental material), Marine (Gralka et al., 2023), and Populus (see supplemental material)---each capturing binary growth outcomes of microbes in diverse carbon sources.
+These datasets were selected based on their comparable experimental goals (measurement of carbon-utilization traits) and their coverage of phylogenetically and ecologically diverse microbial strains.
+Specifically, ATLeaf included 224 strains grown on 45 carbon substrates, Biolog encompassed 362 strains and 64 substrates, Marine comprised 175 strains and 100 substrates, and Populus contained 58 strains tested on 191 substrates.
+The resulting phenotype data provided a comprehensive foundation for training and benchmarking machine learning classifiers to predict carbon utilization phenotypes across diverse microbes and carbon sources while accounting for dataset-specific characteristics.
+The overall workflow, including data aggregation, genome annotation using multiple sources (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A (see Methods).
+Our analyses focused on understanding factors influencing predictive performance and strategies for model improvement and interpretability, therefore for all the analyses in the our study we only use the 15 shared phenotypes across all the original datasets (Figure~\ref{fig:dataset_characteristics}B).
+Subsequent analyses primarily employed the ATLeaf, Biolog, and Marine datasets for model training and testing, while the Populus dataset was reserved exclusively for independent testing.
+Figure~\ref{fig:phylogenetic_distribution} describes the phylogenetic distribution of the microbes from the four datasets used in this study.
 
 \begin{figure}[h]
 \centering
@@ -31,17 +40,40 @@
     \centering
     \includegraphics[width=\textwidth]{figure1b.pdf}
 \end{subfigure}
-
-\caption{\textbf{Dataset characteristics.} (A) Overview of data collection: growth phenotypes measured across microbial isolates and carbon sources, yielding binary outcomes for ML training. (B) Phenotypic distribution for 16 carbon sources common across training datasets.}
-\label{fig:dataset_characteristics}
+\caption{
+\textbf{The microbial carbon utilization prediction workflow.}
+(A) Overview of the data, characteristics, and machine learning workflow for carbon utilization prediction. The experimental data were collected by measuring the growth phenotypes (growth vs no growth) of a group of microbial isolates in 242 unique carbon sources. The resulting growth/no-growth outcomes are tabulated and utilized as the training data for the machine learning workflow. Our study utilizes four datasets (Biolog, ATLeaf, Marine, and Populus). The analysis workflow first includes annotating the genome sequences of the microbial isolates using various annotation tools. The count matrices generated are then used as features for the machine learning workflow to predict the outcomes of the carbon utilization screens.
+(B) Phenotypic distribution for the 15 common carbon sources across the four datasets. The bar plot shows the the number of samples and class distribution across the four datasets for each phenotype. The solid bars represent the number of growth (positive) samples, while the patterned bars represent the number of no-growth (negative) samples. The datasets exhibit varying class distributions, with some phenotypes showing balanced classes (eg. Alaine and Sucrose) and others exhibiting significant class imbalance (eg. Glycerol in ATLeaf and Galacturonic-Acid in Marine).
+}\label{fig:dataset_characteristics}
 \end{figure}
+
+In order to establish baseline performance for carbon utilization prediction, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based prediction tool that infers growth capabilities based on the presence of known metabolic pathways in the genome (Price et al., 2020); and (2) a phylogeny-based method that predicts phenotypes based on the growth outcomes of phylogenetically related strains (see Methods).
+
+GapMind predicts growth capabilities by assessing the completeness of metabolic pathways required for utilizing specific carbon sources.
+We applied GapMind to the genomes in our datasets and compared its predictions to the experimental growth outcomes.
+As shown in Figure~\ref{fig:baseline_predictions}A, GapMind achieved modest balanced accuracy across the 15 shared phenotypes, with performance varying depending on the completeness threshold used (strict: $\sim$0.65 vs.\  permissive: $\sim$0.70).
+This indicates that while GapMind captures some mechanistic aspects of carbon utilization, it fails to account for the full complexity of microbial metabolism and regulation.
+Contrarily, the phylogeny-based nearest neighbor approach leverages the evolutionary relationships among microbial strains to predict phenotypes.
+These methods have been widely used in microbial ecology and genomics, based on the principle that closely related organisms often share similar traits[refs].
+By examining the growth outcomes of closely related strains, the model infers the likely capabilities of a given strain.
+In this case, we use a nearest neighbor classifier with k=3, where the phenotype of a strain is predicted based on the majority phenotype of its three closest phylogenetic neighbors.
+As shown in Figure~\ref{fig:baseline_predictions}B, phylogeny-based predictions performed well within phylogenetic clades (random split: 0.75--0.85) but struggled when tested on phylogenetically distant samples (out-of-clade split: 0.55--0.65).
+The results when testing on out-of-clade samples approached the performance of null models (Identity and Bernoulli), indicating that phylogenetic relatedness alone is insufficient for accurate phenotype prediction across diverse microbial lineages.
+This is a fundamental limitation of phylogeny-based methods, as it requires that the training and test samples be closely related for accurate predictions.
+Furthermore, another limitation of relying solely on phylogenetic relatedness, is that it may not capture the nuances of metabolic capabilities that can vary even among closely related strains due to horizontal gene transfer, gene loss, or regulatory differences[refs].
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure2.pdf}
-\caption{\textbf{Baseline prediction approaches reveal limitations of mechanistic and phylogenetic methods.} (A) GapMind mechanism-based prediction achieves only modest accuracy across phenotypes (strict: $\sim$0.65, permissive: $\sim$0.70 balanced accuracy), performing significantly better than random baseline (p $<$ 0.001, permutation test) but far from perfect. (B) Phylogeny-based prediction shows high accuracy within datasets (random split: 0.75--0.85) but fails when tested on phylogenetically distant samples (out-of-clade split: 0.55--0.65), indicating learning of clade-specific patterns rather than universal metabolic rules. Both approaches demonstrate fundamental limitations, motivating machine learning approaches.}
-\label{fig:baseline_predictions}
+\caption{
+\textbf{Predictions using mechanistic and phylogenetic methods have limitations.}
+(A) The bar plot demonstrates the GapMind prediction results compared against experimental growth outcomes across the 15 shared phenotypes for both strict and persmissive thresholds for pathway completeness (see Methods). GapMind achieves modest balanced accuracy across phenotypes (strict: $\sim$0.65, permissive: $\sim$0.70).
+(B) The dot plot shows the balanced accuracy of phylogeny-based nearest neighbor predictions across the 15 shared phenotypes under two evaluation scenarios: random split (top panel) and out-of-clade split (phylogenetically distant samples; bottom panel). Phylogeny-based prediction shows high accuracy within-clade (random split: 0.75--0.85) but performs poorly when tested on phylogenetically distant samples (out-of-clade split: 0.55--0.65). The out-of-clade performance drops significantly and approaches the performance of the null models (Identity and Bernoulli).
+Both approaches demonstrate fundamental limitations, motivating machine learning approaches.
+}\label{fig:baseline_predictions}
 \end{figure}
+
+\FloatBarrier
 
 \subsection{Machine Learning Performance: Strong Intra-Dataset Results but Generalization Issues}
 
@@ -61,7 +93,7 @@
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure4.pdf}
-\caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Literature dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
+\caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Biolog dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
 \label{fig:misclassification_diagnosis}
 \end{figure}
 
