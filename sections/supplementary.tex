@@ -15,6 +15,41 @@
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figure_s2.png}
+\caption{\textbf{Phylogenetic distance of different split types}}
+\label{fig:phylogenetic_distance_splits}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llllr}
+\hline
+train\_dataset & test\_dataset & feature\_type & best\_model & count \\
+\hline
+atleaf & lit    & kofam & cb & 13 \\
+atleaf & lit    & kofam & rf & 3  \\
+atleaf & lit    & rast  & cb & 11 \\
+atleaf & lit    & rast  & rf & 5  \\
+lit    & atleaf & kofam & cb & 11 \\
+lit    & atleaf & kofam & rf & 5  \\
+lit    & atleaf & rast  & rf & 9  \\
+lit    & atleaf & rast  & cb & 7  \\
+\hline
+\end{tabular}
+\caption{Best-performing models and counts across train-test dataset pairs and feature types.}
+\label{tab:best_models_counts}
+\end{table}
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figure_s3.png}
+\caption{\textbf{Performance of in-clade and out-of-clade evaluations} Comparison of model performance when evaluated on genomes within the same clade as the training set versus genomes from different clades.}
+\label{fig:in_clade_out_clade_performance}
+\end{figure}
+
 
 \subsection*{Additional Analyses}
 

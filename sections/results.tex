@@ -16,7 +16,7 @@
 \item Additional improvements: learning curves show sample requirements, feature representation combinations provide modest gains, dataset aggregation helps (Figure~\ref{fig:model_optimization})
 \end{enumerate}
 
-\subsection*{Dataset Overview and Baseline Predictions}
+\subsection*{Dataset overview and baseline predictions}
 
 \textbf{Key finding:} Predicting microbial carbon utilization should be straightforward, but existing approaches  (mechanism-based or phylogeny-based) show fundamental limitations.
 
@@ -31,12 +31,12 @@ Figure~\ref{fig:phylogenetic_distribution} describes the phylogenetic distributi
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.95\textwidth}
+\begin{subfigure}[b]{0.90\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure1a.pdf}
 \end{subfigure}
 \vspace{0.5cm}
-\begin{subfigure}[b]{0.95\textwidth}
+\begin{subfigure}[b]{0.90\textwidth}
     \centering
     \includegraphics[width=\textwidth]{figure1b.pdf}
 \end{subfigure}
@@ -59,12 +59,16 @@ By examining the growth outcomes of closely related strains, the model infers th
 In this case, we use a nearest neighbor classifier with k=3, where the phenotype of a strain is predicted based on the majority phenotype of its three closest phylogenetic neighbors.
 As shown in Figure~\ref{fig:baseline_predictions}B, phylogeny-based predictions performed well within phylogenetic clades (random split: 0.75--0.85) but struggled when tested on phylogenetically distant samples (out-of-clade split: 0.55--0.65).
 The results when testing on out-of-clade samples approached the performance of null models (Identity and Bernoulli), indicating that phylogenetic relatedness alone is insufficient for accurate phenotype prediction across diverse microbial lineages.
+Surprisingly, for Cellobiose and Arginine, for certain out-of-clade splits, the nearest neighbor approach performed very accurately (balanced accuracy $>$0.90).
+This could be due to the presence of highly conserved metabolic pathways for these substrates across diverse taxa, allowing phylogenetically distant organisms to share similar utilization capabilities??? [refs].
+\todo{Check this}
 This is a fundamental limitation of phylogeny-based methods, as it requires that the training and test samples be closely related for accurate predictions.
 Furthermore, another limitation of relying solely on phylogenetic relatedness, is that it may not capture the nuances of metabolic capabilities that can vary even among closely related strains due to horizontal gene transfer, gene loss, or regulatory differences[refs].
+The limited performance of both GapMind and phylogeny-based approaches highlights the need for more sophisticated methods that can integrate mechanistic knowledge with data-driven learning to improve carbon utilization predictions.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\textwidth]{figure2.pdf}
+\includegraphics[width=0.85\textwidth]{figure2.pdf}
 \caption{
 \textbf{Predictions using mechanistic and phylogenetic methods have limitations.}
 (A) The bar plot demonstrates the GapMind prediction results compared against experimental growth outcomes across the 15 shared phenotypes for both strict and persmissive thresholds for pathway completeness (see Methods). GapMind achieves modest balanced accuracy across phenotypes (strict: $\sim$0.65, permissive: $\sim$0.70).
@@ -73,18 +77,53 @@ Both approaches demonstrate fundamental limitations, motivating machine learning
 }\label{fig:baseline_predictions}
 \end{figure}
 
-\FloatBarrier
+\FloatBarrier{}
 
-\subsection{Machine Learning Performance: Strong Intra-Dataset Results but Generalization Issues}
+\subsection*{Machine learning models demonstratre strong intra-dataset results but have generalization issues}
 
-\textbf{Key finding:} ML models achieve high accuracy on intra-dataset and random splits but show substantial performance degradation across datasets and phylogenetic contexts.
+\textbf{Key finding:} ML models achieve high accuracy on intra-dataset and random splits but show performance degradation across datasets and phylogenetic contexts.
+
+Initially, we used the KOFAM annotations as features to train binary classifiers (gradient-boosted trees) for predicting carbon utilization phenotypes.
+We choose the KOFAM annotations as our primary feature set due to their comprehensive coverage of metabolic functions and pathways, which are directly relevant to carbon utilization.
+Plus, KOFAM annotations were previously used successfully in similar phenotype prediction tasks (e.g., Li et al., 2021).
+Additionally, it is more fine-grained compared to other annotation sources like RAST, allowing the model to capture subtle functional differences that may influence growth phenotypes.
+And unlike the GapMind rule set, KOFAM annotations are not explicitly curated for specific pathways and span the entire metabolic repertoire of the organisms, providing a richer feature space for machine learning.
+We evaluated model performance using balanced accuracy to account for class imbalance across phenotypes.
+We evaluated two types of machine learning algorithms: gradient-boosted trees (GBT) and random forests (RF).
+We limited ourselves to these since previous papers (Li et al., 2021; Agrawal et al., 2022) have shown that Random Forests performed well for trait prediction tasks, and GBTs are known to often outperform RFs in various classification tasks due to their ability to model complex relationships through boosting.
+We finally selected GBTs for our main analyses due to their slightly better performance across different splits and phenotypes (see Table~\ref{tab:best_models_counts} in Supplementary).
+
+For this analysis, we aggregated the data from all four datasets and used four evaluation scenarios to assess model performance and generalization:
+(1) Random cross-validation splits across the entire aggregated dataset;
+(2) Cross-dataset evaluation (training on three datasets and testing on the held-out dataset);
+(3) In-clade cross-dataset splits (where the cross-dataset evaluation is restricted to phylogenetically similar samples); and
+(4) Out-of-clade splits (out-of-clade splits where training and test samples are phylogenetically distant).
+
+In the random cross-validation scenario (Figure~\ref{fig:ml_performance}A), ML models achieved high balanced accuracy (0.75--0.90) across phenotypes, significantly outperforming the GapMind baseline.
+However, when evaluated in the cross-dataset scenario (Figure~\ref{fig:ml_performance}B), performance dropped substantially (0.50--0.75), indicating limited generalization across datasets.
+To further dissect the role of phylogeny in model performance, we conducted in-clade cross-dataset evaluations, where training and test samples were phylogenetically similar (Figure~\ref{fig:ml_performance}C).
+Surprisingly, the performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal (average difference $\sim$0.02), suggesting that dataset-specific biases dominated model performance as much as phylogenetic relatedness.
+For the random splits, we can verify that the test samples were drawn from the same phylogenetic clades as the training samples (see Figure~\ref{fig:phylogenetic_distance_splits}).
+
+% TODO: Continue from here
+Performance on phylogeny-dependent out-of-clade splits are shown in Figure~\ref{fig:in_clade_out_clade_performance}.
+
+Consistent with previous observations on dataset diversity (Albright et al., 2023; Li et al., 2023), the random split yielded higher model performance (balanced accuracy: 0.80--0.90) across phenotypes (Figure~\ref{fig:ml_performance}A), compared to dataset splits (Figure~\ref{fig:ml_performance}B).
+
+ML advantage diminishes or reverses under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\textwidth]{figure3.pdf}
-\caption{\textbf{Machine learning models excel within datasets but struggle to generalize.} (A) Intra-dataset random cross-validation achieves high balanced accuracy (0.80--0.90) across phenotypes, substantially better than GapMind baselines. (B) Cross-dataset evaluation using all pairwise dataset combinations reveals systematic generalization failures: performance drops of 0.15--0.25, with cross-dataset accuracy (0.60--0.70) approaching or falling below GapMind permissive baseline. (C) Phylogeny-independent (in-clade) splits show reduced performance compared to random splits, with out-of-clade splits showing further degradation, quantifying independent contributions of dataset bias and phylogenetic distance. (D) Direct comparison to GapMind performance: ML advantage diminishes or reverses under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.}
-\label{fig:ml_performance}
+\includegraphics[width=0.80\textwidth]{figure3.pdf}
+\caption{
+\textbf{Machine learning models excel when test splits are within same datasets as the training data but struggle to generalize across different datasets.}
+(A) The box plot shows the balanced accuracy of machine learning models (gradient-boosted trees using KOFAM features) across the 15 shared phenotypes under random cross-validation splits within the aggregated dataset. The dotted line represents the performance of the GapMind permissive baseline. Machine learning models achieve high balanced accuracy (0.75--0.90), significantly outperforming GapMind.
+(B) The dot plot demonstrates the cross-dataset balanced accuracy of machine learning models across the 15 shared phenotypes when training on three datasets and testing on the held-out dataset. The dotted line represents the performance of the GapMind permissive baseline and the solid line represents the mean random split performance from panel A. Cross-dataset performance (0.50--0.75) falls short of the random split performance, indicating limited generalization across datasets.
+(C) The difference plot shows the performance change between model predictions on regular cross-dataset and in-clade cross-dataset splits. The average performance difference is minimal ($\sim$0.02), indicating that dataset-specific biases dominate model performance.
+}\label{fig:ml_performance}
 \end{figure}
+
+\FloatBarrier{}
 
 \subsection{Why Are GapMind and ML Models Misclassifying?}
 
@@ -96,6 +135,8 @@ Both approaches demonstrate fundamental limitations, motivating machine learning
 \caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Biolog dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
 \label{fig:misclassification_diagnosis}
 \end{figure}
+
+\FloatBarrier{}
 
 \input{sections/table_feature_comparison}
 
