@@ -132,18 +132,48 @@ In the subsequent sectoins, we investiage why GapMind misclassifies certain samp
 
 \textbf{Key finding:} GapMind misclassifications reveal annotation gaps and regulatory complexity; ML generalization failures stem from learning phylogenetically correlated rather than mechanistically relevant features. This raises the question: can ML learn actual mechanisms when trained appropriately?
 
+Missclassification by GapMind can arise from multiple factors, including incomplete pathway annotations, alternative metabolic routes not captured in the curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions, we summarize these potential causes in Figure~\ref{fig:misclassification_diagnosis}A.
+To diagnose whether these issues are systematic, we analyzed misclassification patterns both per-genome and per-phenotype (Figure~\ref{fig:misclassification_diagnosis}B).
+Per-phenotype analysis revealed that though there are some phenotypes for which GapMind performs better (e.g., Mannitol, Galactose) and some for which it performs worse (e.g., Serine, Alanine), there is no clear directional bias in the misclassifications (false positives vs.\ false negatives).
+This suggests that both missing annotations/alternative pathways and regulatory/measurement issues could contribute to errors.
+The same pattern holds true when analyzing misclassifications per-dataset, where datasets like Biolog show higher overall discordance ($\sim$30\%) compared to Populus ($\sim$26\%), but again without a clear directional bias.
+
+To understand why ML models struggle to generalize across datasets and phylogenetic contexts, we performed feature importance stability analyses (Figure~\ref{fig:misclassification_diagnosis}C).
+First, we assessed feature stability across random splits of the aggregated dataset (top panel).
+Here, we found that at least 1 feature was consistently identified as important across different random splits, indicating that models were learning common patterns when the data distribution was uniform across datasets and phylogenetic groups.
+Next, we evaluated feature stability across the cross-dataset splits used in Figure~\ref{fig:ml_performance}B.
+For this analysis, we compared the stable features identified in models trained on each individual dataset to those from the aggregated dataset minus that dataset Figure~\ref{fig:misclassification_diagnosis}C (bottom panel).
+Note that we did not use the Populus dataset for this analysis since it was reserved for independent testing and did not contain enough samples for training.
+In this case, we observed a notable drop in the number of stable features shared between individual datasets and the aggregated dataset, with only Histidine, Maltose, Mannitol and m-Inositol showing at least one common stable feature.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure4.pdf}
-\caption{\textbf{Diagnosing why predictions fail.} \textit{GapMind misclassifications:} (A) Framework distinguishing concordant samples (GapMind matches experiment) from discordant samples (GapMind contradicts experiment). (B) Per-phenotype concordance rates reveal systematic patterns: phenotypes with high false negative rates (GapMind--/Exp+) suggest missing annotations or alternative pathways; high false positive rates (GapMind+/Exp--) suggest regulation or measurement variability. (C) Dataset-specific discordance patterns: Biolog dataset shows highest discordance ($\sim$35--40\%), ATLeaf shows highest concordance ($\sim$75--80\%), indicating data quality differences. \textit{ML generalization issues:} (D) Cross-dataset feature instability: models trained on different datasets identify almost entirely different top features for identical phenotypes (Jaccard similarity $<$ 0.2), explaining why high within-dataset accuracy fails to generalize. (E) Biological relevance assessment: 40--70\% of top-20 ML features lack clear mechanistic connections to target phenotypes, indicating models learn phylogenetic correlations rather than causal genes. \textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?}
-\label{fig:misclassification_diagnosis}
+\caption{
+\textbf{Diagnosing why GapMind misclassifies samples and why ML models fail to generalize.}
+(A) Framework outlining reasons for concordant samples (GapMind matches experiment) and discordant samples (GapMind contradicts experiment).
+(B) Stacked bar plots showing per-phenotype (top panel) and per-dataset (bottom panel) misclassification patterns of GapMind predictions. Each bar is divided into proportions of true positives, true negatives, false positives (GapMind predicts growth but no growth observed), and false negatives (GapMind predicts no growth but growth observed). No clear directional bias is observed, indicating multiple underlying causes.
+(C;\ top panel) Feature importance stability analysis performed on models trained on random splits of the aggregated dataset. The bar plot show the number of common stable features in more than 70\% of model runs trained on different random splits using different random seeds for initialization. The top features were identified using SHAP analysis.
+(C;\ bottom panel) Cross-dataset stability analysis performed on the dataset splits used in Figure 3B. The bar plot shows the number of common stable features in more than 70\% of model runs trained on different datasets and their overlap with the aggregated dataset containing the three other datasets. The top features were identified using SHAP analysis. Solid bars represent the number of stable features that were in common with the aggregated dataset, while the patterned bars represent the number of stable features that were unique to the specific dataset.
+}\label{fig:misclassification_diagnosis}
 \end{figure}
 
-\FloatBarrier{}
+Next, we wanted to asses the biological relevance of the top features identified by ML models.
+Whether the common and unique stable features identified in individual datasets were mechanistically relevant to the phenotype being predicted or whether they were spurious correlations specific to that dataset.
+For this purpose, we labeled the KOFAM annotations with their respective descriptions in Table~\ref{tab:feature_comparison}.
+We observed that the main enzyme for Histidine metabolism (K01712) was consistently identified as a top feature across all datasets, indicating that ML models can learn mechanistic features when such features are present, consistently annotated and are clear differentiators of the phenotype.
+We also observe an uncharacterized protein (K09975) appearing as a common feature for ATLeaf and Marine datasets, which may warrant further investigation.
+However, it is interesting to note that though K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which are core enzymes in the histidine degradation pathway, are also part of the ATLeaf stable feature set, but they were not identified as stable features in the aggregated dataset.
+This could be due to this gene not appearing as a stable feature in the Biolog and Marine datasets, possibly because of annotation gaps or alternative pathways in those datasets.
+\todo{check why this is the case}
 
 \input{sections/table_feature_comparison}
 
-\subsection{Can ML Learn Actual Mechanisms? Testing on GapMind-Concordant Data}
+\textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?
+
+\FloatBarrier{}
+
+\subsection*{Can ML Learn Actual Mechanisms? Testing on GapMind-Concordant Data}
 
 \textbf{Key finding:} When trained on GapMind-concordant samples (where mechanisms are clearly mappable to genes), ML achieves near-perfect accuracy and learns mechanistic features. Importantly, ML also predicts a subset of discordant samples accurately, performing better than GapMind alone.
 
@@ -162,36 +192,14 @@ In the subsequent sectoins, we investiage why GapMind misclassifies certain samp
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure6a.png}
-    \caption{Identifying and removing bad data.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure6b.png}
-    \caption{Improving precision via probability thresholds.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure6c.png}
-    \caption{Confidence-based filtering of measurements (y).}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure6d.png}
-    \caption{Confidence-based filtering of features (X).}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure6e.png}
-    \caption{Curriculum learning experiments.}
-\end{subfigure}
-\caption{\textbf{What strategies improve model performance?} (A) \textit{Removing bad data:} Using insights from Figures 4 and 5, we identify problematic samples. Per-genome analysis reveals errors concentrated in top 10--20\% of genomes showing systematic issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor annotation). Removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08. Dataset-level filtering (removing high-discordance datasets) shows similar gains. (B) \textit{Improving precision:} For applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up. (C) \textit{Measurement confidence filtering:} Filtering training samples by experimental measurement confidence (using replicates, OD thresholds, growth curve quality) improves cross-dataset generalization by 0.05--0.10 balanced accuracy. (D) \textit{Feature confidence filtering:} Filtering by annotation quality scores (e.g., KOFAM/RAST confidence, alignment scores) shows modest improvements of 0.02--0.05 balanced accuracy. (E) \textit{Curriculum learning:} Training first on high-confidence concordant samples, then progressively adding lower-confidence and discordant samples, shows marginal performance gains (0.02--0.04) compared to direct concordant training, suggesting diminishing returns for added complexity.}
+\includegraphics[width=0.95\textwidth]{figure6.pdf}
+\caption{
+\textbf{What strategies improve model performance?}
+(A) \textit{Removing bad data:} Using insights from Figures 4 and 5, we identify problematic samples. Per-genome analysis reveals errors concentrated in top 10--20\% of genomes showing systematic issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor annotation). Removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08. Dataset-level filtering (removing high-discordance datasets) shows similar gains.
+(B) \textit{Improving precision:} For applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up.
+(C) \textit{Measurement confidence filtering:} Filtering training samples by experimental measurement confidence (using replicates, OD thresholds, growth curve quality) improves cross-dataset generalization by 0.05--0.10 balanced accuracy.
+(D) \textit{Feature confidence filtering:} Filtering by annotation quality scores (e.g., KOFAM/RAST confidence, alignment scores) shows modest improvements of 0.02--0.05 balanced accuracy.
+(E) \textit{Curriculum learning:} Training first on high-confidence concordant samples, then progressively adding lower-confidence and discordant samples, shows marginal performance gains (0.02--0.04) compared to direct concordant training, suggesting diminishing returns for added complexity.}
 \label{fig:improvement_strategies}
 \end{figure}
 
