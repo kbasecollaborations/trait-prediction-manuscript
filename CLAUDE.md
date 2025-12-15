@@ -27,6 +27,11 @@
 - Use CatBoost (because it does better than RF most of the time) and make sure to use the `make_classifier` function from `scripts/ml.py` if possible, at least use the same parameters provided there.
 - Disable `cat_features` as CatBoost handles 0/1 integers fine
 
+## LaTeX .tex file guidelines
+
+- Put individual lines in the .tex files on separate lines for easier diffs
+- Use academic writing style, avoid contractions, and ensure proper grammar and punctuation.
+
 ## General behavior
 
 - Prefer readability and maintainability over clever one-liners.
