@@ -512,13 +512,12 @@ def plot_concordant_train_performance(
 def plot_dataset_split_train_performance(
     ax: Axes,
     data_dir: Path,
-    gapmind_dir: Path,
     phenotypes: list[str] | None = None,
 ) -> None:
     """Plot performance of dataset split models trained on concordant, tested on discordant vs full.
 
     Only uses dataset_split data for visualization. Also plots GapMind
-    accuracy from Figure 3B as a reference line.
+    accuracy from Figure 3B as a reference line (calculated only on test sets).
 
     Parameters
     ----------
@@ -526,8 +525,6 @@ def plot_dataset_split_train_performance(
         Matplotlib axes object to plot on.
     data_dir : Path
         Directory containing the figure 5C data files.
-    gapmind_dir : Path
-        Directory containing GapMind metrics files.
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
@@ -537,11 +534,12 @@ def plot_dataset_split_train_performance(
     # Filter to only dataset_split
     ml_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
 
-    # Load GapMind results (using loose threshold)
-    gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
+    # Load GapMind results for dataset split test sets (from Figure 3)
+    fig3_data_dir = Path("data/outputs/figure3")
+    gapmind_df = pd.read_csv(fig3_data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t")
 
-    # Create GapMind dictionary for plotting
-    gapmind_dict = gapmind_df.set_index("phenotype")["balanced_accuracy"].to_dict()
+    # Calculate mean GapMind performance for each phenotype (across dataset splits)
+    gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -604,11 +602,11 @@ def plot_dataset_split_train_performance(
 
     # Plot GapMind as reference dotted line
     for phenotype in phenotypes:
-        if phenotype in gapmind_dict:
+        if phenotype in gapmind_means:
             x_pos = x[phenotypes.index(phenotype)]
             ax.plot(
                 [x_pos - 0.45, x_pos + 0.45],
-                [gapmind_dict[phenotype], gapmind_dict[phenotype]],
+                [gapmind_means[phenotype], gapmind_means[phenotype]],
                 color="#F18F01",
                 linestyle=":",
                 linewidth=2,
@@ -669,7 +667,7 @@ def plot_dataset_split_train_performance(
     )
 
 
-def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = None) -> None:
+def create_figure(data_dir: Path, output_file: Path) -> None:
     """Create Figure 5 with four subplots.
 
     Parameters
@@ -678,12 +676,7 @@ def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = 
         Directory containing the data files.
     output_file : Path
         Path to save the output figure.
-    gapmind_dir : Path | None
-        Directory containing GapMind metrics. If None, uses data/outputs/figure2.
     """
-    if gapmind_dir is None:
-        gapmind_dir = Path("data/outputs/figure2")
-
     # Load all data to determine common phenotypes
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
     feature_comp_df = pd.read_csv(data_dir / "figure5b_feature_comparison_summary.csv")
@@ -723,7 +716,7 @@ def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = 
     plot_dataset_split_performance(axes[0], data_dir, common_phenotypes)
     create_feature_comparison_plot(axes[1], data_dir, common_phenotypes)
     plot_concordant_train_performance(axes[2], data_dir, common_phenotypes)
-    plot_dataset_split_train_performance(axes[3], data_dir, gapmind_dir, common_phenotypes)
+    plot_dataset_split_train_performance(axes[3], data_dir, common_phenotypes)
 
     # Manually align x-axes to ensure consistency
     x_pos = np.arange(len(common_phenotypes))
