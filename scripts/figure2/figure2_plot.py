@@ -178,31 +178,30 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         ax = axes[idx]
         split_df = df[df["split"] == split_type]
 
-        # Create stripplot with seaborn (no dodge - all models on same vertical line)
-        sns.stripplot(
-            data=split_df,
-            x="phenotype",
-            y="balanced_accuracy",
-            hue="model",
-            hue_order=list(model_labels.values()),
-            palette=palette,
-            dodge=False,
-            alpha=0.6,
-            size=5,
-            ax=ax,
-            legend=False,
-            jitter=0.15,
-            order=phenotypes,
-        )
+        # Plot each model separately with correct markers
+        for model_name in model_labels.values():
+            model_df = split_df[split_df["model"] == model_name]
 
-        # Add different markers for each model manually with consistent sizing
-        for collection, (model_name, marker) in zip(ax.collections, markers.items()):
-            # Get the marker path and scale it consistently
-            marker_obj = plt.matplotlib.markers.MarkerStyle(marker)
-            marker_path = marker_obj.get_path().transformed(marker_obj.get_transform())
-            collection.set_paths([marker_path])
-            # Ensure consistent sizes
-            collection.set_sizes([25] * len(collection.get_offsets()))
+            # Get x positions for each phenotype
+            x_positions = []
+            y_values = []
+            for _, row in model_df.iterrows():
+                x_pos = phenotypes.index(row["phenotype"])
+                # Add jitter
+                x_jitter = x_pos + np.random.uniform(-0.15, 0.15)
+                x_positions.append(x_jitter)
+                y_values.append(row["balanced_accuracy"])
+
+            # Plot with correct marker for this model
+            ax.scatter(
+                x_positions,
+                y_values,
+                marker=markers[model_name],
+                color=palette[model_name],
+                alpha=0.6,
+                s=50,
+                label=model_name,
+            )
 
         # Add mean lines for each model and phenotype
         for phenotype in phenotypes:
@@ -228,6 +227,11 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         ax.set_ylabel("Balanced Accuracy")
         ax.set_xlabel("")
         ax.set_ylim(0, 1)
+
+        # Set x-ticks and labels
+        ax.set_xticks(range(len(phenotypes)))
+        ax.set_xticklabels(phenotypes)
+        ax.set_xlim(-0.5, len(phenotypes) - 0.5)
 
         # Only show x-tick labels on the bottom subplot
         if idx == len(split_order) - 1:
