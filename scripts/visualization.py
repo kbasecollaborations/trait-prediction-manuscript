@@ -79,7 +79,7 @@ def get_dataset_display_names():
     return {
         "atleaf": "AtLeaf",
         "marine": "Marine",
-        "lit": "Literature",
+        "lit": "Biolog",
         "pmi": "Populus",
     }
 
