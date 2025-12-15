@@ -32,7 +32,7 @@ def create_feature_table(
     phenotypes: list[str],
     output_file: Path,
 ) -> None:
-    """Create LaTeX table showing common and unique features for each dataset.
+    """Create LaTeX table showing common and unique features for each dataset (concordant samples).
 
     Parameters
     ----------
@@ -41,8 +41,10 @@ def create_feature_table(
     output_file : Path
         Output path for the LaTeX table file.
     """
-    # Load data
-    comparison_file = Path("data/outputs/figure4/feature_comparison_summary.csv")
+    # Load data from Figure 5B outputs
+    comparison_file = Path(
+        "data/outputs/figure5/figure5b_feature_comparison_summary.csv"
+    )
     ko_dict_file = Path("data/external/mapping/KO_dictionary.json")
 
     comparison_df = pd.read_csv(comparison_file)
@@ -121,13 +123,14 @@ def create_feature_table(
     # Close table
     latex_lines.append("\\end{tabular}")
     latex_lines.append(
-        "\\caption{Stable features identified by machine learning models for selected phenotypes. "
-        "\\textbf{Common Features} are those appearing in both the combined (all datasets) and "
-        "individual dataset models. \\textbf{Unique Features} are those appearing only in the "
-        "individual dataset model. Features shown are consistent across multiple random seeds "
-        "(appearing in $\\geq$70\\% of training runs).}"
+        "\\caption{Stable features identified by machine learning models for selected phenotypes "
+        "when trained on GapMind-concordant samples only. \\textbf{Common Features} are those "
+        "appearing in both the combined (all datasets) and individual dataset models. "
+        "\\textbf{Unique Features} are those appearing only in the individual dataset model. "
+        "Features shown are consistent across multiple random seeds (appearing in $\\geq$70\\% "
+        "of training runs).}"
     )
-    latex_lines.append("\\label{tab:feature_comparison}")
+    latex_lines.append("\\label{tab:feature_comparison_concordant}")
     latex_lines.append("\\end{table}")
 
     # Write to file
@@ -140,5 +143,5 @@ def create_feature_table(
 if __name__ == "__main__":
     # phenotypes = ["Histidine", "Galactose"]
     phenotypes = ["Histidine"]
-    output_file = Path("sections/table_feature_comparison.tex")
+    output_file = Path("sections/table_feature_comparison_concordant.tex")
     create_feature_table(phenotypes, output_file)
