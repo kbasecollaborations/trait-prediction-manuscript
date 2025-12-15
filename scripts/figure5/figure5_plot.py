@@ -5,7 +5,8 @@ Create Figure 5: Performance on GapMind-concordant samples.
 This figure shows:
 - Panel A: Dataset split performance (concordant samples) with random split reference
 - Panel B: Shared stable features between individual datasets (concordant samples)
-- Panel C: Performance of concordant-trained models on discordant vs full test sets
+- Panel C: Performance of concordant-trained models on discordant vs full test sets (random split)
+- Panel D: Performance of concordant-trained models on discordant vs full test sets (dataset split)
 """
 
 import json
@@ -508,8 +509,168 @@ def plot_concordant_train_performance(
     )
 
 
-def create_figure(data_dir: Path, output_file: Path) -> None:
-    """Create Figure 5 with three subplots.
+def plot_dataset_split_train_performance(
+    ax: Axes,
+    data_dir: Path,
+    gapmind_dir: Path,
+    phenotypes: list[str] | None = None,
+) -> None:
+    """Plot performance of dataset split models trained on concordant, tested on discordant vs full.
+
+    Only uses dataset_split data for visualization. Also plots GapMind
+    accuracy from Figure 3B as a reference line.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes object to plot on.
+    data_dir : Path
+        Directory containing the figure 5C data files.
+    gapmind_dir : Path
+        Directory containing GapMind metrics files.
+    phenotypes : list[str] | None
+        List of phenotypes to plot in order. If None, uses all available.
+    """
+    # Load data
+    ml_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
+
+    # Filter to only dataset_split
+    ml_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
+
+    # Load GapMind results (using loose threshold)
+    gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
+
+    # Create GapMind dictionary for plotting
+    gapmind_dict = gapmind_df.set_index("phenotype")["balanced_accuracy"].to_dict()
+
+    # Get unique phenotypes
+    if phenotypes is None:
+        phenotypes = sorted(ml_df["phenotype"].unique())
+
+    # Set up positions
+    x = np.arange(len(phenotypes))
+
+    # Prepare data for box plot - one box per test type
+    test_types = ["full", "discordant"]
+    test_type_labels = ["Full", "Discordant"]
+    colors = ["#2E86AB", "#A23B72"]  # Blue for full, purple for discordant
+
+    # Create grouped box plots
+    box_data_full = []
+    box_data_disc = []
+
+    for phenotype in phenotypes:
+        full_data = ml_df[
+            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "full")
+        ]["balanced_accuracy"].values
+        disc_data = ml_df[
+            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "discordant")
+        ]["balanced_accuracy"].values
+
+        box_data_full.append(full_data)
+        box_data_disc.append(disc_data)
+
+    # Box plot width and positions
+    width = 0.35
+    positions_full = x - width / 2
+    positions_disc = x + width / 2
+
+    # Create box plots
+    bp1 = ax.boxplot(
+        box_data_full,
+        positions=positions_full,
+        widths=width * 0.8,
+        patch_artist=True,
+        showfliers=True,
+        boxprops=dict(facecolor=colors[0], alpha=0.7, linewidth=1.5),
+        medianprops=dict(color="black", linewidth=2),
+        whiskerprops=dict(linewidth=1.5),
+        capprops=dict(linewidth=1.5),
+        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+    )
+
+    bp2 = ax.boxplot(
+        box_data_disc,
+        positions=positions_disc,
+        widths=width * 0.8,
+        patch_artist=True,
+        showfliers=True,
+        boxprops=dict(facecolor=colors[1], alpha=0.7, linewidth=1.5),
+        medianprops=dict(color="black", linewidth=2),
+        whiskerprops=dict(linewidth=1.5),
+        capprops=dict(linewidth=1.5),
+        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+    )
+
+    # Plot GapMind as reference dotted line
+    for phenotype in phenotypes:
+        if phenotype in gapmind_dict:
+            x_pos = x[phenotypes.index(phenotype)]
+            ax.plot(
+                [x_pos - 0.45, x_pos + 0.45],
+                [gapmind_dict[phenotype], gapmind_dict[phenotype]],
+                color="#F18F01",
+                linestyle=":",
+                linewidth=2,
+                alpha=0.7,
+                zorder=1,
+            )
+
+    # Create legend handles
+    from matplotlib.patches import Patch
+
+    legend_handles = [
+        Patch(facecolor=colors[0], alpha=0.7, label="Test: Full"),
+        Patch(facecolor=colors[1], alpha=0.7, label="Test: Discordant"),
+        Line2D(
+            [0],
+            [0],
+            color="#F18F01",
+            linestyle=":",
+            linewidth=2,
+            alpha=0.7,
+            label="GapMind (Fig 3B)",
+        ),
+    ]
+
+    # Add alternating background colors for x-axis categories
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+
+    # Formatting
+    ax.set_xlabel("")
+    ax.set_ylabel("Balanced Accuracy")
+    ax.tick_params(axis="x", which="both", top=False, bottom=True)
+    ax.set_ylim(0, 1.05)
+
+    # Add horizontal line at 0.5 (random performance)
+    ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
+
+    # Add subplot label
+    ax.text(
+        -0.08,
+        1.05,
+        "(D)",
+        transform=ax.transAxes,
+        fontweight="bold",
+        va="top",
+        ha="right",
+        fontsize=14,
+    )
+
+    # Add legend
+    ax.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.10),
+        ncol=3,
+        frameon=False,
+    )
+
+
+def create_figure(data_dir: Path, output_file: Path, gapmind_dir: Path | None = None) -> None:
+    """Create Figure 5 with four subplots.
 
     Parameters
     ----------
@@ -517,7 +678,12 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         Directory containing the data files.
     output_file : Path
         Path to save the output figure.
+    gapmind_dir : Path | None
+        Directory containing GapMind metrics. If None, uses data/outputs/figure2.
     """
+    if gapmind_dir is None:
+        gapmind_dir = Path("data/outputs/figure2")
+
     # Load all data to determine common phenotypes
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
     feature_comp_df = pd.read_csv(data_dir / "figure5b_feature_comparison_summary.csv")
@@ -528,30 +694,36 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         ml_df[ml_df["split_type"] == "dataset_split"]["phenotype"].unique()
     )
     feature_phenotypes = set(feature_comp_df["phenotype"].unique())
-    # Filter test_df to only random_split for phenotype determination
-    test_phenotypes = set(
+    # Filter test_df to only random_split for phenotype determination (panel C)
+    test_phenotypes_random = set(
         test_df[test_df["split_type"] == "random_split"]["phenotype"].unique()
+    )
+    # Filter test_df to only dataset_split for phenotype determination (panel D)
+    test_phenotypes_dataset = set(
+        test_df[test_df["split_type"] == "dataset_split"]["phenotype"].unique()
     )
 
     # Use intersection to ensure consistent x-axis
     print("Determining common phenotypes across all analyses...")
     print(f" - Dataset split phenotypes: {len(dataset_phenotypes)}")
     print(f" - Feature comparison phenotypes: {len(feature_phenotypes)}")
-    print(f" - Test type phenotypes: {len(test_phenotypes)}")
+    print(f" - Test type phenotypes (random): {len(test_phenotypes_random)}")
+    print(f" - Test type phenotypes (dataset): {len(test_phenotypes_dataset)}")
     common_phenotypes = sorted(
-        dataset_phenotypes.intersection(feature_phenotypes).intersection(
-            test_phenotypes
-        )
+        dataset_phenotypes.intersection(feature_phenotypes)
+        .intersection(test_phenotypes_random)
+        .intersection(test_phenotypes_dataset)
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Create figure with 3 subplots arranged vertically
-    fig, axes = plt.subplots(3, 1, figsize=(12, 15))
+    # Create figure with 4 subplots arranged vertically
+    fig, axes = plt.subplots(4, 1, figsize=(12, 20))
 
     # Plot each subplot with common phenotypes
     plot_dataset_split_performance(axes[0], data_dir, common_phenotypes)
     create_feature_comparison_plot(axes[1], data_dir, common_phenotypes)
     plot_concordant_train_performance(axes[2], data_dir, common_phenotypes)
+    plot_dataset_split_train_performance(axes[3], data_dir, gapmind_dir, common_phenotypes)
 
     # Manually align x-axes to ensure consistency
     x_pos = np.arange(len(common_phenotypes))
@@ -562,12 +734,14 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     # Remove x-axis labels from all but bottom plot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
-    axes[2].set_xlabel("Phenotype")
+    axes[2].set_xlabel("")
+    axes[3].set_xlabel("Phenotype")
 
     # Only show x-tick labels on bottom plot
     axes[0].set_xticklabels([])
     axes[1].set_xticklabels([])
-    axes[2].set_xticklabels(common_phenotypes, rotation=45, ha="right")
+    axes[2].set_xticklabels([])
+    axes[3].set_xticklabels(common_phenotypes, rotation=45, ha="right")
 
     # Adjust layout with more space between subplots
     plt.tight_layout()
