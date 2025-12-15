@@ -80,32 +80,12 @@
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure5a.png}
-    \caption{Performance on concordant samples.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure5b.png}
-    \caption{Generalization across evaluation scenarios.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.95\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figure5c.png}
-    \caption{Why does it work? ML learns mechanistic features.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.95\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure5d.png}
-    \caption{ML predicts discordant samples better than GapMind.}
-\end{subfigure}
+\includegraphics[width=0.95\textwidth]{figure5.pdf}
 \caption{\textbf{ML learns mechanisms when trained on concordant data and outperforms GapMind on discordant samples.} (A) Models trained on GapMind-concordant samples (where mechanism is clearly mapped to known genes) achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for representative phenotypes. (B) This high performance generalizes robustly: concordant-trained models maintain balanced accuracy $>$0.90 across cross-dataset, in-clade, and out-of-clade evaluation scenarios, where full-data models failed. (C) \textit{Why does it work?} Feature importance analysis reveals concordant-trained models consistently identify established pathway genes as top features ($>$80\% mechanistically relevant, Jaccard similarity 0.6--0.8 across datasets vs. $<$0.2 for full-data models). This demonstrates ML can learn actual mechanisms when samples have clear genotype-phenotype mappings. \textit{Implication:} Discordant samples cannot be clearly mapped to mechanisms, at least not to GapMind genes. (D) \textit{ML performs better than GapMind:} When concordant-trained models are applied to discordant samples, they achieve balanced accuracy of 0.18--0.40 (significantly better than random, p $<$ 0.001). This means ML correctly predicts a subset of samples that GapMind gets wrong, suggesting ML captures features beyond GapMind's gene set. From Figures 4 and 5, we know some samples may be problematic. Next figure explores actual model performance after data quality improvements.}
 \label{fig:concordant_analysis}
 \end{figure}
+
+\input{sections/table_feature_comparison_concordant}
 
 \subsection{Strategies to Improve Model Performance: Data Quality and Training Approaches}
 
