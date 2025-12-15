@@ -386,6 +386,9 @@ def plot_phylogeny_independent_difference(
     # Set up positions
     x = np.arange(len(phenotypes))
 
+    # Calculate mean difference across all datasets and phenotypes
+    mean_difference = phylo_pivot["difference"].mean()
+
     # Plot difference for each test dataset
     for idx, test_dataset in enumerate(test_datasets):
         test_data = phylo_pivot[phylo_pivot["test_dataset"] == test_dataset]
@@ -419,6 +422,16 @@ def plot_phylogeny_independent_difference(
                 zorder=2,
             )
 
+    # Add horizontal line at mean difference
+    ax.axhline(
+        y=mean_difference,
+        color="black",
+        linestyle="--",
+        linewidth=2,
+        alpha=0.7,
+        zorder=3,
+    )
+
     # Create legend handles
     from matplotlib.lines import Line2D
 
@@ -436,6 +449,19 @@ def plot_phylogeny_independent_difference(
         )
         for dataset in test_datasets
     ]
+
+    # Add mean difference line to legend
+    legend_handles.append(
+        Line2D(
+            [0],
+            [0],
+            color="black",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.7,
+            label=f"Mean Difference ({mean_difference:.3f})",
+        )
+    )
 
     # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):
