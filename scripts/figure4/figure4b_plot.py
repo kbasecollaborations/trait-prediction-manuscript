@@ -1,67 +1,17 @@
 #!/usr/bin/env python3
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scienceplots
-import seaborn as sns
 
-from scripts.visualization import configure_plot_style, get_dataset_colors
+from scripts.visualization import configure_plot_style, format_dataset_names, get_dataset_colors
 
 plt.style.use(["science", "nature"])
-sns.set_context("paper")
 configure_plot_style()
-
-
-def load_gapmind_data(gapmind_data_dir: Path) -> pd.DataFrame:
-    """Load GapMind feature data for all phenotypes.
-
-    Parameters
-    ----------
-    gapmind_data_dir : Path
-        Directory containing GapMind feature files.
-
-    Returns
-    -------
-    pd.DataFrame
-        Combined GapMind feature data.
-    """
-    phenotype_dict = {
-        "alanine": "Alanine",
-        "arginine": "Arginine",
-        "histidine": "Histidine",
-        "serine": "Serine",
-        "fructose": "Fructose",
-        "galactose": "Galactose",
-        "glucose": "Glucose",
-        "maltose": "Maltose",
-        "mannose": "Mannose",
-        "sucrose": "Sucrose",
-        "myoinositol": "m-Inositol",
-        "mannitol": "Mannitol",
-        "glycerol": "Glycerol",
-        "galacturonate": "Galacturonic-Acid",
-        "cellobiose": "Cellobiose",
-    }
-    phenotype_names = list(phenotype_dict.values())
-
-    gapmind_data_dict = {}
-    for phenotype_name in phenotype_names:
-        gapmind_data_file = gapmind_data_dir / f"{phenotype_name}.tsv"
-        if not gapmind_data_file.exists():
-            continue
-        gapmind_data = pd.read_csv(
-            gapmind_data_file, sep="\t", index_col=0, dtype={"genomeID": str}
-        )
-        gapmind_data.columns = [
-            f"{phenotype_name}-{col}" for col in gapmind_data.columns
-        ]
-        gapmind_data_dict[phenotype_name] = gapmind_data
-
-    return pd.concat(gapmind_data_dict.values(), axis=1)
 
 
 def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
@@ -178,8 +128,6 @@ def get_genomeid_dataset_map() -> dict[str, str]:
     dict[str, str]
         Mapping of genome ID to dataset name.
     """
-    from scripts.io import read_phenotypes
-
     phenotype_files_all = Path("data/processed/phenotypes").glob("**/*.tsv")
     dataset_genome_name_map = defaultdict(set)
 
@@ -198,10 +146,13 @@ def get_genomeid_dataset_map() -> dict[str, str]:
     return genomeid_dataset_map
 
 
-def identify_microbe_categories(
-    phenotypes_combined: pd.DataFrame, gapmind_data_pheno: pd.DataFrame
-) -> tuple[list[str], list[str], list[str]]:
-    """Identify microbes in three categories.
+def calculate_confusion_matrix_by_dataset(
+    phenotypes_combined: pd.DataFrame,
+    gapmind_data_pheno: pd.DataFrame,
+    genomeid_dataset_map: dict[str, str],
+    phenotype_dict: dict[str, str],
+) -> pd.DataFrame:
+    """Calculate TP, TN, FP, FN for each phenotype and dataset.
 
     Parameters
     ----------
@@ -209,88 +160,97 @@ def identify_microbe_categories(
         Experimental phenotype data.
     gapmind_data_pheno : pd.DataFrame
         GapMind predictions.
+    genomeid_dataset_map : dict[str, str]
+        Mapping of genome IDs to datasets.
+    phenotype_dict : dict[str, str]
+        Mapping of phenotype keys to display names.
 
     Returns
     -------
-    tuple[list[str], list[str], list[str]]
-        Lists of genome IDs for: (1) no exp growth but GapMind predicts growth,
-        (2) all exp growth but GapMind incomplete, (3) top 20 most misclassified.
+    pd.DataFrame
+        DataFrame with columns: Dataset, Phenotype, TP, TN, FP, FN.
     """
-    # Category 1: No experimental growth but GapMind predicts growth
-    microbes_no_exp_growth = phenotypes_combined.index[
-        phenotypes_combined.apply(lambda x: (x.dropna() == 0).all(), axis=1)
-    ].to_list()
+    dataset_performance = {}
 
-    microbes_gapmind_predicts_growth = []
-    for microbe in microbes_no_exp_growth:
-        if microbe in gapmind_data_pheno.index:
-            if (gapmind_data_pheno.loc[microbe] == 1).any():
-                microbes_gapmind_predicts_growth.append(microbe)
+    for dataset in ["atleaf", "lit", "pmi", "marine"]:
+        dataset_performance[dataset] = {}
 
-    # Category 2: All experimental growth but GapMind incomplete
-    microbes_all_exp_growth = phenotypes_combined.index[
-        phenotypes_combined.apply(lambda x: (x.dropna() == 1).all(), axis=1)
-    ].to_list()
+        for phenotype_name in phenotype_dict.values():
+            # Get genome IDs for this dataset
+            dataset_genome_ids = [
+                gid for gid, d in genomeid_dataset_map.items() if d == dataset
+            ]
 
-    microbes_gapmind_missing_predictions = []
-    for microbe in microbes_all_exp_growth:
-        if microbe in gapmind_data_pheno.index:
-            if not (gapmind_data_pheno.loc[microbe] == 1).all():
-                microbes_gapmind_missing_predictions.append(microbe)
+            # Get experimental and GapMind data for this phenotype
+            exp_data = (
+                phenotypes_combined.loc[:, phenotype_name].dropna().astype(np.uint8)
+            )
+            gapmind_data_subset = (
+                gapmind_data_pheno.loc[:, phenotype_name].dropna().astype(np.uint8)
+            )
 
-    # Category 3: Top 20 most frequently misclassified
-    misclassifications = dict()
-    phenotype_names = phenotypes_combined.columns
+            # Filter for common indices in this dataset
+            common_inds = exp_data.index.intersection(gapmind_data_subset.index)
+            common_inds = [gid for gid in common_inds if gid in dataset_genome_ids]
 
-    for phenotype_name in phenotype_names:
-        exp_data = phenotypes_combined.loc[:, phenotype_name].dropna().astype(np.uint8)
-        gapmind_data_pheno_subset = (
-            gapmind_data_pheno.loc[:, phenotype_name].dropna().astype(np.uint8)
-        )
-        common_inds = exp_data.index.intersection(gapmind_data_pheno_subset.index)
-        exp_data = exp_data.loc[common_inds]
-        gapmind_data_pheno_subset = gapmind_data_pheno_subset.loc[common_inds]
-        misclassified = exp_data[exp_data != gapmind_data_pheno_subset]
-        misclassifications[phenotype_name] = misclassified
+            if len(common_inds) == 0:
+                dataset_performance[dataset][phenotype_name] = {
+                    "TP": 0,
+                    "TN": 0,
+                    "FP": 0,
+                    "FN": 0,
+                }
+                continue
 
-    missclassified_genomes = []
-    for phenotype_name, misclassified in misclassifications.items():
-        missclassified_genomes.extend(misclassified.index.unique().tolist())
+            exp_data_subset = exp_data.loc[common_inds]
+            gapmind_data_subset = gapmind_data_subset.loc[common_inds]
 
-    missclassified_counts = Counter(missclassified_genomes)
-    most_common_misclassified = missclassified_counts.most_common(20)
-    top_20_genomes = [genome_id for genome_id, _ in most_common_misclassified]
+            # Calculate confusion matrix components
+            tp = ((exp_data_subset == 1) & (gapmind_data_subset == 1)).sum()
+            tn = ((exp_data_subset == 0) & (gapmind_data_subset == 0)).sum()
+            fp = ((exp_data_subset == 0) & (gapmind_data_subset == 1)).sum()
+            fn = ((exp_data_subset == 1) & (gapmind_data_subset == 0)).sum()
 
-    return (
-        microbes_gapmind_predicts_growth,
-        microbes_gapmind_missing_predictions,
-        top_20_genomes,
-    )
+            dataset_performance[dataset][phenotype_name] = {
+                "TP": tp,
+                "TN": tn,
+                "FP": fp,
+                "FN": fn,
+            }
+
+    # Create DataFrame for plotting
+    performance_data = []
+    for dataset in dataset_performance:
+        for phenotype in phenotype_dict.values():
+            metrics = dataset_performance[dataset][phenotype]
+            performance_data.append(
+                {
+                    "Dataset": dataset,
+                    "Phenotype": phenotype,
+                    "TP": metrics["TP"],
+                    "TN": metrics["TN"],
+                    "FP": metrics["FP"],
+                    "FN": metrics["FN"],
+                }
+            )
+
+    return pd.DataFrame(performance_data)
 
 
-def create_misclassification_plots(
+def create_confusion_matrix_plots(
     ax1: plt.Axes,
     ax2: plt.Axes,
-    ax3: plt.Axes,
-    gapmind_data_dir: Path | None = None,
 ) -> None:
-    """Create misclassification plots on provided axes.
+    """Create confusion matrix plots on provided axes.
 
     Parameters
     ----------
     ax1 : plt.Axes
-        Axes for "No Growth but GapMind predicts growth" plot.
+        Axes for confusion matrix by phenotype plot (top).
     ax2 : plt.Axes
-        Axes for "All Growth but GapMind incomplete" plot.
-    ax3 : plt.Axes
-        Axes for "Top 20 misclassified genomes" plot.
-    gapmind_data_dir : Path | None
-        Directory containing GapMind feature files. If None, uses default path.
+        Axes for confusion matrix by dataset plot (bottom).
     """
-    if gapmind_data_dir is None:
-        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
-
-    # Load data
+    # Define phenotype_dict
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -309,6 +269,14 @@ def create_misclassification_plots(
         "cellobiose": "Cellobiose",
     }
 
+    # Define colorblind-friendly pastel colors
+    colors = {
+        "TP": "#8FBC8F",  # Pastel green (correct positive)
+        "TN": "#B0C4DE",  # Pastel blue (correct negative)
+        "FP": "#F4A460",  # Pastel orange (incorrect positive)
+        "FN": "#E9967A",  # Pastel salmon (incorrect negative)
+    }
+
     print("Loading GapMind predictions...")
     gapmind_data_pheno = load_gapmind_predictions(phenotype_dict)
 
@@ -318,224 +286,101 @@ def create_misclassification_plots(
     print("Getting dataset mapping...")
     genomeid_dataset_map = get_genomeid_dataset_map()
 
-    print("Identifying microbe categories...")
-    cat1_microbes, cat2_microbes, cat3_microbes = identify_microbe_categories(
-        phenotypes_combined, gapmind_data_pheno
+    print("Calculating confusion matrix metrics...")
+    performance_df = calculate_confusion_matrix_by_dataset(
+        phenotypes_combined, gapmind_data_pheno, genomeid_dataset_map, phenotype_dict
     )
 
-    # Count microbes by dataset for each category
-    def count_by_dataset(microbe_list: list[str]) -> dict[str, int]:
-        counts = defaultdict(int)
-        for microbe in microbe_list:
-            dataset = genomeid_dataset_map.get(microbe, "unknown")
-            counts[dataset] += 1
-        return dict(counts)
+    # Top plot: Combined performance across all datasets for each phenotype
+    phenotype_combined = performance_df.groupby("Phenotype")[
+        ["TP", "TN", "FP", "FN"]
+    ].sum()
 
-    cat1_counts = count_by_dataset(cat1_microbes)
-    cat2_counts = count_by_dataset(cat2_microbes)
+    phenotypes = phenotype_combined.index.tolist()
+    x = np.arange(len(phenotypes))
+    width = 0.6
 
-    # Get misclassification counts for top 20 genomes
-    misclassifications = dict()
-    phenotype_names = phenotypes_combined.columns
+    tp_vals = phenotype_combined["TP"].values
+    tn_vals = phenotype_combined["TN"].values
+    fp_vals = phenotype_combined["FP"].values
+    fn_vals = phenotype_combined["FN"].values
 
-    for phenotype_name in phenotype_names:
-        exp_data = phenotypes_combined.loc[:, phenotype_name].dropna().astype(np.uint8)
-        gapmind_data_pheno_subset = (
-            gapmind_data_pheno.loc[:, phenotype_name].dropna().astype(np.uint8)
-        )
-        common_inds = exp_data.index.intersection(gapmind_data_pheno_subset.index)
-        exp_data = exp_data.loc[common_inds]
-        gapmind_data_pheno_subset = gapmind_data_pheno_subset.loc[common_inds]
-        misclassified = exp_data[exp_data != gapmind_data_pheno_subset]
-        misclassifications[phenotype_name] = misclassified
-
-    missclassified_genomes = []
-    for phenotype_name, misclassified in misclassifications.items():
-        missclassified_genomes.extend(misclassified.index.unique().tolist())
-
-    missclassified_counts = Counter(missclassified_genomes)
-
-    datasets = ["atleaf", "lit", "pmi", "marine"]
-    dataset_colors = get_dataset_colors()
-
-    # Subplot 1: No growth but GapMind predicts growth
-    cat1_data = pd.DataFrame({"count": [cat1_counts.get(d, 0) for d in datasets]})
-    bars1 = ax1.bar(
-        range(len(datasets)),
-        cat1_data["count"],
-        color=[dataset_colors[d] for d in datasets],
-        alpha=0.7,
-        zorder=2,
-    )
-    ax1.set_ylabel("Number of Microbes", fontsize=12)
-    ax1.set_xlabel("Dataset", fontsize=12)
-    ax1.set_title(
-        "No Experimental Growth but GapMind Predicts Growth",
-        fontsize=12,
-        pad=10,
-    )
-    ax1.set_xticks(range(len(datasets)))
-    ax1.set_xticklabels(datasets, rotation=45, ha="right")
-    ax1.set_ylim(
-        0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
+    ax1.bar(x, tp_vals, width, label="TP", color=colors["TP"])
+    ax1.bar(x, tn_vals, width, bottom=tp_vals, label="TN", color=colors["TN"])
+    ax1.bar(x, fp_vals, width, bottom=tp_vals + tn_vals, label="FP", color=colors["FP"])
+    ax1.bar(
+        x,
+        fn_vals,
+        width,
+        bottom=tp_vals + tn_vals + fp_vals,
+        label="FN",
+        color=colors["FN"],
     )
 
-    # Subplot 2: All growth but GapMind incomplete
-    cat2_data = pd.DataFrame({"count": [cat2_counts.get(d, 0) for d in datasets]})
-    bars2 = ax2.bar(
-        range(len(datasets)),
-        cat2_data["count"],
-        color=[dataset_colors[d] for d in datasets],
-        alpha=0.7,
-        zorder=2,
-    )
-    ax2.set_ylabel("Number of Microbes", fontsize=12)
-    ax2.set_xlabel("Dataset", fontsize=12)
-    ax2.set_title(
-        "Growth on All C Sources but GapMind Incomplete",
-        fontsize=12,
-        pad=10,
-    )
-    ax2.set_xticks(range(len(datasets)))
-    ax2.set_xticklabels(datasets, rotation=45, ha="right")
-    ax2.set_ylim(
-        0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
-    )
+    ax1.set_ylabel("Count", fontsize=12)
+    ax1.set_xlabel("Phenotype", fontsize=12)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=10)
+    ax1.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.05), frameon=False)
+    ax1.grid(axis="y", alpha=0.3)
 
-    # Subplot 3: Top 20 most frequently misclassified genomes
-    # Get category membership for each genome
-    cat1_set = set(cat1_microbes)
-    cat2_set = set(cat2_microbes)
+    # Bottom plot: Combined performance across all phenotypes for each dataset
+    dataset_combined = performance_df.groupby("Dataset")[["TP", "TN", "FP", "FN"]].sum()
 
-    # Prepare data for plotting
-    top_20_data = []
-    for genome_id, count in missclassified_counts.most_common(20):
-        # Determine category (excluding "both")
-        in_cat1 = genome_id in cat1_set
-        in_cat2 = genome_id in cat2_set
+    datasets = dataset_combined.index.tolist()
+    x = np.arange(len(datasets))
+    width = 0.5  # Narrower bars for bottom subplot
 
-        if in_cat1:
-            category = "No Growth"
-            color = "#e377c2"  # Pink
-        elif in_cat2:
-            category = "All Growth"
-            color = "#17becf"  # Cyan
-        else:
-            category = "Neither"
-            color = "#7f7f7f"  # Gray
+    tp_vals = dataset_combined["TP"].values
+    tn_vals = dataset_combined["TN"].values
+    fp_vals = dataset_combined["FP"].values
+    fn_vals = dataset_combined["FN"].values
 
-        top_20_data.append(
-            {
-                "genome_id": genome_id,
-                "count": count,
-                "category": category,
-                "color": color,
-            }
-        )
-
-    top_20_df = pd.DataFrame(top_20_data)
-
-    # Create horizontal bar plot (vertical layout)
-    bars3 = ax3.barh(
-        range(len(top_20_df)),
-        top_20_df["count"],
-        color=top_20_df["color"],
-        alpha=0.7,
-        zorder=2,
-    )
-    ax3.set_xlabel("Number of Misclassifications", fontsize=12)
-    ax3.set_ylabel("Microbe ID", fontsize=12)
-    # ax3.set_title(
-    #     "Top 20 Most Frequently Misclassified Microbes",
-    #     fontsize=12,
-    #     pad=20,
-    # )
-    ax3.set_yticks(range(len(top_20_df)))
-    # Shorten genome IDs for readability
-    short_labels = ["_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]]
-    ax3.set_yticklabels(short_labels, fontsize=9)
-    ax3.invert_yaxis()  # Highest misclassified at top
-
-    # Set x-axis limit to make bars shorter
-    max_count = top_20_df["count"].max()
-    ax3.set_xlim(0, max_count * 1.1)
-
-    # Add legend for categories at the top in one line
-    from matplotlib.patches import Patch
-
-    category_handles = [
-        Patch(facecolor="#e377c2", alpha=0.7, label="No Growth"),
-        Patch(facecolor="#17becf", alpha=0.7, label="All Growth"),
-        Patch(facecolor="#7f7f7f", alpha=0.7, label="Neither"),
-    ]
-    ax3.legend(
-        handles=category_handles,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.08),
-        ncol=3,
-        frameon=False,
-        fontsize=10,
+    ax2.bar(x, tp_vals, width, label="TP", color=colors["TP"])
+    ax2.bar(x, tn_vals, width, bottom=tp_vals, label="TN", color=colors["TN"])
+    ax2.bar(x, fp_vals, width, bottom=tp_vals + tn_vals, label="FP", color=colors["FP"])
+    ax2.bar(
+        x,
+        fn_vals,
+        width,
+        bottom=tp_vals + tn_vals + fp_vals,
+        label="FN",
+        color=colors["FN"],
     )
 
-    # Calculate overlaps for summary
-    cat1_set = set(cat1_microbes)
-    cat2_set = set(cat2_microbes)
-    cat3_set = set(cat3_microbes)
+    ax2.set_ylabel("Count", fontsize=11)
+    ax2.set_xlabel("Dataset", fontsize=11)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(format_dataset_names(datasets), fontsize=10)
+    ax2.tick_params(axis="y", labelsize=10)
+    ax2.grid(axis="y", alpha=0.3)
 
-    overlap_12 = cat1_set.intersection(cat2_set)
-    overlap_13 = cat1_set.intersection(cat3_set)
-    overlap_23 = cat2_set.intersection(cat3_set)
-    overlap_123 = cat1_set.intersection(cat2_set).intersection(cat3_set)
-
-    # Print summary
-    print(f"\n=== Figure 4B Summary ===")
-    print(f"Category 1 (No growth, GM predicts growth): {len(cat1_microbes)} genomes")
-    print(f"Category 2 (All growth, GM incomplete): {len(cat2_microbes)} genomes")
-    print(f"Category 3 (Top 20 misclassified): {len(cat3_microbes)} genomes")
-    print(f"\nOverlap 1-2: {len(overlap_12)} genomes")
-    print(f"Overlap 1-3: {len(overlap_13)} genomes")
-    print(f"Overlap 2-3: {len(overlap_23)} genomes")
-    print(f"Overlap 1-2-3: {len(overlap_123)} genomes")
+    print("\n=== Figure 4B Summary ===")
+    print(f"Total TP: {phenotype_combined['TP'].sum()}")
+    print(f"Total TN: {phenotype_combined['TN'].sum()}")
+    print(f"Total FP: {phenotype_combined['FP'].sum()}")
+    print(f"Total FN: {phenotype_combined['FN'].sum()}")
 
 
-def create_figure4b(
-    output_file: Path,
-    gapmind_data_dir: Path | None = None,
-) -> None:
-    """Create standalone Figure 4B showing misclassification patterns.
+def create_figure4b(output_file: Path) -> None:
+    """Create standalone Figure 4B showing confusion matrix plots.
 
     Parameters
     ----------
     output_file : Path
         Path to save the output figure.
-    gapmind_data_dir : Path | None
-        Directory containing GapMind feature files. If None, uses default path.
     """
-    from matplotlib.gridspec import GridSpec
+    import matplotlib.gridspec as gridspec
 
-    fig = plt.figure(figsize=(14, 10))
-    gs = GridSpec(2, 2, figure=fig, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
+    fig = plt.figure(figsize=(12, 10))
+    gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[3, 1], hspace=0.4)
 
-    ax1 = fig.add_subplot(gs[0, 0])  # Top left
-    ax2 = fig.add_subplot(gs[0, 1])  # Top right
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0])
 
-    # Create a nested gridspec for the bottom row to center and narrow the third plot
-    bottom_gs = GridSpec(
-        1,
-        3,
-        figure=fig,
-        width_ratios=[0.2, 1, 0.2],
-        wspace=0,
-        left=gs[1, :].get_position(fig).x0,
-        right=gs[1, :].get_position(fig).x1,
-        bottom=gs[1, :].get_position(fig).y0,
-        top=gs[1, :].get_position(fig).y1,
-    )
-    ax3 = fig.add_subplot(bottom_gs[0, 1])  # Center column only
+    create_confusion_matrix_plots(ax1, ax2)
 
-    create_misclassification_plots(ax1, ax2, ax3, gapmind_data_dir)
-
-    gs.tight_layout(fig)
+    plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved plot to {output_file}")
     plt.close()
