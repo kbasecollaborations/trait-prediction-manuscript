@@ -36,7 +36,7 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
 
     # Add confidence level column
     strict_df["confidence"] = "Strict"
-    loose_df["confidence"] = "Loose"
+    loose_df["confidence"] = "Permissive"
 
     # Combine dataframes
     df = pd.concat([strict_df, loose_df], ignore_index=True)
@@ -69,20 +69,30 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
         x + width / 2,
         loose_data["balanced_accuracy"],
         width,
-        label="Loose",
+        label="Permissive",
         color=color_loose,
         alpha=0.8,
     )
 
-    # Add horizontal line at mean balanced accuracy
-    mean_ba = df["balanced_accuracy"].mean()
+    # Add horizontal lines for mean balanced accuracy of each confidence level
+    mean_strict = strict_df["balanced_accuracy"].mean()
+    mean_loose = loose_df["balanced_accuracy"].mean()
+
     ax.axhline(
-        y=mean_ba,
-        color="gray",
+        y=mean_strict,
+        color=color_strict,
         linestyle="--",
-        linewidth=1,
-        alpha=0.5,
-        label=f"Mean ({mean_ba:.2f})",
+        linewidth=1.5,
+        alpha=0.7,
+        label=f"Strict Mean ({mean_strict:.2f})",
+    )
+    ax.axhline(
+        y=mean_loose,
+        color=color_loose,
+        linestyle="--",
+        linewidth=1.5,
+        alpha=0.7,
+        label=f"Permissive Mean ({mean_loose:.2f})",
     )
 
     # Formatting
@@ -107,10 +117,9 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
 
     # Add legend at the top in a single row
     ax.legend(
-        title="GapMind Confidence",
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.18),
-        ncol=3,
+        bbox_to_anchor=(0.5, 1.15),
+        ncol=4,
         frameon=False,
     )
 
