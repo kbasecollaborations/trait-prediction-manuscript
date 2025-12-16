@@ -171,9 +171,6 @@ def plot_dataset_split_performance(
     ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
-    ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
-
     # Add subplot label
     ax.text(
         -0.08,
@@ -381,7 +378,9 @@ def plot_concordant_train_performance(
     fig3_random_df = fig3_ml_df[fig3_ml_df["split_type"] == "random_split"].copy()
 
     # Calculate mean random split performance for each phenotype
-    fig3_random_means = fig3_random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+    fig3_random_means = (
+        fig3_random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+    )
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -484,9 +483,6 @@ def plot_concordant_train_performance(
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
-    ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
-
     # Add subplot label
     ax.text(
         -0.08,
@@ -536,10 +532,14 @@ def plot_dataset_split_train_performance(
 
     # Load GapMind results for dataset split test sets (from Figure 3)
     fig3_data_dir = Path("data/outputs/figure3")
-    gapmind_df = pd.read_csv(fig3_data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t")
+    gapmind_df = pd.read_csv(
+        fig3_data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t"
+    )
 
     # Calculate mean GapMind performance for each phenotype (across dataset splits)
-    gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+    gapmind_means = (
+        gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+    )
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -641,9 +641,6 @@ def plot_dataset_split_train_performance(
     ax.set_ylabel("Balanced Accuracy")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
-
-    # Add horizontal line at 0.5 (random performance)
-    ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
 
     # Add subplot label
     ax.text(
