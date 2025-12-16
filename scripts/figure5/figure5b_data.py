@@ -250,7 +250,9 @@ def load_individual_dataset(
     tuple[pd.DataFrame, pd.Series]
         Feature matrix and target variable
     """
-    features_path = Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
+    features_path = (
+        Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
+    )
     phenotype_path = (
         Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
     )
@@ -661,7 +663,7 @@ def main() -> None:
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
     # Parameters
-    N_SEEDS = 5  # Reduced for faster execution
+    N_SEEDS = 20
     THRESHOLD = 0.7
     N_FEATURES = 10
     DATASETS = ["atleaf", "lit", "marine"]
