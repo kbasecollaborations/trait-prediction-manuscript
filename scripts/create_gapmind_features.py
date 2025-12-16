@@ -219,6 +219,109 @@ def save_feature_matrices(
             feature_matrix_threshold.to_csv(output_file, sep="\t")
 
 
+def get_dataset_genomes(dataset: str) -> set[str]:
+    """Get unique genome IDs from existing feature files for a dataset.
+
+    Parameters
+    ----------
+    dataset : str
+        Dataset name (e.g., 'atleaf', 'marine', 'lit', 'pmi')
+
+    Returns
+    -------
+    set[str]
+        Set of unique genome IDs in this dataset
+    """
+    # Use kofam.tsv as the reference for which genomes are in each dataset
+    kofam_file = Path(f"data/interim/features/{dataset}/kofam.tsv")
+    df = pd.read_csv(kofam_file, sep="\t", dtype={"genomeID": str}, index_col=0)
+    return set(df.index)
+
+
+def create_combined_feature_matrix(
+    gapmind_features_dir: Path, dataset_genomes: set[str]
+) -> pd.DataFrame:
+    """Create combined feature matrix for a dataset from all phenotype features.
+
+    Parameters
+    ----------
+    gapmind_features_dir : Path
+        Directory containing per-phenotype GapMind feature matrices
+    dataset_genomes : set[str]
+        Set of genome IDs to include in the final matrix
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined feature matrix with phenotype-prefixed column names
+    """
+    combined_matrices = []
+
+    # Load all phenotype feature matrices from the "all" directory
+    all_features_dir = gapmind_features_dir / "all"
+    for feature_file in sorted(all_features_dir.glob("*.tsv")):
+        # Extract phenotype name from filename
+        phenotype_name = feature_file.stem
+
+        # Load feature matrix
+        df = pd.read_csv(feature_file, sep="\t", index_col=0, dtype={"genomeID": str})
+        df.index = df.index.astype(str)
+
+        # Prepend phenotype name to all column names
+        df.columns = [f"{phenotype_name}-{col}" for col in df.columns]
+
+        # Filter to dataset genomes
+        df = df[df.index.isin(dataset_genomes)]
+
+        combined_matrices.append(df)
+
+    # Combine all matrices
+    if not combined_matrices:
+        raise ValueError("No feature matrices found")
+
+    combined_df = pd.concat(combined_matrices, axis=1)
+
+    # Fill any missing values with -1 (consistent with GapMind convention)
+    combined_df = combined_df.fillna(-1).astype(int)
+
+    return combined_df
+
+
+def save_combined_feature_matrices(gapmind_features_dir: Path) -> None:
+    """Save combined feature matrices for each dataset.
+
+    Parameters
+    ----------
+    gapmind_features_dir : Path
+        Directory containing per-phenotype GapMind feature matrices
+    """
+    datasets = ["atleaf", "lit", "marine", "pmi"]
+
+    print("\nCreating combined feature matrices for each dataset...")
+    for dataset in datasets:
+        print(f"\nProcessing {dataset}...")
+
+        # Get unique genomes for this dataset
+        dataset_genomes = get_dataset_genomes(dataset)
+        print(f"  Found {len(dataset_genomes)} unique genomes")
+
+        # Create combined feature matrix
+        combined_matrix = create_combined_feature_matrix(
+            gapmind_features_dir, dataset_genomes
+        )
+        print(
+            f"  Combined matrix shape: {combined_matrix.shape[0]} genomes × {combined_matrix.shape[1]} features"
+        )
+
+        # Save to data/interim/features/<dataset>/gapmind.tsv
+        output_dir = Path(f"data/interim/features/{dataset}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / "gapmind.tsv"
+
+        combined_matrix.to_csv(output_file, sep="\t")
+        print(f"  Saved to {output_file}")
+
+
 def main() -> None:
     """Main function to extract GapMind features."""
     # Setup
@@ -245,6 +348,9 @@ def main() -> None:
     save_feature_matrices(feature_matrix_dict, output_dir)
 
     print(f"\nFeatures saved to {output_dir}")
+
+    # Create combined feature matrices for each dataset
+    save_combined_feature_matrices(output_dir)
 
 
 if __name__ == "__main__":
