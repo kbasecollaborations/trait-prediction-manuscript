@@ -418,15 +418,19 @@ def run_figure6c_analysis(
     print("Summary Statistics")
     print("=" * 80)
 
-    summary = results_df.groupby(["phenotype", "condition"]).agg(
-        {
-            "precision": ["mean", "std"],
-            "recall": ["mean", "std"],
-            "auprc": ["mean", "std"],
-            "n_samples": "mean",
-        }
-    )
-    print(summary)
+    if len(results_df) > 0:
+        summary = results_df.groupby(["phenotype", "condition"]).agg(
+            {
+                "precision": ["mean", "std"],
+                "recall": ["mean", "std"],
+                "auprc": ["mean", "std"],
+                "n_samples": "mean",
+            }
+        )
+        print(summary)
+    else:
+        print("\nNo results generated. All experiments were skipped.")
+        print("Check if test sets are too small or don't have both classes.")
 
 
 if __name__ == "__main__":
