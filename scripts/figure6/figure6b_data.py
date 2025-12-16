@@ -24,7 +24,6 @@ from tqdm import tqdm
 from scripts.classifiers.nearest_neighbor import NearestNeighborClassifier
 from scripts.ml_splits import load_split_data, perform_split_ml
 
-
 # Confidence parameters (from notebook)
 K_NEIGHBORS = 3
 W_PHYLO = 0.2
@@ -192,10 +191,10 @@ def load_phylogenetic_data() -> tuple[Tree, pd.DataFrame]:
     tuple[Tree, pd.DataFrame]
         Tree and distance matrix (with diagonal set to inf).
     """
-    tree_file = Path("data/processed/phylogenetic_tree/gtdb-pruned.nwk")
+    tree_file = Path("data/processed/phylogeny/gtdb-pruned.nwk")
     tree = Tree(str(tree_file), format=1)
 
-    distance_file = Path("data/processed/phylogenetic_tree/distance_matrix.tsv")
+    distance_file = Path("data/processed/phylogeny/distance_matrix.tsv")
     distance_df = pd.read_csv(distance_file, sep="\t", index_col=0)
     # Set diagonal to inf (exclude self from nearest neighbors)
     distance_df.values[np.arange(len(distance_df)), np.arange(len(distance_df))] = (
@@ -248,28 +247,65 @@ def calculate_phylo_confidence(
     return y_conf
 
 
-def load_phenotype_data() -> dict[str, pd.DataFrame]:
+def load_phenotype_data() -> dict[str, pd.Series]:
     """
-    Load experimental phenotype data.
+    Load and combine experimental phenotype data for common phenotypes only.
 
     Returns
     -------
-    dict[str, pd.DataFrame]
-        Dictionary mapping phenotype names to DataFrames with phenotype values.
+    dict[str, pd.Series]
+        Dictionary mapping phenotype names to Series with phenotype values.
     """
-    phenotype_data_dir = Path("data/processed/phenotypes/combined_phenotypes/")
+    # Common phenotypes across all 4 datasets (15 total)
+    COMMON_PHENOTYPES = [
+        "Alanine",
+        "Arginine",
+        "Cellobiose",
+        "Fructose",
+        "Galactose",
+        "Galacturonic-Acid",
+        "Glucose",
+        "Glycerol",
+        "Histidine",
+        "Maltose",
+        "Mannitol",
+        "Mannose",
+        "Serine",
+        "Sucrose",
+        "m-Inositol",
+    ]
+
+    DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
+    PHENOTYPE_DIR = Path("data/processed/phenotypes/")
+
+    # Load phenotype data for all common phenotypes
     combined_phenotype_dict = {}
-    for phenotype_file in phenotype_data_dir.glob("*.tsv"):
-        phenotype_name = phenotype_file.stem
-        phenotype_data = pd.read_csv(
-            phenotype_file, sep="\t", index_col=0, dtype={"genomeID": str}
-        )  # type: ignore
-        combined_phenotype_dict[phenotype_name] = phenotype_data
+    for phenotype_name in COMMON_PHENOTYPES:
+        # Combine phenotype data from all datasets
+        phenotype_dfs = []
+        for dataset_name in DATASET_SUBSET:
+            phenotype_file = PHENOTYPE_DIR / dataset_name / f"{phenotype_name}.tsv"
+            if phenotype_file.exists():
+                pheno_data = pd.read_csv(
+                    phenotype_file, sep="\t", index_col=0, dtype={"genomeID": str}
+                )
+                phenotype_dfs.append(pheno_data)
+
+        if phenotype_dfs:
+            # Concatenate all datasets
+            combined = pd.concat(phenotype_dfs, axis=0)
+
+            # Remove duplicates, keeping the first occurrence
+            combined = combined[~combined.index.duplicated(keep="first")]
+
+            # Store the phenotype series
+            combined_phenotype_dict[phenotype_name] = combined[phenotype_name]
+
     return combined_phenotype_dict
 
 
 def calculate_y_soft_all_phenotypes(
-    phenotype_data: dict[str, pd.DataFrame],
+    phenotype_data: dict[str, pd.Series],
     tree: Tree,
     distance_df: pd.DataFrame,
     conf_mech: dict[str, pd.Series],
@@ -283,7 +319,7 @@ def calculate_y_soft_all_phenotypes(
 
     Parameters
     ----------
-    phenotype_data : dict[str, pd.DataFrame]
+    phenotype_data : dict[str, pd.Series]
         Experimental phenotype data.
     tree : Tree
         Phylogenetic tree.
@@ -310,7 +346,7 @@ def calculate_y_soft_all_phenotypes(
     for phenotype_name in tqdm(
         phenotype_data.keys(), desc="Calculating y_soft for phenotypes"
     ):
-        y_exp = phenotype_data[phenotype_name].iloc[:, 0]
+        y_exp = phenotype_data[phenotype_name]
 
         # Calculate phylogenetic confidence
         conf_phylo = calculate_phylo_confidence(y_exp, tree, distance_df, k=k)
@@ -322,9 +358,8 @@ def calculate_y_soft_all_phenotypes(
         y_soft_mech = conf_mech[phenotype_name]
 
         # Find common indices
-        common_inds = (
-            conf_phylo.index.intersection(y_soft_mech.index)
-            .intersection(y_exp.index)
+        common_inds = conf_phylo.index.intersection(y_soft_mech.index).intersection(
+            y_exp.index
         )
 
         y_exp_subset = y_exp.loc[common_inds]
@@ -586,8 +621,7 @@ def main() -> None:
     print("\nFiltering summary:")
     for split_type in filtered_split_data:
         total_samples_original = sum(
-            len(split_data[split_type][key]["X_test"])
-            for key in split_data[split_type]
+            len(split_data[split_type][key]["X_test"]) for key in split_data[split_type]
         )
         total_samples_filtered = sum(
             len(filtered_split_data[split_type][key]["X_test"])
@@ -617,20 +651,23 @@ def main() -> None:
     # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
-    print("\nBy split type:")
-    summary = (
-        results.groupby("split_type")["balanced_accuracy"].describe().round(3)
-    )
-    print(summary)
 
-    print("\nBy phenotype (mean balanced accuracy):")
-    phenotype_summary = (
-        results.groupby("phenotype")["balanced_accuracy"]
-        .agg(["mean", "std", "count"])
-        .round(3)
-        .sort_values("mean", ascending=False)
-    )
-    print(phenotype_summary)
+    if len(results) > 0:
+        print("\nBy split type:")
+        summary = results.groupby("split_type")["balanced_accuracy"].describe().round(3)
+        print(summary)
+
+        print("\nBy phenotype (mean balanced accuracy):")
+        phenotype_summary = (
+            results.groupby("phenotype")["balanced_accuracy"]
+            .agg(["mean", "std", "count"])
+            .round(3)
+            .sort_values("mean", ascending=False)
+        )
+        print(phenotype_summary)
+    else:
+        print("\nNo results generated. All splits were skipped.")
+        print("Check if test sets are too small or don't have both classes.")
 
     print("\nDone!")
 
