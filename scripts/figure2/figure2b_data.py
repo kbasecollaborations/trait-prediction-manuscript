@@ -34,52 +34,7 @@ from scripts.classifiers import (
     IdentityClassifier,
     NearestNeighborClassifier,
 )
-
-
-def load_data_from_folder(
-    folder_path: Path,
-) -> dict[str, tuple[pd.DataFrame, pd.Series]]:
-    """
-    Load train, validation, and test data from a folder.
-
-    Parameters
-    ----------
-    folder_path : Path
-        Path to the folder containing the split data files.
-
-    Returns
-    -------
-    dict[str, tuple[pd.DataFrame, pd.Series]]
-        Dictionary with keys 'train', 'val', 'test' containing tuples of
-        (features, labels) for each split.
-    """
-    data = {}
-    X_train_path = folder_path / "X_train.tsv"
-    y_train_path = folder_path / "y_train.tsv"
-    X_val_path = folder_path / "X_val.tsv"
-    y_val_path = folder_path / "y_val.tsv"
-    X_test_path = folder_path / "X_test.tsv"
-    y_test_path = folder_path / "y_test.tsv"
-
-    X_train = pd.read_csv(X_train_path, index_col=0, sep="\t", dtype={"genomeID": str})
-    X_val = pd.read_csv(X_val_path, index_col=0, sep="\t", dtype={"genomeID": str})
-    X_test = pd.read_csv(X_test_path, index_col=0, sep="\t", dtype={"genomeID": str})
-
-    y_train = pd.read_csv(
-        y_train_path, index_col=0, sep="\t", dtype={"genomeID": str}
-    ).iloc[:, 0]
-    y_val = pd.read_csv(
-        y_val_path, index_col=0, sep="\t", dtype={"genomeID": str}
-    ).iloc[:, 0]
-    y_test = pd.read_csv(
-        y_test_path, index_col=0, sep="\t", dtype={"genomeID": str}
-    ).iloc[:, 0]
-
-    data["train"] = (X_train, y_train)
-    data["val"] = (X_val, y_val)
-    data["test"] = (X_test, y_test)
-
-    return data
+from scripts.ml_splits import load_single_split_data
 
 
 def get_scores(model: Any, X: pd.DataFrame, y: pd.Series) -> dict[str, float | str]:
@@ -114,7 +69,7 @@ def get_scores(model: Any, X: pd.DataFrame, y: pd.Series) -> dict[str, float | s
 
 
 def perform_ml(
-    data: dict[str, dict[str, tuple[pd.DataFrame, pd.Series]]],
+    data: dict[str, dict[str, pd.DataFrame | pd.Series]],
     tree: Tree,
     tree_leaves: list[str],
     distance_df: pd.DataFrame,
@@ -124,8 +79,9 @@ def perform_ml(
 
     Parameters
     ----------
-    data : dict[str, dict[str, tuple[pd.DataFrame, pd.Series]]]
-        Dictionary mapping dataset keys to train/val/test splits.
+    data : dict[str, dict[str, pd.DataFrame | pd.Series]]
+        Dictionary mapping dataset keys to data splits. Each split contains
+        X_train, y_train, X_val, y_val, X_test, y_test.
     tree : Tree
         Phylogenetic tree.
     tree_leaves : list[str]
@@ -140,12 +96,14 @@ def perform_ml(
     """
     results = []
     for key in tqdm(data):
-        train_X, train_y = data[key]["train"]
+        train_X = data[key]["X_train"]
+        train_y = data[key]["y_train"]
         common_train_index = train_X.index.intersection(tree_leaves)
         train_X = train_X.loc[common_train_index]
         train_y = train_y.loc[common_train_index]
 
-        test_X, test_y = data[key]["test"]
+        test_X = data[key]["X_test"]
+        test_y = data[key]["y_test"]
         common_test_index = test_X.index.intersection(tree_leaves)
         test_X = test_X.loc[common_test_index]
         test_y = test_y.loc[common_test_index]
@@ -200,8 +158,16 @@ def main() -> None:
     RANDOM_SPLIT_DIR = Path("data/processed/train_test_splits/random_split")
     DATASET_SPLIT_DIR = Path("data/processed/train_test_splits/dataset_split")
     PHYLO_SPLIT_DIR = Path("data/processed/train_test_splits/phylogeny_split")
+    FEATURE_FILE = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
     OUTPUT_DIR = Path("data/outputs/figure2")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Load feature data
+    print(f"Loading feature data from {FEATURE_FILE}")
+    feature_data = pd.read_csv(
+        FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
+    )
+    print(f"Feature data shape: {feature_data.shape}")
 
     # Load tree and distance matrix
     tree_file = Path("data/processed/phylogeny/gtdb-pruned.nwk")
@@ -229,7 +195,7 @@ def main() -> None:
                 continue
             repeat_name = repeat_dir.name
             key = f"{phenotype_name}_{repeat_name}"
-            data = load_data_from_folder(repeat_dir)
+            data = load_single_split_data(repeat_dir, feature_data)
             random_split_data[key] = data
 
     # Load dataset split data
@@ -244,7 +210,7 @@ def main() -> None:
                 continue
             split_name = split_dir.name
             key = f"{phenotype_name}_{split_name}"
-            data = load_data_from_folder(split_dir)
+            data = load_single_split_data(split_dir, feature_data)
             dataset_split_data[key] = data
 
     # Load out-of-clade split data
@@ -262,7 +228,7 @@ def main() -> None:
                 continue
             split_name = split_dir.name
             key = f"{phenotype_name}_ooc_{split_name}"
-            data = load_data_from_folder(split_dir)
+            data = load_single_split_data(split_dir, feature_data)
             out_of_clade_split_data[key] = data
 
     # Perform ML and save results
