@@ -375,6 +375,12 @@ def analyze_combined_splits(
     # Get all phenotypes
     phenotypes = [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
 
+    # Load feature data once
+    feature_file = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
+    feature_data = pd.read_csv(
+        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
+    )
+
     results = {}
 
     for phenotype in tqdm(phenotypes, desc="Analyzing combined splits"):
@@ -389,7 +395,7 @@ def analyze_combined_splits(
 
             # Load split data
             try:
-                split_data = load_single_split_data(split_dir)
+                split_data = load_single_split_data(split_dir, feature_data)
             except Exception as e:
                 print(f"Error loading {key}: {e}")
                 continue

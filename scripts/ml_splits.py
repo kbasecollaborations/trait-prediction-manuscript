@@ -3,6 +3,9 @@ Machine learning utilities for train-test splits.
 
 This script provides utilities to run machine learning pipelines on
 pre-generated train-test split data.
+
+Split files contain only phenotype labels (y_train, y_val, y_test).
+Feature data is loaded separately and aligned with split indices.
 """
 
 import warnings
@@ -17,27 +20,29 @@ from scripts.ml import _get_scores, get_feature_importances, make_classifier
 warnings.filterwarnings("ignore")
 
 
-def load_single_split_data(folder_path: Path) -> dict[str, pd.DataFrame | pd.Series]:
+def load_single_split_data(
+    folder_path: Path, feature_data: pd.DataFrame
+) -> dict[str, pd.DataFrame | pd.Series]:
     """
     Load train/val/test data from a single split folder.
 
     Parameters
     ----------
     folder_path : Path
-        Path to folder containing split files (X_train.tsv, y_train.tsv, etc.)
+        Path to folder containing split files (y_train.tsv, y_val.tsv, y_test.tsv)
+    feature_data : pd.DataFrame
+        Feature matrix with samples as rows and features as columns
 
     Returns
     -------
     dict[str, pd.DataFrame | pd.Series]
         Dictionary containing X_train, y_train, X_val, y_val, X_test, y_test.
         Each y array is a Series (single column from the DataFrame).
+        X arrays are created by subsetting feature_data using indices from y files.
     """
     data: dict[str, pd.DataFrame | pd.Series] = {}
 
-    # Load training data
-    X_train = pd.read_csv(
-        folder_path / "X_train.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    # Load training labels
     y_train = pd.read_csv(
         folder_path / "y_train.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
     )
@@ -45,25 +50,34 @@ def load_single_split_data(folder_path: Path) -> dict[str, pd.DataFrame | pd.Ser
     if isinstance(y_train, pd.DataFrame) and y_train.shape[1] == 1:
         y_train = y_train.iloc[:, 0]
 
-    # Load validation data
-    X_val = pd.read_csv(
-        folder_path / "X_val.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    # Load validation labels
     y_val = pd.read_csv(
         folder_path / "y_val.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
     )
     if isinstance(y_val, pd.DataFrame) and y_val.shape[1] == 1:
         y_val = y_val.iloc[:, 0]
 
-    # Load test data
-    X_test = pd.read_csv(
-        folder_path / "X_test.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    # Load test labels
     y_test = pd.read_csv(
         folder_path / "y_test.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
     )
     if isinstance(y_test, pd.DataFrame) and y_test.shape[1] == 1:
         y_test = y_test.iloc[:, 0]
+
+    # Get indices that are in both split and feature data
+    train_indices = y_train.index.intersection(feature_data.index)
+    val_indices = y_val.index.intersection(feature_data.index)
+    test_indices = y_test.index.intersection(feature_data.index)
+
+    # Create X arrays from feature data using split indices
+    X_train = feature_data.loc[train_indices, :]
+    X_val = feature_data.loc[val_indices, :]
+    X_test = feature_data.loc[test_indices, :]
+
+    # Subset y arrays to match X arrays (in case some indices were missing)
+    y_train = y_train.loc[train_indices]
+    y_val = y_val.loc[val_indices]
+    y_test = y_test.loc[test_indices]
 
     data["X_train"] = X_train
     data["y_train"] = y_train
@@ -78,13 +92,15 @@ def load_single_split_data(folder_path: Path) -> dict[str, pd.DataFrame | pd.Ser
 def load_split_data(
     base_dir: Path = Path("data/processed/train_test_splits"),
     split_types: list[str] | None = None,
+    feature_file: Path = Path("data/processed/features_reduced/combined_datasets/kofam.tsv"),
 ) -> dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]]:
     """
     Load all train/val/test splits from the base directory.
 
     This function loads splits from all subdirectories in the base directory,
     including random_split, dataset_split, and phylogeny_split (with in-clade
-    and out-of-clade variants).
+    and out-of-clade variants). Feature data is loaded separately and used to
+    create X arrays based on split indices.
 
     Parameters
     ----------
@@ -95,6 +111,9 @@ def load_split_data(
         List of split types to load. Options are: "random_split", "dataset_split",
         "phylo_ooc" (out-of-clade), "phylo_ic" (in-clade). If None, loads all
         split types, by default None
+    feature_file : Path, optional
+        Path to combined feature file, by default
+        Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
 
     Returns
     -------
@@ -127,6 +146,13 @@ def load_split_data(
     if split_types is None:
         split_types = ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
 
+    # Load feature data once
+    print(f"Loading feature data from {feature_file}")
+    feature_data = pd.read_csv(
+        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
+    )
+    print(f"Feature data shape: {feature_data.shape}")
+
     result: dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]] = {}
 
     # Load random splits
@@ -144,7 +170,7 @@ def load_split_data(
                     if not repeat_dir.is_dir():
                         continue
                     key = f"{phenotype_name}_{repeat_dir.name}"
-                    data = load_single_split_data(repeat_dir)
+                    data = load_single_split_data(repeat_dir, feature_data)
                     random_split_data[key] = data
             result["random_split"] = random_split_data
 
@@ -163,7 +189,7 @@ def load_split_data(
                     if not split_dir.is_dir():
                         continue
                     key = f"{phenotype_name}_{split_dir.name}"
-                    data = load_single_split_data(split_dir)
+                    data = load_single_split_data(split_dir, feature_data)
                     dataset_split_data[key] = data
             result["dataset_split"] = dataset_split_data
 
@@ -185,7 +211,7 @@ def load_split_data(
                     if not split_dir.is_dir():
                         continue
                     key = f"{phenotype_name}_ooc_{split_dir.name}"
-                    data = load_single_split_data(split_dir)
+                    data = load_single_split_data(split_dir, feature_data)
                     phylo_ooc_data[key] = data
             result["phylo_ooc"] = phylo_ooc_data
 
@@ -207,7 +233,7 @@ def load_split_data(
                     if not split_dir.is_dir():
                         continue
                     key = f"{phenotype_name}_ic_{split_dir.name}"
-                    data = load_single_split_data(split_dir)
+                    data = load_single_split_data(split_dir, feature_data)
                     phylo_ic_data[key] = data
             result["phylo_ic"] = phylo_ic_data
 
