@@ -17,8 +17,58 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import pearsonr, spearmanr
-from tqdm import tqdm
+
+
+def compute_correlation_matrix(
+    features_a: np.ndarray, features_b: np.ndarray, method: str = "pearson"
+) -> np.ndarray:
+    """
+    Compute correlation matrix between two feature matrices using vectorized operations.
+
+    Parameters
+    ----------
+    features_a : np.ndarray
+        First feature matrix of shape (n_samples, n_features_a).
+    features_b : np.ndarray
+        Second feature matrix of shape (n_samples, n_features_b).
+    method : str, optional
+        Correlation method: 'pearson' or 'spearman', by default "pearson"
+
+    Returns
+    -------
+    np.ndarray
+        Correlation matrix of shape (n_features_b, n_features_a).
+        Element [i, j] is the correlation between features_b[:, i] and features_a[:, j].
+    """
+    if method == "spearman":
+        # Convert to ranks for Spearman correlation
+        # Use scipy's rankdata which handles ties properly
+        from scipy.stats import rankdata
+
+        features_a = np.apply_along_axis(rankdata, 0, features_a)
+        features_b = np.apply_along_axis(rankdata, 0, features_b)
+
+    # Standardize features (subtract mean, divide by std)
+    # This handles the case where std is 0 by setting those to 0
+    a_mean = np.mean(features_a, axis=0, keepdims=True)
+    b_mean = np.mean(features_b, axis=0, keepdims=True)
+
+    a_std = np.std(features_a, axis=0, keepdims=True)
+    b_std = np.std(features_b, axis=0, keepdims=True)
+
+    # Avoid division by zero - set std=1 for constant columns (they'll have corr=0)
+    a_std = np.where(a_std == 0, 1, a_std)
+    b_std = np.where(b_std == 0, 1, b_std)
+
+    a_centered = (features_a - a_mean) / a_std
+    b_centered = (features_b - b_mean) / b_std
+
+    # Compute correlation matrix: (n_samples, n_features_b).T @ (n_samples, n_features_a)
+    # Result is (n_features_b, n_features_a)
+    n_samples = features_a.shape[0]
+    corr_matrix = (b_centered.T @ a_centered) / n_samples
+
+    return corr_matrix
 
 
 def find_correlated_features(
@@ -52,35 +102,33 @@ def find_correlated_features(
     features_a_aligned = features_a.loc[common_samples]
     features_b_aligned = features_b.loc[common_samples]
 
-    # Dictionary to store correlated features
-    correlated = {}
-
-    # Determine correlation function
-    if method == "pearson":
-        corr_func = pearsonr
-    elif method == "spearman":
-        corr_func = spearmanr
-    else:
+    if method not in ["pearson", "spearman"]:
         raise ValueError(f"Unknown correlation method: {method}")
 
-    # Check each feature in features_b against all features in features_a
-    for col_b in tqdm(
-        features_b_aligned.columns, desc=f"Finding {method} correlations"
-    ):
-        correlated_with = []
-        for col_a in features_a_aligned.columns:
-            # Calculate correlation
-            try:
-                corr, _ = corr_func(
-                    features_a_aligned[col_a], features_b_aligned[col_b]
-                )
-                if abs(corr) >= threshold:
-                    correlated_with.append(col_a)
-            except Exception:
-                # Skip if correlation calculation fails (e.g., constant columns)
-                pass
+    print(f"  Computing {method} correlation matrix...")
+    # Compute correlation matrix using vectorized operations
+    # Shape: (n_features_b, n_features_a)
+    corr_matrix = compute_correlation_matrix(
+        features_a_aligned.values, features_b_aligned.values, method=method
+    )
 
-        if correlated_with:
+    # Find correlations above threshold
+    print(f"  Finding correlations above threshold {threshold}...")
+    correlated = {}
+
+    # Take absolute value for threshold comparison
+    abs_corr_matrix = np.abs(corr_matrix)
+
+    # For each feature in features_b, find which features in features_a are correlated
+    for i, col_b in enumerate(features_b_aligned.columns):
+        # Find indices where correlation exceeds threshold
+        correlated_indices = np.where(abs_corr_matrix[i, :] >= threshold)[0]
+
+        if len(correlated_indices) > 0:
+            # Get the feature names from features_a
+            correlated_with = [
+                features_a_aligned.columns[j] for j in correlated_indices
+            ]
             correlated[col_b] = correlated_with
 
     return correlated
