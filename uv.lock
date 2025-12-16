@@ -2881,7 +2881,7 @@ wheels = [
 [[package]]
 name = "trait-prediction"
 version = "0.2.2"
-source = { git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=main#4e45f589f46947e10256a4097d3c5da73728b101" }
+source = { git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=main#a84dce8290f00480ba5d59d289a45213f3fe0396" }
 dependencies = [
     { name = "catboost" },
     { name = "ete3" },
