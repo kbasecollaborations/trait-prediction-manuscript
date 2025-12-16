@@ -35,24 +35,6 @@ configure_plot_style()
 np.random.seed(42)
 
 
-def extract_test_dataset(key: str) -> str:
-    """Extract test dataset from key string.
-
-    Parameters
-    ----------
-    key : str
-        Key string like "Mannose_train(atleaf+marine+pmi),test(lit)"
-
-    Returns
-    -------
-    str
-        Test dataset name (e.g., "lit")
-    """
-    # Extract test dataset from "test(dataset)" pattern
-    test_part = key.split("test(")[1].split(")")[0]
-    return test_part
-
-
 def plot_dataset_split_performance(
     ax: Axes,
     data_dir: Path,
@@ -74,46 +56,34 @@ def plot_dataset_split_performance(
     dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
     random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
 
-    # Extract test dataset from key
-    dataset_df["test_dataset"] = dataset_df["key"].apply(extract_test_dataset)
-
-    # Get dataset colors
-    dataset_colors = get_dataset_colors()
-
-    # Get unique phenotypes and test datasets
+    # Get unique phenotypes
     if phenotypes is None:
         phenotypes = sorted(dataset_df["phenotype"].unique())
-    test_datasets = sorted(dataset_df["test_dataset"].unique())
 
     # Set up positions
     x = np.arange(len(phenotypes))
-    width = 0.2
-    offsets = np.linspace(
-        -width * (len(test_datasets) - 1) / 2,
-        width * (len(test_datasets) - 1) / 2,
-        len(test_datasets),
+
+    # Prepare data for box plot - combining all datasets
+    box_data = []
+    for phenotype in phenotypes:
+        phenotype_data = dataset_df[dataset_df["phenotype"] == phenotype][
+            "balanced_accuracy"
+        ].values
+        box_data.append(phenotype_data)
+
+    # Create box plot
+    bp = ax.boxplot(
+        box_data,
+        positions=x,
+        widths=0.6,
+        patch_artist=True,
+        showfliers=True,
+        boxprops=dict(facecolor="#2E86AB", alpha=0.7, linewidth=1.5),
+        medianprops=dict(color="black", linewidth=2),
+        whiskerprops=dict(linewidth=1.5),
+        capprops=dict(linewidth=1.5),
+        flierprops=dict(marker="o", markersize=4, alpha=0.5),
     )
-
-    # Plot dataset split results
-    for idx, test_dataset in enumerate(test_datasets):
-        test_data = dataset_df[dataset_df["test_dataset"] == test_dataset]
-
-        # Plot individual points
-        for phenotype in phenotypes:
-            phenotype_data = test_data[test_data["phenotype"] == phenotype]
-            x_pos = x[phenotypes.index(phenotype)] + offsets[idx]
-
-            # Add jitter
-            x_jitter = x_pos + np.random.normal(0, 0.02, len(phenotype_data))
-
-            ax.scatter(
-                x_jitter,
-                phenotype_data["balanced_accuracy"],
-                color=dataset_colors[test_dataset],
-                alpha=0.6,
-                s=60,
-                zorder=2,
-            )
 
     # Calculate mean random split performance
     random_means = random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
@@ -133,23 +103,10 @@ def plot_dataset_split_performance(
             )
 
     # Create legend handles
-    legend_handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="w",
-            markerfacecolor=dataset_colors[dataset],
-            markersize=8,
-            alpha=0.8,
-            label=f"Test: {format_dataset_names([dataset])[0]}",
-            linestyle="None",
-        )
-        for dataset in test_datasets
-    ]
+    from matplotlib.patches import Patch
 
-    # Add random split reference to legend
-    legend_handles.append(
+    legend_handles = [
+        Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split"),
         Line2D(
             [0],
             [0],
@@ -157,8 +114,8 @@ def plot_dataset_split_performance(
             linewidth=2,
             alpha=0.7,
             label="Random Split (mean)",
-        )
-    )
+        ),
+    ]
 
     # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):

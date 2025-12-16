@@ -250,7 +250,7 @@ def load_individual_dataset(
     tuple[pd.DataFrame, pd.Series]
         Feature matrix and target variable
     """
-    features_path = Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
+    features_path = Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
     phenotype_path = (
         Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
     )
@@ -306,7 +306,7 @@ def load_all_datasets_combined(
 
     for dataset_name in datasets:
         features_path = (
-            Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
+            Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
         )
         phenotype_path = (
             Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
