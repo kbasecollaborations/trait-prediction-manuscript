@@ -28,6 +28,7 @@ from trait_prediction.main import DataSet
 
 from scripts.io import read_features, read_phenotypes
 from scripts.ml import make_classifier
+from scripts.ml_splits import load_single_split_data
 
 warnings.filterwarnings("ignore")
 
@@ -154,6 +155,30 @@ def get_concordant_samples(
     concordant_genomes = set(valid_genomes[concordant_mask])
 
     return concordant_genomes
+
+
+def get_test_dataset_from_key(key: str) -> str | None:
+    """
+    Extract the test dataset name from a dataset_split key.
+
+    Parameters
+    ----------
+    key : str
+        Key in format "Phenotype_train(datasets),test(dataset)"
+
+    Returns
+    -------
+    str | None
+        Test dataset name (atleaf, lit, marine, or pmi), or None if not a dataset_split
+    """
+    # Example key: "Alanine_train(atleaf+lit+marine),test(pmi)"
+    if "test(" not in key:
+        return None
+
+    test_part = key.split("test(")[1]
+    test_dataset = test_part.rstrip(")")
+
+    return test_dataset
 
 
 def get_shap_top_features(
@@ -398,6 +423,182 @@ def train_and_get_top_features_individual(
     return top_features
 
 
+def train_and_get_top_features_split(
+    split_data: dict[str, pd.DataFrame | pd.Series],
+    random_state: int = 42,
+    n_features: int = 10,
+) -> list[str]:
+    """
+    Train model on combined train+val split and get top SHAP features.
+
+    Parameters
+    ----------
+    split_data : dict
+        Dictionary with keys X_train, y_train, X_val, y_val
+    random_state : int, optional
+        Random state for sampling, by default 42
+    n_features : int, optional
+        Number of top features to return, by default 10
+
+    Returns
+    -------
+    list[str]
+        List of top feature names
+    """
+    # Combine train and val sets
+    X_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
+    y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
+
+    # Resample 80% with stratification
+    X_train, _, y_train, _ = train_test_split(
+        X_combined,
+        y_combined,
+        train_size=0.8,
+        stratify=y_combined,
+        random_state=random_state,
+        shuffle=True,
+    )
+
+    # Train cb_noeval model
+    model = make_classifier("cb_noeval", random_state=random_state)
+    model.fit(X_train, y_train, verbose=False)
+
+    # Get top features using SHAP
+    top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
+
+    return top_features
+
+
+def analyze_combined_splits(
+    splits_dir: Path,
+    gapmind_predictions: pd.DataFrame,
+    experimental_phenotypes: pd.DataFrame,
+    n_seeds: int = 20,
+    threshold: float = 0.7,
+    n_features: int = 10,
+) -> dict[str, list[str]]:
+    """
+    Analyze combined train-test splits and get consistent top features (concordant samples only).
+
+    Parameters
+    ----------
+    splits_dir : Path
+        Path to train_test_splits directory
+    gapmind_predictions : pd.DataFrame
+        GapMind predictions
+    experimental_phenotypes : pd.DataFrame
+        Experimental phenotype data
+    n_seeds : int, optional
+        Number of random seeds to run, by default 20
+    threshold : float, optional
+        Minimum proportion for consistent features, by default 0.7
+    n_features : int, optional
+        Number of top features per run, by default 10
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Dictionary with keys as split identifiers and values as consistent feature lists
+    """
+    dataset_split_dir = splits_dir / "dataset_split"
+
+    # Get all phenotypes
+    phenotypes = [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
+
+    # Load feature data once
+    feature_file = Path("data/processed/features_reduced/combined_datasets/gapmind.tsv")
+    feature_data = pd.read_csv(
+        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
+    )
+
+    results = {}
+
+    for phenotype in tqdm(phenotypes, desc="Analyzing combined splits (concordant)"):
+        phenotype_dir = dataset_split_dir / phenotype
+
+        # Get all split types for this phenotype
+        split_types = [d.name for d in phenotype_dir.iterdir() if d.is_dir()]
+
+        for split_type in split_types:
+            split_dir = phenotype_dir / split_type
+            key = f"{phenotype}_{split_type}"
+
+            # Load split data
+            try:
+                split_data = load_single_split_data(split_dir, feature_data)
+            except Exception as e:
+                print(f"Error loading {key}: {e}")
+                continue
+
+            # Combine train and val sets to filter for concordant samples
+            X_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
+            y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
+
+            # Get concordant samples for this phenotype
+            concordant_genomes = get_concordant_samples(
+                gapmind_predictions, experimental_phenotypes, phenotype
+            )
+
+            if len(concordant_genomes) == 0:
+                continue
+
+            # Filter to concordant samples
+            concordant_in_data = set(X_combined.index) & concordant_genomes
+            if len(concordant_in_data) < 20:  # Need minimum samples
+                continue
+
+            X_concordant = X_combined.loc[list(concordant_in_data)]
+            y_concordant = y_combined.loc[list(concordant_in_data)]
+
+            # Check if we have enough samples for both classes
+            if len(y_concordant.unique()) != 2:
+                continue
+
+            # Check minimum samples per class
+            class_counts = y_concordant.value_counts()
+            if class_counts.min() < 10:
+                continue
+
+            # Create filtered split_data for concordant samples
+            # Split back into train/val (80/20)
+            X_train_conc, X_val_conc, y_train_conc, y_val_conc = train_test_split(
+                X_concordant,
+                y_concordant,
+                train_size=0.8,
+                stratify=y_concordant,
+                random_state=42,
+                shuffle=True,
+            )
+
+            filtered_split_data = {
+                "X_train": X_train_conc,
+                "y_train": y_train_conc,
+                "X_val": X_val_conc,
+                "y_val": y_val_conc,
+            }
+
+            # Run for multiple seeds
+            feature_lists = []
+            for seed in range(n_seeds):
+                try:
+                    top_features = train_and_get_top_features_split(
+                        filtered_split_data, random_state=seed, n_features=n_features
+                    )
+                    feature_lists.append(top_features)
+                except Exception as e:
+                    print(f"Error in {key} with seed {seed}: {e}")
+                    continue
+
+            # Get consistent features
+            if len(feature_lists) > 0:
+                consistent_features = get_consistent_features(
+                    feature_lists, threshold=threshold
+                )
+                results[key] = consistent_features
+
+    return results
+
+
 def analyze_individual_datasets(
     datasets: Sequence[str],
     phenotypes: Sequence[str],
@@ -600,29 +801,46 @@ def compare_features(
     individual_results: dict[str, dict[str, list[str]]],
 ) -> pd.DataFrame:
     """
-    Compare features between combined and individual dataset models.
+    Compare features between combined train-test splits and individual dataset models.
+
+    For each combination where the dataset was not used in training the combined model,
+    find the intersection and unique features.
 
     Parameters
     ----------
     combined_results : dict[str, list[str]]
-        Results from all datasets combined: {phenotype: [features]}
+        Results from combined splits: {key: [features]}
     individual_results : dict[str, dict[str, list[str]]]
         Results from individual datasets: {dataset: {phenotype: [features]}}
 
     Returns
     -------
     pd.DataFrame
-        Comparison summary DataFrame
+        Comparison summary DataFrame with structure:
+        comparison, phenotype, test_dataset, n_combined_features, n_individual_features,
+        n_intersection, n_unique_to_individual, n_unique_to_combined, intersection,
+        unique_to_individual, unique_to_combined
     """
     summary_data = []
 
-    for dataset in individual_results:
-        for phenotype in individual_results[dataset]:
-            if phenotype not in combined_results:
-                continue
+    for combined_key, combined_features in combined_results.items():
+        # Extract phenotype and test dataset
+        phenotype = combined_key.split("_")[0]
+        test_dataset = get_test_dataset_from_key(combined_key)
 
-            combined_features = combined_results[phenotype]
-            individual_features = individual_results[dataset][phenotype]
+        if test_dataset is None:
+            continue
+
+        # Check if this is one of our target datasets
+        if test_dataset not in ["atleaf", "lit", "marine"]:
+            continue
+
+        # Check if we have individual results for this dataset/phenotype
+        if (
+            test_dataset in individual_results
+            and phenotype in individual_results[test_dataset]
+        ):
+            individual_features = individual_results[test_dataset][phenotype]
 
             # Calculate intersection and unique features
             combined_set = set(combined_features)
@@ -632,11 +850,12 @@ def compare_features(
             unique_to_individual = sorted(list(individual_set - combined_set))
             unique_to_combined = sorted(list(combined_set - individual_set))
 
+            comparison_key = f"{phenotype}_{test_dataset}"
             summary_data.append(
                 {
-                    "comparison": f"{phenotype}_{dataset}",
+                    "comparison": comparison_key,
                     "phenotype": phenotype,
-                    "test_dataset": dataset,
+                    "test_dataset": test_dataset,
                     "n_combined_features": len(combined_features),
                     "n_individual_features": len(individual_features),
                     "n_intersection": len(intersection),
@@ -656,6 +875,7 @@ def main() -> None:
     Main function to generate Figure 5B data (concordant samples only).
     """
     # Define paths
+    SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure5")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -667,7 +887,6 @@ def main() -> None:
     THRESHOLD = 0.7
     N_FEATURES = 10
     DATASETS = ["atleaf", "lit", "marine"]
-    ALL_DATASETS = ["atleaf", "lit", "marine", "pmi"]
 
     # Load GapMind predictions and experimental phenotypes
     print("Loading GapMind predictions (loose)...")
@@ -678,9 +897,10 @@ def main() -> None:
     experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
     print(f"  Loaded {len(experimental_phenotypes)} genomes")
 
-    # Get common phenotypes
+    # Get common phenotypes from dataset_split directory
+    dataset_split_dir = SPLITS_DIR / "dataset_split"
     COMMON_PHENOTYPES = sorted(
-        list(set(gapmind_predictions.columns) & set(experimental_phenotypes.columns))
+        [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
     )
     print(f"\nCommon phenotypes to analyze: {len(COMMON_PHENOTYPES)}")
 
@@ -688,11 +908,45 @@ def main() -> None:
     print("Figure 5B: SHAP-based Feature Importance (Concordant Samples Only)")
     print("=" * 80)
 
-    # Analyze individual datasets
+    # Step 1: Analyze combined train-test splits (concordant samples)
+    combined_file = OUTPUT_DIR / "figure5b_combined_splits_shap_features.json"
+
+    print("\nStep 1: Analyzing combined train-test splits (concordant samples)...")
+    print(f"  - Running {N_SEEDS} random seeds per split")
+    print(f"  - Extracting top {N_FEATURES} features per run")
+    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
+
+    combined_results = analyze_combined_splits(
+        SPLITS_DIR,
+        gapmind_predictions,
+        experimental_phenotypes,
+        n_seeds=N_SEEDS,
+        threshold=THRESHOLD,
+        n_features=N_FEATURES,
+    )
+
+    # Filter to only include common phenotypes
+    combined_results_filtered = {
+        k: v
+        for k, v in combined_results.items()
+        if k.split("_")[0] in COMMON_PHENOTYPES
+    }
+
+    print(
+        f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (concordant samples)"
+    )
+
+    # Save combined results
+    with open(combined_file, "w") as f:
+        json.dump(combined_results_filtered, f, indent=2)
+    print(f"Saved combined results to: {combined_file}")
+
+    # Step 2: Analyze individual datasets (concordant samples)
     individual_file = OUTPUT_DIR / "figure5b_individual_datasets_shap_features.json"
 
-    print(f"\nAnalyzing individual datasets: {DATASETS}")
+    print(f"\nStep 2: Analyzing individual datasets: {DATASETS}")
     print(f"  - Concordant samples only")
+    print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
     print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
     print(f"  - Extracting top {N_FEATURES} features per run")
     print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
@@ -716,39 +970,11 @@ def main() -> None:
         json.dump(individual_results, f, indent=2)
     print(f"Saved individual results to: {individual_file}")
 
-    # Analyze all datasets combined
-    all_combined_file = OUTPUT_DIR / "figure5b_all_datasets_combined_shap_features.json"
-
-    print(f"\nAnalyzing all datasets combined: {ALL_DATASETS}")
-    print(f"  - Concordant samples only")
-    print(f"  - Running {N_SEEDS} random seeds per phenotype")
-    print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
-
-    all_combined_results = analyze_all_datasets_combined(
-        ALL_DATASETS,
-        COMMON_PHENOTYPES,
-        gapmind_predictions,
-        experimental_phenotypes,
-        n_seeds=N_SEEDS,
-        threshold=THRESHOLD,
-        n_features=N_FEATURES,
-    )
-
-    print(
-        f"\nCompleted analysis for all datasets combined: {len(all_combined_results)} phenotypes"
-    )
-
-    # Save all combined results
-    with open(all_combined_file, "w") as f:
-        json.dump(all_combined_results, f, indent=2)
-    print(f"Saved all combined results to: {all_combined_file}")
-
-    # Compare features
+    # Step 3: Compare features between combined splits and individual datasets
     comparison_file = OUTPUT_DIR / "figure5b_feature_comparison_summary.csv"
 
-    print("\nComparing features between combined and individual models...")
-    summary_df = compare_features(all_combined_results, individual_results)
+    print("\nStep 3: Comparing features between combined splits and individual models...")
+    summary_df = compare_features(combined_results_filtered, individual_results)
 
     print(f"\nFound {len(summary_df)} valid comparisons")
 
@@ -760,10 +986,10 @@ def main() -> None:
     print("Summary Statistics")
     print("=" * 80)
 
+    print(f"\nCombined splits analyzed (concordant): {len(combined_results_filtered)}")
     print(
-        f"\nIndividual dataset/phenotype combinations: {sum(len(p) for p in individual_results.values())}"
+        f"Individual dataset/phenotype combinations: {sum(len(p) for p in individual_results.values())}"
     )
-    print(f"All datasets combined phenotypes analyzed: {len(all_combined_results)}")
     print(f"Valid comparisons: {len(summary_df)}")
 
     if len(summary_df) > 0:
