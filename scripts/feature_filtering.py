@@ -23,6 +23,7 @@ FEATURE_DIR = Path("data/interim/features")
 OUTPUT_DIR = Path("data/processed/features_reduced")
 DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
 FEATURE_TYPES = ["kofam", "rast"]
+CORRELATION_METHOD = "spearman" if FEATURE_TYPES == ["gapmind"] else "pearson"
 
 
 def load_and_combine_datasets(feature_type: str) -> pd.DataFrame:
@@ -89,7 +90,7 @@ def filter_combined_features(
     # Apply correlation filtering using Feature class method
     filtered_df, high_corr_features_dict = (
         Feature.remove_features_with_high_correlation(
-            filtered_df, CORRELATION_THRESHOLD, parallel=True
+            filtered_df, CORRELATION_THRESHOLD, parallel=True, method=CORRELATION_METHOD
         )
     )
     print(f"  After correlation filtering: {filtered_df.shape[1]} features remaining")
