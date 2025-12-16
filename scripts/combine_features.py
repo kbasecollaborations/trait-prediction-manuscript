@@ -4,10 +4,11 @@ Combine GapMind, KOFAM, and RAST features with correlation filtering.
 
 This script:
 1. Loads GapMind, KOFAM, and RAST features from the reduced features directory
-2. Removes RAST features that are correlated with KOFAM features (Pearson correlation)
-3. Removes KOFAM features that are correlated with GapMind features (Spearman correlation)
-4. Combines the remaining features into a single feature matrix
-5. Saves the combined feature matrix and the lists of removed features
+2. Filters to common genomes present in all three feature sets
+3. Removes RAST features that are correlated with KOFAM features (Pearson correlation)
+4. Removes KOFAM features that are correlated with GapMind features (Spearman correlation)
+5. Combines the remaining features into a single feature matrix
+6. Saves the combined feature matrix and the lists of removed features
 """
 
 import gzip
@@ -128,6 +129,24 @@ def main() -> None:
     )
     print(f"    Shape: {rast_features.shape}")
 
+    # Get common genomes across all feature matrices
+    print("\nFinding common genomes across all feature matrices...")
+    common_genomes = (
+        gapmind_features.index.intersection(kofam_features.index).intersection(
+            rast_features.index
+        )
+    )
+    print(f"  Common genomes: {len(common_genomes)}")
+    print(f"    GapMind: {len(gapmind_features)}")
+    print(f"    KOFAM: {len(kofam_features)}")
+    print(f"    RAST: {len(rast_features)}")
+
+    # Filter all feature matrices to only include common genomes
+    print("\nFiltering to common genomes...")
+    gapmind_features = gapmind_features.loc[common_genomes]
+    kofam_features = kofam_features.loc[common_genomes]
+    rast_features = rast_features.loc[common_genomes]
+
     # Step 1: Remove RAST features correlated with KOFAM features (Pearson)
     print("\n" + "=" * 80)
     print("Step 1: Remove RAST features correlated with KOFAM features")
@@ -172,30 +191,18 @@ def main() -> None:
     print("Step 3: Combine all remaining features")
     print("=" * 80)
 
-    # Get all unique genomeIDs across all feature matrices
-    all_genomes = (
-        gapmind_features.index.union(kofam_features_filtered.index).union(
-            rast_features_filtered.index
-        )
-    )
-
-    print(f"Total unique genomes: {len(all_genomes)}")
-
-    # Reindex all matrices to have the same genomes, filling missing values with 0
-    gapmind_features_aligned = gapmind_features.reindex(all_genomes, fill_value=0)
-    kofam_features_aligned = kofam_features_filtered.reindex(all_genomes, fill_value=0)
-    rast_features_aligned = rast_features_filtered.reindex(all_genomes, fill_value=0)
-
-    # Concatenate along columns
+    # All feature matrices already have the same genomes (common genomes)
+    # Just concatenate along columns
     combined_features = pd.concat(
-        [gapmind_features_aligned, kofam_features_aligned, rast_features_aligned],
+        [gapmind_features, kofam_features_filtered, rast_features_filtered],
         axis=1,
     )
 
     print(f"\nCombined feature matrix shape: {combined_features.shape}")
-    print(f"  GapMind features: {gapmind_features_aligned.shape[1]}")
-    print(f"  KOFAM features: {kofam_features_aligned.shape[1]}")
-    print(f"  RAST features: {rast_features_aligned.shape[1]}")
+    print(f"  Genomes: {combined_features.shape[0]}")
+    print(f"  GapMind features: {gapmind_features.shape[1]}")
+    print(f"  KOFAM features: {kofam_features_filtered.shape[1]}")
+    print(f"  RAST features: {rast_features_filtered.shape[1]}")
     print(f"  Total features: {combined_features.shape[1]}")
 
     # Step 4: Save combined feature matrix
@@ -217,14 +224,15 @@ def main() -> None:
         },
         "summary": {
             "correlation_threshold": CORRELATION_THRESHOLD,
+            "common_genomes": len(common_genomes),
             "rast_features_removed": len(rast_kofam_correlated),
             "kofam_features_removed": len(kofam_gapmind_correlated),
             "original_gapmind_features": gapmind_features.shape[1],
             "original_kofam_features": kofam_features.shape[1],
             "original_rast_features": rast_features.shape[1],
-            "final_gapmind_features": gapmind_features_aligned.shape[1],
-            "final_kofam_features": kofam_features_aligned.shape[1],
-            "final_rast_features": rast_features_aligned.shape[1],
+            "final_gapmind_features": gapmind_features.shape[1],
+            "final_kofam_features": kofam_features_filtered.shape[1],
+            "final_rast_features": rast_features_filtered.shape[1],
             "total_combined_features": combined_features.shape[1],
         },
     }
