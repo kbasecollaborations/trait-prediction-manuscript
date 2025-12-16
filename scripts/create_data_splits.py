@@ -2,11 +2,12 @@
 """Script to generate training data splits for the ML pipeline.
 
 This script creates train/validation/test splits using three different strategies:
-1. Random split (cluster-based)
+1. Random split (cluster-based on phenotype data)
 2. Dataset split (leave-one-dataset-out)
 3. Phylogeny split (in-clade and out-of-clade)
 
-The splits are created for all common phenotypes across all 4 datasets using kofam features.
+The splits are created for all common phenotypes across all 4 datasets.
+Output files contain only phenotype labels (y_train, y_val, y_test).
 """
 
 from pathlib import Path
@@ -22,7 +23,6 @@ from scripts.splitter import InCladeSplitter, LargeTreeTraverseOOCSplitter
 RANDOM_STATE = 42
 OUTPUT_DIR = Path("data/processed/train_test_splits")
 PHENOTYPE_DIR = Path("data/processed/phenotypes")
-FEATURE_DIR = Path("data/processed/features_reduced")
 PHYLOGENY_DIR = Path("data/processed/phylogeny")
 
 # All four datasets
@@ -58,30 +58,19 @@ def create_sample_map() -> dict[str, str]:
     """
     sample_map = {}
     for dataset_name in DATASET_SUBSET:
-        curr_dataset_dir = FEATURE_DIR / dataset_name
-        feature_file = curr_dataset_dir / "kofam.tsv"
-        feature_data = pd.read_csv(
-            feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
-        )
-        samples = feature_data.index.tolist()
-        for sample in samples:
-            sample_map[sample] = dataset_name
+        # Get samples from the first available phenotype file for this dataset
+        curr_dataset_dir = PHENOTYPE_DIR / dataset_name
+        phenotype_files = list(curr_dataset_dir.glob("*.tsv"))
+        if phenotype_files:
+            phenotype_data = pd.read_csv(
+                phenotype_files[0], sep="\t", index_col=0, dtype={"genomeID": str}
+            )
+            samples = phenotype_data.index.tolist()
+            for sample in samples:
+                sample_map[sample] = dataset_name
     return sample_map
 
 
-def load_combined_features() -> pd.DataFrame:
-    """Load combined kofam features from the combined_datasets folder.
-
-    Returns
-    -------
-    pd.DataFrame
-        Combined feature matrix with samples as rows and features as columns.
-    """
-    feature_file = FEATURE_DIR / "combined_datasets" / "kofam.tsv"
-    feature_data = pd.read_csv(
-        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
-    return feature_data
 
 
 def load_phenotype_data() -> dict[str, pd.DataFrame]:
@@ -110,51 +99,45 @@ def load_phenotype_data() -> dict[str, pd.DataFrame]:
     return phenotype_data_dict
 
 
-def create_xy_data(
-    feature_data: pd.DataFrame, phenotype_data_dict: dict[str, pd.DataFrame]
-) -> dict[str, tuple[pd.DataFrame, pd.DataFrame]]:
-    """Create X, y pairs for each phenotype.
+def create_y_data(
+    phenotype_data_dict: dict[str, pd.DataFrame]
+) -> dict[str, pd.DataFrame]:
+    """Create y data for each phenotype.
 
     Parameters
     ----------
-    feature_data : pd.DataFrame
-        Combined feature matrix.
     phenotype_data_dict : dict[str, pd.DataFrame]
         Dictionary of phenotype data frames.
 
     Returns
     -------
-    dict[str, tuple[pd.DataFrame, pd.DataFrame]]
-        Dictionary mapping phenotype names to (X, y) tuples.
+    dict[str, pd.DataFrame]
+        Dictionary mapping phenotype names to y DataFrames.
     """
-    xy_data = {}
+    y_data = {}
     for phenotype_name in COMMON_PHENOTYPES:
         if phenotype_name not in phenotype_data_dict:
             print(f"Warning: {phenotype_name} not found in phenotype data")
             continue
 
         phenotype_data = phenotype_data_dict[phenotype_name]
-        common_index = feature_data.index.intersection(phenotype_data.index)
-        X = feature_data.loc[common_index, :]
-        y = phenotype_data.loc[common_index, :]
+        y = phenotype_data.copy()
 
         # Drop rows where phenotype data is missing
         mask = ~y.isna().any(axis=1)
-        X = X.loc[mask, :]
         y = y.loc[mask, :]
 
         # Convert phenotype data to int
         y = y.astype(int)
 
         print(f"Phenotype: {phenotype_name}")
-        print(f"  X shape: {X.shape}, y shape: {y.shape}")
-        xy_data[phenotype_name] = (X, y)
+        print(f"  y shape: {y.shape}")
+        y_data[phenotype_name] = y
 
-    return xy_data
+    return y_data
 
 
 def cluster_based_split(
-    X: pd.DataFrame,
     y: pd.DataFrame,
     split_ratio: dict[str, float],
     n_clusters: int | None = None,
@@ -164,8 +147,6 @@ def cluster_based_split(
 
     Parameters
     ----------
-    X : pd.DataFrame
-        Feature matrix.
     y : pd.DataFrame
         Target matrix.
     split_ratio : dict[str, float]
@@ -184,15 +165,15 @@ def cluster_based_split(
 
     np.random.seed(random_state)
     if n_clusters is None:
-        n_clusters = int(np.sqrt(len(X)))
+        n_clusters = int(np.sqrt(len(y)))
 
     clustering = AgglomerativeClustering(n_clusters=n_clusters, linkage="average")
-    cluster_labels = clustering.fit_predict(X)
+    cluster_labels = clustering.fit_predict(y)
 
     train_indices, val_indices, test_indices = [], [], []
     for cluster_id in np.unique(cluster_labels):
         cluster_mask = cluster_labels == cluster_id
-        cluster_samples = X.index[cluster_mask]
+        cluster_samples = y.index[cluster_mask]
         cluster_samples = np.random.permutation(cluster_samples)
         n_cluster_samples = len(cluster_samples)
         n_train = int(split_ratio["train"] * n_cluster_samples)
@@ -205,7 +186,6 @@ def cluster_based_split(
 
 
 def save_split(
-    X: pd.DataFrame,
     y: pd.DataFrame,
     split_dict: dict[str, list[str]],
     output_dir: Path,
@@ -214,8 +194,6 @@ def save_split(
 
     Parameters
     ----------
-    X : pd.DataFrame
-        Feature matrix.
     y : pd.DataFrame
         Target matrix.
     split_dict : dict[str, list[str]]
@@ -225,69 +203,62 @@ def save_split(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    X_train = X.loc[split_dict["train"], :]
-    X_val = X.loc[split_dict["val"], :]
-    X_test = X.loc[split_dict["test"], :]
     y_train = y.loc[split_dict["train"]].astype(int)
     y_val = y.loc[split_dict["val"]].astype(int)
     y_test = y.loc[split_dict["test"]].astype(int)
 
-    X_train.to_csv(output_dir / "X_train.tsv", sep="\t", index=True)
-    X_val.to_csv(output_dir / "X_val.tsv", sep="\t", index=True)
-    X_test.to_csv(output_dir / "X_test.tsv", sep="\t", index=True)
     y_train.to_csv(output_dir / "y_train.tsv", sep="\t", index=True)
     y_val.to_csv(output_dir / "y_val.tsv", sep="\t", index=True)
     y_test.to_csv(output_dir / "y_test.tsv", sep="\t", index=True)
 
 
-def create_random_splits(xy_data: dict[str, tuple[pd.DataFrame, pd.DataFrame]]) -> None:
+def create_random_splits(y_data: dict[str, pd.DataFrame]) -> None:
     """Create cluster-based random splits for all phenotypes.
 
     Parameters
     ----------
-    xy_data : dict[str, tuple[pd.DataFrame, pd.DataFrame]]
-        Dictionary mapping phenotype names to (X, y) tuples.
+    y_data : dict[str, pd.DataFrame]
+        Dictionary mapping phenotype names to y DataFrames.
     """
     print("\n=== Creating random splits ===")
-    for phenotype_name in xy_data:
+    for phenotype_name in y_data:
         print(f"Processing {phenotype_name}...")
         output_dir = OUTPUT_DIR / f"random_split/{phenotype_name}"
-        X, y = xy_data[phenotype_name]
+        y = y_data[phenotype_name]
         for i in range(5):
             curr_output_dir = output_dir / f"{i}"
             split_dict = cluster_based_split(
-                X,
                 y,
                 split_ratio={"train": 0.7, "val": 0.15, "test": 0.15},
                 random_state=RANDOM_STATE + i,
             )
-            save_split(X, y, split_dict, curr_output_dir)
+            save_split(y, split_dict, curr_output_dir)
 
 
 def create_dataset_splits(
-    xy_data: dict[str, tuple[pd.DataFrame, pd.DataFrame]], sample_map: dict[str, str]
+    y_data: dict[str, pd.DataFrame], sample_map: dict[str, str]
 ) -> None:
     """Create leave-one-dataset-out splits for all phenotypes.
 
     Parameters
     ----------
-    xy_data : dict[str, tuple[pd.DataFrame, pd.DataFrame]]
-        Dictionary mapping phenotype names to (X, y) tuples.
+    y_data : dict[str, pd.DataFrame]
+        Dictionary mapping phenotype names to y DataFrames.
     sample_map : dict[str, str]
         Mapping from sample IDs to dataset names.
     """
     print("\n=== Creating dataset splits ===")
-    for phenotype_name in xy_data:
+    for phenotype_name in y_data:
         print(f"Processing {phenotype_name}...")
         output_dir = OUTPUT_DIR / f"dataset_split/{phenotype_name}"
-        X, y = xy_data[phenotype_name]
+        y = y_data[phenotype_name]
         for dataset_name in DATASET_SUBSET:
             training_datasets = [d for d in DATASET_SUBSET if d != dataset_name]
             folder_name = f"train({'+'.join(training_datasets)}),test({dataset_name})"
             curr_output_dir = output_dir / folder_name
 
-            test_indices = [ind for ind in X.index if sample_map[ind] == dataset_name]
-            train_val_indices = [ind for ind in X.index if ind not in test_indices]
+            test_indices = [ind for ind in y.index if sample_map[ind] == dataset_name]
+            train_val_indices = [ind for ind in y.index if ind not in test_indices]
 
             # Skip if test set is empty
             if len(test_indices) == 0:
@@ -303,7 +274,7 @@ def create_dataset_splits(
                 "val": val_indices,
                 "test": test_indices,
             }
-            save_split(X, y, split_dict, curr_output_dir)
+            save_split(y, split_dict, curr_output_dir)
 
 
 def load_phylogeny() -> tuple[Tree, pd.DataFrame]:
@@ -344,28 +315,28 @@ def load_phylogeny() -> tuple[Tree, pd.DataFrame]:
 
 
 def create_phylogeny_splits(
-    xy_data: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
+    y_data: dict[str, pd.DataFrame],
 ) -> None:
     """Create phylogeny-based splits (in-clade and out-of-clade) for all phenotypes.
 
     Parameters
     ----------
-    xy_data : dict[str, tuple[pd.DataFrame, pd.DataFrame]]
-        Dictionary mapping phenotype names to (X, y) tuples.
+    y_data : dict[str, pd.DataFrame]
+        Dictionary mapping phenotype names to y DataFrames.
     """
     print("\n=== Creating phylogeny splits ===")
 
     # Load tree and distance matrix
     tree, distance_df = load_phylogeny()
 
-    for phenotype_name in xy_data:
+    for phenotype_name in y_data:
         print(f"Processing {phenotype_name}...")
         output_dir = OUTPUT_DIR / f"phylogeny_split/{phenotype_name}"
-        X, y = xy_data[phenotype_name]
+        y = y_data[phenotype_name]
 
         # Get samples that are in the tree
-        samples = [leaf for leaf in tree.iter_leaf_names() if leaf in X.index]
-        print(f"  {len(samples)} samples found in tree (out of {len(X)})")
+        samples = [leaf for leaf in tree.iter_leaf_names() if leaf in y.index]
+        print(f"  {len(samples)} samples found in tree (out of {len(y)})")
 
         for split_type in ["in-clade", "out-of-clade"]:
             print(f"  Creating {split_type} splits...")
@@ -400,7 +371,7 @@ def create_phylogeny_splits(
                     "val": val_indices,
                     "test": test_samples,
                 }
-                save_split(X, y, split_dict, curr_output_dir)
+                save_split(y, split_dict, curr_output_dir)
 
 
 def main() -> None:
@@ -415,24 +386,19 @@ def main() -> None:
     sample_map = create_sample_map()
     print(f"Total samples: {len(sample_map)}")
 
-    # Load features
-    print("\n=== Loading features ===")
-    feature_data = load_combined_features()
-    print(f"Feature matrix shape: {feature_data.shape}")
-
     # Load phenotypes
     print("\n=== Loading phenotypes ===")
     phenotype_data_dict = load_phenotype_data()
     print(f"Loaded {len(phenotype_data_dict)} phenotypes")
 
-    # Create X, y data
-    print("\n=== Creating X, y pairs ===")
-    xy_data = create_xy_data(feature_data, phenotype_data_dict)
+    # Create y data
+    print("\n=== Creating y data ===")
+    y_data = create_y_data(phenotype_data_dict)
 
     # Create all splits
-    create_random_splits(xy_data)
-    create_dataset_splits(xy_data, sample_map)
-    create_phylogeny_splits(xy_data)
+    create_random_splits(y_data)
+    create_dataset_splits(y_data, sample_map)
+    create_phylogeny_splits(y_data)
 
     print("\n=== Done! ===")
 
