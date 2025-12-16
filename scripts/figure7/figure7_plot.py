@@ -21,6 +21,11 @@ sns.set_context("paper")
 configure_plot_style()
 
 
+# Feature type to use: "gapmind", "kofam", or "rast"
+# Change this line to match the feature type used in figure7_data.py
+FEATURE_TYPE = "gapmind"
+
+
 def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Prepare data for plotting by formatting labels and names.
@@ -218,7 +223,7 @@ def plot_all_test_subsets(df: pd.DataFrame, output_dir: Path) -> None:
 
     for test_subset in test_subsets:
         subset_name = test_subset.lower().replace(" ", "_")
-        output_file = output_dir / f"figure7_{subset_name}.pdf"
+        output_file = output_dir / f"figure7_{FEATURE_TYPE}_{subset_name}.pdf"
         plot_performance_vs_sample_size(df, output_file, test_subset=test_subset)
 
 
@@ -353,7 +358,7 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
         )
 
         plt.tight_layout()
-        phenotype_file = output_file.parent / f"figure7_{phenotype.lower()}_all_tests.pdf"
+        phenotype_file = output_file.parent / f"figure7_{FEATURE_TYPE}_{phenotype.lower()}_all_tests.pdf"
         fig.savefig(phenotype_file, dpi=300, bbox_inches="tight")
         print(f"Saved plot to {phenotype_file}")
         plt.close()
@@ -403,10 +408,11 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
 def main() -> None:
     """Main function to generate Figure 7 plots."""
     # Load data
-    data_file = Path("data/outputs/figure7/figure7_data_requirements.csv")
+    data_file = Path(f"data/outputs/figure7/figure7_data_requirements_{FEATURE_TYPE}.csv")
     df = pd.read_csv(data_file)
 
     print(f"Loaded {len(df)} rows from {data_file}")
+    print(f"Feature type: {FEATURE_TYPE.upper()}")
 
     # Prepare data
     plot_data = prepare_plot_data(df)
@@ -421,7 +427,7 @@ def main() -> None:
     # Main plot: Full test set only
     print("  Creating main plot (Full Test)...")
     plot_performance_vs_sample_size(
-        plot_data, output_dir / "figure7.pdf", test_subset="Full Test"
+        plot_data, output_dir / f"figure7_{FEATURE_TYPE}.pdf", test_subset="Full Test"
     )
 
     # Individual plots for each test subset
@@ -430,7 +436,7 @@ def main() -> None:
 
     # Combined plots showing all test subsets per phenotype
     print("  Creating combined plots per phenotype...")
-    plot_combined_test_subsets(plot_data, output_dir / "figure7_combined.pdf")
+    plot_combined_test_subsets(plot_data, output_dir / f"figure7_{FEATURE_TYPE}_combined.pdf")
 
     # Print summary statistics
     print_summary_statistics(plot_data)

@@ -32,6 +32,10 @@ N_REPEATS = 3
 SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
 RANDOM_STATE = 42
 
+# Feature type to use: "gapmind", "kofam", or "rast"
+# Change this line to switch between feature types
+FEATURE_TYPE = "gapmind"
+
 # Scoring metrics
 SCORING = [
     "accuracy",
@@ -522,12 +526,14 @@ def main() -> None:
     """Main function to generate Figure 7 data."""
     # Define paths
     SPLITS_DIR = Path("data/processed/train_test_splits")
-    FEATURE_FILE = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
+    FEATURE_FILE = Path(
+        f"data/processed/features_reduced/combined_datasets/{FEATURE_TYPE}.tsv"
+    )
     OUTPUT_DIR = Path("data/outputs/figure7")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load features
-    print("Loading feature data...")
+    print(f"Loading {FEATURE_TYPE.upper()} feature data...")
     feature_data = pd.read_csv(
         FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
@@ -547,6 +553,7 @@ def main() -> None:
 
     # Run analysis
     print("\nRunning data requirements analysis...")
+    print(f"  Feature type: {FEATURE_TYPE.upper()}")
     print(f"  Phenotypes: {PHENOTYPES_TO_ANALYZE}")
     print(f"  Sample sizes: {SAMPLE_SIZES}")
     print(f"  Repeats per configuration: {N_REPEATS}")
@@ -555,8 +562,11 @@ def main() -> None:
 
     results = run_data_requirements_analysis(split_data, feature_data, gapmind_data)
 
+    # Add feature type to results
+    results["feature_type"] = FEATURE_TYPE
+
     # Save results
-    results_file = OUTPUT_DIR / "figure7_data_requirements.csv"
+    results_file = OUTPUT_DIR / f"figure7_data_requirements_{FEATURE_TYPE}.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
