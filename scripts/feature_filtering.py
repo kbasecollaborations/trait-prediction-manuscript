@@ -22,8 +22,10 @@ CORRELATION_THRESHOLD = 0.95
 FEATURE_DIR = Path("data/interim/features")
 OUTPUT_DIR = Path("data/processed/features_reduced")
 DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
-FEATURE_TYPES = ["kofam", "rast"]
-CORRELATION_METHOD = "spearman" if FEATURE_TYPES == ["gapmind"] else "pearson"
+# FEATURE_TYPES = ["kofam", "rast"]
+# CORRELATION_METHOD = "pearson"
+FEATURE_TYPES = ["gapmind"]
+CORRELATION_METHOD = "spearman"
 
 
 def load_and_combine_datasets(feature_type: str) -> pd.DataFrame:
