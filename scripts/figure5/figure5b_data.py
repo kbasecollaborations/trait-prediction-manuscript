@@ -258,7 +258,7 @@ def load_individual_dataset(
     )
 
     # Load features using the proper reading functions
-    feature_set = read_features([features_path])
+    feature_set = read_features([features_path], ftype="int")
 
     # Load phenotype using the proper reading functions
     phenotype_set = read_phenotypes([phenotype_path])

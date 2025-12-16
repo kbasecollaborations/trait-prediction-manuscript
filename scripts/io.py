@@ -25,7 +25,7 @@ def index_format_func(x):
     )
 
 
-def read_features(feature_files: Iterable[Path]) -> FeatureSet:
+def read_features(feature_files: Iterable[Path], ftype: str = "binary") -> FeatureSet:
     """Read feature files and create a FeatureSet.
 
     Parameters
@@ -41,7 +41,17 @@ def read_features(feature_files: Iterable[Path]) -> FeatureSet:
     feature_inputs: list[FeatureInput] = []
     for feature_file in feature_files:
         feature_name = f"{feature_file.parent.stem}_{feature_file.stem}"
-        findex = FeatureIndex(feature_name, ftype="binary", dtype="uint8")
+        if ftype == "binary":
+            dtype = "uint8"
+        elif ftype == "count":
+            dtype = "uint32"
+        elif ftype == "float":
+            dtype = "float32"
+        elif ftype == "int":
+            dtype = "int32"
+        else:
+            raise ValueError(f"Unknown feature type: {ftype}")
+        findex = FeatureIndex(feature_name, ftype=ftype, dtype=dtype)
         finput = FeatureInput(feature_file, findex, index_format_func)
         feature_inputs.append(finput)
     feature_set = FeatureSet.read_data(feature_inputs)
