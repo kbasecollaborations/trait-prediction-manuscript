@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""
+Create Figure 6D: Comparing combined vs phenotype-filtered features.
+
+This figure shows the performance difference between:
+1. Combined features (GapMind + KOFAM + RAST)
+2. Phenotype-filtered features (GapMind features specific to each phenotype)
+
+Performance is shown for both random split and dataset split approaches.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import scienceplots
+import seaborn as sns
+from matplotlib.axes import Axes
+
+from scripts.visualization import configure_plot_style
+
+plt.style.use(["science", "nature"])
+sns.set_context("paper")
+configure_plot_style()
+
+
+def plot_split_comparison(
+    ax: Axes,
+    data: pd.DataFrame,
+    split_type: str,
+    phenotypes: list[str],
+    title: str,
+) -> None:
+    """
+    Plot comparison for a single split type.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to plot on.
+    data : pd.DataFrame
+        Results dataframe filtered for this split type.
+    split_type : str
+        Name of split type (for filtering).
+    phenotypes : list[str]
+        List of phenotypes in order.
+    title : str
+        Subplot title.
+    """
+    # Filter data for this split type
+    split_data = data[data["split_type"] == split_type].copy()
+
+    # Calculate mean and std for each phenotype and experiment
+    summary = (
+        split_data.groupby(["phenotype", "experiment"])["balanced_accuracy"]
+        .agg(["mean", "std", "count"])
+        .reset_index()
+    )
+
+    x = np.arange(len(phenotypes))
+    width = 0.35
+
+    # Separate combined and filtered data
+    combined_data = summary[summary["experiment"] == "combined"].set_index("phenotype")
+    filtered_data = summary[summary["experiment"] == "phenotype_filtered"].set_index(
+        "phenotype"
+    )
+
+    # Align with phenotypes order
+    combined_means = [
+        combined_data.loc[p, "mean"] if p in combined_data.index else np.nan
+        for p in phenotypes
+    ]
+    combined_stds = [
+        combined_data.loc[p, "std"] if p in combined_data.index else 0
+        for p in phenotypes
+    ]
+    filtered_means = [
+        filtered_data.loc[p, "mean"] if p in filtered_data.index else np.nan
+        for p in phenotypes
+    ]
+    filtered_stds = [
+        filtered_data.loc[p, "std"] if p in filtered_data.index else 0
+        for p in phenotypes
+    ]
+
+    # Create bars
+    bars1 = ax.bar(
+        x - width / 2,
+        combined_means,
+        width,
+        yerr=combined_stds,
+        label="Combined Features\n(GapMind + KOFAM + RAST)",
+        color="#2E86AB",
+        alpha=0.7,
+        capsize=3,
+    )
+    bars2 = ax.bar(
+        x + width / 2,
+        filtered_means,
+        width,
+        yerr=filtered_stds,
+        label="Phenotype-Filtered\n(GapMind only)",
+        color="#E63946",
+        alpha=0.7,
+        capsize=3,
+    )
+
+    # Add alternating background colors
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+
+    # Formatting
+    ax.set_ylabel("Balanced Accuracy")
+    ax.set_xlabel("Phenotype")
+    ax.set_title(title, pad=10)
+    ax.set_xticks(x)
+    ax.set_xticklabels(phenotypes, rotation=45, ha="right")
+    ax.set_ylim(0, 1.05)
+    ax.legend(loc="upper right", frameon=False)
+
+    # Add feature count annotation
+    # Get average feature counts for this split type
+    combined_n_features = (
+        split_data[split_data["experiment"] == "combined"]["n_features"]
+        .mean()
+    )
+    filtered_n_features = (
+        split_data[split_data["experiment"] == "phenotype_filtered"]["n_features"]
+        .mean()
+    )
+
+    # Add text annotation for feature counts
+    if not np.isnan(combined_n_features):
+        ax.text(
+            0.02,
+            0.98,
+            f"Combined: ~{int(combined_n_features)} features",
+            transform=ax.transAxes,
+            verticalalignment="top",
+            fontsize=8,
+            color="#2E86AB",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        )
+    if not np.isnan(filtered_n_features):
+        ax.text(
+            0.02,
+            0.90,
+            f"Filtered: ~{int(filtered_n_features)} features (avg)",
+            transform=ax.transAxes,
+            verticalalignment="top",
+            fontsize=8,
+            color="#E63946",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        )
+
+
+def create_figure(
+    data_file: Path,
+    output_file: Path,
+    phenotype_order: list[str] | None = None,
+) -> None:
+    """
+    Create Figure 6D showing combined vs phenotype-filtered features comparison.
+
+    Parameters
+    ----------
+    data_file : Path
+        Path to CSV file with results from figure6d_data.py.
+    output_file : Path
+        Path to save the output figure.
+    phenotype_order : list[str] | None
+        Order of phenotypes for x-axis. If None, uses alphabetical order.
+    """
+    # Load data
+    df = pd.read_csv(data_file)
+
+    # Get unique phenotypes
+    if phenotype_order is None:
+        phenotypes = sorted(df["phenotype"].unique())
+    else:
+        # Filter to only phenotypes that are in the data
+        phenotypes = [p for p in phenotype_order if p in df["phenotype"].values]
+
+    # Create figure with 2 subplots (one for each split type)
+    fig, axes = plt.subplots(2, 1, figsize=(12, 12))
+
+    # Plot random split
+    plot_split_comparison(
+        axes[0],
+        df,
+        "random_split",
+        phenotypes,
+        title="A. Random Split: Combined vs Phenotype-Filtered Features",
+    )
+
+    # Plot dataset split
+    plot_split_comparison(
+        axes[1],
+        df,
+        "dataset_split",
+        phenotypes,
+        title="B. Dataset Split: Combined vs Phenotype-Filtered Features",
+    )
+
+    # Adjust layout
+    plt.tight_layout()
+    fig.savefig(output_file, dpi=300, bbox_inches="tight")
+    print(f"Saved plot to {output_file}")
+    plt.close()
+
+    # Print summary statistics
+    print("\n" + "=" * 80)
+    print("Summary: Combined vs Phenotype-Filtered Features")
+    print("=" * 80)
+
+    for split_type in ["random_split", "dataset_split"]:
+        split_data = df[df["split_type"] == split_type]
+
+        print(f"\n{split_type.replace('_', ' ').title()}:")
+
+        for experiment in ["combined", "phenotype_filtered"]:
+            exp_data = split_data[split_data["experiment"] == experiment]
+            if len(exp_data) > 0:
+                mean_ba = exp_data["balanced_accuracy"].mean()
+                std_ba = exp_data["balanced_accuracy"].std()
+                mean_features = exp_data["n_features"].mean()
+                print(f"  {experiment.replace('_', ' ').title()}:")
+                print(f"    Balanced Accuracy: {mean_ba:.4f} ± {std_ba:.4f}")
+                print(f"    Features: ~{int(mean_features)}")
+
+        # Calculate difference
+        combined_mean = split_data[split_data["experiment"] == "combined"][
+            "balanced_accuracy"
+        ].mean()
+        filtered_mean = split_data[split_data["experiment"] == "phenotype_filtered"][
+            "balanced_accuracy"
+        ].mean()
+
+        if not np.isnan(combined_mean) and not np.isnan(filtered_mean):
+            diff = filtered_mean - combined_mean
+            pct_diff = (diff / combined_mean) * 100 if combined_mean != 0 else 0
+            print(f"  Difference (Filtered - Combined): {diff:+.4f} ({pct_diff:+.2f}%)")
+
+    # Print per-phenotype comparison
+    print("\n" + "=" * 80)
+    print("Per-Phenotype Comparison (Dataset Split)")
+    print("=" * 80)
+
+    dataset_split_data = df[df["split_type"] == "dataset_split"]
+    phenotype_summary = (
+        dataset_split_data.groupby(["phenotype", "experiment"])["balanced_accuracy"]
+        .mean()
+        .unstack(fill_value=np.nan)
+    )
+
+    if "combined" in phenotype_summary.columns and "phenotype_filtered" in phenotype_summary.columns:
+        phenotype_summary["difference"] = (
+            phenotype_summary["phenotype_filtered"] - phenotype_summary["combined"]
+        )
+        phenotype_summary = phenotype_summary.sort_values("difference", ascending=False)
+        print(phenotype_summary.round(4))
+
+
+if __name__ == "__main__":
+    data_dir = Path("data/outputs/figure6")
+    data_file = data_dir / "figure6d_all_results.csv"
+    output_file = Path("figures/figure6d.pdf")
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Define phenotype order (matching common phenotypes from figure3)
+    phenotype_order = [
+        "Alanine",
+        "Arginine",
+        "Histidine",
+        "Serine",
+        "Fructose",
+        "Galactose",
+        "Maltose",
+        "Mannose",
+        "Sucrose",
+        "m-Inositol",
+        "Mannitol",
+        "Glycerol",
+        "Galacturonic-Acid",
+        "Cellobiose",
+    ]
+
+    create_figure(data_file, output_file, phenotype_order)
