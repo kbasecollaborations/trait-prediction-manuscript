@@ -363,6 +363,7 @@ def create_misclassification_plots(
     bars1 = ax1.bar(
         range(len(datasets)),
         cat1_data["count"],
+        width=0.4,
         color=[dataset_colors[d] for d in datasets],
         alpha=0.7,
         zorder=2,
@@ -385,6 +386,7 @@ def create_misclassification_plots(
     bars2 = ax2.bar(
         range(len(datasets)),
         cat2_data["count"],
+        width=0.4,
         color=[dataset_colors[d] for d in datasets],
         alpha=0.7,
         zorder=2,
@@ -439,6 +441,7 @@ def create_misclassification_plots(
     bars3 = ax3.barh(
         range(len(top_20_df)),
         top_20_df["count"],
+        height=0.6,
         color=top_20_df["color"],
         alpha=0.7,
         zorder=2,
@@ -451,10 +454,13 @@ def create_misclassification_plots(
     #     pad=20,
     # )
     ax3.set_yticks(range(len(top_20_df)))
-    # Shorten genome IDs for readability
-    short_labels = ["_".join(str(gid).split("_")[:2]) for gid in top_20_df["genome_id"]]
-    ax3.set_yticklabels(short_labels, fontsize=9)
+    # Shorten genome IDs for readability - use only first part
+    short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
+    ax3.set_yticklabels(short_labels, fontsize=8)
     ax3.invert_yaxis()  # Highest misclassified at top
+
+    # Adjust tick parameters to prevent label overlap
+    ax3.tick_params(axis='y', which='major', pad=2)
 
     # Set x-axis limit to make bars shorter
     max_count = top_20_df["count"].max()
