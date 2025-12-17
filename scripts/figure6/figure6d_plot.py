@@ -184,9 +184,8 @@ def plot_balanced_accuracy_scatter(
         .reset_index()
     )
 
-    # Define markers for split type and colors
+    # Define markers for split type (no fill colors, just shape difference)
     markers = {"random_split": "o", "dataset_split": "s"}
-    colors = {"random_split": "#2E86AB", "dataset_split": "#E63946"}
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
 
     # Plot combined vs filtered for each phenotype and split type
@@ -211,7 +210,7 @@ def plot_balanced_accuracy_scatter(
             filtered_vals,
             s=200,
             alpha=0.7,
-            color=colors[split_type],
+            facecolors="white",
             edgecolors="black",
             linewidths=2,
             marker=markers[split_type],

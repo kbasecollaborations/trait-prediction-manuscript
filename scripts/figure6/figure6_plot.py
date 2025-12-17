@@ -15,9 +15,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scienceplots
+import seaborn as sns
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 from scripts.figure6.figure6a_plot import create_misclassification_plots
+from scripts.visualization import configure_plot_style
 from scripts.figure6.figure6b_plot import plot_confident_samples_performance
 from scripts.figure6.figure6c_plot import (
     plot_gapmind_precision_recall_scatter,
@@ -30,6 +32,8 @@ from scripts.figure6.figure6d_plot import (
 )
 
 plt.style.use(["science", "nature"])
+sns.set_context("paper")
+configure_plot_style()
 
 
 def create_figure6(output_file: Path) -> None:
