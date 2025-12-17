@@ -2,97 +2,128 @@
 
 \section*{Methods}
 
-% NOTE: Incubation period of ATLeaf was 7 days (colony growth was assessed by comparing with control plate)
+\subsection*{Carbon Source Utilization Datasets}
 
-\subsection*{Machine learning training details}
+We compiled four binary growth datasets capturing growth outcomes of phylogenetically and ecologically diverse bacterial strains across various carbon sources.
+ATLeaf (Schäfer et al., 2023) comprised 224 strains tested on 45 carbon substrates using minimal media on agar plates.
+Biolog encompassed 362 strains across 64 substrates, compiled from published studies \cite{}.
+Marine (Gralka et al., 2023) contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
+Populus included 58 bacterial isolates tested on 191 carbon sources.
+\todo{Add citations for Biolog and Populus datasets}
 
-1. Eval set: Used only when training on the combined dataset (>500 samples), otherwise used CV only because of small sample size
-2. Instead of RFE, we are using bootstrapping + multiple random seeds + >70\% feature importance consensus to select features
+Due to annotation pipeline limitations and incomplete phenotypic data, the final datasets used for analysis contained fewer genomes and phenotypes than the original datasets (Supplementary Table Sx).
+All analyses focused on the 15 shared phenotypes across all datasets.
+We used ATLeaf, Biolog, and Marine datasets for model training and testing, reserving Populus for independent validation.
+We standardized carbon source nomenclature across datasets using a phenotype name normalization protocol.
 
-\subsection*{Annotation}
+\subsection*{Genome Annotation}
 
-\subsubsection*{Protein Sequence Analysis Using UniRef Databases}
-For the analysis of protein sequences, we employed the UniRef30, UniRef50, UniRef70, and UniRef90 databases in conjunction with the UniProt-TrEMBL database. The initial step involved filtering out protein sequences that were shorter than 100 amino acids to ensure the analysis was focused on sequences of substantial length and potential functional significance. Subsequently, all qualifying protein sequences were amalgamated into a single file. This consolidation process necessitated the creation of a mapping document to link the original identifiers (ids) to the new, unified identifiers, facilitating future reference and analysis.
-
-The merged protein sequences then underwent a similarity search against a specified database using the DIAMOND BLASTP tool. The parameters for this search were set to require a minimum query and subject coverage of 80\%, an E-value threshold of 0.001 for significance, and the use of a mid-sensitivity search mode. The output was formatted according to the standard BLAST tabular format (outfmt 6). Following the similarity search, the results were divided based on the original source files from which the protein sequences were derived. This step was crucial for maintaining the traceability of the analysis back to the original datasets.
-
-The final stage in the protein sequence analysis involved the generation of counts dataframes. These dataframes serve as a quantitative representation of the analysis results, facilitating further statistical and comparative studies.
-
-\subsubsection*{Genome Annotation Using EggNOG}
-Genome annotation via the EggNOG database was conducted on an individual basis for each genome to optimize efficiency and reduce computational time through parallelization. The annotation process utilized the \texttt{emapper.py} script with the DIAMOND method for sequence alignment. The parameters mirrored those used in the UniRef analysis, including an E-value cutoff of 0.001 and both query and subject coverages set at 80\%, with a mid-sensitivity mode for sequence matching.
-
-Upon completion of the annotation process, counts dataframes were generated for KEGG Orthology (KO) identifiers and seed orthologs. Notably, due to the presence of proteins with multiple KO identifiers, the resulting KO counts could exceed the total number of proteins analyzed, as each KO id was counted individually.
-
-\subsubsection*{Kofamscan and KEGG Pathway Module Analysis}
-Each genome was annotated individually using Kofamscan, a process parallelized to enhance efficiency. The \texttt{exec\_annotation} script with the \texttt{-f mapper} option was utilized for this purpose. Similar to previous steps, this stage culminated in the generation of counts dataframes, which are essential for the quantitative analysis of the annotation results.
-
-KEGG Pathway Modules were analyzed by parsing the results obtained from Kofamscan, based on module definitions available on the KEGG website. A completion score ranging from 0 to 1 was calculated for each pathway for which there was a non-zero completion rate, providing a quantitative measure of pathway completeness. These results were then aggregated to facilitate comprehensive pathway analysis across the genomes studied.
-
-\subsubsection*{RAST Annotation}
-The RAST annotation tool provided results in JSON format, which were parsed to extract counts of ontology terms, specifically focusing on \texttt{ontology\_terms.SSO}. This parsing facilitated the generation of a counts dataframe, which is instrumental in understanding the functional landscape of the annotated genomes.
-
-\subsubsection*{De Novo Protein Clustering}
-For \textit{de novo} protein clustering, a similar approach to the initial protein sequence analysis was adopted. Protein sequences were merged into a single file, and a mapping between old and new identifiers was established. Clustering was performed using the MMSeqs2 tool, with parameters set to achieve the desired sequence identity and coverage. The \texttt{createtsv} function of MMSeqs2 was then used to generate a tab-separated values (TSV) file, which facilitated the splitting of results based on the original file sources. The concluding step involved generating a counts DataFrame, where cluster IDs were associated with new identifiers, allowing for straightforward conversion back to the original protein ids using the previously mentioned mapping document.
-
-\subsection*{Carbon Source Utilization Datasets and Genomic Information}
-This study analyzed four distinct carbon source screening datasets: ATLeaf (Schäfer et al., 2023), Literature \cite{}, Marine (Gralka et al., 2023), and PMI \cite{}. The atleaf dataset comprises growth measurements of 224 bacterial strains cultivated on 45 distinct carbon sources using minimal media on agar plates. The literature dataset encompasses 363 bacterial genomes with corresponding growth data across 65 carbon sources, compiled from published studies \cite{}. The marine dataset contains high-throughput metabolic profiling data of 186 marine heterotrophic bacteria, assessed across 135 carbon substrates in MBL media. The PMI dataset includes metabolic characterization of 55 bacterial isolates across 192 carbon sources.
-
-Due to annotation pipeline limitations and incomplete phenotypic data, the final datasets utilized for machine learning analyses contained fewer genomes and phenotypes than the original datasets (detailed in Supplementary Table Sx). All bacterial genomes were processed through our standardized annotation pipeline to generate various feature representations for machine learning applications. To facilitate cross-dataset comparisons, we implemented a phenotype name normalization protocol to standardize carbon source nomenclature across datasets.
-
-\subsection*{Automated Biological Feature Selection - Bio (KEGG)}
-We employed a systematic approach for biological feature selection utilizing the Kyoto Encyclopedia of Genes and Genomes (KEGG) pathway database \cite{}. For each of the 16 phenotypes common across the atleaf, lit, and pmi datasets, we curated a list of relevant keywords for KEGG database queries. These queries were executed using the KEGG API to retrieve associated KO (KEGG Orthology) identifiers and orthologs from matching pathways and modules. We intentionally implemented broad keyword criteria to ensure that we comprehensively captured all the metabolically relevant KO identifiers, resulting in an extensive feature set. The number of features identified for each phenotype is documented in Table S3.
-
-\subsection*{Manual Biological Feature Selection - Bio (Manual)}
-See Table S2.
+We processed all bacterial genomes through a standardized annotation pipeline using three complementary tools.
+RAST annotation provided functional predictions via the RAST server, with results parsed from JSON format to extract ontology terms (\texttt{ontology\_terms.SSO}).
+KOFAM annotation used Kofamscan with the \texttt{exec\_annotation} script and \texttt{-f mapper} option, annotating each genome individually in parallel.
+GapMind (Price et al., 2020) predicted metabolic pathway completeness for carbon utilization, with pathway scores ranging from 0 (incomplete) to 2 (high confidence).
 
 \subsection*{Phylogenetic Tree Construction}
-A comprehensive phylogenetic tree incorporating microorganisms from all phenotype datasets was constructed using the Genome Taxonomy Database (GTDB) \cite{} as a reference.
+
+We constructed a comprehensive phylogenetic tree incorporating microorganisms from all phenotype datasets using the Genome Taxonomy Database (GTDB) \cite{} as a reference.
+Phylogenetic distances were calculated using the ete3 toolkit \cite{}.
+
+\subsection*{Baseline Predictors}
+
+\subsubsection*{GapMind Mechanistic Predictions}
+
+We evaluated GapMind as a mechanistic baseline predictor.
+GapMind predicts growth from metabolic pathway completeness scores.
+We tested two prediction thresholds: strict (requiring complete pathways) and permissive (allowing likely complete pathways).
+Binary predictions were generated by applying these thresholds to GapMind's pathway completeness scores for each carbon source.
+
+\subsubsection*{Phylogeny-Based Nearest Neighbor}
+
+We implemented a phylogenetic nearest neighbor classifier that predicts phenotypes based on the $k$ closest relatives in the training data.
+For each test genome, we identified the $k=3$ nearest neighbors by phylogenetic distance and assigned the phenotype based on majority vote (or mean, rounded to binary).
+This approach leverages the documented association between metabolic phenotypes and phylogenetic relationships.
+
+\subsubsection*{Null Models}
+
+We implemented two additional null model strategies to establish performance baselines:
+\begin{itemize}
+    \item Identity: Assigns the predicted phenotype based on the most common class in the training data
+    \item Bernoulli: Assigns phenotypes based on the class probability observed in the training data
+\end{itemize}
 
 \subsection*{Data Pre-processing and Feature Selection}
-Feature representations underwent distinct pre-processing protocols depending on the analytical objectives. All feature representations, except ``kofam\_modules'', which contained module pathway completeness scores, were converted to binary presence/absence matrices. We implemented three primary pre-processing strategies:
 
+Feature representations from KOFAM and GapMind annotations were converted to binary presence/absence matrices (except GapMind pathway scores, which retained numeric values).
+We implemented two-stage filtering on the combined dataset across all training data:
 \begin{itemize}
-    \item ``all features'' datasets: Maintained without additional pre-processing
-    \item ``nocorr'' datasets: Subjected to both variance and correlation filtering. Variance filtering: Implemented using sklearn's VarianceThreshold method (threshold = 0.01). Correlation filtering: Employed a graph-based approach to eliminate highly correlated features based on network connectivity
-    \item ``Bio'' datasets: Underwent biological feature selection as previously described
+    \item Variance filtering: Removed features with variance below 0.01 using sklearn's VarianceThreshold
+    \item Correlation filtering: Removed highly correlated features (Spearman $\rho > 0.95$) using a graph-based approach that retains features with highest connectivity
 \end{itemize}
+KOFAM annotations yielded approximately 4000--5000 features per dataset after filtering; GapMind features yielded approximately 1000 features.
+All filtering was performed on training data to prevent data leakage.
 
-Furthermore, to evaluate univariate feature selection methods, we implemented ``chi2'', ``f\_classif'', and ``mutual\_info\_classif'' functions in conjunction with sklearn's SelectKBest method. Additionally, we explored dimensionality reduction through Principal Component Analysis (PCA) and Non-negative Matrix Factorization (NMF) using sklearn's decomposition module. All feature selection procedures were strictly confined to training data to prevent data leakage.
+\subsection*{Machine Learning Classifiers}
 
-\subsection*{Null Models}
-To establish performance baselines, we implemented three null model strategies:
+We trained gradient-boosted tree classifiers using CatBoost \cite{}, which showed slightly better performance than RandomForest in preliminary comparisons.
+CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularization 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with patience of 50 iterations.
+Training used an 80:20 train:validation split with early stopping based on validation set performance to minimize overfitting.
+We used balanced accuracy as the primary performance metric to account for class imbalance in phenotype data.
 
+\subsection*{Evaluation Strategies}
+
+\subsubsection*{Cross-Validation and Cross-Dataset Testing}
+
+We evaluated model performance using four scenarios:
 \begin{itemize}
-    \item Identity: Assigns the predicted phenotype based on the most common phenotype in the training data
-    \item Bernoulli: Assigns phenotypes based on the probability of the phenotype appearing in the training data
-    \item Nearest Neighbor: Assigns phenotypes based on phylogenetically closest organisms in the training data. Phylogenetic distances for the Nearest Neighbor model were calculated using the ete3 toolkit \cite{}, utilizing a comprehensive tree containing all the study organisms mapped to GTDB taxonomy.
+    \item Random cross-validation: Standard train/test splits within the aggregated dataset
+    \item Cross-dataset evaluation: Training on three datasets, testing on the held-out fourth dataset
+    \item In-clade cross-dataset: Cross-dataset evaluation restricted to phylogenetically similar samples
+    \item Out-of-clade: Cross-dataset evaluation on phylogenetically distant samples
 \end{itemize}
+For cross-dataset testing, we mapped features from training data to test data, imputing missing features as zero values.
 
-\subsection*{Machine Learning Workflow}
-Our primary machine-learning implementation utilized RandomForest \cite{} and CatBoost \cite{}. Model training incorporated evaluation set holdouts to minimize overfitting. Given the inherent class imbalance in phenotype data, we employed Matthews Correlation Coefficient and Balanced Accuracy as the primary performance metrics. Training-validation partitioning was implemented using sklearn's \texttt{train\_test\_split} method, with an 80:20 ratio, respectively.
+\subsubsection*{Phylogenetic Partitioning}
 
-Comparative analyses demonstrated comparable performance between CatBoost and sklearn's RandomForestClassifier. Additionally, hyperparameter optimization yielded minimal performance improvements.
+We implemented the out-of-clade partitioning algorithm described by Li et al.\ (2023), which systematically separates training and test data based on phylogenetic relationships.
+The algorithm selects test clades based on a target test set size range (20--30\% of samples) while ensuring phylogenetic separation from training data.
+We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
-\subsection*{Cross-dataset Test Performance Evaluations}
-We conducted systematic cross-dataset validation to assess classifier generalizability by training models on individual source datasets (ATleaf, Literature, and Marine) and evaluating performance on independent target datasets (ATleaf, Literature, Marine and PMI). To maintain feature set consistency across train and test datasets, regardless of pre-processing or selection strategies, we implemented a feature mapping protocol. For every feature in the training data missing from the test data this involved retrieving features from the ``all features'' representation of test dataset, with any missing features imputed as zero values to ensure consistency.
+\subsection*{Concordant and Discordant Sample Analysis}
 
-\subsection*{In-clade and Out-of-clade Partitioning}
-To evaluate the robustness of our predictive models across phylogenetic distances, we implemented two complementary approaches for generating phylogenetically structured test sets. The primary approach utilized the partitioning algorithm described by (Li et al. 2023), which systematically separates training and test data based on phylogenetic relationships.
+To assess whether ML models learn mechanistic features, we stratified samples based on agreement between GapMind predictions and experimental outcomes.
+Concordant samples are those where GapMind predictions match experimental results (correct predictions by the mechanistic model).
+Discordant samples are those where GapMind predictions contradict experimental results (false positives or false negatives).
+We trained models on concordant samples only and evaluated performance on both concordant and discordant test sets to assess whether learned features generalize beyond the mechanistic predictor's coverage.
 
-We supplemented this algorithmic approach with manual class-level partitioning to provide additional validation of model performance across taxonomic boundaries. For manual partitioning, we selected major bacterial classes that were well-represented across our datasets. Specifically, we designated Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases, while Actinomycetia, Bacilli, and Bacteroidia served as in-clade test cases.
+\subsection*{Feature Importance Analysis}
 
-The out-of-clade analysis involved the complete removal of all members belonging to the designated test class (either Gammaproteobacteria or Alphaproteobacteria) from the training data, creating a stringent test of model generalizability across taxonomic boundaries. In contrast, we maintained class representation in the training data for in-clade analysis by removing only the specific genomes selected for testing while retaining other members of the same class in the training set.
+We identified stable predictive features using SHAP (SHapley Additive exPlanations) analysis \cite{}.
+For each phenotype and dataset configuration, we trained models across 20 random seeds, extracting the top 10 features by mean absolute SHAP value from each run.
+Features appearing in at least 70\% of runs were designated as ``stable features.''
+We compared stable features across datasets to assess whether models learn consistent mechanistic signatures or dataset-specific patterns.
 
-Dataset-specific analyses were conducted to account for varying taxonomic distributions across our source datasets.
+\subsection*{Data Quality Filtering Strategies}
 
-\subsection*{Recursive Feature Elimination}
-We implemented Recursive Feature Elimination with Cross-Validation (RFECV) using sklearn's framework. The protocol consisted of:
+We explored alternative approaches to improve model generalization beyond concordant sample filtering.
 
+\subsubsection*{Problematic Sample Identification}
+
+We identified systematically problematic samples: microbes showing zero growth on all substrates, microbes showing universal growth despite incomplete GapMind pathways, and genomes with the highest per-genome misclassification rates across phenotypes.
+\todo{Specify threshold used for identifying high-misclassification genomes}
+
+\subsubsection*{Confidence-Based Filtering}
+
+We developed a composite confidence score combining three information sources:
 \begin{itemize}
-    \item Data Partitioning: Implementation of 5-fold stratified cross-validation, replicated 10 times to generate 50 distinct cross-validation splits
-    \item Feature Selection: Iterative feature elimination optimizing for Matthews Correlation Coefficient
-    \item Validation: Performance assessment on independent held-out validation sets
+    \item Phylogenetic confidence ($w=0.2$): Agreement among $k=3$ nearest phylogenetic neighbors
+    \item GapMind confidence ($w=0.3$): Pathway completeness score from GapMind
+    \item Experimental data ($w=0.5$): Binary experimental outcome
 \end{itemize}
+Samples with confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
+\todo{Clarify rationale for confidence weight selection}
 
-\subsection*{Combined Feature Representation}
-The development of the combined feature representation integrated information from multiple annotation sources through a systematic feature selection process. Initially, we identified the top 100 features from individual feature representations based on their importance in RandomForest models, as quantified through SHAP (SHapley Additive exPlanations) analysis \cite{}. These high-importance features were then aggregated to create a comprehensive combined representation that leveraged complementary information from different annotation sources.
+\subsection*{Sample Size Requirements}
+
+We assessed minimum training data requirements using learning curves.
+For selected phenotypes, we trained models on subsets of training data (50, 100, 200, 500, and full samples) using stratified subsampling with 3 repeats per configuration.
+Performance was evaluated across random, cross-dataset, and out-of-clade splits, and on full, concordant, and discordant test subsets.
