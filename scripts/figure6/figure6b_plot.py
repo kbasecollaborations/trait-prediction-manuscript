@@ -59,6 +59,10 @@ def plot_confident_samples_performance(
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
 
+    # Load full dataset results from Figure 6C for comparison (to calculate samples removed)
+    full_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    full_df = full_df[full_df["condition"] == "full"].copy()
+
     # Get unique phenotypes
     if phenotypes is None:
         phenotypes = sorted(concordant_df["phenotype"].unique())
@@ -67,7 +71,7 @@ def plot_confident_samples_performance(
     x = np.arange(len(phenotypes))
     width = 0.25  # Width of each bar
 
-    # Calculate mean and std for each condition
+    # Calculate mean and std for balanced accuracy
     concordant_summary = (
         concordant_df.groupby("phenotype")["balanced_accuracy"]
         .agg(["mean", "std"])
@@ -83,6 +87,40 @@ def plot_confident_samples_performance(
         .agg(["mean", "std"])
         .reindex(phenotypes)
     )
+
+    # Calculate total samples for each condition
+    concordant_total = (
+        concordant_df.groupby("phenotype")["n_concordant_total"]
+        .mean()
+        .reindex(phenotypes)
+    )
+
+    # Sum n_train, n_val, n_test columns first, then group by phenotype
+    ysoft_df["total_samples"] = ysoft_df["n_train"] + ysoft_df["n_val"] + ysoft_df["n_test"]
+    ysoft_total = (
+        ysoft_df.groupby("phenotype")["total_samples"]
+        .mean()
+        .reindex(phenotypes)
+    )
+
+    full_df["total_samples"] = full_df["n_train"] + full_df["n_val"] + full_df["n_test"]
+    full_total = (
+        full_df.groupby("phenotype")["total_samples"]
+        .mean()
+        .reindex(phenotypes)
+    )
+
+    misclass_df["total_samples"] = misclass_df["n_train"] + misclass_df["n_val"] + misclass_df["n_test"]
+    misclass_total = (
+        misclass_df.groupby("phenotype")["total_samples"]
+        .mean()
+        .reindex(phenotypes)
+    )
+
+    # Calculate samples removed
+    concordant_removed = full_total - concordant_total
+    ysoft_removed = full_total - ysoft_total
+    misclass_removed = full_total - misclass_total
 
     # Extract means and stds
     concordant_means = concordant_summary["mean"].values
@@ -123,6 +161,50 @@ def plot_confident_samples_performance(
         alpha=0.7,
         capsize=3,
     )
+
+    # Add text annotations showing samples removed
+    for i, phenotype in enumerate(phenotypes):
+        # Get y positions (top of bars + error bars)
+        y1 = concordant_means[i] + concordant_stds[i] if not np.isnan(concordant_means[i]) else 0
+        y2 = ysoft_means[i] + ysoft_stds[i] if not np.isnan(ysoft_means[i]) else 0
+        y3 = misclass_means[i] + misclass_stds[i] if not np.isnan(misclass_means[i]) else 0
+
+        # Add annotations if samples were removed
+        if not np.isnan(concordant_removed.iloc[i]) and concordant_removed.iloc[i] > 0:
+            ax.text(
+                i - width,
+                y1 + 0.02,
+                f"-{int(concordant_removed.iloc[i])}",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="#2E86AB",
+                weight="bold",
+            )
+
+        if not np.isnan(ysoft_removed.iloc[i]) and ysoft_removed.iloc[i] > 0:
+            ax.text(
+                i,
+                y2 + 0.02,
+                f"-{int(ysoft_removed.iloc[i])}",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="#06A77D",
+                weight="bold",
+            )
+
+        if not np.isnan(misclass_removed.iloc[i]) and misclass_removed.iloc[i] > 0:
+            ax.text(
+                i + width,
+                y3 + 0.02,
+                f"-{int(misclass_removed.iloc[i])}",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                color="#E63946",
+                weight="bold",
+            )
 
     # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):

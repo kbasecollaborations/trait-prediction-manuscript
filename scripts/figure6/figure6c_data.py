@@ -218,6 +218,10 @@ def evaluate_with_predictions(
     model: Any,
     X_test: pd.DataFrame,
     y_test: pd.Series,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_val: pd.DataFrame,
+    y_val: pd.Series,
     exclude_samples: set[str] | None = None,
 ) -> dict[str, float]:
     """
@@ -231,22 +235,45 @@ def evaluate_with_predictions(
         Test feature matrix.
     y_test : pd.Series
         Test labels.
+    X_train : pd.DataFrame
+        Training feature matrix.
+    y_train : pd.Series
+        Training labels.
+    X_val : pd.DataFrame
+        Validation feature matrix.
+    y_val : pd.Series
+        Validation labels.
     exclude_samples : set[str] | None
         Set of sample IDs to exclude from evaluation. If None, use all samples.
 
     Returns
     -------
     dict[str, float]
-        Dictionary with precision, recall, auprc, balanced_accuracy, and sample count.
+        Dictionary with precision, recall, auprc, balanced_accuracy, and sample counts.
     """
     # Filter samples if needed
     if exclude_samples is not None:
-        keep_mask = ~y_test.index.isin(exclude_samples)
-        X_test_filtered = X_test[keep_mask]
-        y_test_filtered = y_test[keep_mask]
+        # Filter test set
+        keep_mask_test = ~y_test.index.isin(exclude_samples)
+        X_test_filtered = X_test[keep_mask_test]
+        y_test_filtered = y_test[keep_mask_test]
+
+        # Filter train set
+        keep_mask_train = ~y_train.index.isin(exclude_samples)
+        X_train_filtered = X_train[keep_mask_train]
+        y_train_filtered = y_train[keep_mask_train]
+
+        # Filter validation set
+        keep_mask_val = ~y_val.index.isin(exclude_samples)
+        X_val_filtered = X_val[keep_mask_val]
+        y_val_filtered = y_val[keep_mask_val]
     else:
         X_test_filtered = X_test
         y_test_filtered = y_test
+        X_train_filtered = X_train
+        y_train_filtered = y_train
+        X_val_filtered = X_val
+        y_val_filtered = y_val
 
     if len(y_test_filtered) == 0:
         return {
@@ -254,7 +281,9 @@ def evaluate_with_predictions(
             "recall": np.nan,
             "auprc": np.nan,
             "balanced_accuracy": np.nan,
-            "n_samples": 0,
+            "n_test": len(y_test_filtered),
+            "n_train": len(y_train_filtered),
+            "n_val": len(y_val_filtered),
         }
 
     # Check if we have both classes
@@ -264,7 +293,9 @@ def evaluate_with_predictions(
             "recall": np.nan,
             "auprc": np.nan,
             "balanced_accuracy": np.nan,
-            "n_samples": len(y_test_filtered),
+            "n_test": len(y_test_filtered),
+            "n_train": len(y_train_filtered),
+            "n_val": len(y_val_filtered),
         }
 
     # Get predictions
@@ -282,7 +313,9 @@ def evaluate_with_predictions(
         "recall": recall,
         "auprc": auprc,
         "balanced_accuracy": balanced_acc,
-        "n_samples": len(y_test_filtered),
+        "n_test": len(y_test_filtered),
+        "n_train": len(y_train_filtered),
+        "n_val": len(y_val_filtered),
     }
 
 
@@ -391,11 +424,13 @@ def run_figure6c_analysis(
         )
 
         # Evaluate on full test set
-        metrics_full = evaluate_with_predictions(model, X_test_aligned, y_test, exclude_samples=None)
+        metrics_full = evaluate_with_predictions(
+            model, X_test_aligned, y_test, X_train, y_train, X_val_aligned, y_val, exclude_samples=None
+        )
 
         # Evaluate on filtered test set (excluding problematic samples)
         metrics_filtered = evaluate_with_predictions(
-            model, X_test_aligned, y_test, exclude_samples=problematic_samples
+            model, X_test_aligned, y_test, X_train, y_train, X_val_aligned, y_val, exclude_samples=problematic_samples
         )
 
         # Store results
@@ -409,7 +444,9 @@ def run_figure6c_analysis(
                     "recall": metrics["recall"],
                     "auprc": metrics["auprc"],
                     "balanced_accuracy": metrics["balanced_accuracy"],
-                    "n_samples": metrics["n_samples"],
+                    "n_test": metrics["n_test"],
+                    "n_train": metrics["n_train"],
+                    "n_val": metrics["n_val"],
                 }
             )
 
@@ -431,7 +468,9 @@ def run_figure6c_analysis(
                 "recall": ["mean", "std"],
                 "auprc": ["mean", "std"],
                 "balanced_accuracy": ["mean", "std"],
-                "n_samples": "mean",
+                "n_test": "mean",
+                "n_train": "mean",
+                "n_val": "mean",
             }
         )
         print(summary)
