@@ -22,97 +22,100 @@ sns.set_context("paper")
 configure_plot_style()
 
 
-def plot_metric_comparison(
+def plot_precision_recall_scatter(
     ax: Axes,
-    data: pd.DataFrame,
-    metric: str,
+    data_dir: Path,
     phenotypes: list[str],
-    ylabel: str,
-    title: str,
 ) -> None:
     """
-    Plot before/after comparison for a single metric.
+    Plot precision vs recall scatter plot for three filtering conditions.
 
     Parameters
     ----------
     ax : Axes
         Matplotlib axes to plot on.
-    data : pd.DataFrame
-        Results dataframe with columns: phenotype, condition, metric.
-    metric : str
-        Name of the metric column to plot.
+    data_dir : Path
+        Directory containing the data files.
     phenotypes : list[str]
         List of phenotypes in order.
-    ylabel : str
-        Y-axis label.
-    title : str
-        Subplot title.
     """
-    # Calculate mean and std for each phenotype and condition
-    summary = (
-        data.groupby(["phenotype", "condition"])[metric]
-        .agg(["mean", "std"])
-        .reset_index()
+    # Load data from three sources
+    # 1. Concordant samples (Figure 5A)
+    concordant_df = pd.read_csv(
+        Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
+    )
+    concordant_df = concordant_df[concordant_df["split_type"] == "dataset_split"].copy()
+
+    # 2. Y_soft filtered samples (current Figure 6B)
+    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
+    ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
+
+    # 3. Misclassified samples removed (Figure 6C filtered condition)
+    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
+
+    # Calculate mean precision and recall for each phenotype (for scatter points)
+    concordant_summary = (
+        concordant_df.groupby("phenotype")[["precision", "recall"]]
+        .mean()
+        .reindex(phenotypes)
+    )
+    ysoft_summary = (
+        ysoft_df.groupby("phenotype")[["precision", "recall"]]
+        .mean()
+        .reindex(phenotypes)
+    )
+    misclass_summary = (
+        misclass_df.groupby("phenotype")[["precision", "recall"]]
+        .mean()
+        .reindex(phenotypes)
     )
 
-    x = np.arange(len(phenotypes))
-    width = 0.35
-
-    # Separate full and filtered data
-    full_data = summary[summary["condition"] == "full"].set_index("phenotype")
-    filtered_data = summary[summary["condition"] == "filtered"].set_index("phenotype")
-
-    # Align with phenotypes order
-    full_means = [full_data.loc[p, "mean"] if p in full_data.index else 0 for p in phenotypes]
-    full_stds = [full_data.loc[p, "std"] if p in full_data.index else 0 for p in phenotypes]
-    filtered_means = [
-        filtered_data.loc[p, "mean"] if p in filtered_data.index else 0 for p in phenotypes
-    ]
-    filtered_stds = [
-        filtered_data.loc[p, "std"] if p in filtered_data.index else 0 for p in phenotypes
-    ]
-
-    # Create bars
-    bars1 = ax.bar(
-        x - width / 2,
-        full_means,
-        width,
-        yerr=full_stds,
-        label="Before Filtering",
-        color="#E63946",
+    # Plot scatter points for each condition (per-phenotype means)
+    ax.scatter(
+        concordant_summary["recall"],
+        concordant_summary["precision"],
+        s=200,
         alpha=0.7,
-        capsize=3,
+        color="#2E86AB",
+        edgecolors="black",
+        linewidths=2,
+        label="Concordant Samples",
+        zorder=3,
     )
-    bars2 = ax.bar(
-        x + width / 2,
-        filtered_means,
-        width,
-        yerr=filtered_stds,
-        label="After Filtering",
+    ax.scatter(
+        ysoft_summary["recall"],
+        ysoft_summary["precision"],
+        s=200,
+        alpha=0.7,
         color="#06A77D",
+        edgecolors="black",
+        linewidths=2,
+        label="Y_soft Filtered",
+        zorder=3,
+    )
+    ax.scatter(
+        misclass_summary["recall"],
+        misclass_summary["precision"],
+        s=200,
         alpha=0.7,
-        capsize=3,
+        color="#E63946",
+        edgecolors="black",
+        linewidths=2,
+        label="Misclassified Removed",
+        zorder=3,
     )
 
-    # Add alternating background colors
-    for i in range(len(phenotypes)):
-        if i % 2 == 0:
-            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+    # Add diagonal line (precision = recall)
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
     # Formatting
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel("Phenotype")
-    ax.set_title(title, pad=10)
-    ax.set_xticks(x)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="upper right", frameon=False)
-
-    # Add horizontal line at baseline (if appropriate)
-    if metric == "auprc":
-        # Calculate baseline (proportion of positive class)
-        # This is approximate; actual baseline varies by phenotype
-        ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.5, zorder=1)
+    ax.legend(loc="lower left", frameon=False)
+    ax.set_aspect("equal")
 
 
 def create_figure(

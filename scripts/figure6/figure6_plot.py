@@ -19,7 +19,7 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 from scripts.figure6.figure6a_plot import create_misclassification_plots
 from scripts.figure6.figure6b_plot import plot_confident_samples_performance
-from scripts.figure6.figure6c_plot import plot_metric_comparison
+from scripts.figure6.figure6c_plot import plot_precision_recall_scatter
 from scripts.figure6.figure6d_plot import plot_split_comparison
 
 plt.style.use(["science", "nature"])
@@ -74,10 +74,12 @@ def create_figure6(output_file: Path) -> None:
 
     # Create figure with complex layout using GridSpec
     # Panel A: 3 plots horizontal (row 0)
-    # Panels B, C, D: vertical plots (rows 1-6)
-    fig = plt.figure(figsize=(18, 35))
+    # Panel B: Performance comparison (row 1)
+    # Panel C: Precision-recall scatter (row 2) - make it bigger
+    # Panel D: Feature comparison - 2 subplots (rows 3-4)
+    fig = plt.figure(figsize=(18, 28))
     gs = GridSpec(
-        7, 2, figure=fig, height_ratios=[1, 1, 1, 1, 1, 1, 1], hspace=0.3, wspace=0.4
+        5, 2, figure=fig, height_ratios=[1, 1, 1.5, 1, 1], hspace=0.3, wspace=0.4
     )
 
     # Panel A: GapMind misclassification patterns (3 subplots horizontal)
@@ -97,41 +99,14 @@ def create_figure6(output_file: Path) -> None:
     ax_b = fig.add_subplot(gs[1, :])
     plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
 
-    # Panel C: Impact of filtering (3 metrics, each spanning all 2 columns)
-    print("Creating Panel C: Impact of filtering on metrics...")
-    ax_c1 = fig.add_subplot(gs[2, :])
-    plot_metric_comparison(
-        ax_c1,
-        df_6c,
-        "precision",
-        common_phenotypes,
-        ylabel="Precision",
-        title="",
-    )
-
-    ax_c2 = fig.add_subplot(gs[3, :])
-    plot_metric_comparison(
-        ax_c2,
-        df_6c,
-        "recall",
-        common_phenotypes,
-        ylabel="Recall",
-        title="",
-    )
-
-    ax_c3 = fig.add_subplot(gs[4, :])
-    plot_metric_comparison(
-        ax_c3,
-        df_6c,
-        "auprc",
-        common_phenotypes,
-        ylabel="AUPRC",
-        title="",
-    )
+    # Panel C: Precision-recall scatter plot (spans all 2 columns)
+    print("Creating Panel C: Precision-recall scatter plot...")
+    ax_c = fig.add_subplot(gs[2, :])
+    plot_precision_recall_scatter(ax_c, data_dir, common_phenotypes)
 
     # Panel D: Combined vs phenotype-filtered features (2 split types, each spanning all 2 columns)
     print("Creating Panel D: Combined vs phenotype-filtered features...")
-    ax_d1 = fig.add_subplot(gs[5, :])
+    ax_d1 = fig.add_subplot(gs[3, :])
     plot_split_comparison(
         ax_d1,
         df_6d,
@@ -140,7 +115,7 @@ def create_figure6(output_file: Path) -> None:
         title="",
     )
 
-    ax_d2 = fig.add_subplot(gs[6, :])
+    ax_d2 = fig.add_subplot(gs[4, :])
     plot_split_comparison(
         ax_d2,
         df_6d,
@@ -150,13 +125,13 @@ def create_figure6(output_file: Path) -> None:
     )
 
     # Collect all axes in order
-    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c1, ax_c2, ax_c3, ax_d1, ax_d2]
+    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c, ax_d1, ax_d2]
 
     # Add main panel labels
     panel_labels_map = {
         ax_a1: "(A)",  # First misclassification plot
         ax_b: "(B)",  # Confident samples
-        ax_c1: "(C)",  # First filtering metric
+        ax_c: "(C)",  # Precision-recall scatter
         ax_d1: "(D)",  # First feature comparison
     }
 
@@ -177,7 +152,7 @@ def create_figure6(output_file: Path) -> None:
     # Remove x-tick labels from all but bottom plot
     for ax in all_axes[:-1]:
         ax.set_xlabel("")
-        if ax in [ax_b, ax_c1, ax_c2, ax_c3, ax_d1]:  # Only reset for phenotype plots
+        if ax in [ax_b, ax_d1]:  # Only reset for phenotype plots (not scatter plot)
             ax.set_xticklabels([])
 
     # Set x-axis label only on bottom plot
@@ -186,7 +161,7 @@ def create_figure6(output_file: Path) -> None:
 
     # Adjust x-axis limits to ensure consistency for phenotype plots
     x_pos = np.arange(len(common_phenotypes))
-    for ax in [ax_b, ax_c1, ax_c2, ax_c3, ax_d1, ax_d2]:
+    for ax in [ax_b, ax_d1, ax_d2]:
         ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
         ax.set_xticks(x_pos)
 

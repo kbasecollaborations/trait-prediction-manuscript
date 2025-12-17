@@ -5,8 +5,7 @@ Create Figure 5: Performance on GapMind-concordant samples.
 This figure shows:
 - Panel A: Dataset split performance (concordant samples) with random split reference
 - Panel B: Shared stable features between individual datasets (concordant samples)
-- Panel C: Performance of concordant-trained models on discordant vs full test sets (random split)
-- Panel D: Performance of concordant-trained models on discordant vs full test sets (dataset split)
+- Panel C: Performance of concordant-trained models on discordant test sets (random split vs dataset split)
 """
 
 import json
@@ -309,10 +308,9 @@ def plot_concordant_train_performance(
     data_dir: Path,
     phenotypes: list[str] | None = None,
 ) -> None:
-    """Plot performance of models trained on concordant, tested on discordant vs full.
+    """Plot performance of models trained on concordant, tested on discordant only.
 
-    Only uses random_split data for visualization. Also plots mean random split
-    accuracy from Figure 3A as a reference line.
+    Shows both random split and dataset split results in grouped box plots.
 
     Parameters
     ----------
@@ -326,18 +324,8 @@ def plot_concordant_train_performance(
     # Load data
     ml_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
 
-    # Filter to only random_split
-    ml_df = ml_df[ml_df["split_type"] == "random_split"].copy()
-
-    # Load Figure 3 random split results for reference line (full data, not concordant)
-    fig3_data_dir = Path("data/outputs/figure3")
-    fig3_ml_df = pd.read_csv(fig3_data_dir / "ml_results.csv")
-    fig3_random_df = fig3_ml_df[fig3_ml_df["split_type"] == "random_split"].copy()
-
-    # Calculate mean random split performance for each phenotype
-    fig3_random_means = (
-        fig3_random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
-    )
+    # Filter to only discordant test type
+    ml_df = ml_df[ml_df["test_type"] == "discordant"].copy()
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -346,35 +334,35 @@ def plot_concordant_train_performance(
     # Set up positions
     x = np.arange(len(phenotypes))
 
-    # Prepare data for box plot - one box per test type
-    test_types = ["full", "discordant"]
-    test_type_labels = ["Full", "Discordant"]
-    colors = ["#2E86AB", "#A23B72"]  # Blue for full, purple for discordant
+    # Prepare data for box plot - random split vs dataset split
+    colors = ["#2E86AB", "#A23B72"]  # Blue for random split, purple for dataset split
+    split_types = ["random_split", "dataset_split"]
+    split_labels = ["Random Split", "Dataset Split"]
 
     # Create grouped box plots
-    box_data_full = []
-    box_data_disc = []
+    box_data_random = []
+    box_data_dataset = []
 
     for phenotype in phenotypes:
-        full_data = ml_df[
-            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "full")
+        random_data = ml_df[
+            (ml_df["phenotype"] == phenotype) & (ml_df["split_type"] == "random_split")
         ]["balanced_accuracy"].values
-        disc_data = ml_df[
-            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "discordant")
+        dataset_data = ml_df[
+            (ml_df["phenotype"] == phenotype) & (ml_df["split_type"] == "dataset_split")
         ]["balanced_accuracy"].values
 
-        box_data_full.append(full_data)
-        box_data_disc.append(disc_data)
+        box_data_random.append(random_data)
+        box_data_dataset.append(dataset_data)
 
     # Box plot width and positions
     width = 0.35
-    positions_full = x - width / 2
-    positions_disc = x + width / 2
+    positions_random = x - width / 2
+    positions_dataset = x + width / 2
 
     # Create box plots
     bp1 = ax.boxplot(
-        box_data_full,
-        positions=positions_full,
+        box_data_random,
+        positions=positions_random,
         widths=width * 0.8,
         patch_artist=True,
         showfliers=True,
@@ -386,8 +374,8 @@ def plot_concordant_train_performance(
     )
 
     bp2 = ax.boxplot(
-        box_data_disc,
-        positions=positions_disc,
+        box_data_dataset,
+        positions=positions_dataset,
         widths=width * 0.8,
         patch_artist=True,
         showfliers=True,
@@ -398,35 +386,12 @@ def plot_concordant_train_performance(
         flierprops=dict(marker="o", markersize=4, alpha=0.5),
     )
 
-    # Plot Figure 3 random split mean as reference dotted line
-    for phenotype in phenotypes:
-        if phenotype in fig3_random_means:
-            x_pos = x[phenotypes.index(phenotype)]
-            ax.plot(
-                [x_pos - 0.45, x_pos + 0.45],
-                [fig3_random_means[phenotype], fig3_random_means[phenotype]],
-                color="#06A77D",
-                linestyle=":",
-                linewidth=2,
-                alpha=0.7,
-                zorder=1,
-            )
-
     # Create legend handles
     from matplotlib.patches import Patch
 
     legend_handles = [
-        Patch(facecolor=colors[0], alpha=0.7, label="Test: Full"),
-        Patch(facecolor=colors[1], alpha=0.7, label="Test: Discordant"),
-        Line2D(
-            [0],
-            [0],
-            color="#06A77D",
-            linestyle=":",
-            linewidth=2,
-            alpha=0.7,
-            label="Random Split (Fig 3A)",
-        ),
+        Patch(facecolor=colors[0], alpha=0.7, label=split_labels[0]),
+        Patch(facecolor=colors[1], alpha=0.7, label=split_labels[1]),
     ]
 
     # Add alternating background colors for x-axis categories
@@ -457,172 +422,13 @@ def plot_concordant_train_performance(
         handles=legend_handles,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
-        ncol=3,
-        frameon=False,
-    )
-
-
-def plot_dataset_split_train_performance(
-    ax: Axes,
-    data_dir: Path,
-    phenotypes: list[str] | None = None,
-) -> None:
-    """Plot performance of dataset split models trained on concordant, tested on discordant vs full.
-
-    Only uses dataset_split data for visualization. Also plots GapMind
-    accuracy from Figure 3B as a reference line (calculated only on test sets).
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes object to plot on.
-    data_dir : Path
-        Directory containing the figure 5C data files.
-    phenotypes : list[str] | None
-        List of phenotypes to plot in order. If None, uses all available.
-    """
-    # Load data
-    ml_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
-
-    # Filter to only dataset_split
-    ml_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
-
-    # Load GapMind results for dataset split test sets (from Figure 3)
-    fig3_data_dir = Path("data/outputs/figure3")
-    gapmind_df = pd.read_csv(
-        fig3_data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t"
-    )
-
-    # Calculate mean GapMind performance for each phenotype (across dataset splits)
-    gapmind_means = (
-        gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
-    )
-
-    # Get unique phenotypes
-    if phenotypes is None:
-        phenotypes = sorted(ml_df["phenotype"].unique())
-
-    # Set up positions
-    x = np.arange(len(phenotypes))
-
-    # Prepare data for box plot - one box per test type
-    test_types = ["full", "discordant"]
-    test_type_labels = ["Full", "Discordant"]
-    colors = ["#2E86AB", "#A23B72"]  # Blue for full, purple for discordant
-
-    # Create grouped box plots
-    box_data_full = []
-    box_data_disc = []
-
-    for phenotype in phenotypes:
-        full_data = ml_df[
-            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "full")
-        ]["balanced_accuracy"].values
-        disc_data = ml_df[
-            (ml_df["phenotype"] == phenotype) & (ml_df["test_type"] == "discordant")
-        ]["balanced_accuracy"].values
-
-        box_data_full.append(full_data)
-        box_data_disc.append(disc_data)
-
-    # Box plot width and positions
-    width = 0.35
-    positions_full = x - width / 2
-    positions_disc = x + width / 2
-
-    # Create box plots
-    bp1 = ax.boxplot(
-        box_data_full,
-        positions=positions_full,
-        widths=width * 0.8,
-        patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor=colors[0], alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
-    )
-
-    bp2 = ax.boxplot(
-        box_data_disc,
-        positions=positions_disc,
-        widths=width * 0.8,
-        patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor=colors[1], alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
-    )
-
-    # Plot GapMind as reference dotted line
-    for phenotype in phenotypes:
-        if phenotype in gapmind_means:
-            x_pos = x[phenotypes.index(phenotype)]
-            ax.plot(
-                [x_pos - 0.45, x_pos + 0.45],
-                [gapmind_means[phenotype], gapmind_means[phenotype]],
-                color="#F18F01",
-                linestyle=":",
-                linewidth=2,
-                alpha=0.7,
-                zorder=1,
-            )
-
-    # Create legend handles
-    from matplotlib.patches import Patch
-
-    legend_handles = [
-        Patch(facecolor=colors[0], alpha=0.7, label="Test: Full"),
-        Patch(facecolor=colors[1], alpha=0.7, label="Test: Discordant"),
-        Line2D(
-            [0],
-            [0],
-            color="#F18F01",
-            linestyle=":",
-            linewidth=2,
-            alpha=0.7,
-            label="GapMind (Fig 3B)",
-        ),
-    ]
-
-    # Add alternating background colors for x-axis categories
-    for i in range(len(phenotypes)):
-        if i % 2 == 0:
-            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
-
-    # Formatting
-    ax.set_xlabel("")
-    ax.set_ylabel("Balanced Accuracy")
-    ax.tick_params(axis="x", which="both", top=False, bottom=True)
-    ax.set_ylim(0, 1.05)
-
-    # Add subplot label
-    ax.text(
-        -0.08,
-        1.05,
-        "(D)",
-        transform=ax.transAxes,
-        fontweight="bold",
-        va="top",
-        ha="right",
-        fontsize=14,
-    )
-
-    # Add legend
-    ax.legend(
-        handles=legend_handles,
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.10),
-        ncol=3,
+        ncol=len(legend_handles),
         frameon=False,
     )
 
 
 def create_figure(data_dir: Path, output_file: Path) -> None:
-    """Create Figure 5 with four subplots.
+    """Create Figure 5 with three subplots.
 
     Parameters
     ----------
@@ -641,36 +447,28 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         ml_df[ml_df["split_type"] == "dataset_split"]["phenotype"].unique()
     )
     feature_phenotypes = set(feature_comp_df["phenotype"].unique())
-    # Filter test_df to only random_split for phenotype determination (panel C)
-    test_phenotypes_random = set(
-        test_df[test_df["split_type"] == "random_split"]["phenotype"].unique()
-    )
-    # Filter test_df to only dataset_split for phenotype determination (panel D)
-    test_phenotypes_dataset = set(
-        test_df[test_df["split_type"] == "dataset_split"]["phenotype"].unique()
+    # Filter test_df to only discordant test type for phenotype determination (panel C)
+    test_phenotypes = set(
+        test_df[test_df["test_type"] == "discordant"]["phenotype"].unique()
     )
 
     # Use intersection to ensure consistent x-axis
     print("Determining common phenotypes across all analyses...")
     print(f" - Dataset split phenotypes: {len(dataset_phenotypes)}")
     print(f" - Feature comparison phenotypes: {len(feature_phenotypes)}")
-    print(f" - Test type phenotypes (random): {len(test_phenotypes_random)}")
-    print(f" - Test type phenotypes (dataset): {len(test_phenotypes_dataset)}")
+    print(f" - Test type phenotypes (discordant): {len(test_phenotypes)}")
     common_phenotypes = sorted(
-        dataset_phenotypes.intersection(feature_phenotypes)
-        .intersection(test_phenotypes_random)
-        .intersection(test_phenotypes_dataset)
+        dataset_phenotypes.intersection(feature_phenotypes).intersection(test_phenotypes)
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Create figure with 4 subplots arranged vertically
-    fig, axes = plt.subplots(4, 1, figsize=(12, 20))
+    # Create figure with 3 subplots arranged vertically
+    fig, axes = plt.subplots(3, 1, figsize=(12, 15))
 
     # Plot each subplot with common phenotypes
     plot_dataset_split_performance(axes[0], data_dir, common_phenotypes)
     create_feature_comparison_plot(axes[1], data_dir, common_phenotypes)
     plot_concordant_train_performance(axes[2], data_dir, common_phenotypes)
-    plot_dataset_split_train_performance(axes[3], data_dir, common_phenotypes)
 
     # Manually align x-axes to ensure consistency
     x_pos = np.arange(len(common_phenotypes))
@@ -681,14 +479,12 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     # Remove x-axis labels from all but bottom plot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
-    axes[2].set_xlabel("")
-    axes[3].set_xlabel("Phenotype")
+    axes[2].set_xlabel("Phenotype")
 
     # Only show x-tick labels on bottom plot
     axes[0].set_xticklabels([])
     axes[1].set_xticklabels([])
-    axes[2].set_xticklabels([])
-    axes[3].set_xticklabels(common_phenotypes, rotation=45, ha="right")
+    axes[2].set_xticklabels(common_phenotypes, rotation=45, ha="right")
 
     # Adjust layout with more space between subplots
     plt.tight_layout()
