@@ -2,13 +2,13 @@
 
 \section*{Discussion}
 
-\subsection{Summary of Core Findings}
+\subsection*{Summary of Core Findings}
 
 \textbf{Key finding:} \textit{Data quality, not algorithmic limitations, fundamentally constrains genotype-phenotype prediction.}
 
 We restate the central finding: ML models achieve robust generalization when trained on high-quality (concordant) data, but fail systematically when trained on mixed-quality data. The problem is not that ML cannot learn metabolic mechanisms---it demonstrably can when given clean signal. Rather, discordant samples force models toward spurious correlations that happen to be predictive within specific datasets/clades but do not transfer. This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge.
 
-\subsection{Interpretation: What Discordances Reveal About Genotype-Phenotype Mapping}
+\subsection*{Interpretation: What Discordances Reveal About Genotype-Phenotype Mapping}
 
 \textbf{Key finding:} \textit{Discordant samples reflect a mixture of technical artifacts and genuine biological complexity.}
 
@@ -21,13 +21,13 @@ The partial predictability of discordant samples (BACC 0.18--0.4) suggests heter
 
 Dataset-specific discordance patterns likely reflect differences in experimental protocols, growth conditions, and measurement sensitivity rather than fundamental biological differences. The concentration of discordances in specific genomes or phenotypes provides a roadmap for targeted data quality improvements.
 
-\subsection{Relationship to Previous Work on Phylogenetic Confounding}
+\subsection*{Relationship to Previous Work on Phylogenetic Confounding}
 
 \textbf{Key finding:} \textit{Our findings extend and reframe previous observations about phylogenetic bias in trait prediction.}
 
 Previous work (cite Li et al. and others) demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding. Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples. When trained on concordant samples only, models identify mechanistic features and generalize across clades---suggesting the problem is signal-to-noise ratio, not sample size per se. This does not contradict previous findings but provides a mechanistic explanation: mixed-quality data creates a situation where phylogenetic markers become the most consistent predictive signal. Implication: strategic data curation may be more valuable than brute-force data aggregation.
 
-\subsection{Practical Implications: Building Generalizable Phenotype Predictors}
+\subsection*{Practical Implications: Building Generalizable Phenotype Predictors}
 
 \textbf{Key finding:} \textit{Rigorous evaluation and quality diagnostics enable generalizable predictions even without mechanistic knowledge.}
 
@@ -52,7 +52,7 @@ Previous work (cite Li et al. and others) demonstrated that ML models learn phyl
 \item Mechanistic concordance (where available) provides a principled approach to quality filtering, but evaluation-based diagnostics can serve similar purposes when mechanisms are unknown
 \end{itemize}
 
-\subsection{Limitations}
+\subsection*{Limitations}
 
 \textbf{Key finding:} \textit{Our framework has important constraints that bound its applicability.}
 
@@ -64,7 +64,7 @@ Previous work (cite Li et al. and others) demonstrated that ML models learn phyl
 \item \textbf{Annotation dependence:} All our analyses rely on computational genome annotations, which have systematic biases across taxa. Poorly studied lineages may have lower concordance rates due to annotation gaps rather than genuinely different biology.
 \end{itemize}
 
-\subsection{Future Directions}
+\subsection*{Future Directions}
 
 \textbf{Key finding:} \textit{Characterizing discordances points toward specific research priorities and methodological advances.}
 
@@ -94,7 +94,7 @@ Previous work (cite Li et al. and others) demonstrated that ML models learn phyl
 \item Development of mechanistic prediction tools for additional phenotype classes to enable similar quality filtering
 \end{itemize}
 
-\subsection{Conclusion}
+\subsection*{Conclusion}
 
 \textbf{Key finding:} \textit{The path to generalizable phenotype prediction runs through data quality, not algorithmic complexity.}
 
@@ -132,3 +132,18 @@ Conclusion & Path runs through data quality & Final synthesis \\
 
 \item \textbf{On length:} This is a fairly comprehensive discussion outline. For ISME Journal, discussions are typically 4--6 paragraphs. Which sections are essential versus could be condensed?
 \end{enumerate}
+
+\subsection*{From older draft}
+This study provides a comprehensive assessment of the factors shaping both the predictive performance and interpretability of genomic models for microbial nutrient utilization phenotypes. By constructing phenotype-specific classifiers from an aggregated dataset comprising 819 microbial genomes and their growth profiles across 242 carbon sources, and leveraging diverse genomic annotation resources (Figure 1A), we systematically explored the impact of feature representation and selection within a unified machine learning framework (Figure 1B). Our analyses first considered the influence of dataset composition and phylogenetic biases on model generalizability, proceeded to evaluate the effectiveness of alternative feature representations and selection strategies, and ultimately examined the interpretability of resulting models in the context of microbial metabolism.
+Dataset Composition and Model Performance
+Although the correlation between phylogeny and metabolic traits is well established (A. C. Martiny et al., 2013), our results show that dataset composition, particularly phylogenetic distance and dataset-specific biases, affect model performance (Figures 3 and 4). Models trained and validated within the same dataset, especially those with more homogeneous composition such as ATLeaf, consistently achieved higher predictive accuracy compared to those trained on heterogeneous datasets like Literature or Marine. However, when models were evaluated across datasets, performance dropped substantially, regardless of the feature representation or selection strategy employed (Figure 3B). The observation that performance differences between datasets often met or exceeded those attributable to phylogenetic distance alone highlights the impact of dataset composition, experimental protocols, or other latent environmental factors not captured by the genomic features. This necessitates caution when applying models trained on one dataset to new microbial communities and emphasizes the need for diverse, well-curated training data and rigorous cross-dataset validation.
+Feature Representation and Selection
+Our comparative analysis of different annotation sources revealed that no single feature representation consistently outperformed others across all phenotypes (Figure 2B, 2C). While metabolic features, such as those derived from KOFAM, showed slightly superior performance in some cases, other annotation sources also contributed valuable predictive information. Notably, integrating features from multiple annotation sources into a combined representation yielded the highest accuracy for the majority of phenotypes (~82%), supporting the hypothesis that leveraging diverse genomic annotations enhances predictive power (Figure 5C).
+Feature selection strategies, although only marginally improving overall model performance (Figure 2A), played a crucial role in enhancing interpretability and reducing the feature space. Biologically informed feature selection, in particular, maintained prediction accuracy while substantially reducing the number of features (from ~10,000 to as few as 10–300; Figure 5B). This reduction not only improves computational efficiency but also facilitates the identification of mechanistically relevant features, as evidenced by the higher biological relevance of features selected through manual curation (Figure 6C, Table S3).
+Interpretability and Generalizability
+The interpretability of predictive models was markedly improved through biologically informed feature selection. Models trained on these features consistently identified a core set of predictive signals within datasets, as shown by the overlap of top features across cross-validation folds (Figure 6A). However, the overlap of important features across different datasets for the same phenotype remained limited (Figures 6B, S7), indicating that the relationships captured by the models are often dataset-specific and may not generalize well across diverse microbial communities. This lack of generalizability likely reflects both environmental and phylogenetic differences between datasets, as well as the influence of dataset-specific biases (Figure 4). Nevertheless, even if the identified key predictors are not directly biologically relevant, they are likely strongly correlated with the genes necessary for the underlying biological processes (Szklarczyk et al., 2023).
+Despite these challenges, certain phenotypes—such as m-Inositol—demonstrated greater cross-dataset generalizability (Figure 3B, 5A), suggesting that for some metabolic traits, predictive signals are more conserved and transferable. Moreover, models trained on aggregated datasets or using biologically selected features showed improved cross-dataset performance for specific phenotypes (Figure 5A, 5B), highlighting the potential of combining data and domain knowledge to enhance model robustness.
+Integrative Approaches and Future Directions
+The superior performance of classifiers trained on combined feature representations (Figure 2C) underscores the value of integrating diverse annotation sources. This approach not only improves prediction accuracy but also enables the discovery of novel mechanistic insights by connecting annotations of multiple types. However, these models generalize poorly across datasets and are much more difficult to interpret. However, the consistent identification of biologically relevant features (Table S3) when using biological feature selection suggets that there might be utility in combining these two approaches to advance our understanding of microbial nutrient utilization.
+In summary, our findings emphasize the importance of meticulous dataset composition, integrative feature representation, and biologically informed feature selection in developing robust and interpretable models for microbial phenotype prediction. While challenges remain in achieving generalizability across diverse datasets, the framework established here provides a foundation for improving metabolic pathway annotations and understanding microbial growth characteristics.
+Future work should prioritize expanding and diversifying and standardizing training datasets, refining feature selection strategies, and exploring advanced machine learning approaches to further enhance model performance and generalizability across complex microbial communities. Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will help to greatly accelerate these efforts (Gralka et al., 2023; Huang et al., 2023; Kehe et al., 2019). Such endeavors will be crucial for building truly predictive and insightful tools for microbial systems biology.

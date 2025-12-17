@@ -29,6 +29,8 @@ Our analyses focused on understanding factors influencing predictive performance
 Subsequent analyses primarily employed the ATLeaf, Biolog, and Marine datasets for model training and testing, while the Populus dataset was reserved exclusively for independent testing.
 Figure~\ref{fig:phylogenetic_distribution} describes the phylogenetic distribution of the microbes from the four datasets used in this study.
 
+Model performance is rigorously evaluated using cross-validation, cross-dataset testing to assess generalizability, and phylogeny-dependent tests to examine the impact of evolutionary relatedness on prediction accuracy. Finally, interpretation of biologically informative features offers insights into potential metabolic mechanisms underlying carbon utilization phenotypes.
+
 \begin{figure}[h]
 \centering
 \begin{subfigure}[b]{0.90\textwidth}
@@ -53,7 +55,9 @@ GapMind predicts growth capabilities by assessing the completeness of metabolic 
 We applied GapMind to the genomes in our datasets and compared its predictions to the experimental growth outcomes.
 As shown in Figure~\ref{fig:baseline_predictions}A, GapMind achieved modest balanced accuracy across the 15 shared phenotypes, with performance varying depending on the completeness threshold used (strict: $\sim$0.65 vs.\  permissive: $\sim$0.70).
 This indicates that while GapMind captures some mechanistic aspects of carbon utilization, it fails to account for the full complexity of microbial metabolism and regulation.
+
 Contrarily, the phylogeny-based nearest neighbor approach leverages the evolutionary relationships among microbial strains to predict phenotypes.
+The association between metabolic phenotypes and phylogenetic relationships is well-documented and routinely leveraged for metabolic profiling (Langille et al., 2013; A. C. Martiny et al., 2013).  However, while phylogeny-based models can capture broad patterns, they lack the capacity to reveal mechanistic insights into the specific features underlying carbon utilization, and their predictive accuracy often diminishes when applied to phylogenetically diverse microbial taxa.
 These methods have been widely used in microbial ecology and genomics, based on the principle that closely related organisms often share similar traits[refs].
 By examining the growth outcomes of closely related strains, the model infers the likely capabilities of a given strain.
 In this case, we use a nearest neighbor classifier with k=3, where the phenotype of a strain is predicted based on the majority phenotype of its three closest phylogenetic neighbors.
@@ -108,13 +112,15 @@ For the random splits, we can verify that the test samples were drawn from the s
 
 Performance on phylogeny-dependent out-of-clade splits are shown in Figure~\ref{fig:in_clade_out_clade_performance} and reflect similar trends as cross-dataset splits, with balanced accuracy ranging from 0.50--0.80.
 Which indicates that the models also struggle to generalize across phylogenetically distant samples.
-This is consistent with previous observations on dataset diversity (Albright et al., 2023; Li et al., 2023), where random splits often overestimate generalization performance due to fitting phylogeny-specific patterns.
+This is consistent with previous observations on dataset diversity (J. B. H. Martiny et al., 2015; Li et al., 2023), where random splits often overestimate generalization performance due to fitting phylogeny-specific patterns.
 
 Overall, we observe that the performance advantage of machine learning models had over GapMind in random split scenarios, diminishes under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.
 However, we also note that since GapMind itself has modest performance on these datasets (Figure~\ref{fig:baseline_predictions}A), even modest improvements by ML models in cross-dataset and out-of-clade scenarios could still be valuable for practical applications.
 Especially since if machine learning models can be trained on dataset or phylogeny specific data, they can provide more accurate predictions than existing mechanistic approaches.
 
 In the subsequent sectoins, we investiage why GapMind misclassifies certain samples and why ML models struggle to generalize, and explore strategies to improve model performance.
+
+Most carbon source utilizations are catalyzed by evolutionarily conserved, well-characterized catabolic enzymes. We therefore hypothesized that models trained on one dataset would generalize to other datasets (Gowda et al., 2022). Therefore, we anticipated the models would generalize well across diverse datasets; however, this did not occur. Nevertheless, it is imperative to consider additional factors, such as phylogenetic diversity and biases inherent to the datasets (ecosystem/environmental), which could lead to variations in the fundamental biochemical processes observed. To rigorously assess the impact of these biases on model generalizability, we conducted a detailed analysis in the subsequent subsection.
 
 \begin{figure}[h]
 \centering
