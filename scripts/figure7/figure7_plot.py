@@ -9,7 +9,6 @@ across different split types and training data quality (full vs concordant).
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import scienceplots
 import seaborn as sns
@@ -24,6 +23,9 @@ configure_plot_style()
 # Feature type to use: "gapmind", "kofam", or "rast"
 # Change this line to match the feature type used in figure7_data.py
 FEATURE_TYPE = "gapmind"
+
+# Sample sizes used in figure7_data.py
+SAMPLE_SIZES = [50, 100, 200, 500, "full"]
 
 
 def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -79,6 +81,7 @@ def plot_performance_vs_sample_size(
 
     Creates a faceted plot showing performance (balanced accuracy) vs number
     of training samples, faceted by phenotype (rows) and split type (columns).
+    Lines connect points with the same key and repeat across sample sizes.
 
     Parameters
     ----------
@@ -104,6 +107,13 @@ def plot_performance_vs_sample_size(
         figsize=(12, 6),
         sharex=True,
         sharey=True,
+    )
+
+    # Get unique sample sizes for x-axis labeling
+    raw_sizes = plot_data["sample_size"].unique()
+    unique_sample_sizes = sorted(
+        raw_sizes,
+        key=lambda x: float("inf") if str(x) == "full" else float(x),
     )
 
     # Define colors and markers for training types
@@ -138,36 +148,45 @@ def plot_performance_vs_sample_size(
                 if len(train_subset) == 0:
                     continue
 
-                # Plot individual points
+                # Get unique (key, repeat) combinations for line connections
+                train_subset["key_repeat"] = (
+                    train_subset["key"] + "_" + train_subset["repeat"].astype(str)
+                )
+                unique_key_repeats = train_subset["key_repeat"].unique()
+
+                # Plot lines connecting points with the same key and repeat
+                for key_repeat in unique_key_repeats:
+                    line_data = train_subset[
+                        train_subset["key_repeat"] == key_repeat
+                    ].copy()
+
+                    # Sort by n_train_samples for proper line connection
+                    line_data = line_data.sort_values("n_train_samples")
+
+                    # Plot line
+                    ax.plot(
+                        line_data["n_train_samples"],
+                        line_data["balanced_accuracy"],
+                        color=colors[training_type],
+                        linestyle="-",
+                        linewidth=1,
+                        alpha=0.4,
+                    )
+
+                # Plot all points
                 ax.scatter(
                     train_subset["n_train_samples"],
                     train_subset["balanced_accuracy"],
                     color=colors[training_type],
                     marker=markers[training_type],
-                    alpha=0.6,
+                    alpha=0.7,
                     s=40,
-                    label=training_type,
+                    label=training_type
+                    if row_idx == 0 and col_idx == len(split_types) - 1
+                    else None,
                     edgecolors="black",
                     linewidths=0.5,
                 )
-
-                # Calculate and plot mean line
-                mean_data = (
-                    train_subset.groupby("n_train_samples")["balanced_accuracy"]
-                    .mean()
-                    .reset_index()
-                )
-                ax.plot(
-                    mean_data["n_train_samples"],
-                    mean_data["balanced_accuracy"],
-                    color=colors[training_type],
-                    linestyle="-",
-                    linewidth=2,
-                    alpha=0.8,
-                )
-
-            # Add reference line at 0.95
-            ax.axhline(y=0.95, color="red", linestyle="--", alpha=0.3, linewidth=1)
 
             # Set labels and title
             if row_idx == len(phenotypes) - 1:
@@ -195,12 +214,26 @@ def plot_performance_vs_sample_size(
             # Set y-axis limits
             ax.set_ylim(0, 1.05)
 
-            # Add legend only to top-right subplot
-            if row_idx == 0 and col_idx == len(split_types) - 1:
-                ax.legend(title="Training Type", loc="lower right", frameon=False)
+            # Set x-axis ticks to match sample sizes
+            x_ticks = []
+            x_labels = []
+            for sample_size in unique_sample_sizes:
+                size_data = subset[subset["sample_size"] == sample_size]
+                if len(size_data) > 0:
+                    mean_n_samples = size_data["n_train_samples"].mean()
+                    x_ticks.append(mean_n_samples)
+                    x_labels.append(str(sample_size) if sample_size != "full" else "full")
+
+            if x_ticks:
+                ax.set_xticks(x_ticks)
+                ax.set_xticklabels(x_labels, rotation=45, ha="right")
 
             # Format x-axis
             ax.tick_params(axis="both", which="both")
+
+            # Add legend only to top-right subplot
+            if row_idx == 0 and col_idx == len(split_types) - 1:
+                ax.legend(title="Training Type", loc="lower right", frameon=False)
 
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
@@ -232,6 +265,7 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
     Plot all test subsets together for comparison.
 
     Creates separate figures for each phenotype showing all test subsets.
+    Lines connect points with the same key and repeat across sample sizes.
 
     Parameters
     ----------
@@ -244,6 +278,17 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
     split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
     test_subsets = ["Full Test", "Concordant Test", "Discordant Test"]
 
+    # Get unique sample sizes for x-axis labeling
+    raw_sizes = df["sample_size"].unique()
+    unique_sample_sizes = sorted(
+        raw_sizes,
+        key=lambda x: float("inf") if str(x) == "full" else float(x),
+    )
+
+    # Define colors and markers for training types
+    colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
+    markers = {"Full": "o", "Concordant": "s"}
+
     for phenotype in phenotypes:
         fig, axes = plt.subplots(
             nrows=len(test_subsets),
@@ -252,10 +297,6 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
             sharex=True,
             sharey=True,
         )
-
-        # Define colors and markers
-        colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
-        markers = {"Full": "o", "Concordant": "s"}
 
         for row_idx, test_subset in enumerate(test_subsets):
             for col_idx, split_type in enumerate(split_types):
@@ -286,36 +327,45 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                     if len(train_subset) == 0:
                         continue
 
-                    # Plot individual points
+                    # Get unique (key, repeat) combinations for line connections
+                    train_subset["key_repeat"] = (
+                        train_subset["key"] + "_" + train_subset["repeat"].astype(str)
+                    )
+                    unique_key_repeats = train_subset["key_repeat"].unique()
+
+                    # Plot lines connecting points with the same key and repeat
+                    for key_repeat in unique_key_repeats:
+                        line_data = train_subset[
+                            train_subset["key_repeat"] == key_repeat
+                        ].copy()
+
+                        # Sort by n_train_samples for proper line connection
+                        line_data = line_data.sort_values("n_train_samples")
+
+                        # Plot line
+                        ax.plot(
+                            line_data["n_train_samples"],
+                            line_data["balanced_accuracy"],
+                            color=colors[training_type],
+                            linestyle="-",
+                            linewidth=1,
+                            alpha=0.4,
+                        )
+
+                    # Plot all points
                     ax.scatter(
                         train_subset["n_train_samples"],
                         train_subset["balanced_accuracy"],
                         color=colors[training_type],
                         marker=markers[training_type],
-                        alpha=0.6,
+                        alpha=0.7,
                         s=40,
-                        label=training_type,
+                        label=training_type
+                        if row_idx == 0 and col_idx == len(split_types) - 1
+                        else None,
                         edgecolors="black",
                         linewidths=0.5,
                     )
-
-                    # Calculate and plot mean line
-                    mean_data = (
-                        train_subset.groupby("n_train_samples")["balanced_accuracy"]
-                        .mean()
-                        .reset_index()
-                    )
-                    ax.plot(
-                        mean_data["n_train_samples"],
-                        mean_data["balanced_accuracy"],
-                        color=colors[training_type],
-                        linestyle="-",
-                        linewidth=2,
-                        alpha=0.8,
-                    )
-
-                # Add reference line
-                ax.axhline(y=0.95, color="red", linestyle="--", alpha=0.3, linewidth=1)
 
                 # Set labels
                 if row_idx == len(test_subsets) - 1:
@@ -343,11 +393,25 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                 # Set y-axis limits
                 ax.set_ylim(0, 1.05)
 
+                # Set x-axis ticks to match sample sizes
+                x_ticks = []
+                x_labels = []
+                for sample_size in unique_sample_sizes:
+                    size_data = subset[subset["sample_size"] == sample_size]
+                    if len(size_data) > 0:
+                        mean_n_samples = size_data["n_train_samples"].mean()
+                        x_ticks.append(mean_n_samples)
+                        x_labels.append(str(sample_size) if sample_size != "full" else "full")
+
+                if x_ticks:
+                    ax.set_xticks(x_ticks)
+                    ax.set_xticklabels(x_labels, rotation=45, ha="right")
+
+                ax.tick_params(axis="both", which="both")
+
                 # Add legend only to top-right subplot
                 if row_idx == 0 and col_idx == len(split_types) - 1:
                     ax.legend(title="Training Type", loc="lower right", frameon=False)
-
-                ax.tick_params(axis="both", which="both")
 
         # Add overall title
         fig.suptitle(
