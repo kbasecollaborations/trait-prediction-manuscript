@@ -165,30 +165,82 @@ We observed that the main enzyme for Histidine metabolism (K01712) was consisten
 We also observe an uncharacterized protein (K09975) appearing as a common feature for ATLeaf and Marine datasets, which may warrant further investigation.
 However, it is interesting to note that though K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which are core enzymes in the histidine degradation pathway, are also part of the ATLeaf stable feature set, but they were not identified as stable features in the aggregated dataset.
 This could be due to this gene not appearing as a stable feature in the Biolog and Marine datasets, possibly because of annotation gaps or alternative pathways in those datasets.
-\todo{check why this is the case}
+
+Among the common stables features identified for Histinde in the aggregated dataset, are there mechanistic features?
+\todo{Do this}
 
 \input{sections/table_feature_comparison}
 
-\textbf{Question for next figure:} Given ML uses very few mechanistic features, can ML learn actual mechanisms when trained on cleaner data?
+\todo{Correlated features are not taken into account, FIX}
+
+We have observed the machine learning models struggle to generalize across datasets and phylogenetic contexts, and that they learn very few mechanistic features when trained on the full datasets.
+In the next section, we explore whether these models can learn actual mechanisms when trained on cleaner data where genotype-phenotype mappings are clearer.
 
 \FloatBarrier{}
 
 \subsection*{Can ML Learn Actual Mechanisms? Testing on GapMind-Concordant Data}
 
-\textbf{Key finding:} When trained on GapMind-concordant samples (where mechanisms are clearly mappable to genes), ML achieves near-perfect accuracy and learns mechanistic features. Importantly, ML also predicts a subset of discordant samples accurately, performing better than GapMind alone.
+\textbf{Key finding:} When trained on GapMind-concordant samples (where mechanisms are clearly mappable to genes), ML achieves near-perfect accuracy on concordant test samples and learns mechanistic features. Importantly, ML also predicts a subset of discordant samples accurately, performing better than GapMind alone.
+
+The analyses in the previous sections indicate that ML models struggle to generalize across datasets and phylogenetic contexts, likely because they learn non-mechanistic features that are dataset-specific.
+This raises the question: can ML learn actual mechanistic features when trained on samples where genotype-phenotype mappings are clear?
+To test this, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples).
+These samples likely have clearer mechanistic underpinnings, as GapMind's pathway-based predictions align with observed growth phenotypes.
+Additionally, we used GapMind features (presence/absence of pathway genes) as the feature matrix for the ML models, ensuring that the feature space is directly tied to known metabolic mechanisms.
+We retrained ML models using only these concordant samples and evaluated their performance on held-out concordant test samples Figure~\ref{fig:concordant_analysis}A (top panel).
+Our results show that models trained on concordant samples achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data across all phenotypes for the random split evaluation.
+Additionally, when trained on cross-dataset splits filtered for concordance, these models also achieve high balanced accuracy ($>$0.90) on many phenotype-dataset combinations.
+Indicating that when mechanisms are clear and features are mechanistically relevant, ML can learn and generalize well.
+However, even if we use concordant data, generalization fails for some phenotypes (eg. Glucose) even though there are common stable features across datasets.
+This could be due to the imbalanced class distribution in the data for these phenotypes.
+
+Cross-dataset stability analysis performed on models trained on GapMind-concordant samples using the dataset splits used in Figure~\ref{fig:ml_performance}B is shown in Figure~\ref{fig:concordant_analysis}B.
+Compared to Figure 4C (bottom panel), there is a notable increase in the number of stable features shared between individual datasets and the aggregated dataset, indicating that concordant training helps models learn consistent mechanistic features.
+Furthermore, Table~\ref{tab:feature_comparison_concordant} summarizes the biological relevance of the top stable features identified in concordant-trained models for representative phenotypes.
+Models consistently identify established pathway genes as top features, demonstrating that ML can learn actual mechanisms when samples have clear genotype-phenotype mappings.
+
+When concordant-trained models are applied to discordant samples, they achieve balanced accuracy of 0.18--0.60.
+This means ML correctly predicts a subset of samples that GapMind gets wrong, suggesting ML captures features beyond GapMind's gene set.
+Thereby, ML complements mechanistic tools by learning additional patterns from the data.
+
+From Figure~\ref{fig:misclassification_diagnosis}, we know that many samples are predicted incorrectly by GapMind due to annotation gaps or regulatory issues.
+In the subsequent section, we explore most likely causes of these errors and strategies to improve model performance.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.75\textwidth]{figure5.pdf}
-\caption{\textbf{ML learns mechanisms when trained on concordant data and outperforms GapMind on discordant samples.} (A) Models trained on GapMind-concordant samples (where mechanism is clearly mapped to known genes) achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for representative phenotypes. (B) This high performance generalizes robustly: concordant-trained models maintain balanced accuracy $>$0.90 across cross-dataset, in-clade, and out-of-clade evaluation scenarios, where full-data models failed. (C) \textit{Why does it work?} Feature importance analysis reveals concordant-trained models consistently identify established pathway genes as top features ($>$80\% mechanistically relevant, Jaccard similarity 0.6--0.8 across datasets vs. $<$0.2 for full-data models). This demonstrates ML can learn actual mechanisms when samples have clear genotype-phenotype mappings. \textit{Implication:} Discordant samples cannot be clearly mapped to mechanisms, at least not to GapMind genes. (D) \textit{ML performs better than GapMind:} When concordant-trained models are applied to discordant samples, they achieve balanced accuracy of 0.18--0.40 (significantly better than random, p $<$ 0.001). This means ML correctly predicts a subset of samples that GapMind gets wrong, suggesting ML captures features beyond GapMind's gene set. From Figures 4 and 5, we know some samples may be problematic. Next figure explores actual model performance after data quality improvements.}
-\label{fig:concordant_analysis}
+\caption{
+\textbf{ML learns mechanisms when trained on concordant data using GapMind features and outperforms GapMind by being able to predict on discordant samples.}
+(A) The plot shows performance of models trained on GapMind-concordant samples (where GapMind predictions match experimental outcomes). These models when trained on the random split evaluation data filtered for concordance, achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data across all phenotypes. When trained on the cross-dataset splits filtered for concordance, these models also achieve high balanced accuracy ($>$0.90) on many phenotype-dataset combinations, however some phenotypes such as Glucose and Sucrose show poor performance (balanced accuracy $<$0.70), indicating that concordant training alone does not guarantee generalization for all phenotypes.
+(B) Cross-dataset stability analysis performed on models trained on GapMind-concordant samples using the dataset splits used in Figure 3B. The bar plot shows the number of common stable features in more than 70\% of model runs trained on different datasets and their overlap with the aggregated dataset containing the three other datasets. Solid bars represent the number of stable features that were in common with the aggregated dataset, while the patterned bars represent the number of stable features that were unique to the specific dataset.
+(C) Box plot showing the balanced accuracy of concordant-trained models when applied to discordant samples (where GapMind predictions contradict experimental outcomes). The models achieve balanced accuracy of 0.18--0.60 across phenotypes, indicating that they can correctly predict a subset of samples that GapMind misclassifies.
+}\label{fig:concordant_analysis}
 \end{figure}
 
 \input{sections/table_feature_comparison_concordant}
 
-\subsection{Strategies to Improve Model Performance: Data Quality and Training Approaches}
+\FloatBarrier{}
 
-\textbf{Key finding:} Multiple strategies can improve model performance: removing systematically problematic samples, tuning probability thresholds for precision, filtering by confidence estimates, and curriculum learning approaches.
+\subsection*{Strategies to Improve Model Performance: Data Quality and Training Approaches}
+
+\textbf{Key finding:} Multiple strategies can improve model performance: removing systematically problematic samples and filtering by confidence estimates. And by prioritizing precision and recall we can tailor models for specific applications. We also explore effects of feature aggregation and feature selection on model performance.
+
+Concordant training is beneficial, but we would ideally not like to discard data entirely and in most cases we may not have a mechanistic predictor like GapMind to identify concordant samples.
+Therefore, we explored multiple strategies to improve model performance by addressing data quality issues and training approaches.
+Still, one thing we can do is reduce the amount of data that is removed by identifying and removing only the most problematic samples.
+Figure~\ref{fig:improvement_strategies}A shows the samples with most probable issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor genome annotation).
+We find that removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08???
+
+Additionally, it is important to consider the metric of importance.
+In Figure~\ref{fig:improvement_strategies}B, we show that for applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up....
+
+X, y confidence
+
+Combined features: GapMind + KOFAM + RAST
+
+Biological features (GapMind)
+
+NOTE: Figure 6D is using full data and not concordant data
 
 \begin{figure}[h]
 \centering
@@ -203,74 +255,46 @@ This could be due to this gene not appearing as a stable feature in the Biolog a
 \label{fig:improvement_strategies}
 \end{figure}
 
-\subsection{Other Ways to Improve Models: Sample Size, Feature Combinations, and Dataset Aggregation}
+\subsection*{How much data is really needed to train good models?}
 
-\textbf{Key finding:} Learning curves establish practical sample size requirements; feature representation combinations and dataset aggregation provide modest gains but are secondary to data quality improvements.
+\textbf{Key finding:} Learning curves establish practical sample size requirements
 
 \begin{figure}[h]
 \centering
-\begin{subfigure}[b]{0.95\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure7a.png}
-    \caption{Learning curves: how much data is needed?}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure7b.png}
-    \caption{Sample requirements vs.\ evaluation scenario.}
-\end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure7c.png}
-    \caption{Feature representation combinations.}
-\end{subfigure}
-\vspace{0.5cm}
-\begin{subfigure}[b]{0.95\textwidth}
-    \centering
-    % \includegraphics[width=\textwidth]{figure7d.png}
-    \caption{Does dataset aggregation improve performance?}
-\end{subfigure}
+\includegraphics[width=0.95\textwidth]{figure7_gapmind_histidine_all_tests.pdf}
 \caption{\textbf{Additional model optimization strategies.} (A) \textit{How much experimental data is needed?} Learning curves for concordant-trained models on representative phenotypes (glycerol, cellobiose, galactose, histidine) show performance plateaus at $\sim$40--60 samples per phenotype, establishing practical minimum experimental requirements. (B) \textit{Sample requirements depend on evaluation rigor:} Random within-dataset splits achieve balanced accuracy $>$0.85 with $\sim$30 samples; cross-dataset evaluation requires $\sim$50 samples; out-of-clade phylogenetic splits require $\sim$60--80 samples. This relationship shows that harder generalization tasks need more training data. (C) \textit{Do feature combinations help?} Combining KOFAM and RAST annotations provides marginal improvement (0.02--0.05 balanced accuracy) over KOFAM alone. Additional annotation sources show diminishing returns. \textit{Is it worth the computational cost?} For most applications, KOFAM alone is sufficient; feature combinations may help when sample sizes are very limited ($<$40). (D) \textit{Does dataset aggregation improve performance?} Combining multiple datasets (e.g., ATLeaf + Marine) during training improves generalization to held-out datasets by 0.03--0.07 balanced accuracy compared to single-dataset training. \textit{Is this necessary?} Given that 40--60 concordant samples achieve high performance (panel A), dataset aggregation provides marginal benefit when high-quality samples are available from a single source. However, aggregation may be valuable when individual datasets have limited coverage of specific phenotypes or phylogenetic groups.}
 \label{fig:model_optimization}
 \end{figure}
 
-\subsection{Summary and Practical Recommendations}
+\subsection*{Summary and Practical Recommendations}
 
 \textbf{Key insights from this work:}
 
 \begin{enumerate}
-\item \textbf{ML can learn mechanistic features}, but only when trained on samples with clear genotype-phenotype mappings (GapMind-concordant data). Full datasets contain noise that leads to spurious correlation learning.
+\item \textbf{ML can learn mechanistic features}, but only when trained on samples with clear genotype-phenotype mappings (GapMind-concordant data). Full datasets contain noise that leads to spurious correlation learning. Therefore, it is important to identify and prioritize high-quality samples for training rather than simply maximizing quantity through data aggregation.
 
 \item \textbf{ML outperforms GapMind} by correctly predicting a subset of discordant samples, capturing features beyond GapMind's curated gene sets.
 
 \item \textbf{Multiple improvement strategies exist:}
 \begin{itemize}
 \item Most impactful: Training on concordant data (primary strategy from Figure 5)
-\item Modest gains: Removing systematically bad genomes/datasets, confidence-based filtering, curriculum learning (Figure 6)
-\item Secondary optimizations: Feature combinations, dataset aggregation (Figure 7)
+\item Modest gains: Removing systematically bad genomes/datasets, confidence-based filtering  (Figure 6)
+\item Secondary optimizations: Feature combinations (Figure 6)
 \end{itemize}
 
-\item \textbf{Sample size requirements are manageable:} 40--60 concordant samples per phenotype achieve high performance, though out-of-clade generalization requires 60--80 samples.
+\item \textbf{Sample size requirements are manageable:} 50 concordant samples per phenotype achieve high performance, though out-of-clade generalization requires 60--80 samples.
 
 \item \textbf{Rigorous evaluation is critical:} Cross-dataset and out-of-clade splits provide realistic performance estimates; random within-dataset CV overestimates generalization by 0.15--0.25.
 
-\item \textbf{Deployment considerations:} Probability threshold tuning enables precision-focused predictions for experimental follow-up, while default thresholds balance precision and recall for screening applications.
+\item \textbf{Deployment considerations:} Probability threshold tuning enables precision-focused predictions for experimental follow-up
 \end{enumerate}
 
 \textbf{Practical workflow for building generalizable models:}
 \begin{enumerate}
 \item Evaluate using cross-dataset/out-of-clade splits to avoid overly optimistic estimates
 \item When mechanistic predictions (e.g., GapMind) are available, train on concordant samples
-\item Without mechanistic knowledge, use feature stability diagnostics (high cross-dataset Jaccard $>$ 0.5 indicates mechanistic learning) and per-genome quality assessments
-\item Collect 40--80 high-quality samples per phenotype; prioritize quality over quantity
-\item Apply improvement strategies (Figures 6--7) for incremental gains
+\item Without mechanistic knowledge, use feature stability diagnostics (high number of cross-dataset common stable features indicates mechanistic learning) and per-genome quality assessments
+\item Collect 40--80 high-quality samples per phenotype from phylogenetically diverse strains from the appropriate ecosystem of interest; prioritize quality over quantity
+\item Apply improvement strategies (Figures 5,6) for incremental gains
 \item Tune deployment thresholds based on application requirements
 \end{enumerate}
-
-\subsection*{Tables}
-
-\textbf{Table 1:} Summary of dataset characteristics (genomes, phenotypes, phylogenetic breadth, experimental methods)
-
-\textbf{Table 2:} Per-phenotype summary showing: (a) GapMind concordance rates and directional bias (false positive vs.\ false negative rates); (b) baseline performance (GapMind strict/permissive, phylogeny random/out-of-clade); (c) ML performance across evaluation scenarios (random CV, cross-dataset, in-clade, out-of-clade); (d) concordant-trained model performance and mechanistic feature identification; (e) minimum sample requirements for robust generalization
