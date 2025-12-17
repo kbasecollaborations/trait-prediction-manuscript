@@ -85,6 +85,7 @@ Both approaches demonstrate fundamental limitations, motivating machine learning
 
 Initially, we used the KOFAM annotations as features to train binary classifiers (gradient-boosted trees) for predicting carbon utilization phenotypes.
 We choose the KOFAM annotations as our primary feature set due to their comprehensive coverage of metabolic functions and pathways, which are directly relevant to carbon utilization.
+For machine learning we use an average of 4000--5000 KOFAM features per genome after correlation filtering (see Methods for details).
 Plus, KOFAM annotations were previously used successfully in similar phenotype prediction tasks (e.g., Li et al., 2023).
 Additionally, it is more fine-grained compared to other annotation sources like RAST, allowing the model to capture subtle functional differences that may influence growth phenotypes.
 And unlike the GapMind rule set, KOFAM annotations are not explicitly curated for specific pathways and span the entire metabolic repertoire of the organisms, providing a richer feature space for machine learning.
@@ -137,6 +138,8 @@ To diagnose whether these issues are systematic, we analyzed misclassification p
 Per-phenotype analysis revealed that though there are some phenotypes for which GapMind performs better (e.g., Mannitol, Galactose) and some for which it performs worse (e.g., Serine, Alanine), there is no clear directional bias in the misclassifications (false positives vs.\ false negatives).
 This suggests that both missing annotations/alternative pathways and regulatory/measurement issues could contribute to errors.
 The same pattern holds true when analyzing misclassifications per-dataset, where datasets like Biolog show higher overall discordance ($\sim$30\%) compared to Populus ($\sim$26\%), but again without a clear directional bias.
+Even though each dataset involved different experimental growth assays with different base media conditions and even though we have a diverse range of phenmotypes it looks like GapMind misclassifications are not systematically biased in one direction and the false positives and false negatives are evenly distributed across phenotypes and datasets.
+Meaning that the particular base media-phenotype combination does not seem to systematically affect GapMind performance and hence there should not be any biases due to these factors that could influence ML model training.
 
 To understand why ML models struggle to generalize across datasets and phylogenetic contexts, we performed feature importance stability analyses (Figure~\ref{fig:misclassification_diagnosis}C).
 First, we assessed feature stability across random splits of the aggregated dataset (top panel).
@@ -187,6 +190,7 @@ This raises the question: can ML learn actual mechanistic features when trained 
 To test this, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples).
 These samples likely have clearer mechanistic underpinnings, as GapMind's pathway-based predictions align with observed growth phenotypes.
 Additionally, we used GapMind features (presence/absence of pathway genes) as the feature matrix for the ML models, ensuring that the feature space is directly tied to known metabolic mechanisms.
+The number of features per genome after correlation filtering is $\sim$1000 GapMind features across all the GapMind carbon utilization phenotypes.
 We retrained ML models using only these concordant samples and evaluated their performance on held-out concordant test samples Figure~\ref{fig:concordant_analysis}A (top panel).
 Our results show that models trained on concordant samples achieve near-perfect balanced accuracy ($>$0.95) on held-out concordant test data across all phenotypes for the random split evaluation.
 Additionally, when trained on cross-dataset splits filtered for concordance, these models also achieve high balanced accuracy ($>$0.90) on many phenotype-dataset combinations.
@@ -270,11 +274,23 @@ Circles represent random split evaluations while squares represent cross-dataset
 
 \textbf{Key finding:} Learning curves establish practical sample size requirements
 
+In Figure~\ref{fig:model_sample_size_requirements}, we present learning curves for models trained on GapMind-concordant data for the Histidine phenotype.
+These curves illustrate how model performance (balanced accuracy) varies with training sample size under different evaluation scenarios: random cross-validation splits, cross-dataset splits, and out-of-clade phylogenetic splits.
+Each panel further breaks down performance on full test samples (top row), concordant test samples (middle row), and discordant test samples (bottom row).
+
+
+Learning curves for concordant-trained models on Histidine phenotype show performance plateaus at $\sim$100 samples, establishing practical minimum experimental requirements.
+This is true across all evaluation scenarios and test types, indicating that collecting around 50--100 high-quality samples per phenotype is sufficient to train robust models for these carbon utilization traits.
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure7_gapmind_histidine_all_tests.pdf}
-\caption{\textbf{Additional model optimization strategies.} (A) \textit{How much experimental data is needed?} Learning curves for concordant-trained models on representative phenotypes (glycerol, cellobiose, galactose, histidine) show performance plateaus at $\sim$40--60 samples per phenotype, establishing practical minimum experimental requirements. (B) \textit{Sample requirements depend on evaluation rigor:} Random within-dataset splits achieve balanced accuracy $>$0.85 with $\sim$30 samples; cross-dataset evaluation requires $\sim$50 samples; out-of-clade phylogenetic splits require $\sim$60--80 samples. This relationship shows that harder generalization tasks need more training data. (C) \textit{Do feature combinations help?} Combining KOFAM and RAST annotations provides marginal improvement (0.02--0.05 balanced accuracy) over KOFAM alone. Additional annotation sources show diminishing returns. \textit{Is it worth the computational cost?} For most applications, KOFAM alone is sufficient; feature combinations may help when sample sizes are very limited ($<$40). (D) \textit{Does dataset aggregation improve performance?} Combining multiple datasets (e.g., ATLeaf + Marine) during training improves generalization to held-out datasets by 0.03--0.07 balanced accuracy compared to single-dataset training. \textit{Is this necessary?} Given that 40--60 concordant samples achieve high performance (panel A), dataset aggregation provides marginal benefit when high-quality samples are available from a single source. However, aggregation may be valuable when individual datasets have limited coverage of specific phenotypes or phylogenetic groups.}
-\label{fig:model_optimization}
+\caption{
+\textbf{Sample size requirements for training generalizable models.}
+Learning curves showing model performance (balanced accuracy) as a function of training sample size for Histidine phenotype using GapMind-concordant data.
+The panels are organized by evaluation scenario (columns): (A) Random cross-validation splits, (B) Cross-dataset splits, and (C) Out-of-clade phylogenetic splits and by test type (rows): (Top) full, (Middle) concordant test samples, and (Bottom) discordant test samples.
+Each point represents model performance at a specific training sample size (50, 100, 200, 500, full) and the lines show the trend for the same split across different training sizes.
+}\label{fig:model_sample_size_requirements}
 \end{figure}
 
 \subsection*{Summary and Practical Recommendations}
