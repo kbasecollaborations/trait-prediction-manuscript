@@ -301,13 +301,27 @@ def subsample_indices(
             n=n_samples, replace=False, random_state=random_state
         ).index
     else:
-        # Stratified sampling
-        _, sampled_indices = train_test_split(
-            y_subset.index,
-            train_size=n_samples,
-            stratify=y_subset,
-            random_state=random_state,
-        )
+        # Check if we can do stratified sampling
+        # For stratification to work, sklearn needs at least one sample per class
+        # in both train and test sets
+        n_classes = len(y_subset.unique())
+        test_size = len(y_subset) - n_samples
+
+        # Need at least n_classes samples in test set for stratification
+        if test_size >= n_classes:
+            # Stratified sampling - take the train portion
+            sampled_indices, _ = train_test_split(
+                y_subset.index,
+                train_size=n_samples,
+                stratify=y_subset,
+                random_state=random_state,
+            )
+        else:
+            # Not enough samples for stratified split, use random sampling
+            sampled_indices = y_subset.sample(
+                n=n_samples, replace=False, random_state=random_state
+            ).index
+
         sampled_indices = pd.Index(sampled_indices)
 
     return sampled_indices
@@ -573,18 +587,23 @@ def main() -> None:
     # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
-    print("\nBy split type:")
-    summary = results.groupby("split_type")["balanced_accuracy"].describe().round(3)
-    print(summary)
 
-    print("\nBy phenotype (mean balanced accuracy):")
-    phenotype_summary = (
-        results.groupby("phenotype")["balanced_accuracy"]
-        .agg(["mean", "std", "count"])
-        .round(3)
-        .sort_values("mean", ascending=False)
-    )
-    print(phenotype_summary)
+    if len(results) > 0:
+        print("\nBy split type:")
+        summary = results.groupby("split_type")["balanced_accuracy"].describe().round(3)
+        print(summary)
+
+        print("\nBy phenotype (mean balanced accuracy):")
+        phenotype_summary = (
+            results.groupby("phenotype")["balanced_accuracy"]
+            .agg(["mean", "std", "count"])
+            .round(3)
+            .sort_values("mean", ascending=False)
+        )
+        print(phenotype_summary)
+    else:
+        print("\nNo results generated. All experiments were skipped.")
+        print("Check if test sets are too small or don't have both classes.")
 
     print("\nDone!")
 
