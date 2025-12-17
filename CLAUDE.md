@@ -27,10 +27,46 @@
 - Use CatBoost (because it does better than RF most of the time) and make sure to use the `make_classifier` function from `scripts/ml.py` if possible, at least use the same parameters provided there.
 - Disable `cat_features` as CatBoost handles 0/1 integers fine
 
-## LaTeX .tex file guidelines
+## Manuscript editing (LaTeX): instructions & guardrails
 
 - Put individual lines in the .tex files on separate lines for easier diffs
 - Use academic writing style, avoid contractions, and ensure proper grammar and punctuation.
+
+### Scope (what to edit)
+
+- Primary goal: improve sentence structure, narrative flow, and conciseness **without changing technical meaning**.
+- Edit prose only by default (Abstract/Intro/Results/Discussion), not figures/tables/math unless explicitly requested.
+- Prefer “small, safe, local” edits over large rewrites unless asked.
+
+### Hard constraints (must follow)
+
+- Do NOT change: equations/math environments, numbers/results, variable names, symbols, units, theorem/lemma statements, labels (`\label{}`), refs (`\ref{}`, `\autoref{}`), citation keys (`\cite{}`), bibliography files, or cross-referencing structure.
+- Do NOT add new claims, new references, or new citations. If something needs support, insert a `TODO(CITATION NEEDED)` comment only.
+- Do NOT “smooth over” uncertainty: preserve hedging level (e.g., “may”, “suggests”, “consistent with”) and avoid strengthening causal language.
+- Do NOT edit custom macros or packages unless requested; treat them as API.
+
+### Workflow (required)
+
+1. First, briefly list the 3–7 biggest issues you see in the provided text (redundancy, unclear antecedents, paragraph topic drift, etc.).
+2. Then propose a plan: what you will change, what you will not change, and what sections/files you will touch.
+3. Then apply edits.
+4. After edits, run a self-check:
+   - “Meaning preserved?” (yes/no + note any risky sentences)
+   - “Constraints violated?” (yes/no)
+   - “Any ambiguous terms introduced?” (list)
+
+### Style targets (soft constraints)
+
+- Prefer active voice when it improves clarity, but keep passive voice when agent/action is unknown or irrelevant.
+- Reduce nominalizations and long prepositional chains.
+- Keep terminology consistent (do not introduce synonyms for key technical terms).
+- Prefer shorter sentences, but don’t split if it harms logic.
+
+### Output format
+
+- If editing files: make changes directly and keep diffs minimal.
+- If not editing files: return a unified diff or “before/after” blocks for each paragraph you changed.
+- For any non-trivial rewrite, include a 1-line rationale.
 
 ## General behavior
 
