@@ -1,33 +1,25 @@
 %!TEX root = ../main.tex
 
-% TODO: Rewrite after going through the whole paper
 \begin{abstract}
-  {
-    \noindent
+{
+\noindent
 Predicting microbial carbon utilization from genomic data remains challenging despite well-characterized metabolic pathways.
-Here, we ask whether machine learning can learn novel mechanistic features from genomic data, and when it fails, why this occurs and how to improve performance.
-We compiled growth phenotypes for 819 microbial genomes across 242 carbon sources from four independent experimental collections and developed phenotype-specific classifiers.
+We compiled growth phenotypes for 819 microbial genomes across 242 carbon sources from four independent datasets and developed phenotype-specific classifiers to investigate whether machine learning can learn mechanistic features, why generalization fails, and how to improve performance.
 
-Baseline approaches showed fundamental limitations: mechanistic predictions (GapMind) achieved only modest accuracy ($\sim$0.65--0.70 balanced accuracy), while phylogeny-based methods failed to generalize beyond training distributions.
-Machine learning models achieved strong within-dataset accuracy (0.80--0.90) but exhibited substantially reduced cross-dataset and out-of-clade performance (drops of 0.15--0.25).
-Diagnosis revealed distinct failure modes: GapMind misclassifications showed phenotype-specific patterns indicating annotation gaps and regulatory complexity, while ML generalization failures stemmed from learning phylogenetically correlated rather than mechanistically relevant features.
+Baseline mechanistic predictions (GapMind) achieved only modest accuracy ($\sim$0.65--0.70 balanced accuracy), while phylogeny-based methods failed to generalize beyond training distributions.
+Machine learning models achieved strong within-dataset accuracy (0.75--0.90) but exhibited substantially reduced cross-dataset and out-of-clade performance (0.50--0.75).
+Diagnosis revealed distinct failure modes: GapMind misclassifications showed no systematic directional bias, indicating multiple underlying causes (annotation gaps, regulatory complexity, measurement issues); ML generalization failures stemmed from learning dataset-specific rather than mechanistically relevant features.
 
-Critically, machine learning \textit{can} learn actual mechanisms.
-When trained on samples where GapMind predictions matched experimental outcomes (concordant data), models achieved near-perfect accuracy ($>$0.95) that generalized robustly and consistently identified established pathway genes as top features.
-Moreover, these models predicted a subset of GapMind-discordant samples accurately (balanced accuracy 0.18--0.40), demonstrating that ML captures features beyond GapMind's curated gene sets and outperforms purely mechanistic approaches.
+Critically, ML can learn actual mechanisms when trained appropriately.
+Models trained on samples where GapMind predictions matched experimental outcomes (concordant data) achieved near-perfect accuracy ($>$0.95) that generalized robustly and consistently identified established pathway genes as top features.
+Moreover, these concordant-trained models predicted a subset of GapMind-discordant samples accurately (balanced accuracy 0.18--0.60), demonstrating that ML captures features beyond GapMind's curated gene sets.
 
-We systematically evaluated multiple improvement strategies: removing problematic genomes improved cross-dataset performance by 0.03--0.08; confidence-based filtering of measurements or features provided gains of 0.02--0.10; probability threshold tuning enabled precision-focused deployment; and curriculum learning showed marginal benefits.
-Learning curves established that 40--60 high-quality samples per phenotype achieve robust generalization, with harder evaluation scenarios (out-of-clade) requiring 60--80 samples.
-Feature representation combinations and dataset aggregation provided modest secondary improvements.
+We evaluated multiple improvement strategies: removing problematic genomes and confidence-based filtering of measurements improved cross-dataset performance modestly, while combined feature representations improved within-dataset but not cross-dataset accuracy.
+Learning curves established that 50--100 high-quality samples per phenotype achieve robust generalization.
 
-Our findings demonstrate that machine learning can learn mechanistic features when trained appropriately, outperforming mechanistic baselines by capturing a broader feature space.
-We provide a comprehensive evaluation of improvement strategies and establish practical requirements for building generalizable phenotype prediction models.
-  }
+Our findings demonstrate that data quality, not algorithmic complexity, fundamentally constrains genotype-phenotype prediction.
+Strategic data curation may be more valuable than brute-force data aggregation for building generalizable models.
+}
 \end{abstract}
 
-% Insert keywords here
 \keywords{Machine learning, Microbial phenotypes, Genotype-phenotype mapping, Carbon utilization}
-
-% \doublespacing
-
-% \section*{Importance}

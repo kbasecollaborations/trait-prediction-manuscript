@@ -2,148 +2,81 @@
 
 \section*{Discussion}
 
-\subsection*{Summary of Core Findings}
+\subsection*{Summary of findings}
 
-\textbf{Key finding:} \textit{Data quality, not algorithmic limitations, fundamentally constrains genotype-phenotype prediction.}
+Our results demonstrate that data quality, not algorithmic limitations, fundamentally constrains genotype-phenotype prediction.
+ML models achieved robust generalization when trained on high-quality (concordant) data but failed systematically when trained on mixed-quality data.
+The problem is not that ML cannot learn metabolic mechanisms---it demonstrably can when given clean signal.
+Rather, discordant samples force models toward spurious correlations that are predictive within specific datasets or clades but do not transfer.
+This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge.
 
-We restate the central finding: ML models achieve robust generalization when trained on high-quality (concordant) data, but fail systematically when trained on mixed-quality data. The problem is not that ML cannot learn metabolic mechanisms---it demonstrably can when given clean signal. Rather, discordant samples force models toward spurious correlations that happen to be predictive within specific datasets/clades but do not transfer. This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge.
+\subsection*{Interpreting discordances}
 
-\subsection*{Interpretation: What Discordances Reveal About Genotype-Phenotype Mapping}
-
-\textbf{Key finding:} \textit{Discordant samples reflect a mixture of technical artifacts and genuine biological complexity.}
-
-The partial predictability of discordant samples (BACC 0.18--0.4) suggests heterogeneous causes---some discordances are ``recoverable'' (annotation gaps where mechanism exists but wasn't detected), others are not (regulation, alternative pathways, measurement error). Directional bias in discordances is informative:
-
+The partial predictability of discordant samples (balanced accuracy 0.18--0.60) suggests heterogeneous causes.
+Some discordances are ``recoverable'' (annotation gaps where the mechanism exists but was not detected), while others are not (regulatory effects, alternative pathways, measurement error).
+The directional pattern of discordances is informative:
 \begin{itemize}
-\item \textbf{GapMind--/Experiment+ (false negatives):} likely annotation gaps, divergent homologs, or unknown alternative pathways---these represent opportunities for biological discovery
-\item \textbf{GapMind+/Experiment-- (false positives):} likely regulatory repression, missing cofactors/transporters, or experimental artifacts---these represent the complexity that static genomic features cannot capture
+\item \textbf{GapMind--/Experiment+ (false negatives):} likely reflect annotation gaps, divergent homologs, or unknown alternative pathways---representing opportunities for biological discovery
+\item \textbf{GapMind+/Experiment-- (false positives):} likely reflect regulatory repression, missing cofactors/transporters, or experimental artifacts---representing complexity that static genomic features cannot capture
 \end{itemize}
+Dataset-specific discordance patterns likely reflect differences in experimental protocols and measurement sensitivity rather than fundamental biological differences, providing a roadmap for targeted data quality improvements.
 
-Dataset-specific discordance patterns likely reflect differences in experimental protocols, growth conditions, and measurement sensitivity rather than fundamental biological differences. The concentration of discordances in specific genomes or phenotypes provides a roadmap for targeted data quality improvements.
+\subsection*{Relationship to previous work}
 
-\subsection*{Relationship to Previous Work on Phylogenetic Confounding}
+Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding (Li et al., 2023; Agrawal et al., 2022).
+Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples.
+When trained on concordant samples only, models identified mechanistic features and generalized across clades, suggesting the problem is signal-to-noise ratio rather than sample size per se.
+This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance (A. C. Martiny et al., 2013; J. B. H. Martiny et al., 2015), but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
 
-\textbf{Key finding:} \textit{Our findings extend and reframe previous observations about phylogenetic bias in trait prediction.}
+Our finding that combined feature representations from multiple annotation sources improved within-dataset accuracy but not cross-dataset generalization is consistent with previous observations that biologically informed feature selection improves interpretability without sacrificing accuracy (Li et al., 2023).
+However, even when models identified biologically relevant features within datasets, the overlap across datasets remained limited, indicating that dataset-specific biases dominate when data quality is mixed.
 
-Previous work (cite Li et al. and others) demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding. Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples. When trained on concordant samples only, models identify mechanistic features and generalize across clades---suggesting the problem is signal-to-noise ratio, not sample size per se. This does not contradict previous findings but provides a mechanistic explanation: mixed-quality data creates a situation where phylogenetic markers become the most consistent predictive signal. Implication: strategic data curation may be more valuable than brute-force data aggregation.
+\subsection*{Practical implications}
 
-\subsection*{Practical Implications: Building Generalizable Phenotype Predictors}
+Our results provide actionable guidance for building generalizable phenotype predictors.
 
-\textbf{Key finding:} \textit{Rigorous evaluation and quality diagnostics enable generalizable predictions even without mechanistic knowledge.}
+\textbf{For model development:}
+ML models should be trained on high-quality samples with clear genotype-phenotype mappings when possible.
+When mechanistic predictors like GapMind are available, concordant samples provide the highest-quality training data.
+Without mechanistic knowledge, feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
+Cross-dataset and out-of-clade evaluation provides realistic performance estimates; within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
+Sample size requirements are manageable: 50--100 high-quality samples per phenotype achieve robust performance.
 
-\textbf{For computational biologists building models:}
-\begin{itemize}
-\item Within-dataset cross-validation provides inflated performance estimates---always evaluate with cross-dataset and/or out-of-clade holdouts
-\item Feature stability across independent training sets is a diagnostic for mechanistic versus spurious learning
-\item Samples consistently misclassified across multiple feature sets and algorithms may indicate data quality issues rather than model failures
-\end{itemize}
-
-\textbf{For experimentalists generating phenotype data:}
-\begin{itemize}
-\item Standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for aggregatable data
-\item Including positive and negative controls enables quality assessment
-\item Replicate measurements would enable identification of unreliable phenotype calls
-\end{itemize}
+\textbf{For experimental design:}
+Standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data.
+Including positive and negative controls and replicate measurements enables quality assessment and identification of unreliable phenotype calls.
+Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection (Gralka et al., 2023; Huang et al., 2023; Kehe et al., 2019), but quality must be prioritized alongside quantity.
 
 \textbf{For the field broadly:}
-\begin{itemize}
-\item The value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains
-\item A smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models
-\item Mechanistic concordance (where available) provides a principled approach to quality filtering, but evaluation-based diagnostics can serve similar purposes when mechanisms are unknown
-\end{itemize}
+The value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains.
+A smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models.
+Focusing on precision or recall rather than balanced accuracy may be more informative depending on the application.
 
 \subsection*{Limitations}
 
-\textbf{Key finding:} \textit{Our framework has important constraints that bound its applicability.}
+Our framework has important constraints.
+First, our filtering approach requires mechanistic tools like GapMind, which exist only for well-characterized metabolic pathways.
+Extension to traits lacking comparable mechanistic predictors (e.g., stress tolerance, virulence) requires development of alternative quality assessment approaches.
+Second, we restricted analysis to binary growth/no-growth outcomes; quantitative traits may require different filtering strategies.
+Third, filtering to concordant samples reduces training data substantially ($\sim$30\% removed), which may be prohibitive for rare phenotypes---though our results suggest small high-quality datasets can outperform larger noisy ones.
+Fourth, by filtering to samples where mechanism-based predictions match experiments, we may be selecting for samples where the known pathway is the actual mechanism, potentially missing organisms using alternative routes.
+The partial predictability of discordant samples suggests this is a real limitation.
+Finally, all analyses rely on computational genome annotations, which have systematic biases across taxa; poorly studied lineages may have lower concordance rates due to annotation gaps rather than genuinely different biology.
 
-\begin{itemize}
-\item \textbf{Dependence on mechanistic tools:} Our filtering approach requires tools like GapMind, which exist only for well-characterized metabolic pathways. Extension to traits lacking comparable mechanistic predictors (e.g., stress tolerance, virulence, complex phenotypes) requires development of alternative quality assessment approaches.
-\item \textbf{Binary phenotypes only:} We restricted analysis to growth/no-growth outcomes. Quantitative traits (growth rates, yields, substrate affinities) introduce continuous measurement noise that may require different filtering strategies.
-\item \textbf{Sample size reduction:} Filtering to concordant samples reduces training data substantially (typically 40--60\% retention). For rare phenotypes with limited measurements, this may be prohibitive---though our results suggest that small high-quality datasets can outperform larger noisy ones.
-\item \textbf{Circularity concern:} By filtering to samples where mechanism-based predictions match experiments, we may be selecting for samples where the known pathway is the actual mechanism, potentially missing organisms using alternative routes. The partial predictability of discordant samples (BACC 0.18--0.4) suggests this is a real limitation.
-\item \textbf{Annotation dependence:} All our analyses rely on computational genome annotations, which have systematic biases across taxa. Poorly studied lineages may have lower concordance rates due to annotation gaps rather than genuinely different biology.
-\end{itemize}
+\subsection*{Future directions}
 
-\subsection*{Future Directions}
+Discordances point toward specific research priorities.
+False negative discordances (GapMind--/Experiment+) for specific phenotypes may indicate undiscovered alternative pathways; systematic investigation of these cases could expand pathway databases.
+Clades with elevated discordance rates may harbor novel metabolic strategies worth experimental characterization.
 
-\textbf{Key finding:} \textit{Characterizing discordances points toward specific research priorities and methodological advances.}
-
-\textbf{Biological discovery from discordances:}
-\begin{itemize}
-\item False negative discordances (GapMind--/Experiment+) for specific phenotypes may indicate undiscovered alternative pathways---systematic investigation of these cases could expand pathway databases
-\item Clades with elevated discordance rates may harbor novel metabolic strategies worth experimental characterization
-\end{itemize}
-
-\textbf{Improving data quality at the source:}
-\begin{itemize}
-\item Development of standardized phenotyping protocols optimized for ML training
-\item Inclusion of technical replicates to enable measurement reliability assessment
-\item Better integration of experimental metadata to enable condition-aware prediction
-\end{itemize}
-
-\textbf{Methodological advances:}
-\begin{itemize}
-\item Methods for identifying high-quality training samples without mechanistic knowledge---potentially using ensemble disagreement, prediction confidence, or cross-validation stability
-\item Transfer learning approaches that leverage concordant samples to initialize models that can then learn from noisier data
-\item Integration of gene expression or regulatory information to capture context-dependence that static genomic features miss
-\end{itemize}
-
-\textbf{Extension to other phenotypes:}
-\begin{itemize}
-\item Testing whether concordance-based filtering generalizes to other trait types (antibiotic resistance, environmental tolerance, host interactions)
-\item Development of mechanistic prediction tools for additional phenotype classes to enable similar quality filtering
-\end{itemize}
+Methodological advances could improve applicability of our framework.
+Methods for identifying high-quality training samples without mechanistic knowledge---potentially using ensemble disagreement, prediction confidence, or cross-validation stability---would extend this approach to less-characterized phenotypes.
+Integration of gene expression or regulatory information could capture context-dependence that static genomic features miss.
+Testing whether concordance-based filtering generalizes to other trait types (antibiotic resistance, environmental tolerance, host interactions) would establish broader applicability.
 
 \subsection*{Conclusion}
 
-\textbf{Key finding:} \textit{The path to generalizable phenotype prediction runs through data quality, not algorithmic complexity.}
-
-We demonstrated that ML successfully learns mechanistic genotype-phenotype relationships when provided with high-quality training data. Generalization failures reflect data quality limitations---discordant samples where genotype-phenotype relationships are obscured by annotation gaps, regulatory complexity, or measurement error. Rather than pursuing ever-larger datasets or more sophisticated algorithms, the field should prioritize: (1) rigorous evaluation using cross-dataset and cross-phylogeny holdouts, (2) quality diagnostics based on feature stability and biological relevance, and (3) strategic curation of training data to maximize signal-to-noise ratio. These principles, validated here for microbial carbon utilization, provide a framework applicable to diverse biological prediction challenges where data quality varies and mechanistic knowledge is incomplete.
-
-\subsection*{Summary Table of Discussion Structure}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{lll}
-\hline
-\textbf{Section} & \textbf{Key Statement} & \textbf{Main Takeaway} \\
-\hline
-Opening & Data quality, not algorithms, is the bottleneck & Reframes the problem \\
-Interpretation & Discordances are heterogeneous & Some recoverable, some not \\
-Context & Extends prior work on phylogenetic confounding & Quality, not quantity \\
-Practical implications & Evaluation and diagnostics enable generalization & Actionable guidance \\
-Limitations & Framework has constraints & Honest about bounds \\
-Future directions & Discordances point to research priorities & Forward-looking \\
-Conclusion & Path runs through data quality & Final synthesis \\
-\hline
-\end{tabular}
-\caption{Summary of discussion structure.}
-\label{tab:discussion_structure}
-\end{table}
-
-\subsection*{Questions for Refinement}
-
-\begin{enumerate}
-\item \textbf{On the ``circularity'' limitation:} How much do you want to emphasize this? It's a legitimate concern but could undermine the main message if overemphasized. The partial predictability of discordant samples partially addresses it.
-
-\item \textbf{On positioning relative to Li et al.:} Do you want to frame your work as contradicting, extending, or providing an alternative interpretation to their conclusions about needing $>$1000 genomes?
-
-\item \textbf{On future directions:} Are there specific experimental follow-ups you or collaborators might actually pursue? Mentioning concrete next steps can strengthen the discussion.
-
-\item \textbf{On length:} This is a fairly comprehensive discussion outline. For ISME Journal, discussions are typically 4--6 paragraphs. Which sections are essential versus could be condensed?
-\end{enumerate}
-
-\subsection*{From older draft}
-This study provides a comprehensive assessment of the factors shaping both the predictive performance and interpretability of genomic models for microbial nutrient utilization phenotypes. By constructing phenotype-specific classifiers from an aggregated dataset comprising 819 microbial genomes and their growth profiles across 242 carbon sources, and leveraging diverse genomic annotation resources (Figure 1A), we systematically explored the impact of feature representation and selection within a unified machine learning framework (Figure 1B). Our analyses first considered the influence of dataset composition and phylogenetic biases on model generalizability, proceeded to evaluate the effectiveness of alternative feature representations and selection strategies, and ultimately examined the interpretability of resulting models in the context of microbial metabolism.
-Dataset Composition and Model Performance
-Although the correlation between phylogeny and metabolic traits is well established (A. C. Martiny et al., 2013), our results show that dataset composition, particularly phylogenetic distance and dataset-specific biases, affect model performance (Figures 3 and 4). Models trained and validated within the same dataset, especially those with more homogeneous composition such as ATLeaf, consistently achieved higher predictive accuracy compared to those trained on heterogeneous datasets like Literature or Marine. However, when models were evaluated across datasets, performance dropped substantially, regardless of the feature representation or selection strategy employed (Figure 3B). The observation that performance differences between datasets often met or exceeded those attributable to phylogenetic distance alone highlights the impact of dataset composition, experimental protocols, or other latent environmental factors not captured by the genomic features. This necessitates caution when applying models trained on one dataset to new microbial communities and emphasizes the need for diverse, well-curated training data and rigorous cross-dataset validation.
-Feature Representation and Selection
-Our comparative analysis of different annotation sources revealed that no single feature representation consistently outperformed others across all phenotypes (Figure 2B, 2C). While metabolic features, such as those derived from KOFAM, showed slightly superior performance in some cases, other annotation sources also contributed valuable predictive information. Notably, integrating features from multiple annotation sources into a combined representation yielded the highest accuracy for the majority of phenotypes (~82%), supporting the hypothesis that leveraging diverse genomic annotations enhances predictive power (Figure 5C).
-Feature selection strategies, although only marginally improving overall model performance (Figure 2A), played a crucial role in enhancing interpretability and reducing the feature space. Biologically informed feature selection, in particular, maintained prediction accuracy while substantially reducing the number of features (from ~10,000 to as few as 10–300; Figure 5B). This reduction not only improves computational efficiency but also facilitates the identification of mechanistically relevant features, as evidenced by the higher biological relevance of features selected through manual curation (Figure 6C, Table S3).
-Interpretability and Generalizability
-The interpretability of predictive models was markedly improved through biologically informed feature selection. Models trained on these features consistently identified a core set of predictive signals within datasets, as shown by the overlap of top features across cross-validation folds (Figure 6A). However, the overlap of important features across different datasets for the same phenotype remained limited (Figures 6B, S7), indicating that the relationships captured by the models are often dataset-specific and may not generalize well across diverse microbial communities. This lack of generalizability likely reflects both environmental and phylogenetic differences between datasets, as well as the influence of dataset-specific biases (Figure 4). Nevertheless, even if the identified key predictors are not directly biologically relevant, they are likely strongly correlated with the genes necessary for the underlying biological processes (Szklarczyk et al., 2023).
-Despite these challenges, certain phenotypes—such as m-Inositol—demonstrated greater cross-dataset generalizability (Figure 3B, 5A), suggesting that for some metabolic traits, predictive signals are more conserved and transferable. Moreover, models trained on aggregated datasets or using biologically selected features showed improved cross-dataset performance for specific phenotypes (Figure 5A, 5B), highlighting the potential of combining data and domain knowledge to enhance model robustness.
-Integrative Approaches and Future Directions
-The superior performance of classifiers trained on combined feature representations (Figure 2C) underscores the value of integrating diverse annotation sources. This approach not only improves prediction accuracy but also enables the discovery of novel mechanistic insights by connecting annotations of multiple types. However, these models generalize poorly across datasets and are much more difficult to interpret. However, the consistent identification of biologically relevant features (Table S3) when using biological feature selection suggets that there might be utility in combining these two approaches to advance our understanding of microbial nutrient utilization.
-In summary, our findings emphasize the importance of meticulous dataset composition, integrative feature representation, and biologically informed feature selection in developing robust and interpretable models for microbial phenotype prediction. While challenges remain in achieving generalizability across diverse datasets, the framework established here provides a foundation for improving metabolic pathway annotations and understanding microbial growth characteristics.
-Future work should prioritize expanding and diversifying and standardizing training datasets, refining feature selection strategies, and exploring advanced machine learning approaches to further enhance model performance and generalizability across complex microbial communities. Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will help to greatly accelerate these efforts (Gralka et al., 2023; Huang et al., 2023; Kehe et al., 2019). Such endeavors will be crucial for building truly predictive and insightful tools for microbial systems biology.
+We demonstrated that ML successfully learns mechanistic genotype-phenotype relationships when provided with high-quality training data.
+Generalization failures reflect data quality limitations---discordant samples where genotype-phenotype relationships are obscured by annotation gaps, regulatory complexity, or measurement error.
+Rather than pursuing ever-larger datasets or more sophisticated algorithms, the field should prioritize: (1) rigorous evaluation using cross-dataset and cross-phylogeny holdouts, (2) quality diagnostics based on feature stability and biological relevance, and (3) strategic curation of training data to maximize signal-to-noise ratio.
+These principles, validated here for microbial carbon utilization, provide a framework applicable to diverse biological prediction challenges where data quality varies and mechanistic knowledge is incomplete.
