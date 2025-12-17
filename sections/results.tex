@@ -8,12 +8,12 @@
 
 \textbf{Narrative flow:}
 \begin{enumerate}
-\item Baseline approaches (GapMind, phylogeny) show limited accuracy, motivating ML approaches (Figure~\ref{fig:baseline_predictions})
-\item ML models perform well on intra-dataset/random splits but fail to generalize across datasets and phylogenetic contexts (Figure~\ref{fig:ml_performance})
-\item Why are predictions failing? GapMind misclassifications reveal annotation gaps and regulatory issues; ML generalization failures stem from learning non-mechanistic features (Figure~\ref{fig:misclassification_diagnosis})
-\item Can ML learn actual mechanisms? Yes—when trained on GapMind-concordant data where mechanisms are clear, ML achieves high accuracy and learns mechanistic features. ML also predicts some discordant samples better than GapMind (Figure~\ref{fig:concordant_analysis})
-\item Strategies to improve models: removing bad data, adjusting probability thresholds for precision, using confidence estimates, curriculum learning (Figure~\ref{fig:improvement_strategies})
-\item Additional improvements: learning curves show sample requirements, feature representation combinations provide modest gains, dataset aggregation helps (Figure~\ref{fig:model_optimization})
+\item Baseline approaches (GapMind, phylogeny) show limited accuracy, motivating ML approaches
+\item ML models perform well on intra-dataset/random splits but fail to generalize across datasets and phylogenetic contexts
+\item Why are predictions failing? GapMind misclassifications reveal annotation gaps and regulatory issues; ML generalization failures stem from learning non-mechanistic features
+\item Can ML learn actual mechanisms? Yes—when trained on GapMind-concordant data where mechanisms are clear, ML achieves high accuracy and learns mechanistic features. ML also predicts some discordant samples better than GapMind
+\item Strategies to improve models: removing bad data, using confidence estimates, using Precision and Recall metrics
+\item Additional improvements: learning curves show sample requirements, feature representation combinations provide modest gains, dataset aggregation helps
 \end{enumerate}
 
 \subsection*{Dataset overview and baseline predictions}
@@ -131,7 +131,7 @@ In the subsequent sectoins, we investiage why GapMind misclassifies certain samp
 
 \subsection*{Why Are GapMind and ML Models Misclassifying?}
 
-\textbf{Key finding:} GapMind misclassifications reveal annotation gaps and regulatory complexity; ML generalization failures stem from learning phylogenetically correlated rather than mechanistically relevant features. This raises the question: can ML learn actual mechanisms when trained appropriately?
+\textbf{Key finding:} GapMind misclassifications reveal annotation gaps and regulatory complexity; ML generalization failures stem from learning dataset or phylogenetic biases correlated rather than mechanistically relevant features. This raises the question: can ML learn actual mechanisms when trained appropriately?
 
 Missclassification by GapMind can arise from multiple factors, including incomplete pathway annotations, alternative metabolic routes not captured in the curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions, we summarize these potential causes in Figure~\ref{fig:misclassification_diagnosis}A.
 To diagnose whether these issues are systematic, we analyzed misclassification patterns both per-genome and per-phenotype (Figure~\ref{fig:misclassification_diagnosis}B).
@@ -168,9 +168,6 @@ We observed that the main enzyme for Histidine metabolism (K01712) was consisten
 We also observe an uncharacterized protein (K09975) appearing as a common feature for ATLeaf and Marine datasets, which may warrant further investigation.
 However, it is interesting to note that though K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which are core enzymes in the histidine degradation pathway, are also part of the ATLeaf stable feature set, but they were not identified as stable features in the aggregated dataset.
 This could be due to this gene not appearing as a stable feature in the Biolog and Marine datasets, possibly because of annotation gaps or alternative pathways in those datasets.
-
-Among the common stables features identified for Histinde in the aggregated dataset, are there mechanistic features?
-\todo{Do this}
 
 \input{sections/table_feature_comparison}
 
@@ -300,7 +297,7 @@ Each point represents model performance at a specific training sample size (50, 
 \begin{enumerate}
 \item \textbf{ML can learn mechanistic features}, but only when trained on samples with clear genotype-phenotype mappings (GapMind-concordant data). Full datasets contain noise that leads to spurious correlation learning. Therefore, it is important to identify and prioritize high-quality samples for training rather than simply maximizing quantity through data aggregation.
 
-\item \textbf{ML outperforms GapMind} by correctly predicting a subset of discordant samples, capturing features beyond GapMind's curated gene sets.
+\item \textbf{ML outperforms GapMind} by correctly predicting a subset of discordant samples, capturing relationships and features beyond GapMind's curated rule/gene sets.
 
 \item \textbf{Multiple improvement strategies exist:}
 \begin{itemize}
@@ -309,19 +306,18 @@ Each point represents model performance at a specific training sample size (50, 
 \item Secondary optimizations: Feature combinations (Figure 6)
 \end{itemize}
 
-\item \textbf{Sample size requirements are manageable:} 50 concordant samples per phenotype achieve high performance, though out-of-clade generalization requires 60--80 samples.
+\item \textbf{Sample size requirements are manageable:} 50--100 concordant samples per phenotype achieve high performance, though out-of-clade/dataset split generalization requires 100--200 samples.
 
 \item \textbf{Rigorous evaluation is critical:} Cross-dataset and out-of-clade splits provide realistic performance estimates; random within-dataset CV overestimates generalization by 0.15--0.25.
 
-\item \textbf{Deployment considerations:} Probability threshold tuning enables precision-focused predictions for experimental follow-up
+\item \textbf{Deployment considerations:} Focus on precision or recall might be more informative than balanced accuracy depending on application (Figure 6).
 \end{enumerate}
 
 \textbf{Practical workflow for building generalizable models:}
 \begin{enumerate}
 \item Evaluate using cross-dataset/out-of-clade splits to avoid overly optimistic estimates
 \item When mechanistic predictions (e.g., GapMind) are available, train on concordant samples
-\item Without mechanistic knowledge, use feature stability diagnostics (high number of cross-dataset common stable features indicates mechanistic learning) and per-genome quality assessments
-\item Collect 40--80 high-quality samples per phenotype from phylogenetically diverse strains from the appropriate ecosystem of interest; prioritize quality over quantity
+\item Without mechanistic knowledge, use feature stability diagnostics (high number of cross-dataset common stable features indicates mechanistic learning), per-genome quality assessments, and measurement confidence filtering to identify high-quality samples
+\item Collect 50--100 high-quality samples per phenotype from phylogenetically diverse strains from the appropriate ecosystem of interest; prioritize quality over quantity
 \item Apply improvement strategies (Figures 5,6) for incremental gains
-\item Tune deployment thresholds based on application requirements
 \end{enumerate}
