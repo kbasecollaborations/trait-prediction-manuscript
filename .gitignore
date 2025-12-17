@@ -483,6 +483,7 @@ cython_debug/
 # Misc
 .claude/
 CLAUDE.md
+prompts/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
