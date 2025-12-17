@@ -33,7 +33,7 @@ def plot_confident_samples_performance(
     phenotypes: list[str] | None = None,
 ) -> None:
     """
-    Plot dataset split performance on confident samples with random split reference.
+    Plot dataset split performance comparison across three filtering conditions.
 
     Parameters
     ----------
@@ -44,69 +44,85 @@ def plot_confident_samples_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load data (confident samples only)
-    ml_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
-    dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
-    random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
+    # Load data from three sources
+    # 1. Concordant samples (Figure 5A)
+    concordant_df = pd.read_csv(
+        Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
+    )
+    concordant_df = concordant_df[concordant_df["split_type"] == "dataset_split"].copy()
+
+    # 2. Y_soft filtered samples (current Figure 6B)
+    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
+    ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
+
+    # 3. Misclassified samples removed (Figure 6C filtered condition)
+    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
 
     # Get unique phenotypes
     if phenotypes is None:
-        phenotypes = sorted(dataset_df["phenotype"].unique())
+        phenotypes = sorted(concordant_df["phenotype"].unique())
 
     # Set up positions
     x = np.arange(len(phenotypes))
+    width = 0.25  # Width of each bar
 
-    # Prepare data for box plot - combining all datasets
-    box_data = []
-    for phenotype in phenotypes:
-        phenotype_data = dataset_df[dataset_df["phenotype"] == phenotype][
-            "balanced_accuracy"
-        ].values
-        box_data.append(phenotype_data)
-
-    # Create box plot
-    bp = ax.boxplot(
-        box_data,
-        positions=x,
-        widths=0.6,
-        patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor="#2E86AB", alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+    # Calculate mean and std for each condition
+    concordant_summary = (
+        concordant_df.groupby("phenotype")["balanced_accuracy"]
+        .agg(["mean", "std"])
+        .reindex(phenotypes)
+    )
+    ysoft_summary = (
+        ysoft_df.groupby("phenotype")["balanced_accuracy"]
+        .agg(["mean", "std"])
+        .reindex(phenotypes)
+    )
+    misclass_summary = (
+        misclass_df.groupby("phenotype")["balanced_accuracy"]
+        .agg(["mean", "std"])
+        .reindex(phenotypes)
     )
 
-    # Calculate mean random split performance
-    random_means = random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+    # Extract means and stds
+    concordant_means = concordant_summary["mean"].values
+    concordant_stds = concordant_summary["std"].values
+    ysoft_means = ysoft_summary["mean"].values
+    ysoft_stds = ysoft_summary["std"].values
+    misclass_means = misclass_summary["mean"].values
+    misclass_stds = misclass_summary["std"].values
 
-    # Plot random split mean as reference lines
-    for phenotype in phenotypes:
-        if phenotype in random_means:
-            x_pos = x[phenotypes.index(phenotype)]
-            ax.plot(
-                [x_pos - 0.45, x_pos + 0.45],
-                [random_means[phenotype], random_means[phenotype]],
-                color="#06A77D",
-                linestyle="-",
-                linewidth=2,
-                alpha=0.7,
-                zorder=1,
-            )
-
-    # Create legend handles
-    legend_handles = [
-        Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split"),
-        Line2D(
-            [0],
-            [0],
-            color="#06A77D",
-            linewidth=2,
-            alpha=0.7,
-            label="Random Split (mean)",
-        ),
-    ]
+    # Create grouped bars
+    bars1 = ax.bar(
+        x - width,
+        concordant_means,
+        width,
+        yerr=concordant_stds,
+        label="Concordant Samples",
+        color="#2E86AB",
+        alpha=0.7,
+        capsize=3,
+    )
+    bars2 = ax.bar(
+        x,
+        ysoft_means,
+        width,
+        yerr=ysoft_stds,
+        label="Y_soft Filtered",
+        color="#06A77D",
+        alpha=0.7,
+        capsize=3,
+    )
+    bars3 = ax.bar(
+        x + width,
+        misclass_means,
+        width,
+        yerr=misclass_stds,
+        label="Misclassified Removed",
+        color="#E63946",
+        alpha=0.7,
+        capsize=3,
+    )
 
     # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):
@@ -115,17 +131,16 @@ def plot_confident_samples_performance(
 
     # Formatting
     ax.set_xlabel("Phenotype")
-    ax.set_ylabel("Balanced Accuracy\n(confident samples only)")
+    ax.set_ylabel("Balanced Accuracy")
     ax.set_xticks(x)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.set_ylim(0, 1.05)
 
     # Add legend
     ax.legend(
-        handles=legend_handles,
         loc="upper center",
         bbox_to_anchor=(0.5, 1.10),
-        ncol=len(legend_handles),
+        ncol=3,
         frameon=False,
     )
 
@@ -141,22 +156,32 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Load data to determine phenotypes
-    ml_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
-
-    # Get phenotypes from dataset split
-    dataset_phenotypes = set(
-        ml_df[ml_df["split_type"] == "dataset_split"]["phenotype"].unique()
+    # Load data from all three sources to determine common phenotypes
+    concordant_df = pd.read_csv(
+        Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
     )
-    random_phenotypes = set(
-        ml_df[ml_df["split_type"] == "random_split"]["phenotype"].unique()
+    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
+    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+
+    # Get phenotypes from each dataset (dataset split only)
+    concordant_phenotypes = set(
+        concordant_df[concordant_df["split_type"] == "dataset_split"]["phenotype"].unique()
+    )
+    ysoft_phenotypes = set(
+        ysoft_df[ysoft_df["split_type"] == "dataset_split"]["phenotype"].unique()
+    )
+    misclass_phenotypes = set(
+        misclass_df[misclass_df["condition"] == "filtered"]["phenotype"].unique()
     )
 
-    # Use intersection to ensure consistent x-axis
+    # Use intersection to ensure consistent x-axis across all three datasets
     print("Determining common phenotypes...")
-    print(f" - Dataset split phenotypes: {len(dataset_phenotypes)}")
-    print(f" - Random split phenotypes: {len(random_phenotypes)}")
-    common_phenotypes = sorted(dataset_phenotypes.intersection(random_phenotypes))
+    print(f" - Concordant samples: {len(concordant_phenotypes)}")
+    print(f" - Y_soft filtered: {len(ysoft_phenotypes)}")
+    print(f" - Misclassified removed: {len(misclass_phenotypes)}")
+    common_phenotypes = sorted(
+        concordant_phenotypes.intersection(ysoft_phenotypes).intersection(misclass_phenotypes)
+    )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
     # Create figure

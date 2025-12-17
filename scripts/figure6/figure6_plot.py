@@ -1,58 +1,197 @@
 #!/usr/bin/env python3
+"""
+Create Figure 6: Comprehensive analysis of model performance and GapMind predictions.
+
+This figure includes:
+- Panel A: GapMind misclassification patterns (3 subplots)
+- Panel B: Performance on confident samples
+- Panel C: Impact of filtering problematic samples (3 metrics)
+- Panel D: Combined vs phenotype-filtered features (2 split types)
+"""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import scienceplots
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 from scripts.figure6.figure6a_plot import create_misclassification_plots
+from scripts.figure6.figure6b_plot import plot_confident_samples_performance
+from scripts.figure6.figure6c_plot import plot_metric_comparison
+from scripts.figure6.figure6d_plot import plot_split_comparison
 
 plt.style.use(["science", "nature"])
 
 
 def create_figure6(output_file: Path) -> None:
-    """Create Figure 6 with misclassification plots (A).
+    """Create Figure 6 with all panels arranged vertically.
 
     Parameters
     ----------
     output_file : Path
         Path to save the output figure.
     """
-    import matplotlib.gridspec as gridspec
+    # Data directories
+    data_dir = Path("data/outputs/figure6")
 
-    # Create figure
-    fig = plt.figure(figsize=(14, 10))
-    gs = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
+    # Load data to determine common phenotypes
+    print("Loading data files...")
 
-    ax1 = fig.add_subplot(gs[0, 0])  # Top left
-    ax2 = fig.add_subplot(gs[0, 1])  # Top right
+    # Figure 6B data
+    ml_df_6b = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
 
-    # Create a nested gridspec for the bottom row to center and narrow the third plot
-    bottom_gs = gridspec.GridSpec(
-        1,
-        3,
-        figure=fig,
-        width_ratios=[0.2, 1, 0.2],
-        wspace=0,
-        left=gs[1, :].get_position(fig).x0,
-        right=gs[1, :].get_position(fig).x1,
-        bottom=gs[1, :].get_position(fig).y0,
-        top=gs[1, :].get_position(fig).y1,
+    # Figure 6C data
+    df_6c = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+
+    # Figure 6D data
+    df_6d = pd.read_csv(data_dir / "figure6d_all_results.csv")
+
+    # Get phenotypes from each dataset
+    phenotypes_6b_dataset = set(
+        ml_df_6b[ml_df_6b["split_type"] == "dataset_split"]["phenotype"].unique()
     )
-    ax3 = fig.add_subplot(bottom_gs[0, 1])  # Center column only
-
-    # Create the plots
-    print("Creating Figure 6A (misclassification plots)...")
-    create_misclassification_plots(ax1, ax2, ax3)
-
-    # Add panel labels
-    ax1.text(
-        -0.15, 1.05, "(A)", transform=ax1.transAxes,
-        fontsize=14, fontweight="bold", va="top", ha="right"
+    phenotypes_6b_random = set(
+        ml_df_6b[ml_df_6b["split_type"] == "random_split"]["phenotype"].unique()
     )
+    phenotypes_6c = set(df_6c["phenotype"].unique())
+    phenotypes_6d = set(df_6d["phenotype"].unique())
+
+    # Use intersection to ensure consistent x-axis across all panels
+    print("Determining common phenotypes...")
+    print(f" - Figure 6B dataset split: {len(phenotypes_6b_dataset)}")
+    print(f" - Figure 6B random split: {len(phenotypes_6b_random)}")
+    print(f" - Figure 6C: {len(phenotypes_6c)}")
+    print(f" - Figure 6D: {len(phenotypes_6d)}")
+
+    common_phenotypes = sorted(
+        phenotypes_6b_dataset.intersection(phenotypes_6b_random)
+        .intersection(phenotypes_6c)
+        .intersection(phenotypes_6d)
+    )
+    print(f" - Common phenotypes: {len(common_phenotypes)}")
+
+    # Create figure with complex layout using GridSpec
+    # Panel A: 3 plots horizontal (row 0)
+    # Panels B, C, D: vertical plots (rows 1-6)
+    fig = plt.figure(figsize=(18, 35))
+    gs = GridSpec(
+        7, 2, figure=fig, height_ratios=[1, 1, 1, 1, 1, 1, 1], hspace=0.3, wspace=0.4
+    )
+
+    # Panel A: GapMind misclassification patterns (3 subplots horizontal)
+    # Create a nested GridSpec for Panel A with 3 columns
+    # Adjust width ratios: give less space to first two plots, more to third plot with labels
+    print("\nCreating Panel A: GapMind misclassification patterns...")
+    gs_a = GridSpecFromSubplotSpec(
+        1, 3, subplot_spec=gs[0, :], wspace=0.35, hspace=0, width_ratios=[1, 1, 1.5]
+    )
+    ax_a1 = fig.add_subplot(gs_a[0, 0])
+    ax_a2 = fig.add_subplot(gs_a[0, 1])
+    ax_a3 = fig.add_subplot(gs_a[0, 2])
+    create_misclassification_plots(ax_a1, ax_a2, ax_a3)
+
+    # Panel B: Performance on confident samples (spans all 2 columns)
+    print("Creating Panel B: Performance on confident samples...")
+    ax_b = fig.add_subplot(gs[1, :])
+    plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
+
+    # Panel C: Impact of filtering (3 metrics, each spanning all 2 columns)
+    print("Creating Panel C: Impact of filtering on metrics...")
+    ax_c1 = fig.add_subplot(gs[2, :])
+    plot_metric_comparison(
+        ax_c1,
+        df_6c,
+        "precision",
+        common_phenotypes,
+        ylabel="Precision",
+        title="",
+    )
+
+    ax_c2 = fig.add_subplot(gs[3, :])
+    plot_metric_comparison(
+        ax_c2,
+        df_6c,
+        "recall",
+        common_phenotypes,
+        ylabel="Recall",
+        title="",
+    )
+
+    ax_c3 = fig.add_subplot(gs[4, :])
+    plot_metric_comparison(
+        ax_c3,
+        df_6c,
+        "auprc",
+        common_phenotypes,
+        ylabel="AUPRC",
+        title="",
+    )
+
+    # Panel D: Combined vs phenotype-filtered features (2 split types, each spanning all 2 columns)
+    print("Creating Panel D: Combined vs phenotype-filtered features...")
+    ax_d1 = fig.add_subplot(gs[5, :])
+    plot_split_comparison(
+        ax_d1,
+        df_6d,
+        "random_split",
+        common_phenotypes,
+        title="",
+    )
+
+    ax_d2 = fig.add_subplot(gs[6, :])
+    plot_split_comparison(
+        ax_d2,
+        df_6d,
+        "dataset_split",
+        common_phenotypes,
+        title="",
+    )
+
+    # Collect all axes in order
+    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c1, ax_c2, ax_c3, ax_d1, ax_d2]
+
+    # Add main panel labels
+    panel_labels_map = {
+        ax_a1: "(A)",  # First misclassification plot
+        ax_b: "(B)",  # Confident samples
+        ax_c1: "(C)",  # First filtering metric
+        ax_d1: "(D)",  # First feature comparison
+    }
+
+    for ax, label in panel_labels_map.items():
+        # Use different x-position for Panel A due to nested GridSpec
+        x_pos = -0.30 if ax == ax_a1 else -0.08
+        ax.text(
+            x_pos,
+            1.05,
+            label,
+            transform=ax.transAxes,
+            fontweight="bold",
+            va="top",
+            ha="right",
+            fontsize=14,
+        )
+
+    # Remove x-tick labels from all but bottom plot
+    for ax in all_axes[:-1]:
+        ax.set_xlabel("")
+        if ax in [ax_b, ax_c1, ax_c2, ax_c3, ax_d1]:  # Only reset for phenotype plots
+            ax.set_xticklabels([])
+
+    # Set x-axis label only on bottom plot
+    ax_d2.set_xlabel("Phenotype")
+    ax_d2.set_xticklabels(common_phenotypes, rotation=45, ha="right")
+
+    # Adjust x-axis limits to ensure consistency for phenotype plots
+    x_pos = np.arange(len(common_phenotypes))
+    for ax in [ax_b, ax_c1, ax_c2, ax_c3, ax_d1, ax_d2]:
+        ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
+        ax.set_xticks(x_pos)
 
     # Save figure
-    gs.tight_layout(fig)
+    plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved combined figure to {output_file}")
     plt.close()

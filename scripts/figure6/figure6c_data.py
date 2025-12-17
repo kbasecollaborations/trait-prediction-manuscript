@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import (
     average_precision_score,
+    balanced_accuracy_score,
     precision_recall_curve,
     precision_score,
     recall_score,
@@ -220,7 +221,7 @@ def evaluate_with_predictions(
     exclude_samples: set[str] | None = None,
 ) -> dict[str, float]:
     """
-    Evaluate model and calculate precision, recall, and AUPRC.
+    Evaluate model and calculate precision, recall, AUPRC, and balanced accuracy.
 
     Parameters
     ----------
@@ -236,7 +237,7 @@ def evaluate_with_predictions(
     Returns
     -------
     dict[str, float]
-        Dictionary with precision, recall, auprc, and sample count.
+        Dictionary with precision, recall, auprc, balanced_accuracy, and sample count.
     """
     # Filter samples if needed
     if exclude_samples is not None:
@@ -252,6 +253,7 @@ def evaluate_with_predictions(
             "precision": np.nan,
             "recall": np.nan,
             "auprc": np.nan,
+            "balanced_accuracy": np.nan,
             "n_samples": 0,
         }
 
@@ -261,6 +263,7 @@ def evaluate_with_predictions(
             "precision": np.nan,
             "recall": np.nan,
             "auprc": np.nan,
+            "balanced_accuracy": np.nan,
             "n_samples": len(y_test_filtered),
         }
 
@@ -272,11 +275,13 @@ def evaluate_with_predictions(
     precision = precision_score(y_test_filtered, y_pred, zero_division=0)
     recall = recall_score(y_test_filtered, y_pred, zero_division=0)
     auprc = average_precision_score(y_test_filtered, y_pred_proba)
+    balanced_acc = balanced_accuracy_score(y_test_filtered, y_pred)
 
     return {
         "precision": precision,
         "recall": recall,
         "auprc": auprc,
+        "balanced_accuracy": balanced_acc,
         "n_samples": len(y_test_filtered),
     }
 
@@ -403,6 +408,7 @@ def run_figure6c_analysis(
                     "precision": metrics["precision"],
                     "recall": metrics["recall"],
                     "auprc": metrics["auprc"],
+                    "balanced_accuracy": metrics["balanced_accuracy"],
                     "n_samples": metrics["n_samples"],
                 }
             )
@@ -424,6 +430,7 @@ def run_figure6c_analysis(
                 "precision": ["mean", "std"],
                 "recall": ["mean", "std"],
                 "auprc": ["mean", "std"],
+                "balanced_accuracy": ["mean", "std"],
                 "n_samples": "mean",
             }
         )
