@@ -85,12 +85,12 @@ Both approaches demonstrate fundamental limitations, motivating machine learning
 
 Initially, we used the KOFAM annotations as features to train binary classifiers (gradient-boosted trees) for predicting carbon utilization phenotypes.
 We choose the KOFAM annotations as our primary feature set due to their comprehensive coverage of metabolic functions and pathways, which are directly relevant to carbon utilization.
-Plus, KOFAM annotations were previously used successfully in similar phenotype prediction tasks (e.g., Li et al., 2021).
+Plus, KOFAM annotations were previously used successfully in similar phenotype prediction tasks (e.g., Li et al., 2023).
 Additionally, it is more fine-grained compared to other annotation sources like RAST, allowing the model to capture subtle functional differences that may influence growth phenotypes.
 And unlike the GapMind rule set, KOFAM annotations are not explicitly curated for specific pathways and span the entire metabolic repertoire of the organisms, providing a richer feature space for machine learning.
 We evaluated model performance using balanced accuracy to account for class imbalance across phenotypes.
 We evaluated two types of machine learning algorithms: gradient-boosted trees (GBT) and random forests (RF).
-We limited ourselves to these since previous papers (Li et al., 2021; Agrawal et al., 2022) have shown that Random Forests performed well for trait prediction tasks, and GBTs are known to often outperform RFs in various classification tasks due to their ability to model complex relationships through boosting.
+We limited ourselves to these since previous papers (Li et al., 2023; Agrawal et al., 2022) have shown that Random Forests performed well for trait prediction tasks, and GBTs are known to often outperform RFs in various classification tasks due to their ability to model complex relationships through boosting.
 We finally selected GBTs for our main analyses due to their slightly better performance across different splits and phenotypes (see Table~\ref{tab:best_models_counts} in Supplementary).
 
 For this analysis, we aggregated the data from all four datasets and used four evaluation scenarios to assess model performance and generalization:
@@ -221,38 +221,49 @@ In the subsequent section, we explore most likely causes of these errors and str
 
 \FloatBarrier{}
 
-\subsection*{Strategies to Improve Model Performance: Data Quality and Training Approaches}
+\subsection*{Strategies to Improve Model Performance: Data Quality and Feature Selection Approaches}
 
 \textbf{Key finding:} Multiple strategies can improve model performance: removing systematically problematic samples and filtering by confidence estimates. And by prioritizing precision and recall we can tailor models for specific applications. We also explore effects of feature aggregation and feature selection on model performance.
 
+First, we identify systematically bad samples that could be introducing noise into the training data.
+We define bad samples as those that show zero growth on all substrates, growth on all of the substrates whereas GapMind shows incomplete pathways, and those microbes that have the most misclassifications across all datasets.
+\todo{Might need to update this genome quality metric}
+
 Concordant training is beneficial, but we would ideally not like to discard data entirely and in most cases we may not have a mechanistic predictor like GapMind to identify concordant samples.
-Therefore, we explored multiple strategies to improve model performance by addressing data quality issues and training approaches.
 Still, one thing we can do is reduce the amount of data that is removed by identifying and removing only the most problematic samples.
-Figure~\ref{fig:improvement_strategies}A shows the samples with most probable issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor genome annotation).
-We find that removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08???
+Therefore, we explored multiple strategies to improve model performance by addressing data quality issues.
+Next, we explore the effect of filtering samples based on the bad genomes identified above and based on measurement confidence (see Methods for details on confidence calculation).
+We retrain models after removing these problematic samples and evaluate their performance across cross-dataset splits (Figure~\ref{fig:improvement_strategies}B).
+We observe that training on concordant data offers the highest performance gains (Figure~\ref{fig:concordant_analysis}B) compared to other data filtering strategies, demonstrating that clear genotype-phenotype mappings are crucial for mechanistic learning.
+However, this approach removes a significant portion of the data ($\sim$30\% of samples), which may not be feasible in many scenarios.
+Filtering based on measurment confidence removes fewer samples in most cases and provides model performance comparable to training on concordant data.
 
-Additionally, it is important to consider the metric of importance.
-In Figure~\ref{fig:improvement_strategies}B, we show that for applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up....
 
-X, y confidence
+In Figure~\ref{fig:improvement_strategies}C, we explore the effect of filtering samples based on various filtering strategies and their effect on precision and recall.
+ML models trained on GapMind-concordant data (green) show the best precision-recall tradeoff and are much better than GapMind predictions alone (purple).
+Removing systematically bad genomes (blue) and filtering based on measurement confidence (red) also provide modest improvements to precision and recall.
 
-Combined features: GapMind + KOFAM + RAST
+In Figure~\ref{fig:improvement_strategies}D, we explore the effect of feature aggregation and feature selection on model performance.
+Here we are using the full data and not the concordant data.
+We compare models trained using only the biologically relevant GapMind features vs. models trained using combined features from GapMind, KOFAM, and RAST annotations.
+We find that combining features provides improvements in random split evaluations (circles) but not in cross-dataset evaluations (squares).
+This suggests that while feature combinations may help capture more information within a dataset, they do not necessarily improve generalization across datasets.
+Therefore, for practical applications where generalization is key, focusing on biologically relevant features may be more beneficial.
 
-Biological features (GapMind)
-
-NOTE: Figure 6D is using full data and not concordant data
+This was also an obervation from previous studies (Li et al., 2023) where they found that using selected KOFAM annotations from relevant KEGG modules provided better performance than using all KOFAM annotations.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.95\textwidth]{figure6.pdf}
 \caption{
-\textbf{What strategies improve model performance?}
-(A) \textit{Removing bad data:} Using insights from Figures 4 and 5, we identify problematic samples. Per-genome analysis reveals errors concentrated in top 10--20\% of genomes showing systematic issues (zero growth on all substrates, growth on $>$90\% of substrates, or poor annotation). Removing these genomes improves cross-dataset balanced accuracy by 0.03--0.08. Dataset-level filtering (removing high-discordance datasets) shows similar gains.
-(B) \textit{Improving precision:} For applications requiring high confidence predictions, tuning probability thresholds from default 0.5 to 0.7--0.8 dramatically improves precision (0.85 $\rightarrow$ 0.95) with acceptable recall reduction, enabling deployment for experimental follow-up.
-(C) \textit{Measurement confidence filtering:} Filtering training samples by experimental measurement confidence (using replicates, OD thresholds, growth curve quality) improves cross-dataset generalization by 0.05--0.10 balanced accuracy.
-(D) \textit{Feature confidence filtering:} Filtering by annotation quality scores (e.g., KOFAM/RAST confidence, alignment scores) shows modest improvements of 0.02--0.05 balanced accuracy.
-(E) \textit{Curriculum learning:} Training first on high-confidence concordant samples, then progressively adding lower-confidence and discordant samples, shows marginal performance gains (0.02--0.04) compared to direct concordant training, suggesting diminishing returns for added complexity.}
-\label{fig:improvement_strategies}
+\textbf{Effects of data filtering and feature selection on model performance.}
+(A) Plots showing sources of errors in GapMind predictions due to bad samples. (Left) Number of microbes showing zero growth across all substrates in each dataset. (Middle) Number of microbes showing growth on all of the substrates in each dataset. (Right) Top 20 misclassified genomes across all datasets, some of which are subsets of the bad genomes shown in the left and middle panels.
+(B) Effect of data filtering on model performance across cross-dataset splits. The grouped bar plot shows the balanced accuracy of models trained on concordant data (green), compared to models trained after removing bad genomes (as identified in panel A; blue) and models trained after removing bad genomes based on calculated measurement confidence (red; see Methods).
+(C) Scatter plot of precision vs recall for models trained on the filtered data shown in panel B (left) vs. GapMind predictions (right). Each dot represents average model performance for a particular phenotype across cross-dataset splits. The colors represent different data filtering strategies and GapMind predictions are shown in purple.
+(D) Effect of feature aggregation and feature selection on model performance across cross-dataset splits (on the full data). The scatter plot (left) shows the balanced accuracy differences when using combined features of GapMind, KOFAM, and RAST annotations (x-axis) vs. when using only the biologically relevant GapMind features (y-axis).
+The scatter plot (right) shows the precision vs recall for models trained using combined features (blue) vs. models trained using only filtered GapMind features (red).
+Circles represent random split evaluations while squares represent cross-dataset evaluations.
+}\label{fig:improvement_strategies}
 \end{figure}
 
 \subsection*{How much data is really needed to train good models?}
