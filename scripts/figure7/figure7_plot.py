@@ -222,7 +222,9 @@ def plot_performance_vs_sample_size(
                 if len(size_data) > 0:
                     mean_n_samples = size_data["n_train_samples"].mean()
                     x_ticks.append(mean_n_samples)
-                    x_labels.append(str(sample_size) if sample_size != "full" else "full")
+                    x_labels.append(
+                        str(sample_size) if sample_size != "full" else "full"
+                    )
 
             if x_ticks:
                 ax.set_xticks(x_ticks)
@@ -322,7 +324,9 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
 
                 # Plot for each training type
                 for training_type in ["Full", "Concordant"]:
-                    train_subset = subset[subset["training_type"] == training_type].copy()
+                    train_subset = subset[
+                        subset["training_type"] == training_type
+                    ].copy()
 
                     if len(train_subset) == 0:
                         continue
@@ -401,7 +405,9 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                     if len(size_data) > 0:
                         mean_n_samples = size_data["n_train_samples"].mean()
                         x_ticks.append(mean_n_samples)
-                        x_labels.append(str(sample_size) if sample_size != "full" else "full")
+                        x_labels.append(
+                            str(sample_size) if sample_size != "full" else "full"
+                        )
 
                 if x_ticks:
                     ax.set_xticks(x_ticks)
@@ -413,16 +419,11 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                 if row_idx == 0 and col_idx == len(split_types) - 1:
                     ax.legend(title="Training Type", loc="lower right", frameon=False)
 
-        # Add overall title
-        fig.suptitle(
-            f"{phenotype}: Performance vs Training Sample Size",
-            fontsize=12,
-            fontweight="bold",
-            y=0.995,
-        )
-
         plt.tight_layout()
-        phenotype_file = output_file.parent / f"figure7_{FEATURE_TYPE}_{phenotype.lower()}_all_tests.pdf"
+        phenotype_file = (
+            output_file.parent
+            / f"figure7_{FEATURE_TYPE}_{phenotype.lower()}_all_tests.pdf"
+        )
         fig.savefig(phenotype_file, dpi=300, bbox_inches="tight")
         print(f"Saved plot to {phenotype_file}")
         plt.close()
@@ -451,7 +452,9 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
     print("\nMean balanced accuracy by configuration:")
     summary = (
         df[df["test_subset"] == "Full Test"]
-        .groupby(["phenotype", "split_type", "training_type", "sample_size"])["balanced_accuracy"]
+        .groupby(["phenotype", "split_type", "training_type", "sample_size"])[
+            "balanced_accuracy"
+        ]
         .agg(["mean", "std", "count"])
         .round(3)
     )
@@ -462,7 +465,9 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
         (df["test_subset"] == "Full Test") & (df["sample_size"] == "full")
     ].copy()
     full_summary = (
-        full_data.groupby(["phenotype", "split_type", "training_type"])["balanced_accuracy"]
+        full_data.groupby(["phenotype", "split_type", "training_type"])[
+            "balanced_accuracy"
+        ]
         .agg(["mean", "std"])
         .round(3)
     )
@@ -472,7 +477,9 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
 def main() -> None:
     """Main function to generate Figure 7 plots."""
     # Load data
-    data_file = Path(f"data/outputs/figure7/figure7_data_requirements_{FEATURE_TYPE}.csv")
+    data_file = Path(
+        f"data/outputs/figure7/figure7_data_requirements_{FEATURE_TYPE}.csv"
+    )
     df = pd.read_csv(data_file)
 
     print(f"Loaded {len(df)} rows from {data_file}")
@@ -500,7 +507,9 @@ def main() -> None:
 
     # Combined plots showing all test subsets per phenotype
     print("  Creating combined plots per phenotype...")
-    plot_combined_test_subsets(plot_data, output_dir / f"figure7_{FEATURE_TYPE}_combined.pdf")
+    plot_combined_test_subsets(
+        plot_data, output_dir / f"figure7_{FEATURE_TYPE}_combined.pdf"
+    )
 
     # Print summary statistics
     print_summary_statistics(plot_data)
