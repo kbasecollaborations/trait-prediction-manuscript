@@ -23,7 +23,11 @@ from scripts.figure6.figure6c_plot import (
     plot_gapmind_precision_recall_scatter,
     plot_precision_recall_scatter,
 )
-from scripts.figure6.figure6d_plot import plot_split_comparison
+from scripts.figure6.figure6d_plot import (
+    plot_balanced_accuracy_scatter,
+    plot_precision_recall_scatter_by_feature_type,
+    plot_split_comparison,
+)
 
 plt.style.use(["science", "nature"])
 
@@ -78,11 +82,11 @@ def create_figure6(output_file: Path) -> None:
     # Create figure with complex layout using GridSpec
     # Panel A: 3 plots horizontal (row 0)
     # Panel B: Performance comparison (row 1)
-    # Panel C: Precision-recall scatter (row 2) - make it bigger
-    # Panel D: Feature comparison - 2 subplots (rows 3-4)
-    fig = plt.figure(figsize=(18, 28))
+    # Panel C: Precision-recall scatter - 2 side-by-side (row 2)
+    # Panel D: Feature comparison scatter - 2 side-by-side (row 3)
+    fig = plt.figure(figsize=(18, 24))
     gs = GridSpec(
-        5, 2, figure=fig, height_ratios=[1, 1, 1.5, 1, 1], hspace=0.3, wspace=0.4
+        4, 2, figure=fig, height_ratios=[1, 1, 1.5, 1.5], hspace=0.3, wspace=0.4
     )
 
     # Panel A: GapMind misclassification patterns (3 subplots horizontal)
@@ -110,25 +114,13 @@ def create_figure6(output_file: Path) -> None:
     plot_precision_recall_scatter(ax_c1, data_dir, common_phenotypes)
     plot_gapmind_precision_recall_scatter(ax_c2, common_phenotypes)
 
-    # Panel D: Combined vs phenotype-filtered features (2 split types, each spanning all 2 columns)
+    # Panel D: Combined vs phenotype-filtered features (2 scatter plots side-by-side)
     print("Creating Panel D: Combined vs phenotype-filtered features...")
-    ax_d1 = fig.add_subplot(gs[3, :])
-    plot_split_comparison(
-        ax_d1,
-        df_6d,
-        "random_split",
-        common_phenotypes,
-        title="",
-    )
-
-    ax_d2 = fig.add_subplot(gs[4, :])
-    plot_split_comparison(
-        ax_d2,
-        df_6d,
-        "dataset_split",
-        common_phenotypes,
-        title="",
-    )
+    gs_d = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[3, :], wspace=0.3)
+    ax_d1 = fig.add_subplot(gs_d[0, 0])
+    ax_d2 = fig.add_subplot(gs_d[0, 1])
+    plot_balanced_accuracy_scatter(ax_d1, df_6d, common_phenotypes)
+    plot_precision_recall_scatter_by_feature_type(ax_d2, df_6d, common_phenotypes)
 
     # Collect all axes in order
     all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c1, ax_c2, ax_d1, ax_d2]
@@ -155,21 +147,14 @@ def create_figure6(output_file: Path) -> None:
             fontsize=14,
         )
 
-    # Remove x-tick labels from all but bottom plot
-    for ax in all_axes[:-1]:
-        ax.set_xlabel("")
-        if ax in [ax_b, ax_d1]:  # Only reset for phenotype plots (not scatter plots)
-            ax.set_xticklabels([])
+    # Remove x-tick labels from Panel B (phenotype bar plot)
+    ax_b.set_xlabel("")
+    ax_b.set_xticklabels([])
 
-    # Set x-axis label only on bottom plot
-    ax_d2.set_xlabel("Phenotype")
-    ax_d2.set_xticklabels(common_phenotypes, rotation=45, ha="right")
-
-    # Adjust x-axis limits to ensure consistency for phenotype plots
+    # Adjust x-axis limits for phenotype bar plot (Panel B only)
     x_pos = np.arange(len(common_phenotypes))
-    for ax in [ax_b, ax_d1, ax_d2]:
-        ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
-        ax.set_xticks(x_pos)
+    ax_b.set_xlim(-0.5, len(common_phenotypes) - 0.5)
+    ax_b.set_xticks(x_pos)
 
     # Save figure
     plt.tight_layout()

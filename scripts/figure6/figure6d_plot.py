@@ -157,6 +157,155 @@ def plot_split_comparison(
         )
 
 
+def plot_balanced_accuracy_scatter(
+    ax: Axes,
+    data: pd.DataFrame,
+    phenotypes: list[str],
+) -> None:
+    """
+    Plot scatter plot of Combined vs Filtered balanced accuracy.
+
+    Shapes indicate split type (circle=random, square=dataset).
+    Points above the diagonal indicate filtered features outperform combined.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to plot on.
+    data : pd.DataFrame
+        Results dataframe with all data.
+    phenotypes : list[str]
+        List of phenotypes to include.
+    """
+    # Calculate mean balanced accuracy for each phenotype, experiment, and split_type
+    summary = (
+        data.groupby(["phenotype", "experiment", "split_type"])["balanced_accuracy"]
+        .mean()
+        .reset_index()
+    )
+
+    # Define markers for split type and colors
+    markers = {"random_split": "o", "dataset_split": "s"}
+    colors = {"random_split": "#2E86AB", "dataset_split": "#E63946"}
+    split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
+
+    # Plot combined vs filtered for each phenotype and split type
+    for split_type in ["random_split", "dataset_split"]:
+        split_data = summary[summary["split_type"] == split_type]
+
+        combined = split_data[split_data["experiment"] == "combined"].set_index(
+            "phenotype"
+        )["balanced_accuracy"]
+        filtered = split_data[
+            split_data["experiment"] == "phenotype_filtered"
+        ].set_index("phenotype")["balanced_accuracy"]
+
+        # Get common phenotypes
+        common = [p for p in phenotypes if p in combined.index and p in filtered.index]
+
+        combined_vals = [combined.loc[p] for p in common]
+        filtered_vals = [filtered.loc[p] for p in common]
+
+        ax.scatter(
+            combined_vals,
+            filtered_vals,
+            s=200,
+            alpha=0.7,
+            color=colors[split_type],
+            edgecolors="black",
+            linewidths=2,
+            marker=markers[split_type],
+            label=split_labels[split_type],
+            zorder=3,
+        )
+
+    # Add diagonal line (y = x)
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
+
+    # Formatting
+    ax.set_xlabel("Combined Features\n(Balanced Accuracy)")
+    ax.set_ylabel("Phenotype-Filtered\n(Balanced Accuracy)")
+    ax.set_xlim(0.4, 1.05)
+    ax.set_ylim(0.4, 1.05)
+    ax.legend(loc="lower right", frameon=False, labelspacing=1.2)
+    ax.set_aspect("equal")
+
+
+def plot_precision_recall_scatter_by_feature_type(
+    ax: Axes,
+    data: pd.DataFrame,
+    phenotypes: list[str],
+) -> None:
+    """
+    Plot precision vs recall scatter plot.
+
+    Shapes indicate split type (circle=random, square=dataset).
+    Colors indicate filter type (blue=combined, red=phenotype-filtered).
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to plot on.
+    data : pd.DataFrame
+        Results dataframe with all data.
+    phenotypes : list[str]
+        List of phenotypes to include.
+    """
+    # Calculate mean precision and recall for each phenotype, experiment, and split_type
+    summary = (
+        data.groupby(["phenotype", "experiment", "split_type"])[["precision", "recall"]]
+        .mean()
+        .reset_index()
+    )
+
+    # Filter to phenotypes of interest
+    summary = summary[summary["phenotype"].isin(phenotypes)]
+
+    # Define colors for filter type and markers for split type
+    colors = {"combined": "#2E86AB", "phenotype_filtered": "#E63946"}
+    markers = {"random_split": "o", "dataset_split": "s"}
+    filter_labels = {
+        "combined": "Combined Features",
+        "phenotype_filtered": "Phenotype-Filtered",
+    }
+    split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
+
+    # Plot each combination of experiment and split type
+    for experiment in ["combined", "phenotype_filtered"]:
+        for split_type in ["random_split", "dataset_split"]:
+            subset = summary[
+                (summary["experiment"] == experiment)
+                & (summary["split_type"] == split_type)
+            ]
+
+            # Create combined label for legend
+            label = f"{filter_labels[experiment]} ({split_labels[split_type]})"
+
+            ax.scatter(
+                subset["recall"],
+                subset["precision"],
+                s=200,
+                alpha=0.7,
+                color=colors[experiment],
+                edgecolors="black",
+                linewidths=2,
+                marker=markers[split_type],
+                label=label,
+                zorder=3,
+            )
+
+    # Add diagonal line (precision = recall)
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
+
+    # Formatting
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_xlim(0, 1.05)
+    ax.set_ylim(0, 1.05)
+    ax.legend(loc="lower right", frameon=False, fontsize=7, labelspacing=1.2)
+    ax.set_aspect("equal")
+
+
 def create_figure(
     data_file: Path,
     output_file: Path,
