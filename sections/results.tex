@@ -4,7 +4,7 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-We compiled four binary growth datasets---ATLeaf \cite{Schafer2023-nk}, Biolog (see supplemental material), Marine \cite{Gralka2023-ft}, and Populus (see supplemental material)---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources.
+To investigate the factors governing genotype-phenotype prediction accuracy and generalization, we compiled four binary growth datasets---ATLeaf \cite{Schafer2023-nk}, Biolog (see supplemental material), Marine \cite{Gralka2023-ft}, and Populus (see supplemental material)---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources.
 ATLeaf included 224 strains grown on 45 carbon substrates, Biolog encompassed 362 strains and 64 substrates, Marine comprised 175 strains and 100 substrates, and Populus contained 58 strains tested on 191 substrates.
 The overall workflow, including data aggregation, genome annotation (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A.
 All analyses focused on the 15 shared phenotypes across all datasets (Figure~\ref{fig:dataset_characteristics}B).
@@ -34,15 +34,17 @@ Solid bars indicate growth (positive) samples; patterned bars indicate no-growth
 }\label{fig:dataset_characteristics}
 \end{figure}
 
-To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth from metabolic pathway completeness (Price et al., 2020); and (2) a phylogeny-based nearest neighbor classifier (k=3) that predicts phenotypes from closely related strains (see Methods).
+To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth capabilities by assessing the completeness of metabolic pathways required for utilizing specific carbon sources \cite{Price2020-ts}; and (2) a phylogeny-based nearest neighbor classifier (k=3) that predicts phenotypes based on the growth outcomes of the three most closely related strains (see Methods).
 
-GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A), indicating that pathway completeness alone does not capture the full complexity of microbial metabolism and regulation.
+GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A).
+While GapMind captures core mechanistic aspects of carbon utilization, these results indicate that pathway completeness alone does not account for the full complexity of microbial metabolism and regulation.
 
 The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
 Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages.
-Notably, Cellobiose and Arginine showed unexpectedly high accuracy ($>$0.90) in certain out-of-clade splits, potentially reflecting highly conserved pathways.
+A fundamental limitation of phylogeny-based methods is that they may not capture metabolic capabilities that vary even among closely related strains due to horizontal gene transfer, gene loss, or regulatory differences.
+Notably, Cellobiose and Arginine showed unexpectedly high accuracy ($>$0.90) in certain out-of-clade splits, potentially reflecting highly conserved pathways for these substrates that transcend phylogenetic boundaries.
 \todo{Investigate conserved pathway hypothesis for Cellobiose/Arginine}
-The limited performance of both baseline approaches motivated the development of machine learning models.
+The limited performance of both baseline approaches---GapMind's incomplete mechanistic coverage and phylogeny's failure to generalize across clades---motivated the development of machine learning models that could integrate genomic features more comprehensively.
 
 \begin{figure}[h]
 \centering
@@ -59,19 +61,29 @@ Dotted lines indicate null model performance (Identity and Bernoulli).
 
 \subsection*{Machine learning models show strong intra-dataset results but have generalization issues}
 
+Machine learning models achieved high accuracy on intra-dataset splits but showed performance degradation across datasets and phylogenetic contexts, suggesting they learn dataset-specific rather than universal patterns.
+
 We trained gradient-boosted tree (GBT) classifiers using KOFAM annotations as features ($\sim$4000--5000 features per genome after correlation filtering; see Methods).
-KOFAM annotations provide comprehensive coverage of metabolic functions, have been used successfully in similar prediction tasks \cite{Li2023-up}, and span the entire metabolic repertoire rather than being limited to curated pathways like GapMind.
-We selected GBTs over random forests due to their slightly better performance (Table~\ref{tab:best_models_counts} in Supplementary) and evaluated models using balanced accuracy to account for class imbalance.
+We selected KOFAM annotations as our primary feature set for several reasons: they provide comprehensive coverage of metabolic functions directly relevant to carbon utilization, they have been used successfully in similar phenotype prediction tasks \cite{Li2023-up}, and unlike GapMind's curated rule sets, they span the entire metabolic repertoire without being constrained to specific pathways.
+This broader feature space allows models to potentially capture relationships beyond known pathway structures.
+We evaluated both gradient-boosted trees and random forests, selecting GBTs for our primary analyses due to their slightly better performance across splits and phenotypes (Table~\ref{tab:best_models_counts} in Supplementary).
+All models were evaluated using balanced accuracy to account for class imbalance across phenotypes.
 
-We aggregated data from all four datasets and assessed model performance using four evaluation scenarios: (1) random cross-validation splits; (2) cross-dataset evaluation (training on three datasets, testing on held-out dataset); (3) in-clade cross-dataset splits (phylogenetically similar samples); and (4) out-of-clade splits (phylogenetically distant samples).
+We aggregated data from all four datasets and assessed model performance using four evaluation scenarios designed to progressively test generalization:
+(1) random cross-validation splits across the aggregated dataset, where training and test samples are drawn from the same distribution;
+(2) cross-dataset evaluation, training on three datasets and testing on the held-out dataset to assess generalization across experimental contexts;
+(3) in-clade cross-dataset splits, restricting cross-dataset evaluation to phylogenetically similar samples to isolate dataset effects from phylogenetic effects; and
+(4) out-of-clade splits, where training and test samples are phylogenetically distant.
+For random splits, we verified that test samples were drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).
 
-In random cross-validation (Figure~\ref{fig:ml_performance}A), ML models achieved high balanced accuracy (0.75--0.90), significantly outperforming GapMind.
-However, cross-dataset performance dropped substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalization.
-The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), suggesting that dataset-specific biases affect model performance as much as phylogenetic relatedness.
+In random cross-validation (Figure~\ref{fig:ml_performance}A), ML models achieved high balanced accuracy (0.75--0.90), significantly outperforming the GapMind baseline.
+However, cross-dataset performance dropped substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalization across experimental contexts.
+Surprisingly, the performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), suggesting that dataset-specific biases affect model performance as much as phylogenetic relatedness.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
-The ML performance advantage over GapMind in random splits diminishes under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.
-Despite the well-characterized nature of carbon catabolic pathways \cite{Gowda2022-cf}, models did not generalize as expected, likely due to phylogenetic diversity and dataset-specific biases.
+Because most carbon source utilization pathways are catalyzed by evolutionarily conserved, well-characterized catabolic enzymes \cite{Gowda2022-cf}, we initially hypothesized that models trained on one dataset would generalize to others.
+The failure to generalize suggests that models learn dataset-specific or phylogeny-correlated features rather than the underlying mechanistic relationships.
+We note, however, that even modest improvements by ML models in cross-dataset scenarios could be valuable for practical applications, particularly when models can be trained on dataset- or phylogeny-specific data where they outperform existing mechanistic approaches.
 
 \begin{figure}[h]
 \centering
@@ -89,15 +101,19 @@ Dotted line: GapMind permissive baseline.
 
 \subsection*{Why are GapMind and ML models misclassifying?}
 
-GapMind misclassifications can arise from incomplete pathway annotations, alternative metabolic routes not captured in curated rules, or regulatory mechanisms that prevent pathway expression (Figure~\ref{fig:misclassification_diagnosis}A).
-We analyzed misclassification patterns per-phenotype and per-dataset to diagnose systematic issues (Figure~\ref{fig:misclassification_diagnosis}B).
+Understanding the sources of prediction errors is essential for developing improvement strategies.
+GapMind misclassifications reveal annotation gaps and regulatory complexity, while ML generalization failures stem from learning dataset- or phylogeny-correlated features rather than mechanistically relevant ones.
+
+GapMind misclassifications can arise from multiple factors: incomplete pathway annotations, alternative metabolic routes not captured in curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions (Figure~\ref{fig:misclassification_diagnosis}A).
+To diagnose whether these issues are systematic, we analyzed misclassification patterns both per-phenotype and per-dataset (Figure~\ref{fig:misclassification_diagnosis}B).
 While some phenotypes show better GapMind performance (e.g., Mannitol, Galactose) than others (e.g., Serine, Alanine), there was no clear directional bias in misclassifications (false positives vs.\ false negatives).
 Similarly, datasets varied in overall discordance (Biolog: $\sim$30\%; Populus: $\sim$26\%) but without directional bias.
-The absence of systematic bias across phenotypes and datasets suggests that experimental conditions do not systematically affect GapMind performance or introduce biases that could confound ML model training.
+The absence of systematic bias suggests that both missing annotations/alternative pathways and regulatory/measurement issues contribute to errors, and that experimental conditions across datasets do not systematically affect GapMind performance in ways that could confound ML model training.
 
 To understand ML generalization failures, we performed feature importance stability analyses using SHAP (Figure~\ref{fig:misclassification_diagnosis}C).
 Across random splits of the aggregated dataset (top panel), at least one feature was consistently identified as important, indicating models learn common patterns when data distribution is uniform.
 However, when comparing stable features between individual datasets and the aggregated dataset (bottom panel; Populus excluded due to small sample size), only Histidine, Maltose, Mannitol, and m-Inositol shared at least one common stable feature across datasets.
+\todo{Extend feature stability analysis to account for highly correlated features that may be functionally equivalent}
 
 \begin{figure}[h]
 \centering
@@ -114,30 +130,38 @@ Solid bars: features common with aggregated dataset; patterned bars: dataset-uni
 \end{figure}
 
 We assessed the biological relevance of stable features by examining their KOFAM annotations (Table~\ref{tab:feature_comparison}).
-For Histidine, the main catabolic enzyme (K01712, urocanate hydratase) was consistently identified across all datasets, demonstrating that ML models can learn mechanistic features when they are present and consistently annotated.
-However, core histidine pathway enzymes K01745 and K05603, which appeared in ATLeaf's stable features, were not identified in the aggregated dataset---likely due to annotation gaps or alternative pathways in other datasets.
+For Histidine, the main catabolic enzyme (K01712, urocanate hydratase) was consistently identified across all datasets, demonstrating that ML models can learn mechanistic features when such features are present, consistently annotated, and serve as clear differentiators of the phenotype.
+However, core histidine pathway enzymes K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which appeared in ATLeaf's stable features, were not identified in the aggregated dataset---likely due to annotation gaps or alternative pathways in other datasets.
 An uncharacterized protein (K09975) appearing as a common feature for ATLeaf and Marine datasets may warrant further investigation.
 \todo{Characterize K09975 function and potential role in histidine metabolism}
 
 \input{sections/table_feature_comparison}
 
-These results indicate that ML models learn few mechanistic features when trained on full datasets, raising the question: can ML learn actual mechanisms when trained on cleaner data?
+These results indicate that ML models learn few mechanistic features when trained on full datasets containing mixed-quality samples.
+This raises a fundamental question: can ML learn actual mechanistic features when trained on samples where genotype-phenotype mappings are clearer?
 
 \FloatBarrier{}
 
 \subsection*{Can ML learn actual mechanisms? Testing on GapMind-concordant data}
 
-To test whether ML can learn mechanistic features, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples), which likely have clearer genotype-phenotype mappings.
-We used GapMind features (presence/absence of pathway genes; $\sim$1000 features after correlation filtering) as the feature matrix, ensuring the feature space is directly tied to known metabolic mechanisms.
+When trained on samples with clear genotype-phenotype mappings (GapMind-concordant data), ML achieves near-perfect accuracy and learns mechanistic features.
+Importantly, ML also correctly predicts a subset of samples that GapMind misclassifies, demonstrating that it captures relationships beyond curated pathway rules.
+
+To test this, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples).
+These samples likely have clearer mechanistic underpinnings, as GapMind's pathway-based predictions align with observed growth phenotypes.
+We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilization phenotypes after correlation filtering) as the feature matrix, ensuring the feature space is directly tied to known metabolic mechanisms.
 
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
-Cross-dataset splits filtered for concordance also achieved high accuracy ($>$0.90) on many phenotype-dataset combinations, though some phenotypes (e.g., Glucose) showed poor generalization, possibly due to class imbalance.
+Cross-dataset splits filtered for concordance also achieved high accuracy ($>$0.90) on many phenotype-dataset combinations, indicating that when mechanisms are clear and features are mechanistically relevant, ML can learn and generalize well.
+However, even with concordant data, generalization failed for some phenotypes (e.g., Glucose, Sucrose) despite common stable features across datasets, possibly due to imbalanced class distributions.
+\todo{Investigate class imbalance effects on Glucose/Sucrose generalization}
 
 Cross-dataset stability analysis (Figure~\ref{fig:concordant_analysis}B) showed a notable increase in shared stable features compared to models trained on full datasets (Figure~\ref{fig:misclassification_diagnosis}C), indicating concordant training helps models learn consistent mechanistic features.
-Table~\ref{tab:feature_comparison_concordant} confirms that models consistently identify established pathway genes as top features.
+Table~\ref{tab:feature_comparison_concordant} confirms that models consistently identify established pathway genes as top features, demonstrating that ML can learn actual mechanisms when samples have clear genotype-phenotype mappings.
 
-When concordant-trained models were applied to discordant samples, they achieved balanced accuracy of 0.18--0.60 (Figure~\ref{fig:concordant_analysis}C), correctly predicting a subset of samples that GapMind misclassified.
-This demonstrates that ML captures features beyond GapMind's curated gene sets, complementing mechanistic approaches.
+When concordant-trained models were applied to discordant samples (where GapMind predictions contradict experimental outcomes), they achieved balanced accuracy of 0.18--0.60 (Figure~\ref{fig:concordant_analysis}C).
+This means ML correctly predicts a subset of samples that GapMind misclassifies, suggesting ML captures features beyond GapMind's curated gene sets.
+Thus, ML complements mechanistic tools by learning additional patterns from the data that are not explicitly encoded in pathway rules.
 
 \begin{figure}[h]
 \centering
@@ -158,18 +182,23 @@ Solid bars: features common with aggregated dataset; patterned bars: dataset-uni
 
 \subsection*{Strategies to improve model performance}
 
-While concordant training provides the best results, it removes $\sim$30\% of samples, which may not be feasible when mechanistic predictors are unavailable.
-We explored alternative strategies to improve model performance by addressing data quality issues (Figure~\ref{fig:improvement_strategies}A).
+Multiple strategies can improve model performance: removing systematically problematic samples, filtering by confidence estimates, and prioritizing precision or recall for specific applications.
 
-We identified systematically problematic samples: microbes showing zero growth on all substrates, growth on all substrates despite incomplete GapMind pathways, and genomes with the highest misclassification rates.
+While concordant training provides the best results, it removes $\sim$30\% of samples, which may not be feasible when mechanistic predictors like GapMind are unavailable.
+We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions (Figure~\ref{fig:improvement_strategies}A).
+
+We identified systematically problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabeled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
+\todo{Develop genome quality metrics independent of GapMind for broader applicability}
 Removing these samples and filtering by measurement confidence (see Methods) improved cross-dataset performance, though not as much as concordant training (Figure~\ref{fig:improvement_strategies}B).
-Confidence-based filtering removed fewer samples while achieving comparable performance gains.
+Importantly, confidence-based filtering removed fewer samples while achieving comparable performance gains, making it a practical alternative when concordant filtering is not possible.
 
 Concordant-trained models showed the best precision-recall tradeoff (Figure~\ref{fig:improvement_strategies}C), substantially outperforming GapMind predictions alone.
 Removing bad genomes and confidence-based filtering provided modest improvements.
+Depending on the application, prioritizing precision (minimizing false positives) or recall (minimizing false negatives) may be more informative than balanced accuracy.
 
 We also compared models trained using GapMind features alone versus combined features from GapMind, KOFAM, and RAST (Figure~\ref{fig:improvement_strategies}D).
 Feature combinations improved random split performance but not cross-dataset generalization, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalization \cite{Li2023-up}.
+This suggests that for practical applications where generalization is the primary goal, focusing on biologically relevant features may be more beneficial than maximizing the feature space.
 
 \begin{figure}[h]
 \centering
@@ -189,8 +218,12 @@ Circles: random splits; squares: cross-dataset splits.
 
 \subsection*{Sample size requirements}
 
-Learning curves for concordant-trained models on the Histidine phenotype (Figure~\ref{fig:model_sample_size_requirements}) show performance plateaus at approximately 100 samples across all evaluation scenarios (random, cross-dataset, and out-of-clade splits) and test types (full, concordant, and discordant samples).
-This establishes that 50--100 high-quality samples per phenotype are sufficient to train robust models for carbon utilization traits.
+A practical question for experimental design is how many samples are needed to train effective models.
+Learning curves for concordant-trained models on the Histidine phenotype (Figure~\ref{fig:model_sample_size_requirements}) illustrate how model performance varies with training sample size under different evaluation scenarios: random cross-validation splits, cross-dataset splits, and out-of-clade phylogenetic splits.
+Each panel further breaks down performance on full test samples, concordant test samples, and discordant test samples.
+
+Performance plateaus at approximately 100 samples across all evaluation scenarios and test types, establishing that 50--100 high-quality samples per phenotype are sufficient to train robust models for carbon utilization traits.
+This relatively modest sample requirement suggests that strategic data collection focusing on quality over quantity may be the most efficient path to generalizable models.
 \todo{Validate sample size requirements across additional phenotypes}
 
 \begin{figure}[h]
