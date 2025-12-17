@@ -5,9 +5,9 @@
 \subsection*{Carbon Source Utilization Datasets}
 
 We compiled four binary growth datasets capturing growth outcomes of phylogenetically and ecologically diverse bacterial strains across various carbon sources.
-ATLeaf (Schäfer et al., 2023) comprised 224 strains tested on 45 carbon substrates using minimal media on agar plates.
+ATLeaf \cite{Schafer2023-nk} comprised 224 strains tested on 45 carbon substrates using minimal media on agar plates.
 Biolog encompassed 362 strains across 64 substrates, compiled from published studies \cite{}.
-Marine (Gralka et al., 2023) contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
+Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
 Populus included 58 bacterial isolates tested on 191 carbon sources.
 \todo{Add citations for Biolog and Populus datasets}
 
@@ -84,7 +84,7 @@ For cross-dataset testing, we mapped features from training data to test data, i
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We implemented the out-of-clade partitioning algorithm described by Li et al.\ (2023), which systematically separates training and test data based on phylogenetic relationships.
+We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up}, which systematically separates training and test data based on phylogenetic relationships.
 The algorithm selects test clades based on a target test set size range (20--30\% of samples) while ensuring phylogenetic separation from training data.
 We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 

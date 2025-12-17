@@ -17,11 +17,11 @@ False positives (GapMind+/Experiment--) likely reflect regulatory repression, mi
 Dataset-specific discordance patterns likely reflect differences in experimental protocols and measurement sensitivity rather than fundamental biological differences, providing a roadmap for targeted data quality improvements.
 
 % Relationship to previous work
-Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding (Li et al., 2023; Agrawal et al., 2022).
+Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding (\cite{Li2023-up}; Agrawal et al., 2022).
 Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples.
 When trained on concordant samples only, models identified mechanistic features and generalized across clades, suggesting the problem is signal-to-noise ratio rather than sample size per se.
-This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance (A. C. Martiny et al., 2013; J. B. H. Martiny et al., 2015), but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
-Our finding that combined feature representations from multiple annotation sources improved within-dataset accuracy but not cross-dataset generalization is consistent with previous observations that biologically informed feature selection improves interpretability without sacrificing accuracy (Li et al., 2023).
+This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance \cite{Martiny2013-ob,Martiny2015-ie}, but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
+Our finding that combined feature representations from multiple annotation sources improved within-dataset accuracy but not cross-dataset generalization is consistent with previous observations that biologically informed feature selection improves interpretability without sacrificing accuracy \cite{Li2023-up}.
 However, even when models identified biologically relevant features within datasets, the overlap across datasets remained limited, indicating that dataset-specific biases dominate when data quality is mixed.
 
 % Practical implications
@@ -31,7 +31,7 @@ Without mechanistic knowledge, feature stability across independent training set
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
 Sample size requirements are manageable: 50--100 high-quality samples per phenotype achieve robust performance.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables quality assessment and identification of unreliable phenotype calls.
-Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection (Gralka et al., 2023; Huang et al., 2023; Kehe et al., 2019), but quality must be prioritized alongside quantity.
+Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection \cite{Gralka2023-ft,Huang2023-lh,Kehe2019-vr}, but quality must be prioritized alongside quantity.
 More broadly, the value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains; a smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models.
 
 % Limitations

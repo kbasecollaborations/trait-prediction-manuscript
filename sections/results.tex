@@ -4,7 +4,7 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-We compiled four binary growth datasets---ATLeaf (Schäfer et al., 2023), Biolog (see supplemental material), Marine (Gralka et al., 2023), and Populus (see supplemental material)---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources.
+We compiled four binary growth datasets---ATLeaf \cite{Schafer2023-nk}, Biolog (see supplemental material), Marine \cite{Gralka2023-ft}, and Populus (see supplemental material)---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources.
 ATLeaf included 224 strains grown on 45 carbon substrates, Biolog encompassed 362 strains and 64 substrates, Marine comprised 175 strains and 100 substrates, and Populus contained 58 strains tested on 191 substrates.
 The overall workflow, including data aggregation, genome annotation (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A.
 All analyses focused on the 15 shared phenotypes across all datasets (Figure~\ref{fig:dataset_characteristics}B).
@@ -38,7 +38,7 @@ To establish baseline performance, we evaluated two existing approaches: (1) Gap
 
 GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A), indicating that pathway completeness alone does not capture the full complexity of microbial metabolism and regulation.
 
-The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships (Langille et al., 2013; A. C. Martiny et al., 2013), performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
+The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
 Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages.
 Notably, Cellobiose and Arginine showed unexpectedly high accuracy ($>$0.90) in certain out-of-clade splits, potentially reflecting highly conserved pathways.
 \todo{Investigate conserved pathway hypothesis for Cellobiose/Arginine}
@@ -60,7 +60,7 @@ Dotted lines indicate null model performance (Identity and Bernoulli).
 \subsection*{Machine learning models show strong intra-dataset results but have generalization issues}
 
 We trained gradient-boosted tree (GBT) classifiers using KOFAM annotations as features ($\sim$4000--5000 features per genome after correlation filtering; see Methods).
-KOFAM annotations provide comprehensive coverage of metabolic functions, have been used successfully in similar prediction tasks (Li et al., 2023), and span the entire metabolic repertoire rather than being limited to curated pathways like GapMind.
+KOFAM annotations provide comprehensive coverage of metabolic functions, have been used successfully in similar prediction tasks \cite{Li2023-up}, and span the entire metabolic repertoire rather than being limited to curated pathways like GapMind.
 We selected GBTs over random forests due to their slightly better performance (Table~\ref{tab:best_models_counts} in Supplementary) and evaluated models using balanced accuracy to account for class imbalance.
 
 We aggregated data from all four datasets and assessed model performance using four evaluation scenarios: (1) random cross-validation splits; (2) cross-dataset evaluation (training on three datasets, testing on held-out dataset); (3) in-clade cross-dataset splits (phylogenetically similar samples); and (4) out-of-clade splits (phylogenetically distant samples).
@@ -68,10 +68,10 @@ We aggregated data from all four datasets and assessed model performance using f
 In random cross-validation (Figure~\ref{fig:ml_performance}A), ML models achieved high balanced accuracy (0.75--0.90), significantly outperforming GapMind.
 However, cross-dataset performance dropped substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalization.
 The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), suggesting that dataset-specific biases affect model performance as much as phylogenetic relatedness.
-Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns (J. B. H. Martiny et al., 2015; Li et al., 2023).
+Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
 The ML performance advantage over GapMind in random splits diminishes under cross-dataset and out-of-clade evaluation, suggesting models learn dataset-specific rather than universal patterns.
-Despite the well-characterized nature of carbon catabolic pathways (Gowda et al., 2022), models did not generalize as expected, likely due to phylogenetic diversity and dataset-specific biases.
+Despite the well-characterized nature of carbon catabolic pathways \cite{Gowda2022-cf}, models did not generalize as expected, likely due to phylogenetic diversity and dataset-specific biases.
 
 \begin{figure}[h]
 \centering
@@ -169,7 +169,7 @@ Concordant-trained models showed the best precision-recall tradeoff (Figure~\ref
 Removing bad genomes and confidence-based filtering provided modest improvements.
 
 We also compared models trained using GapMind features alone versus combined features from GapMind, KOFAM, and RAST (Figure~\ref{fig:improvement_strategies}D).
-Feature combinations improved random split performance but not cross-dataset generalization, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalization (Li et al., 2023).
+Feature combinations improved random split performance but not cross-dataset generalization, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalization \cite{Li2023-up}.
 
 \begin{figure}[h]
 \centering

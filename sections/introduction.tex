@@ -2,20 +2,20 @@
 
 \section*{Introduction}
 
-Microbial nutrient utilization phenotypes are key determinants of ecological niche and influence organism distribution, interactions, and functional roles within complex ecosystems (Falkowski et al., 2008).
-A mechanistic understanding of these phenotypes is crucial for advancing microbial ecology, providing insights into community assembly, nutrient cycling, and biotechnological applications such as probiotic design or bioremediation (Lu et al., 2014).
-Traditional laboratory-based cultivation methods have characterized most existing microbial phenotype data, but these methods cannot characterize the metabolic capabilities of unculturable taxa (Lloyd et al., 2018), introducing significant biases and restricting our understanding of microbial diversity.
-Even for culturable organisms, comprehensive phenotypic characterization across environmental conditions remains resource-intensive (Barber\'{a}n et al., 2017).
+Microbial nutrient utilization phenotypes are key determinants of ecological niche and influence organism distribution, interactions, and functional roles within complex ecosystems \cite{Falkowski2008-bx}.
+A mechanistic understanding of these phenotypes is crucial for advancing microbial ecology, providing insights into community assembly, nutrient cycling, and biotechnological applications such as probiotic design or bioremediation \cite{Lu2014-zz}.
+Traditional laboratory-based cultivation methods have characterized most existing microbial phenotype data, but these methods cannot characterize the metabolic capabilities of unculturable taxa \cite{Lloyd2018-ar}, introducing significant biases and restricting our understanding of microbial diversity.
+Even for culturable organisms, comprehensive phenotypic characterization across environmental conditions remains resource-intensive \cite{Barberan2017-xi}.
 
 Rapid advances in genomics offer a promising path to overcome these limitations.
-The increasing availability of genomic data, including metagenome-assembled genomes (MAGs), presents an opportunity to predict phenotypes directly from genomic information (Li et al., 2023), bypassing extensive laboratory experiments.
-While phylogeny has commonly been used as a proxy for phenotype prediction, it is insufficient for characterizing novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved (Bradley et al., 2018).
+The increasing availability of genomic data, including metagenome-assembled genomes (MAGs), presents an opportunity to predict phenotypes directly from genomic information \cite{Li2023-up}, bypassing extensive laboratory experiments.
+While phylogeny has commonly been used as a proxy for phenotype prediction, it is insufficient for characterizing novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Bradley2018-rs}.
 Genome-based predictions offer a powerful alternative, enabling characterization of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms driving phenotypic variation.
-These predictions can leverage various genomic features, from general characteristics such as GC content (Hu et al., 2022) and genome size to specific information derived from gene annotations and inferred metabolic pathways (Long et al., 2021).
+These predictions can leverage various genomic features, from general characteristics such as GC content \cite{Hu2022-fr} and genome size to specific information derived from gene annotations and inferred metabolic pathways \cite{Long2021-yz}.
 
-Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems (Greener et al., 2022).
+Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy}.
 However, the performance and generalizability of these models are constrained by several factors.
-Limited training data can lead to overfitting (Ramoneda et al., 2024), data sparsity from uneven representation of taxa complicates model training, and biases from overrepresentation of culturable organisms can limit applicability to diverse microbial communities (Albright \& Louca, 2023).
+Limited training data can lead to overfitting \cite{Ramoneda2024-yb}, data sparsity from uneven representation of taxa complicates model training, and biases from overrepresentation of culturable organisms can limit applicability to diverse microbial communities \cite{Albright2023-ze}.
 An additional challenge lies in model interpretability: the choice of genomic representation can influence which features are identified as important, context dependency means orthologous features can behave differently across genomic backgrounds, and high correlations among features due to shared phylogenetic history can confound identification of causal relationships.
 Addressing these challenges requires careful data curation, rigorous validation strategies, and innovative approaches for feature engineering.
 
