@@ -3,22 +3,18 @@
 \begin{abstract}
 {
 \noindent
-Predicting microbial carbon utilization from genomic data remains challenging despite well-characterized metabolic pathways.
-We compiled growth phenotypes for 819 microbial genomes across 242 carbon sources from four independent datasets and developed phenotype-specific classifiers to investigate whether machine learning can learn mechanistic features, why generalization fails, and how to improve performance.
-
-Baseline mechanistic predictions (GapMind) achieved only modest accuracy ($\sim$0.65--0.70 balanced accuracy), while phylogeny-based methods failed to generalize beyond training distributions.
-Machine learning models achieved strong within-dataset accuracy (0.75--0.90) but exhibited substantially reduced cross-dataset and out-of-clade performance (0.50--0.75).
-Diagnosis revealed distinct failure modes: GapMind misclassifications showed no systematic directional bias, indicating multiple underlying causes (annotation gaps, regulatory complexity, measurement issues); ML generalization failures stemmed from learning dataset-specific rather than mechanistically relevant features.
-
-Critically, ML can learn actual mechanisms when trained appropriately.
-Models trained on samples where GapMind predictions matched experimental outcomes (concordant data) achieved near-perfect accuracy ($>$0.95) that generalized robustly and consistently identified established pathway genes as top features.
-Moreover, these concordant-trained models predicted a subset of GapMind-discordant samples accurately (balanced accuracy 0.18--0.60), demonstrating that ML captures features beyond GapMind's curated gene sets.
-
-We evaluated multiple improvement strategies: removing problematic genomes and confidence-based filtering of measurements improved cross-dataset performance modestly, while combined feature representations improved within-dataset but not cross-dataset accuracy.
-Learning curves established that 50--100 high-quality samples per phenotype achieve robust generalization.
-
-Our findings demonstrate that data quality, not algorithmic complexity, fundamentally constrains genotype-phenotype prediction.
-Strategic data curation may be more valuable than brute-force data aggregation for building generalizable models.
+The ability to predict microbial phenotypes from genomic data offers a promising solution to the challenges posed by labor-intensive cultivation.
+Yet, machine learning models aimed at genotype-phenotype prediction often struggle to generalize beyond their training datasets.
+In this study, we explored this generalization problem using microbial carbon utilization as a model system, compiling growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
+Our analyses revealed that the generalization failures are mainly due to data quality rather than algorithmic limitations.
+Models trained on aggregated datasets showed high accuracy within the same dataset but performed poorly across different datasets and phylogenetic contexts, learning dataset-specific correlations instead of mechanistic features.
+To address this issue, we stratified samples based on the agreement between a mechanistic predictor (GapMind) and experimental outcomes.
+When models were trained solely on concordant samples, where pathway-based predictions matched observed phenotypes, they achieved strong cross-dataset generalization and consistently identified known metabolic genes as top predictive features.
+These concordant-trained models also accurately predicted a subset of samples that the mechanistic predictor misclassified, indicating that machine learning captures relationships beyond curated pathway rules.
+We evaluated strategies to improve model performance without requiring mechanistic knowledge, finding that confidence-based filtering and the removal of systematically problematic samples led to modest improvements.
+Learning curves suggest that relatively small numbers of high-quality samples are sufficient for robust generalization.
+These findings shift the focus of biological machine learning from an algorithmic challenge to a data curation issue: when training data contain clear genotype-phenotype relationships, models learn transferable mechanistic features; when relationships are obscured by annotation gaps, regulatory complexity, or measurement error, models default to spurious correlations.
+Prioritizing data quality over quantity may be crucial for developing generalizable phenotype predictors.
 }
 \end{abstract}
 

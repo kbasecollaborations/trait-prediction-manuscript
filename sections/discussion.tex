@@ -3,7 +3,7 @@
 \section*{Discussion}
 
 % Summary of findings
-Our results demonstrate that data quality, not algorithmic limitations, fundamentally constrains genotype-phenotype prediction.
+Our results demonstrate that for microbial carbon utilization phenotypes, data quality rather than algorithmic limitations is the primary constraint on genotype-phenotype prediction.
 ML models achieved robust generalization when trained on high-quality (concordant) data but failed systematically when trained on mixed-quality data.
 The problem is not that ML cannot learn metabolic mechanisms---it demonstrably can when given clean signal.
 Rather, discordant samples force models toward spurious correlations that are predictive within specific datasets or clades but do not transfer.
@@ -11,13 +11,13 @@ This reframes the ``generalizability crisis'' in biological ML from an algorithm
 
 % Interpreting discordances
 The partial predictability of discordant samples (balanced accuracy 0.18--0.60) suggests heterogeneous causes: some discordances are ``recoverable'' (annotation gaps where the mechanism exists but was not detected), while others are not (regulatory effects, alternative pathways, measurement error).
-The directional pattern of discordances is informative.
-False negatives (GapMind--/Experiment+) likely reflect annotation gaps, divergent homologs, or unknown alternative pathways, representing opportunities for biological discovery.
-False positives (GapMind+/Experiment--) likely reflect regulatory repression, missing cofactors or transporters, or experimental artifacts, representing complexity that static genomic features cannot capture.
+The directional pattern of discordances may be informative, though we caution that these interpretations are speculative without experimental validation.
+False negatives (GapMind--/Experiment+) may reflect annotation gaps, divergent homologs, or unknown alternative pathways, potentially representing opportunities for biological discovery.
+False positives (GapMind+/Experiment--) may reflect regulatory repression, missing cofactors or transporters, or experimental artifacts, representing complexity that static genomic features cannot capture.
 Dataset-specific discordance patterns likely reflect differences in experimental protocols and measurement sensitivity rather than fundamental biological differences, providing a roadmap for targeted data quality improvements.
 
 % Relationship to previous work
-Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding (\cite{Li2023-up}; Agrawal et al., 2022).
+Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding \cite{Li2023-up,Agrawal2022-xx}.
 Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples.
 When trained on concordant samples only, models identified mechanistic features and generalized across clades, suggesting the problem is signal-to-noise ratio rather than sample size per se.
 This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance \cite{Martiny2013-ob,Martiny2015-ie}, but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
@@ -29,7 +29,7 @@ Our results provide actionable guidance for building generalizable phenotype pre
 For model development, ML models should be trained on high-quality samples with clear genotype-phenotype mappings when possible; when mechanistic predictors like GapMind are available, concordant samples provide the highest-quality training data.
 Without mechanistic knowledge, feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
-Sample size requirements are manageable: 50--100 high-quality samples per phenotype achieve robust performance.
+Sample size requirements appear manageable: our learning curves for Histidine suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation across additional phenotypes.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables quality assessment and identification of unreliable phenotype calls.
 Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection \cite{Gralka2023-ft,Huang2023-lh,Kehe2019-vr}, but quality must be prioritized alongside quantity.
 More broadly, the value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains; a smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models.

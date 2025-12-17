@@ -14,19 +14,19 @@ Genome-based predictions offer a powerful alternative, enabling characterization
 These predictions can leverage various genomic features, from general characteristics such as GC content \cite{Hu2022-fr} and genome size to specific information derived from gene annotations and inferred metabolic pathways \cite{Long2021-yz}.
 
 Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy}.
-However, the performance and generalizability of these models are constrained by several factors.
-Limited training data can lead to overfitting \cite{Ramoneda2024-yb}, data sparsity from uneven representation of taxa complicates model training, and biases from overrepresentation of culturable organisms can limit applicability to diverse microbial communities \cite{Albright2023-ze}.
-An additional challenge lies in model interpretability: the choice of genomic representation can influence which features are identified as important, context dependency means orthologous features can behave differently across genomic backgrounds, and high correlations among features due to shared phylogenetic history can confound identification of causal relationships.
-Addressing these challenges requires careful data curation, rigorous validation strategies, and innovative approaches for feature engineering.
+However, the performance and generalizability of these models are constrained by data limitations and evaluation challenges.
+Limited and taxonomically biased training data can lead to overfitting and poor applicability to diverse microbial communities \cite{Ramoneda2024-yb,Albright2023-ze}.
+Furthermore, phylogenetic correlations among genomic features confound the identification of mechanistically relevant predictors, making it difficult to distinguish whether models learn true biological relationships or spurious patterns tied to evolutionary history \cite{Li2023-up}.
+Previous work has demonstrated these generalization failures and concluded that massive datasets are needed to overcome phylogenetic confounding.
+However, an alternative hypothesis---that data quality rather than quantity drives generalization---has received less attention.
 
-In this study, we systematically evaluated how data quality, feature type, and evaluation strategy influence machine learning model performance for predicting microbial carbon utilization phenotypes.
+We tested this hypothesis using microbial carbon utilization as a model system.
 Carbon utilization represents an ideal test case due to its ecological and technological importance, and because these phenotypes involve highly conserved, well-characterized mechanisms---creating conditions where generalizability should be high and interpretability can be rigorously assessed.
 We compiled a comprehensive dataset of 819 microbial genomes and their binary growth outcomes across 242 carbon sources from four independent experimental collections.
 We developed phenotype-specific classifiers using this dataset and employed various feature representations and evaluation strategies within a standardized framework.
 
-Our analyses revealed that while ML models achieved high within-dataset accuracy (0.75--0.90 balanced accuracy), they failed to generalize across datasets and phylogenetic contexts (0.50--0.75 balanced accuracy).
-Feature stability analysis showed that models trained on mixed-quality data learn few mechanistic features.
-However, when trained on samples where mechanistic predictions (GapMind) matched experimental outcomes, models achieved near-perfect accuracy ($>$0.95) that generalized robustly and consistently identified established pathway genes as top features.
-These concordant-trained models also predicted a subset of GapMind-discordant samples accurately, demonstrating that ML captures features beyond curated gene sets.
-We evaluated multiple improvement strategies, including removal of problematic samples and confidence-based filtering, and established practical sample size requirements (50--100 high-quality samples per phenotype).
-Our findings demonstrate that data quality, not algorithmic complexity, is the primary determinant of generalizable phenotype prediction, and provide a framework for building robust models across diverse biological prediction challenges.
+Our analyses revealed that models trained on aggregated data failed to generalize across datasets and phylogenetic contexts, learning dataset-specific correlations rather than mechanistic features.
+By stratifying samples according to agreement between mechanistic predictions and experimental outcomes, we found that models trained on high-quality samples achieved robust generalization and consistently identified established pathway genes as top features.
+Critically, these models also predicted a subset of samples that the mechanistic predictor misclassified, demonstrating that machine learning can capture relationships beyond curated pathway rules.
+We evaluated multiple improvement strategies and established practical sample size requirements for robust generalization.
+Our findings support the hypothesis that data quality, not algorithmic complexity, is the primary constraint on generalizable phenotype prediction, and provide a framework for prioritizing data curation in biological machine learning applications.

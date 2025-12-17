@@ -78,7 +78,7 @@ For random splits, we verified that test samples were drawn from the same phylog
 
 In random cross-validation (Figure~\ref{fig:ml_performance}A), ML models achieved high balanced accuracy (0.75--0.90), significantly outperforming the GapMind baseline.
 However, cross-dataset performance dropped substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalization across experimental contexts.
-Surprisingly, the performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), suggesting that dataset-specific biases affect model performance as much as phylogenetic relatedness.
+The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), indicating that dataset-specific and phylogenetic effects on generalization could not be clearly distinguished in this analysis.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
 Because most carbon source utilization pathways are catalyzed by evolutionarily conserved, well-characterized catabolic enzymes \cite{Gowda2022-cf}, we initially hypothesized that models trained on one dataset would generalize to others.
@@ -138,6 +138,7 @@ An uncharacterized protein (K09975) appearing as a common feature for ATLeaf and
 \input{sections/table_feature_comparison}
 
 These results indicate that ML models learn few mechanistic features when trained on full datasets containing mixed-quality samples.
+The limited feature overlap across datasets suggests that discordant samples---where genotype-phenotype relationships are obscured by annotation gaps, regulatory effects, or measurement error---may be forcing models toward spurious correlations.
 This raises a fundamental question: can ML learn actual mechanistic features when trained on samples where genotype-phenotype mappings are clearer?
 
 \FloatBarrier{}
@@ -149,6 +150,7 @@ Importantly, ML also correctly predicts a subset of samples that GapMind misclas
 
 To test this, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples).
 These samples likely have clearer mechanistic underpinnings, as GapMind's pathway-based predictions align with observed growth phenotypes.
+We note that this approach may preferentially select samples where the canonical pathway is the actual mechanism, potentially excluding organisms using alternative metabolic routes; we return to this caveat in the Discussion.
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilization phenotypes after correlation filtering) as the feature matrix, ensuring the feature space is directly tied to known metabolic mechanisms.
 
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
@@ -160,8 +162,9 @@ Cross-dataset stability analysis (Figure~\ref{fig:concordant_analysis}B) showed 
 Table~\ref{tab:feature_comparison_concordant} confirms that models consistently identify established pathway genes as top features, demonstrating that ML can learn actual mechanisms when samples have clear genotype-phenotype mappings.
 
 When concordant-trained models were applied to discordant samples (where GapMind predictions contradict experimental outcomes), they achieved balanced accuracy of 0.18--0.60 (Figure~\ref{fig:concordant_analysis}C).
-This means ML correctly predicts a subset of samples that GapMind misclassifies, suggesting ML captures features beyond GapMind's curated gene sets.
-Thus, ML complements mechanistic tools by learning additional patterns from the data that are not explicitly encoded in pathway rules.
+Performance varied substantially across phenotypes, with some showing above-random accuracy while others did not.
+For phenotypes where concordant-trained models performed well on discordant samples, this suggests ML may capture features beyond GapMind's curated gene sets, potentially identifying alternative pathway genes or regulatory signatures.
+However, the wide performance range indicates that not all discordant samples are equally recoverable, likely reflecting heterogeneous causes of discordance.
 
 \begin{figure}[h]
 \centering
@@ -222,8 +225,8 @@ A practical question for experimental design is how many samples are needed to t
 Learning curves for concordant-trained models on the Histidine phenotype (Figure~\ref{fig:model_sample_size_requirements}) illustrate how model performance varies with training sample size under different evaluation scenarios: random cross-validation splits, cross-dataset splits, and out-of-clade phylogenetic splits.
 Each panel further breaks down performance on full test samples, concordant test samples, and discordant test samples.
 
-Performance plateaus at approximately 100 samples across all evaluation scenarios and test types, establishing that 50--100 high-quality samples per phenotype are sufficient to train robust models for carbon utilization traits.
-This relatively modest sample requirement suggests that strategic data collection focusing on quality over quantity may be the most efficient path to generalizable models.
+For Histidine, performance plateaus at approximately 100 samples across all evaluation scenarios and test types, suggesting that 50--100 high-quality samples per phenotype may be sufficient to train robust models for carbon utilization traits with clear mechanistic underpinnings.
+While this finding requires validation across additional phenotypes, the relatively modest sample requirement suggests that strategic data collection focusing on quality over quantity may be more efficient than brute-force data aggregation for building generalizable models.
 \todo{Validate sample size requirements across additional phenotypes}
 
 \begin{figure}[h]

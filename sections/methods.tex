@@ -95,6 +95,10 @@ Concordant samples are those where GapMind predictions match experimental result
 Discordant samples are those where GapMind predictions contradict experimental results (false positives or false negatives).
 We trained models on concordant samples only and evaluated performance on both concordant and discordant test sets to assess whether learned features generalize beyond the mechanistic predictor's coverage.
 
+We note that using GapMind features to train models on GapMind-concordant samples is not circular: GapMind's pathway completeness score provides a single aggregate prediction per phenotype, whereas ML models must learn which specific genes among the full feature set (approximately 1000 features spanning all carbon utilization pathways) are predictive for each phenotype.
+The concordance filter selects samples with clear genotype-phenotype relationships; the ML model must still identify the relevant features within those samples.
+However, this approach may preferentially select samples where the canonical pathway is the actual mechanism, potentially excluding organisms using alternative metabolic routes (see Discussion).
+
 \subsection*{Feature Importance Analysis}
 
 We identified stable predictive features using SHAP (SHapley Additive exPlanations) analysis \cite{}.
