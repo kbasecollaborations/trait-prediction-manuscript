@@ -397,23 +397,27 @@ def main() -> None:
     all_results.to_csv(results_file_all, index=False)
     print(f"\nSaved all results to: {results_file_all}")
 
-    # Print summary by experiment and split type
-    print("\nBy experiment and split type:")
-    summary = (
-        all_results.groupby(["experiment", "split_type"])["balanced_accuracy"]
-        .describe()
-        .round(3)
-    )
-    print(summary)
+    if len(all_results) > 0:
+        # Print summary by experiment and split type
+        print("\nBy experiment and split type:")
+        summary = (
+            all_results.groupby(["experiment", "split_type"])["balanced_accuracy"]
+            .describe()
+            .round(3)
+        )
+        print(summary)
 
-    print("\nBy experiment and phenotype (mean balanced accuracy):")
-    phenotype_summary = (
-        all_results.groupby(["experiment", "phenotype"])["balanced_accuracy"]
-        .agg(["mean", "std", "count"])
-        .round(3)
-        .sort_values(["experiment", "mean"], ascending=[True, False])
-    )
-    print(phenotype_summary)
+        print("\nBy experiment and phenotype (mean balanced accuracy):")
+        phenotype_summary = (
+            all_results.groupby(["experiment", "phenotype"])["balanced_accuracy"]
+            .agg(["mean", "std", "count"])
+            .round(3)
+            .sort_values(["experiment", "mean"], ascending=[True, False])
+        )
+        print(phenotype_summary)
+    else:
+        print("\nNo results generated. All experiments were skipped.")
+        print("Check if test sets are too small or don't have both classes.")
 
     print("\n" + "=" * 80)
     print("Done!")
