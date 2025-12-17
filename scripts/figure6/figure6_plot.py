@@ -19,7 +19,10 @@ from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 from scripts.figure6.figure6a_plot import create_misclassification_plots
 from scripts.figure6.figure6b_plot import plot_confident_samples_performance
-from scripts.figure6.figure6c_plot import plot_precision_recall_scatter
+from scripts.figure6.figure6c_plot import (
+    plot_gapmind_precision_recall_scatter,
+    plot_precision_recall_scatter,
+)
 from scripts.figure6.figure6d_plot import plot_split_comparison
 
 plt.style.use(["science", "nature"])
@@ -99,10 +102,13 @@ def create_figure6(output_file: Path) -> None:
     ax_b = fig.add_subplot(gs[1, :])
     plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
 
-    # Panel C: Precision-recall scatter plot (spans all 2 columns)
-    print("Creating Panel C: Precision-recall scatter plot...")
-    ax_c = fig.add_subplot(gs[2, :])
-    plot_precision_recall_scatter(ax_c, data_dir, common_phenotypes)
+    # Panel C: Precision-recall scatter plots (2 side-by-side: ML and GapMind)
+    print("Creating Panel C: Precision-recall scatter plots...")
+    gs_c = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, :], wspace=0.3)
+    ax_c1 = fig.add_subplot(gs_c[0, 0])
+    ax_c2 = fig.add_subplot(gs_c[0, 1])
+    plot_precision_recall_scatter(ax_c1, data_dir, common_phenotypes)
+    plot_gapmind_precision_recall_scatter(ax_c2, common_phenotypes)
 
     # Panel D: Combined vs phenotype-filtered features (2 split types, each spanning all 2 columns)
     print("Creating Panel D: Combined vs phenotype-filtered features...")
@@ -125,13 +131,13 @@ def create_figure6(output_file: Path) -> None:
     )
 
     # Collect all axes in order
-    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c, ax_d1, ax_d2]
+    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c1, ax_c2, ax_d1, ax_d2]
 
     # Add main panel labels
     panel_labels_map = {
         ax_a1: "(A)",  # First misclassification plot
         ax_b: "(B)",  # Confident samples
-        ax_c: "(C)",  # Precision-recall scatter
+        ax_c1: "(C)",  # Precision-recall scatter (ML)
         ax_d1: "(D)",  # First feature comparison
     }
 
@@ -152,7 +158,7 @@ def create_figure6(output_file: Path) -> None:
     # Remove x-tick labels from all but bottom plot
     for ax in all_axes[:-1]:
         ax.set_xlabel("")
-        if ax in [ax_b, ax_d1]:  # Only reset for phenotype plots (not scatter plot)
+        if ax in [ax_b, ax_d1]:  # Only reset for phenotype plots (not scatter plots)
             ax.set_xticklabels([])
 
     # Set x-axis label only on bottom plot

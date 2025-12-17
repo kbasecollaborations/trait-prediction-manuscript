@@ -118,6 +118,61 @@ def plot_precision_recall_scatter(
     ax.set_aspect("equal")
 
 
+def plot_gapmind_precision_recall_scatter(
+    ax: Axes,
+    phenotypes: list[str],
+    gapmind_file: Path | None = None,
+) -> None:
+    """
+    Plot GapMind precision vs recall scatter plot.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to plot on.
+    phenotypes : list[str]
+        List of phenotypes in order.
+    gapmind_file : Path | None
+        Path to GapMind metrics file. If None, uses default path.
+    """
+    if gapmind_file is None:
+        gapmind_file = Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv")
+
+    # Load GapMind data
+    gapmind_df = pd.read_csv(gapmind_file, sep="\t")
+
+    # Calculate mean precision and recall for each phenotype (across test datasets)
+    gapmind_summary = (
+        gapmind_df.groupby("phenotype")[["precision", "recall"]]
+        .mean()
+        .reindex(phenotypes)
+    )
+
+    # Plot scatter points for GapMind (per-phenotype means)
+    ax.scatter(
+        gapmind_summary["recall"],
+        gapmind_summary["precision"],
+        s=200,
+        alpha=0.7,
+        color="#8B5CF6",
+        edgecolors="black",
+        linewidths=2,
+        label="GapMind",
+        zorder=3,
+    )
+
+    # Add diagonal line (precision = recall)
+    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
+
+    # Formatting
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_xlim(0, 1.05)
+    ax.set_ylim(0, 1.05)
+    ax.legend(loc="lower left", frameon=False)
+    ax.set_aspect("equal")
+
+
 def create_figure(
     data_file: Path,
     output_file: Path,
