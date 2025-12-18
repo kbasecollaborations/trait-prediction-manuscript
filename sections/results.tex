@@ -116,7 +116,7 @@ The absence of systematic bias suggests that both missing annotations/alternativ
 To understand ML generalization failures, we performed feature importance stability analyses using SHAP (Figure~\ref{fig:misclassification_diagnosis}C).
 Across random splits of the aggregated dataset (top panel), at least one feature was consistently identified as important, indicating models learn common patterns when data distribution is uniform.
 However, when comparing stable features between individual datasets and the aggregated dataset (bottom panel; Populus excluded due to small sample size), only Histidine, Maltose, Mannitol, and m-Inositol shared at least one common stable feature across datasets.
-\todo{Account for highly correlated features that may be functionally equivalent}
+% TODO: Account for highly correlated features that may be functionally equivalent
 
 \begin{figure}[h]
 \centering
@@ -135,14 +135,14 @@ Solid bars represent features common with the aggregated dataset; patterned bars
 
 We assessed the biological relevance of stable features by examining their KOFAM annotations (Table~\ref{tab:feature_comparison}).
 For Histidine, the main catabolic enzyme (K01712, urocanate hydratase) was consistently identified across all datasets, demonstrating that ML models can learn mechanistic features when such features are present, consistently annotated, and serve as clear differentiators of the phenotype.
-However, core histidine pathway enzymes K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which appeared in ATLeaf's stable features, were not identified in the aggregated dataset---likely due to annotation gaps or alternative pathways in other datasets.
+However, core histidine pathway enzymes K01745 (histidine ammonia-lyase) and K05603 (formimidoyl-glutamate deiminase), which appeared in ATLeaf's stable features, were not identified in the aggregated dataset, likely due to annotation gaps or alternative pathways in other datasets.
 An uncharacterized protein (K09975) appearing as a common feature for ATLeaf and Marine datasets may warrant further investigation.
-\todo{K09975 function and potential role}
+% TODO: K09975 function and potential role
 
 \input{sections/table_feature_comparison}
 
 These results indicate that ML models learn few mechanistic features when trained on full datasets containing mixed-quality samples.
-The limited feature overlap across datasets suggests that discordant samples---where genotype-phenotype relationships are obscured by annotation gaps, regulatory effects, or measurement error---may be forcing models toward spurious correlations.
+The limited feature overlap across datasets suggests that discordant samples, where genotype-phenotype relationships are obscured by annotation gaps, regulatory effects, or measurement error, may be forcing models toward spurious correlations.
 This raises a fundamental question: can ML learn actual mechanistic features when trained on samples where genotype-phenotype mappings are clearer?
 
 \FloatBarrier{}
@@ -160,7 +160,7 @@ We used GapMind features (presence/absence of pathway genes; $\sim$1000 features
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
 Cross-dataset splits filtered for concordance also achieved high accuracy ($>$0.90) on many phenotype-dataset combinations, indicating that when mechanisms are clear and features are mechanistically relevant, ML can learn and generalize well.
 However, even with concordant data, generalization failed for some phenotypes (e.g., Glucose, Serine) despite common stable features across datasets, possibly due to imbalanced class distributions.
-\todo{Class imbalance? Investiage}
+% TODO: Class imbalance? Investiage
 
 Cross-dataset stability analysis (Figure~\ref{fig:concordant_analysis}B) showed a notable increase in shared stable features compared to models trained on full datasets (Figure~\ref{fig:misclassification_diagnosis}C), indicating concordant training helps models learn consistent mechanistic features.
 Table~\ref{tab:feature_comparison_concordant} confirms that models consistently identify established pathway genes as top features, demonstrating that ML can learn actual mechanisms when samples have clear genotype-phenotype mappings.
@@ -198,7 +198,7 @@ We therefore explored alternative strategies to improve model performance by add
 
 We identified systematically problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabeled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
 % TODO: Genome quality metrics?
-\todo{Develop metrics independent of GapMind}
+% TODO: Develop metrics independent of GapMind
 Removing these samples and filtering by measurement confidence (see Methods) improved cross-dataset performance, though not as much as concordant training (Figure~\ref{fig:improvement_strategies}B).
 Importantly, confidence-based filtering removed fewer samples while achieving comparable performance gains, making it a practical alternative when concordant filtering is not possible.
 
@@ -244,7 +244,7 @@ Each panel further breaks down performance on full test samples, concordant test
 
 For Histidine, performance plateaus at approximately 100 samples across all evaluation scenarios and test types, suggesting that 50--100 high-quality samples per phenotype may be sufficient to train robust models for carbon utilization traits with clear mechanistic underpinnings.
 While this finding requires validation across additional phenotypes, the relatively modest sample requirement suggests that strategic data collection focusing on quality over quantity may be more efficient than brute-force data aggregation for building generalizable models.
-\todo{Validate sample size requirements across additional phenotypes}
+% TODO: Validate sample size requirements across additional phenotypes
 
 \begin{figure}[h]
 \centering
