@@ -11,14 +11,19 @@
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s1.pdf}
-\caption{\textbf{Phylogenetic distribution} Phylogenetic distribution of 819 genomes across four datasets (ATLeaf, Literature, Marine, PMI), showing distinct taxonomic compositions.}
+\caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
+Phylogenetic tree displaying 819 genomes from four datasets: ATLeaf, Biolog, Marine, and Populus.
+Branch colors indicate dataset membership.
+The tree reveals distinct taxonomic compositions across datasets, with some clades dominated by specific datasets while others show mixed representation.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s2.png}
-\caption{\textbf{Phylogenetic distance of different split types}}
+\caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
+Comparison of phylogenetic distances between training and test samples under different evaluation scenarios.
+The figure demonstrates that random splits sample from phylogenetically similar distributions, while cross-dataset and out-of-clade splits progressively increase the phylogenetic distance between training and test samples.}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
 
@@ -46,6 +51,8 @@ lit    & atleaf & rast  & cb & 7  \\
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s3.png}
-\caption{\textbf{Performance of in-clade and out-of-clade evaluations} Comparison of model performance when evaluated on genomes within the same clade as the training set versus genomes from different clades.}
+\caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
+Balanced accuracy of ML models across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
+The comparison reveals how phylogenetic distance between training and test samples affects model generalization.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
