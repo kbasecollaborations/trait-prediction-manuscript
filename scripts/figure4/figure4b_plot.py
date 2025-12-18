@@ -269,12 +269,13 @@ def create_confusion_matrix_plots(
         "cellobiose": "Cellobiose",
     }
 
-    # Define colorblind-friendly pastel colors
+    # Colorblind-friendly colors (Wong palette) - semantic mapping
+    # Cool colors for correct predictions, warm colors for incorrect
     colors = {
-        "TP": "#8FBC8F",  # Pastel green (correct positive)
-        "TN": "#B0C4DE",  # Pastel blue (correct negative)
-        "FP": "#F4A460",  # Pastel orange (incorrect positive)
-        "FN": "#E9967A",  # Pastel salmon (incorrect negative)
+        "TP": "#0072B2",  # Blue (correct)
+        "TN": "#009E73",  # Teal (correct)
+        "FP": "#E69F00",  # Orange (incorrect)
+        "FN": "#D55E00",  # Vermillion (incorrect)
     }
 
     print("Loading GapMind predictions...")
