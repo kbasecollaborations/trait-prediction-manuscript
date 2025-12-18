@@ -334,11 +334,6 @@ def plot_concordant_train_performance(
     # Set up positions
     x = np.arange(len(phenotypes))
 
-    # Prepare data for box plot - random split vs dataset split
-    colors = ["#2E86AB", "#A23B72"]  # Blue for random split, purple for dataset split
-    split_types = ["random_split", "dataset_split"]
-    split_labels = ["Random Split", "Dataset Split"]
-
     # Create grouped box plots
     box_data_random = []
     box_data_dataset = []
@@ -360,26 +355,28 @@ def plot_concordant_train_performance(
     positions_dataset = x + width / 2
 
     # Create box plots
+    # Random split: green (#06A77D) to match figure3 panel A
     bp1 = ax.boxplot(
         box_data_random,
         positions=positions_random,
         widths=width * 0.8,
         patch_artist=True,
         showfliers=True,
-        boxprops=dict(facecolor=colors[0], alpha=0.7, linewidth=1.5),
+        boxprops=dict(facecolor="#06A77D", alpha=0.7, linewidth=1.5),
         medianprops=dict(color="black", linewidth=2),
         whiskerprops=dict(linewidth=1.5),
         capprops=dict(linewidth=1.5),
         flierprops=dict(marker="o", markersize=4, alpha=0.5),
     )
 
+    # Dataset split: blue (#2E86AB) as complementary color
     bp2 = ax.boxplot(
         box_data_dataset,
         positions=positions_dataset,
         widths=width * 0.8,
         patch_artist=True,
         showfliers=True,
-        boxprops=dict(facecolor=colors[1], alpha=0.7, linewidth=1.5),
+        boxprops=dict(facecolor="#2E86AB", alpha=0.7, linewidth=1.5),
         medianprops=dict(color="black", linewidth=2),
         whiskerprops=dict(linewidth=1.5),
         capprops=dict(linewidth=1.5),
@@ -390,8 +387,8 @@ def plot_concordant_train_performance(
     from matplotlib.patches import Patch
 
     legend_handles = [
-        Patch(facecolor=colors[0], alpha=0.7, label=split_labels[0]),
-        Patch(facecolor=colors[1], alpha=0.7, label=split_labels[1]),
+        Patch(facecolor="#06A77D", alpha=0.7, label="Random Split"),
+        Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split"),
     ]
 
     # Add alternating background colors for x-axis categories
