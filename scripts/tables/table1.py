@@ -101,7 +101,7 @@ def create_feature_table(
                 # Format dataset name
                 dataset_display = {
                     "atleaf": "ATLeaf",
-                    "lit": "Literature",
+                    "lit": "Biolog",
                     "marine": "Marine",
                 }[dataset]
 
