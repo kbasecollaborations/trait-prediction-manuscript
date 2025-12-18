@@ -177,7 +177,7 @@ def plot_confident_samples_performance(
                 f"-{int(concordant_removed.iloc[i])}",
                 ha="center",
                 va="bottom",
-                fontsize=7,
+                fontsize=10,
                 color="#2E86AB",
                 weight="bold",
             )
@@ -189,7 +189,7 @@ def plot_confident_samples_performance(
                 f"-{int(ysoft_removed.iloc[i])}",
                 ha="center",
                 va="bottom",
-                fontsize=7,
+                fontsize=10,
                 color="#06A77D",
                 weight="bold",
             )
@@ -201,7 +201,7 @@ def plot_confident_samples_performance(
                 f"-{int(misclass_removed.iloc[i])}",
                 ha="center",
                 va="bottom",
-                fontsize=7,
+                fontsize=10,
                 color="#E63946",
                 weight="bold",
             )

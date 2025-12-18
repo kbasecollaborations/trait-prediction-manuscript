@@ -9,7 +9,11 @@ import pandas as pd
 import scienceplots
 import seaborn as sns
 
-from scripts.visualization import configure_plot_style, get_dataset_colors
+from scripts.visualization import (
+    configure_plot_style,
+    format_dataset_names,
+    get_dataset_colors,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -376,7 +380,7 @@ def create_misclassification_plots(
         pad=10,
     )
     ax1.set_xticks(range(len(datasets)))
-    ax1.set_xticklabels(datasets, rotation=45, ha="right")
+    ax1.set_xticklabels(format_dataset_names(datasets), rotation=45, ha="right")
     ax1.set_ylim(
         0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
     )
@@ -399,7 +403,7 @@ def create_misclassification_plots(
         pad=10,
     )
     ax2.set_xticks(range(len(datasets)))
-    ax2.set_xticklabels(datasets, rotation=45, ha="right")
+    ax2.set_xticklabels(format_dataset_names(datasets), rotation=45, ha="right")
     ax2.set_ylim(
         0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
     )

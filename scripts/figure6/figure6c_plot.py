@@ -114,7 +114,7 @@ def plot_precision_recall_scatter(
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=False, labelspacing=1.2)
+    ax.legend(loc="lower right", frameon=True, labelspacing=1.2)
     ax.set_aspect("equal")
 
 
@@ -169,7 +169,7 @@ def plot_gapmind_precision_recall_scatter(
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=False, labelspacing=1.2)
+    ax.legend(loc="lower right", frameon=True, labelspacing=1.2)
     ax.set_aspect("equal")
 
 

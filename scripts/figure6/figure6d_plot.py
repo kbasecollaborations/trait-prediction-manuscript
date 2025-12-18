@@ -226,7 +226,7 @@ def plot_balanced_accuracy_scatter(
     ax.set_ylabel("Phenotype-Filtered\n(Balanced Accuracy)")
     ax.set_xlim(0.4, 1.05)
     ax.set_ylim(0.4, 1.05)
-    ax.legend(loc="lower right", frameon=False, labelspacing=1.2)
+    ax.legend(loc="lower right", frameon=True, labelspacing=1.2)
     ax.set_aspect("equal")
 
 
@@ -301,7 +301,7 @@ def plot_precision_recall_scatter_by_feature_type(
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=False, fontsize=7, labelspacing=1.2)
+    ax.legend(loc="lower right", frameon=True, fontsize=7, labelspacing=1.2)
     ax.set_aspect("equal")
 
 
