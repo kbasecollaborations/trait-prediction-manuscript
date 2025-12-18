@@ -22,13 +22,16 @@ Our results provide an alternative interpretation: phylogenetic confounding emer
 When trained on concordant samples only, models identified mechanistic features and generalized across clades, suggesting the problem is signal-to-noise ratio rather than sample size per se.
 This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance \cite{Martiny2013-ob,Martiny2015-ie}, but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
 Our finding that combined feature representations from multiple annotation sources improved within-dataset accuracy but not cross-dataset generalization is consistent with previous observations that biologically informed feature selection improves interpretability without sacrificing accuracy \cite{Li2023-up}.
+This finding suggests two distinct feature engineering strategies depending on the optimization goal: comprehensive features from multiple annotation sources maximize performance when test conditions match training, while biologically relevant features (e.g., pathway-specific genes) should be prioritized when cross-dataset or cross-phylogeny generalization is required.
 However, even when models identified biologically relevant features within datasets, the overlap across datasets remained limited, indicating that dataset-specific biases dominate when data quality is mixed.
 
 % Practical implications
 Our results provide actionable guidance for building generalizable phenotype predictors.
 For model development, ML models should be trained on high-quality samples with clear genotype-phenotype mappings when possible; when mechanistic predictors like GapMind are available, concordant samples provide the highest-quality training data.
+When mechanistic predictors are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives that improve generalization without requiring external knowledge.
 Without mechanistic knowledge, feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
+However, when test conditions are expected to resemble training conditions---such as predictions within the same experimental system or phylogenetic context---full-dataset training maximizes performance and may be the preferred approach.
 Sample size requirements appear manageable: our learning curves for Histidine suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation for other phenotypes.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables quality assessment and identification of unreliable phenotype calls.
 Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection \cite{Gralka2023-ft,Huang2023-lh,Kehe2019-vr}, but quality must be prioritized alongside quantity.

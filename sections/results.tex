@@ -187,8 +187,8 @@ Solid bars: features common with aggregated dataset; patterned bars: dataset-uni
 
 Multiple strategies can improve model performance: removing systematically problematic samples, filtering by confidence estimates, and prioritizing precision or recall for specific applications.
 
-While concordant training provides the best results, it removes $\sim$30\% of samples, which may not be feasible when mechanistic predictors like GapMind are unavailable.
-We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions (Figure~\ref{fig:improvement_strategies}A).
+While concordant training provides the best results, it removes $\sim$30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterized phenotypes.
+We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions, making these approaches applicable to a broader range of traits (Figure~\ref{fig:improvement_strategies}A).
 
 We identified systematically problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabeled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
 \todo{Develop genome quality metrics independent of GapMind for broader applicability}
@@ -201,7 +201,7 @@ Depending on the application, prioritizing precision (minimizing false positives
 
 We also compared models trained using GapMind features alone versus combined features from GapMind, KOFAM, and RAST (Figure~\ref{fig:improvement_strategies}D).
 Feature combinations improved random split performance but not cross-dataset generalization, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalization \cite{Li2023-up}.
-This suggests that for practical applications where generalization is the primary goal, focusing on biologically relevant features may be more beneficial than maximizing the feature space.
+These results suggest two distinct strategies depending on the application goal: for cross-dataset or cross-phylogeny generalization, biologically relevant features (e.g., GapMind pathway genes) should be prioritized; for maximizing performance when test conditions resemble training conditions, comprehensive feature sets may be preferred.
 
 \begin{figure}[h]
 \centering
