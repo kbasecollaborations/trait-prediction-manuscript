@@ -159,9 +159,9 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
 
     # Define colors and markers for each model
     palette = {
-        "Identity": "#808080",  # Gray
-        "Bernoulli": "#F18F01",  # Orange
-        "Nearest Neighbor": "#06A77D",  # Green
+        "Identity": "#A0A0A0",  # Light gray
+        "Bernoulli": "#707070",  # Medium gray
+        "Nearest Neighbor": "#000000",  # Black
     }
 
     markers = {
