@@ -173,7 +173,7 @@ def plot_performance_vs_sample_size(
                         alpha=0.4,
                     )
 
-                # Plot all points
+                # Plot all points (only add label once for legend)
                 ax.scatter(
                     train_subset["n_train_samples"],
                     train_subset["balanced_accuracy"],
@@ -182,7 +182,7 @@ def plot_performance_vs_sample_size(
                     alpha=0.7,
                     s=40,
                     label=training_type
-                    if row_idx == 0 and col_idx == len(split_types) - 1
+                    if row_idx == 0 and col_idx == 0
                     else None,
                     edgecolors="black",
                     linewidths=0.5,
@@ -233,11 +233,19 @@ def plot_performance_vs_sample_size(
             # Format x-axis
             ax.tick_params(axis="both", which="both")
 
-            # Add legend only to top-right subplot
-            if row_idx == 0 and col_idx == len(split_types) - 1:
-                ax.legend(title="Training Type", loc="lower right", frameon=False)
+    # Add figure-level legend at the top in one row
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        ncol=len(labels),
+        frameon=False,
+        bbox_to_anchor=(0.5, 1.02),
+        title="Training Type",
+    )
 
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     plt.close()
@@ -356,7 +364,7 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                             alpha=0.4,
                         )
 
-                    # Plot all points
+                    # Plot all points (only add label once for legend)
                     ax.scatter(
                         train_subset["n_train_samples"],
                         train_subset["balanced_accuracy"],
@@ -365,7 +373,7 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
                         alpha=0.7,
                         s=40,
                         label=training_type
-                        if row_idx == 0 and col_idx == len(split_types) - 1
+                        if row_idx == 0 and col_idx == 0
                         else None,
                         edgecolors="black",
                         linewidths=0.5,
@@ -415,11 +423,19 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
 
                 ax.tick_params(axis="both", which="both")
 
-                # Add legend only to top-right subplot
-                if row_idx == 0 and col_idx == len(split_types) - 1:
-                    ax.legend(title="Training Type", loc="lower right", frameon=False)
+        # Add figure-level legend at the top in one row
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        fig.legend(
+            handles,
+            labels,
+            loc="upper center",
+            ncol=len(labels),
+            frameon=False,
+            bbox_to_anchor=(0.5, 1.02),
+            title="Training Type",
+        )
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
         phenotype_file = (
             output_file.parent
             / f"figure7_{FEATURE_TYPE}_{phenotype.lower()}_all_tests.pdf"
