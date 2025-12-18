@@ -52,9 +52,9 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
     strict_data = strict_df.set_index("phenotype").reindex(phenotypes)
     loose_data = loose_df.set_index("phenotype").reindex(phenotypes)
 
-    # Define colors for strict and loose (reversed)
-    color_strict = "#A23B72"  # Purple
-    color_loose = "#2E86AB"  # Blue
+    # Define colors for strict and loose
+    color_strict = "#2E86AB"  # Blue
+    color_loose = "#A23B72"  # Purple
 
     # Plot bars
     ax.bar(

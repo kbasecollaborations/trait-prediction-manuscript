@@ -89,7 +89,7 @@ def plot_random_split_vs_gapmind(
     )
 
     # Plot GapMind results as horizontal lines (mean across random splits for each phenotype)
-    gapmind_color = "#A23B72"  # Purple
+    gapmind_color = "#A23B72"  # Purple (matches permissive in figure2)
     gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
     for phenotype in phenotypes:
@@ -225,7 +225,7 @@ def plot_dataset_split_performance(
             )
 
     # Plot GapMind results as dashed lines (mean across dataset splits for each phenotype)
-    gapmind_color = "#A23B72"  # Purple
+    gapmind_color = "#A23B72"  # Purple (matches permissive in figure2)
     gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
     for phenotype in phenotypes:
