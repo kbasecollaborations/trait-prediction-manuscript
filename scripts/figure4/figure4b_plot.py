@@ -298,7 +298,7 @@ def create_confusion_matrix_plots(
 
     phenotypes = phenotype_combined.index.tolist()
     x = np.arange(len(phenotypes))
-    width = 0.6
+    width = 0.45
 
     tp_vals = phenotype_combined["TP"].values
     tn_vals = phenotype_combined["TN"].values
@@ -329,7 +329,7 @@ def create_confusion_matrix_plots(
 
     datasets = dataset_combined.index.tolist()
     x = np.arange(len(datasets))
-    width = 0.5  # Narrower bars for bottom subplot
+    width = 0.35  # Narrower bars for bottom subplot
 
     tp_vals = dataset_combined["TP"].values
     tn_vals = dataset_combined["TN"].values

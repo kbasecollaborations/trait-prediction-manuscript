@@ -60,12 +60,12 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot
-    ax.set_ylabel("Number of Stable Features\n(combined)", fontsize=10)
+    ax.set_ylabel("Number of Stable Features\n(combined)", fontsize=12)
     # Set ticks to match bottom subplot
     ax.set_xticks(x_pos + bar_center_offset)
     ax.set_xticklabels([])  # No labels on top plot
     ax.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
-    ax.tick_params(axis="y")
+    ax.tick_params(axis="y", labelsize=11)
     # ax.spines["top"].set_visible(False)
     # ax.spines["right"].set_visible(False)
 
@@ -84,7 +84,7 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
             f"{count}",
             ha="center",
             va="bottom",
-            fontsize=7,
+            fontsize=10,
         )
 
 
@@ -196,7 +196,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         dataset_display_names,
         title="Dataset",
         loc="upper left",
-        bbox_to_anchor=(0.0, 1.20),
+        bbox_to_anchor=(0.0, 1.25),
         ncol=len(datasets),
         frameon=False,
     )
@@ -207,7 +207,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         handles=feature_handles,
         title="Stable features",
         loc="upper right",
-        bbox_to_anchor=(1.0, 1.20),
+        bbox_to_anchor=(1.0, 1.25),
         ncol=2,
         frameon=False,
     )
@@ -223,13 +223,13 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot (matching Figure 1C)
-    ax.set_ylabel("Number of Stable Features\n(individual datasets)", fontsize=10)
-    ax.set_xlabel("Phenotype", fontsize=10)
+    ax.set_ylabel("Number of Stable Features\n(individual datasets)", fontsize=12)
+    ax.set_xlabel("Phenotype", fontsize=12)
     # Center x-tick labels in the middle of the group of bars (matching Figure 1C)
     ax.set_xticks(x_pos + bar_group_center)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=9)
+    ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=11)
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
-    ax.tick_params(axis="y")
+    ax.tick_params(axis="y", labelsize=11)
     # ax.spines["top"].set_visible(False)
     # ax.spines["right"].set_visible(False)
 

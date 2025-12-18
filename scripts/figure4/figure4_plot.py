@@ -4,12 +4,16 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import scienceplots
+import seaborn as sns
 
 from scripts.figure4.figure4a_quadrant import create_quadrant_plot
 from scripts.figure4.figure4b_plot import create_confusion_matrix_plots
 from scripts.figure4.figure4c_plot import create_panel_c_plots
+from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
+sns.set_context("paper")
+configure_plot_style()
 
 
 def create_figure4(output_file: Path) -> None:
@@ -21,17 +25,17 @@ def create_figure4(output_file: Path) -> None:
         Path to save the output figure.
     """
     # Create figure - increased height for panel C
-    fig = plt.figure(figsize=(20, 16))
+    fig = plt.figure(figsize=(20, 18))
 
     # Create grid: 2 rows, top row has 2 columns, bottom row spans full width
     import matplotlib.gridspec as gridspec
 
-    # Main grid: 2 rows
-    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.2, 0.8], hspace=0.12)
+    # Main grid: 2 rows - increased first row height for taller panel A
+    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.5, 0.8], hspace=0.12)
 
-    # Top row grid: 2 columns for panels A and B
+    # Top row grid: 2 columns for panels A and B - A wider, B narrower
     top_gs = gridspec.GridSpecFromSubplotSpec(
-        1, 2, subplot_spec=main_gs[0, :], width_ratios=[1, 1.2], wspace=0.15
+        1, 2, subplot_spec=main_gs[0, :], width_ratios=[1.4, 0.8], wspace=0.18
     )
 
     # Left side: Figure 4A (quadrant plot)
