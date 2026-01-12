@@ -1,20 +1,8 @@
-"""Module that defines the bernoulli classifier null model"""
+"""Module that defines the bernoulli classifier null model.
 
-import pandas as pd
-from scipy.stats import bernoulli
+Re-exports from trait_prediction for backward compatibility.
+"""
 
-from .classifier import Classifier
+from trait_prediction.classifiers import BernoulliClassifier
 
-
-class BernoulliClassifier(Classifier):
-    """Null model that predicts class using bernoulli distribution"""
-
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
-        """Fit the classifier to the data"""
-        self.p = y.mean()
-
-    def predict(self, X: pd.DataFrame) -> pd.Series:
-        """Predict the target variable"""
-        values = bernoulli.rvs(self.p, size=X.shape[0], random_state=self.random_state)
-        s = pd.Series(values, index=X.index)
-        return s
+__all__ = ["BernoulliClassifier"]
