@@ -1,18 +1,33 @@
 """
-Machine learning utilities
+Machine learning utilities.
+
+This module provides utilities for creating classifiers and evaluating
+ML models. It wraps trait_prediction utilities with manuscript-specific
+model type aliases (e.g., "cb" for "catboost").
 """
 
 import pandas as pd
 import sklearn
-from catboost import CatBoostClassifier
 from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import RFE, RFECV
-from sklearn.metrics import get_scorer
 from sklearn.model_selection import StratifiedKFold, cross_validate
-from sklearn.tree import DecisionTreeClassifier
+
+# Import from trait_prediction
+from trait_prediction.classifiers import make_classifier as _make_classifier
+from trait_prediction.pipeline import (
+    align_columns,
+    get_feature_importances,
+    get_scores as _get_scores,
+)
 
 sklearn.set_config(enable_metadata_routing=True)  # type: ignore
+
+# Model type aliases for backward compatibility
+# Manuscript uses "cb" but trait_prediction uses "catboost"
+MODEL_TYPE_ALIASES = {
+    "cb": "catboost",
+    "cb_noeval": "catboost_noeval",
+    "rfe_cb": "rfe_catboost",
+}
 
 
 def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
@@ -24,17 +39,18 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
     model_type : str
         Type of classifier to create. Must be one of:
         - 'rf': Random Forest classifier
-        - 'cb': CatBoost classifier
-        - 'rfe_rf': Random Forest classifier with Recursive Feature Elimination
-        - 'rfe_cb': CatBoost classifier with Recursive Feature Elimination
-        - 'rfe_cv': Cross-validation of a classifier with Recursive Feature Elimination
+        - 'cb': CatBoost classifier (with early stopping)
+        - 'cb_noeval': CatBoost classifier (without early stopping)
         - 'dt': Decision Tree classifier
+        - 'rfe_rf': Random Forest with Recursive Feature Elimination
+        - 'rfe_cb': CatBoost with Recursive Feature Elimination
+        - 'rfe_cv': Cross-validated RFE with Random Forest
     **kwargs : dict
-        Additional keyword arguments to override default parameters for the classifier
+        Additional keyword arguments to override default parameters
 
     Returns
     -------
-    RandomForestClassifier | CatBoostClassifier | RFE
+    BaseEstimator
         Configured classifier instance
 
     Raises
@@ -42,147 +58,9 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
     ValueError
         If model_type is not one of the supported values
     """
-    if model_type == "rf":
-        default_kwargs = {
-            "n_estimators": 1000,
-            "max_depth": None,  # RF needs deep trees. Let them grow.
-            "min_samples_split": 5,  # Slight regularization to prevent leaf purity on noise
-            "min_samples_leaf": 2,  # Require at least 2 samples per leaf
-            "n_jobs": -1,
-            "max_features": "sqrt",  # Critical! distinct trees need feature subsets. 'sqrt' of 7000 is ~83 features considered per split.
-            "random_state": 42,
-        }
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return RandomForestClassifier(**updated_kwargs)
-    elif model_type == "dt":
-        default_kwargs = {
-            "criterion": "gini",
-            "max_depth": None,
-            "min_samples_split": 2,
-            "min_samples_leaf": 1,
-            "random_state": 42,
-        }
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return DecisionTreeClassifier(**updated_kwargs)
-    elif model_type == "cb_noeval":
-        default_kwargs = {
-            "iterations": 500,  # Fixed iterations since no early stopping
-            "learning_rate": 0.03,
-            "depth": 4,
-            "l2_leaf_reg": 15,  # Stronger regularization to prevent overfitting without early stopping
-            "bagging_temperature": 1,  # Increase bootstrap intensity for better generalization
-            "rsm": 0.1,  # Only look at 10% of features per split for diversity
-            "bootstrap_type": "Bayesian",
-            "task_type": "CPU",
-            "verbose": False,
-            "allow_writing_files": False,
-            "random_state": 42,
-            "thread_count": -1,
-        }
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return CatBoostClassifier(**updated_kwargs)  # type: ignore
-    elif model_type == "cb":
-        default_kwargs = {
-            "iterations": 1000,
-            "learning_rate": 0.03,
-            "depth": 4,
-            "l2_leaf_reg": 15,  # changed from 10 -> 15 (stronger regularization)
-            "bagging_temperature": 1,  # changed from 0.5 -> 1 (increase bootstrap intensity)
-            "rsm": 0.1,  # changed from 0.5 -> 0.1 (only look at 10% genes per split)
-            "bootstrap_type": "Bayesian",
-            "od_type": "Iter",
-            "od_wait": 50,  # changed 20 -> 50 (increased patience)
-            "task_type": "CPU",
-            "eval_metric": "Logloss",
-            "verbose": False,
-            "allow_writing_files": False,
-            "use_best_model": True,
-            "random_state": 42,
-            "thread_count": -1,
-        }
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return CatBoostClassifier(**updated_kwargs)  # type: ignore
-    elif model_type == "rfe_rf":
-        default_kwargs = {
-            "step": 0.1,
-            "n_features_to_select": 100,
-            "verbose": 0,
-        }
-        random_state = kwargs.pop("random_state", 42)
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return RFE(
-            estimator=make_classifier("rf", random_state=random_state), **updated_kwargs
-        )
-    elif model_type == "rfe_cb":
-        default_kwargs = {
-            "step": 0.1,
-            "n_features_to_select": 100,
-            "verbose": 0,
-        }
-        random_state = kwargs.pop("random_state", 42)
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return RFE(
-            estimator=make_classifier("cb", random_state=random_state), **updated_kwargs
-        )
-    elif model_type == "rfe_cv":
-        random_state = kwargs.pop("random_state", 42)
-        n_splits = kwargs.pop("n_splits", 5)
-        default_kwargs = {
-            "step": 0.1,
-            "min_features_to_select": 100,
-            "scoring": "balanced_accuracy",
-            "verbose": 0,
-            "n_jobs": -1,
-        }
-        cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-        updated_kwargs = {**default_kwargs, **kwargs}
-        return RFECV(
-            estimator=make_classifier("rf", random_state=random_state),
-            cv=cv,
-            **updated_kwargs,
-        )
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
-
-
-def get_feature_importances(
-    model: RandomForestClassifier | CatBoostClassifier | RFE,
-    X: pd.DataFrame,
-    feature_names: list[str] | None = None,
-    n_features: int = 10,
-) -> pd.Series:
-    """
-    Get the most important features from a trained model.
-
-    Parameters
-    ----------
-    model : RandomForestClassifier | CatBoostClassifier
-        Trained model to extract feature importances from
-    X : pd.DataFrame
-        Feature matrix used to train the model
-    feature_names : list[str] | None, optional
-        List of feature names. If None, uses X.columns, by default None
-    n_features : int, optional
-        Number of top features to return, by default 10
-
-    Returns
-    -------
-    list[str]
-        List of the top `n_features` most important features
-    """
-    if isinstance(model, RFE):
-        estimator: RandomForestClassifier | CatBoostClassifier = model.estimator_  # type: ignore
-        if feature_names is not None:
-            raise ValueError("feature_names must be None for RFE models")
-        feature_names = list(model.get_feature_names_out())
-    else:
-        estimator = model
-    importances = estimator.feature_importances_
-    if feature_names is None:
-        feature_names = list(X.columns)
-    importance_df = pd.Series(importances, index=feature_names)
-    importance_df.sort_values(ascending=False, inplace=True)
-    return importance_df.head(n_features)
+    # Map manuscript model types to trait_prediction model types
+    mapped_type = MODEL_TYPE_ALIASES.get(model_type, model_type)
+    return _make_classifier(mapped_type, **kwargs)
 
 
 def perform_cv(
@@ -191,17 +69,7 @@ def perform_cv(
     model_type: str,
     n_splits: int = 5,
     minority_class_min_samples: int = 10,
-    scoring: list[str] = [
-        "accuracy",
-        "balanced_accuracy",
-        "matthews_corrcoef",
-        "precision",
-        "recall",
-        "f1",
-        "sensitivity",
-        "specificity",
-        "roc_auc",
-    ],
+    scoring: list[str] | None = None,
     **model_kwargs,
 ) -> pd.DataFrame | None:
     """
@@ -214,25 +82,36 @@ def perform_cv(
     y : pd.Series
         Target variable vector
     model_type : str
-        Type of classifier model to use
-        - 'rf': Random Forest classifier
-        - 'cb': CatBoost classifier
-        - 'rfe_rf': Random Forest classifier with Recursive Feature Elimination
-        - 'rfe_cb': CatBoost classifier with Recursive Feature Elimination
-        - 'dt': Decision Tree classifier
+        Type of classifier model to use ('rf', 'cb', 'dt', etc.)
     n_splits : int, optional
         Number of folds for cross-validation, by default 5
-    scoring : list[str], optional
-        List of scoring metrics to evaluate, by default ["accuracy", "balanced_accuracy", "matthews_corrcoef"]
+    minority_class_min_samples : int, optional
+        Minimum samples required in minority class, by default 10
+    scoring : list[str] | None, optional
+        List of scoring metrics to evaluate. If None, uses default metrics.
     **model_kwargs
         Additional keyword arguments passed to the classifier
 
     Returns
     -------
     pd.DataFrame | None
-        DataFrame containing cross-validation results with columns for each scoring metric,
-        fold number, and top features for each fold
+        DataFrame containing cross-validation results with columns for each
+        scoring metric, fold number, and top features. Returns None if
+        insufficient data.
     """
+    if scoring is None:
+        scoring = [
+            "accuracy",
+            "balanced_accuracy",
+            "matthews_corrcoef",
+            "precision",
+            "recall",
+            "f1",
+            "sensitivity",
+            "specificity",
+            "roc_auc",
+        ]
+
     random_state = model_kwargs.get("random_state", 42)
     model = make_classifier(model_type, **model_kwargs)
     kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
@@ -246,7 +125,7 @@ def perform_cv(
         if len(train_class_counts) != 2:
             return None
 
-        # Return None if minority class in training fold has fewer than minority_class_min_samples
+        # Return None if minority class has fewer than min samples
         if train_class_counts.min() < minority_class_min_samples:
             return None
 
@@ -255,9 +134,10 @@ def perform_cv(
         X,
         y,
         cv=kfold,
-        scoring=["accuracy"],  # Use a simple scoring metric for cross_validate
+        scoring=["accuracy"],  # Use simple metric for cross_validate
         return_estimator=True,
     )
+
     all_scores = []
     for fold_idx, (train_idx, test_idx) in enumerate(kfold.split(X, y)):
         estimator = cv_results["estimator"][fold_idx]
@@ -267,29 +147,10 @@ def perform_cv(
         fold_scores["fold"] = fold_idx
         fold_scores["features"] = get_feature_importances(estimator, X).index.tolist()
         all_scores.append(fold_scores)
-    results_df = pd.DataFrame(all_scores)
-    return results_df
+
+    return pd.DataFrame(all_scores)
 
 
-def _get_scores(
-    model: BaseEstimator, X: pd.DataFrame, y: pd.Series, scoring: list[str]
-) -> dict[str, float]:
-    results = dict()
-    for scoring_name in scoring:
-        if scoring_name == "sensitivity":
-            scorer = get_scorer("recall")
-            kwargs = {"pos_label": 1}
-        elif scoring_name == "specificity":
-            scorer = get_scorer("recall")
-            kwargs = {"pos_label": 0}
-        else:
-            scorer = get_scorer(scoring_name)
-            kwargs = {}
-        results[scoring_name] = scorer(model, X, y, **kwargs)
-    return results
-
-
-# TODO: Might need to be updated for clade analysis
 def perform_train_test(
     train_X: pd.DataFrame,
     train_y: pd.Series,
@@ -297,33 +158,65 @@ def perform_train_test(
     test_y: pd.Series,
     model_type: str,
     test_size: int | None = None,
-    scoring: list[str] = [
-        "accuracy",
-        "balanced_accuracy",
-        "matthews_corrcoef",
-        "precision",
-        "recall",
-        "f1",
-        "sensitivity",
-        "specificity",
-        "roc_auc",
-    ],
+    scoring: list[str] | None = None,
     n_repeats: int | None = None,
     **model_kwargs,
 ) -> pd.DataFrame:
+    """
+    Perform train/test evaluation on a classifier model.
+
+    Parameters
+    ----------
+    train_X : pd.DataFrame
+        Training feature matrix
+    train_y : pd.Series
+        Training target variable vector
+    test_X : pd.DataFrame
+        Test feature matrix
+    test_y : pd.Series
+        Test target variable vector
+    model_type : str
+        Type of classifier model to use ('rf', 'cb', 'dt', etc.)
+    test_size : int | None, optional
+        Number of test samples to use. If None, uses all test samples.
+    scoring : list[str] | None, optional
+        List of scoring metrics. If None, uses default metrics.
+    n_repeats : int | None, optional
+        Number of repeated evaluations with different test subsamples.
+    **model_kwargs
+        Additional keyword arguments passed to the classifier
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing evaluation results
+    """
+    if scoring is None:
+        scoring = [
+            "accuracy",
+            "balanced_accuracy",
+            "matthews_corrcoef",
+            "precision",
+            "recall",
+            "f1",
+            "sensitivity",
+            "specificity",
+            "roc_auc",
+        ]
+
     model = make_classifier(model_type, **model_kwargs)
     random_state = model_kwargs.get("random_state", 42)
+
     X_train = train_X.copy()
     y_train = train_y.copy()
     X_test = test_X.copy()
     y_test = test_y.copy()
-    # Make sure X_test has the same columns as X_train and fill missing columns with 0
-    missing_cols = X_train.columns.difference(X_test.columns)
-    if len(missing_cols) > 0:
-        missing_df = pd.DataFrame(0, index=X_test.index, columns=missing_cols)
-        X_test = pd.concat([X_test, missing_df], axis=1)
-    X_test = X_test[X_train.columns]
-    model.fit(X_train, y_train)  # type: ignore
+
+    # Align columns using trait_prediction utility
+    X_test = align_columns(X_train, X_test)
+
+    model.fit(X_train, y_train)
+
     results = []
     if n_repeats is None:
         if test_size is None:
@@ -347,10 +240,21 @@ def perform_train_test(
             X_test_sample = X_test.loc[test_indices, :]
             y_test_sample = y_test.loc[test_indices]
             scores = _get_scores(model, X_test_sample, y_test_sample, scoring)
-            results.append(
-                {
-                    "repeat": i,
-                    **scores,
-                }
-            )
+            results.append({"repeat": i, **scores})
+
     return pd.DataFrame(results)
+
+
+# Re-export for backward compatibility
+__all__ = [
+    "make_classifier",
+    "get_feature_importances",
+    "perform_cv",
+    "perform_train_test",
+    "align_columns",
+    # Keep _get_scores accessible for existing code
+    "_get_scores",
+]
+
+# Alias for backward compatibility
+_get_scores = _get_scores
