@@ -63,8 +63,7 @@ Gray circles and Orange boxes indicate null model performance (Identity and Bern
 
 \subsection*{Machine learning models show strong intra-dataset results but have generalization issues}
 
-Machine learning models achieved high accuracy on intra-dataset splits but showed performance degradation across datasets and phylogenetic contexts, suggesting they learn dataset-specific rather than universal patterns.
-
+The limited performance of both baseline approaches motivated us to test whether machine learning models integrating comprehensive genomic features could better capture the complexity of genotype-phenotype relationships and generalize across experimental contexts.
 We trained gradient-boosted tree (GBT) classifiers using KOFAM annotations as features ($\sim$4000--5000 features per genome after correlation filtering; see Methods).
 We selected KOFAM annotations as our primary feature set for several reasons: they provide comprehensive coverage of metabolic functions directly relevant to carbon utilization, they have been used successfully in similar phenotype prediction tasks \cite{Li2023-up}, and unlike GapMind's curated rule sets, they span the entire metabolic repertoire without being constrained to specific pathways.
 This broader feature space allows models to potentially capture relationships beyond known pathway structures.
@@ -104,9 +103,7 @@ Dotted line indicates GapMind baseline.
 
 \subsection*{Why are GapMind and ML models misclassifying?}
 
-Understanding the sources of prediction errors is essential for developing improvement strategies.
-GapMind misclassifications reveal annotation gaps and regulatory complexity, while ML generalization failures stem from learning dataset- or phylogeny-correlated features rather than mechanistically relevant ones.
-
+To guide improvement strategies, we sought to understand why both GapMind and ML models fail to accurately predict certain samples.
 GapMind misclassifications can arise from multiple factors: incomplete pathway annotations, alternative metabolic routes not captured in curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions (Figure~\ref{fig:misclassification_diagnosis}A).
 To diagnose whether these issues are systematic, we analyzed misclassification patterns both per-phenotype and per-dataset (Figure~\ref{fig:misclassification_diagnosis}B).
 While some phenotypes show better GapMind performance (e.g., Mannitol, Galactose) than others (e.g., Serine, Alanine), there was no clear directional bias in misclassifications (false positives vs.\ false negatives).
@@ -149,11 +146,7 @@ This raises a fundamental question: can ML learn actual mechanistic features whe
 
 \subsection*{Can ML learn actual mechanisms? Testing on GapMind-concordant data}
 
-When trained on samples with clear genotype-phenotype mappings (GapMind-concordant data), ML achieves near-perfect accuracy and learns mechanistic features.
-Importantly, ML also correctly predicts a subset of samples that GapMind misclassifies, demonstrating that it captures relationships beyond curated pathway rules.
-
-To test this, we focused on samples where GapMind predictions matched experimental outcomes (concordant samples).
-These samples likely have clearer mechanistic underpinnings, as GapMind's pathway-based predictions align with observed growth phenotypes.
+To address this question, we hypothesized that samples where GapMind predictions match experimental outcomes (concordant samples) have clearer mechanistic underpinnings, and that ML models trained on such samples could learn and generalize actual mechanistic features.
 We note that this approach may preferentially select samples where the canonical pathway is the actual mechanism, potentially excluding organisms using alternative metabolic routes; we return to this caveat in the Discussion.
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilization phenotypes after correlation filtering) as the feature matrix, ensuring the feature space is directly tied to known metabolic mechanisms.
 
@@ -191,9 +184,7 @@ Test performance is evaluated using Random (green) and Cross-dataset (blue) spli
 
 \subsection*{Strategies to improve model performance}
 
-Multiple strategies can improve model performance: removing systematically problematic samples, filtering by confidence estimates, and prioritizing precision or recall for specific applications.
-
-While concordant training provides the best results, it removes $\sim$30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterized phenotypes.
+While concordant training yields the best results, it removes approximately 30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterized phenotypes.
 We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions, making these approaches applicable to a broader range of traits (Figure~\ref{fig:improvement_strategies}A).
 
 We identified systematically problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabeled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
