@@ -7,7 +7,7 @@ Predicting microbial carbon utilization from genomic data remains challenging de
 Yet, machine learning models aimed at genotype-phenotype prediction often struggle to generalize beyond their training datasets.
 In this study, we explored this generalization problem using microbial carbon utilization as a model system, compiling growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
 Our analyses revealed that the generalization failures are mainly due to data quality rather than algorithmic limitations.
-Models trained on aggregated datasets showed high accuracy within the same dataset but performed poorly across different datasets and phylogenetic contexts, learning dataset-specific correlations instead of mechanistic features.
+Models showed high accuracy within the same dataset but performed poorly across different datasets and phylogenetic contexts, learning dataset-specific correlations instead of mechanistic features.
 Notably, when test conditions resemble training conditions, full-dataset training maximizes performance, making this approach suitable for applications where cross-dataset generalization is not required.
 To address generalization failures, we stratified samples based on the agreement between a mechanistic predictor (GapMind) and experimental outcomes.
 When models were trained solely on concordant samples, where pathway-based predictions matched observed phenotypes, they achieved strong cross-dataset generalization and consistently identified known metabolic genes as top predictive features.
