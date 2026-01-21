@@ -482,6 +482,7 @@ cython_debug/
 
 # Misc
 .claude/
+.serena/
 CLAUDE.md
 prompts/
 
