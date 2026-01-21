@@ -147,6 +147,7 @@ This raises a fundamental question: can ML learn actual mechanistic features whe
 \subsection*{Can ML learn actual mechanisms? Testing on GapMind-concordant data}
 
 To address this question, we hypothesized that samples where GapMind predictions match experimental outcomes (concordant samples) have clearer mechanistic underpinnings, and that ML models trained on such samples could learn and generalize actual mechanistic features.
+We reasoned that concordant samples likely represent organisms using broadly conserved metabolic pathways, the well-characterized pathways that dominate annotation databases, and that models trained on such samples would learn core metabolic features shared across diverse taxa rather than overfitting to rare or organism-specific mechanisms.
 We note that this approach may preferentially select samples where the canonical pathway is the actual mechanism, potentially excluding organisms using alternative metabolic routes; we return to this caveat in the Discussion.
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilization phenotypes after correlation filtering) as the feature matrix, ensuring the feature space is directly tied to known metabolic mechanisms.
 

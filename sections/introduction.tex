@@ -27,7 +27,7 @@ We compiled a comprehensive dataset of 819 microbial genomes and their binary gr
 We developed phenotype-specific classifiers using this dataset and employed various feature representations and evaluation strategies within a standardized framework.
 
 Our analyses revealed that models trained on aggregated data failed to generalize across datasets and phylogenetic contexts, learning dataset-specific correlations rather than mechanistic features.
-By stratifying samples according to agreement between mechanistic predictions and experimental outcomes, we found that models trained on high-quality samples achieved robust generalization and consistently identified established pathway genes as top features.
+By stratifying samples according to agreement between mechanistic predictions and experimental outcomes, we found that models trained on concordant samples, which tend to represent broadly conserved pathways, achieved robust generalization and consistently identified established pathway genes as top features.
 Critically, these models also predicted a subset of samples that the mechanistic predictor misclassified, demonstrating that machine learning can capture relationships beyond curated pathway rules.
 We evaluated multiple improvement strategies, including confidence-based filtering for situations where mechanistic predictors are unavailable, and established that modest sample sizes (50--100 high-quality samples per phenotype) are sufficient for robust generalization.
 Importantly, we found that full-dataset training remains appropriate when test conditions resemble training conditions, as it maximizes performance in same-environment applications.

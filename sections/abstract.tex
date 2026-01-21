@@ -11,6 +11,7 @@ Models showed high accuracy within the same dataset but performed poorly across 
 Notably, when test conditions resemble training conditions, full-dataset training maximizes performance, making this approach suitable for applications where cross-dataset generalization is not required.
 To address generalization failures, we stratified samples based on the agreement between a mechanistic predictor (GapMind) and experimental outcomes.
 When models were trained solely on concordant samples, where pathway-based predictions matched observed phenotypes, they achieved strong cross-dataset generalization and consistently identified known metabolic genes as top predictive features.
+% This success likely reflects that concordant samples represent organisms using broadly conserved pathways, enabling models to learn core metabolic features that transfer across taxa rather than overfitting to rare or organism-specific mechanisms.
 Learning curves indicated that relatively small numbers of high-quality samples (50--100 per phenotype) were sufficient for robust generalization.
 These concordant-trained models also accurately predicted a subset of samples that the mechanistic predictor misclassified, indicating that machine learning captures relationships beyond curated pathway rules.
 We evaluated strategies to improve model performance without requiring mechanistic knowledge, finding that confidence-based filtering and the removal of systematically problematic samples offered practical alternatives when mechanistic predictors are unavailable.
