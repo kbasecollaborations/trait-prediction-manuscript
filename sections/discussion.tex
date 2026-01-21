@@ -9,6 +9,14 @@ The problem is not that ML cannot learn metabolic mechanisms---it demonstrably c
 Rather, discordant samples force models toward spurious correlations that are predictive within specific datasets or clades but do not transfer.
 This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge.
 
+% What constitutes high-quality data
+In this context, high-quality data refers to samples with clear, unambiguous genotype-phenotype relationships---where the presence or absence of specific genes reliably predicts the observed phenotype.
+We operationalized this through concordance with mechanistic predictions: concordant samples are those where pathway-based predictions match experimental outcomes, suggesting the canonical metabolic mechanism is both present and functional.
+However, data quality encompasses multiple dimensions beyond mechanistic concordance.
+At the genomic level, quality depends on genome completeness, assembly accuracy, and annotation consistency.
+At the experimental level, quality depends on measurement reproducibility, standardized growth conditions, and reliable phenotype calling procedures.
+Discordant samples may arise from limitations at any of these levels---incomplete genome assemblies missing pathway genes, inconsistent annotations across databases, variable experimental conditions affecting pathway expression, or unreliable phenotype measurements---and disentangling these sources requires careful experimental design and quality control.
+
 % Interpreting discordances
 The partial predictability of discordant samples (balanced accuracy 0.18--0.60) suggests heterogeneous causes: some discordances are ``recoverable'' (annotation gaps where the mechanism exists but was not detected), while others are not (regulatory effects, alternative pathways, measurement error).
 The directional pattern of discordances may be informative, though we caution that these interpretations are speculative without experimental validation.
@@ -32,7 +40,7 @@ When mechanistic predictors are unavailable, confidence-based filtering and remo
 Without mechanistic knowledge, feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
 However, when test conditions are expected to resemble training conditions---such as predictions within the same experimental system or phylogenetic context---full-dataset training maximizes performance and may be the preferred approach.
-Sample size requirements appear manageable: our learning curves for Histidine suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation for other phenotypes.
+Sample size requirements appear manageable: our learning curves for histidine suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation for other phenotypes.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables quality assessment and identification of unreliable phenotype calls.
 Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection \cite{Gralka2023-ft,Huang2023-lh,Kehe2019-vr}, but quality must be prioritized alongside quantity.
 More broadly, the value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains; a smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models.
