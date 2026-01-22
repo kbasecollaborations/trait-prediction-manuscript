@@ -6,11 +6,12 @@
 Predicting microbial carbon utilization from genomic data remains challenging despite well-characterized metabolic pathways.
 Yet, machine learning models aimed at genotype-phenotype prediction often struggle to generalize beyond their training datasets.
 In this study, we explored this generalization problem using microbial carbon utilization as a model system, compiling growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
-Our analyses revealed that the generalization failures are mainly due to data quality rather than algorithmic limitations.
-Models trained on aggregated datasets showed high accuracy within the same dataset but performed poorly across different datasets and phylogenetic contexts, learning dataset-specific correlations instead of mechanistic features.
+Our analyses revealed that the generalization failures are mainly due to data quality---specifically, whether samples have clear, unambiguous genotype-phenotype relationships---rather than algorithmic limitations.
+Models showed high accuracy within the same dataset but performed poorly across different datasets and phylogenetic contexts, learning dataset-specific correlations instead of mechanistic features.
 Notably, when test conditions resemble training conditions, full-dataset training maximizes performance, making this approach suitable for applications where cross-dataset generalization is not required.
 To address generalization failures, we stratified samples based on the agreement between a mechanistic predictor (GapMind) and experimental outcomes.
 When models were trained solely on concordant samples, where pathway-based predictions matched observed phenotypes, they achieved strong cross-dataset generalization and consistently identified known metabolic genes as top predictive features.
+% This success likely reflects that concordant samples represent organisms using broadly conserved pathways, enabling models to learn core metabolic features that transfer across taxa rather than overfitting to rare or organism-specific mechanisms.
 Learning curves indicated that relatively small numbers of high-quality samples (50--100 per phenotype) were sufficient for robust generalization.
 These concordant-trained models also accurately predicted a subset of samples that the mechanistic predictor misclassified, indicating that machine learning captures relationships beyond curated pathway rules.
 We evaluated strategies to improve model performance without requiring mechanistic knowledge, finding that confidence-based filtering and the removal of systematically problematic samples offered practical alternatives when mechanistic predictors are unavailable.

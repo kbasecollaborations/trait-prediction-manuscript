@@ -1,11 +1,9 @@
 """
 Machine learning utilities for train-test splits.
 
-This script provides utilities to run machine learning pipelines on
-pre-generated train-test split data.
-
-Split files contain only phenotype labels (y_train, y_val, y_test).
-Feature data is loaded separately and aligned with split indices.
+This module provides utilities to run machine learning pipelines on
+pre-generated train-test split data. It wraps trait_prediction utilities
+with manuscript-specific configurations.
 """
 
 import warnings
@@ -13,9 +11,18 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from tqdm import tqdm
 
-from scripts.ml import _get_scores, get_feature_importances, make_classifier
+# Import from trait_prediction
+from trait_prediction.pipeline import (
+    align_columns,
+    get_feature_importances,
+    get_scores,
+    load_single_split as _load_single_split,
+    load_splits as _load_splits,
+)
+
+# Import local utilities (for model type aliases)
+from scripts.ml import make_classifier
 
 warnings.filterwarnings("ignore")
 
@@ -25,6 +32,9 @@ def load_single_split_data(
 ) -> dict[str, pd.DataFrame | pd.Series]:
     """
     Load train/val/test data from a single split folder.
+
+    This is a wrapper around trait_prediction.pipeline.load_single_split
+    for backward compatibility.
 
     Parameters
     ----------
@@ -37,56 +47,8 @@ def load_single_split_data(
     -------
     dict[str, pd.DataFrame | pd.Series]
         Dictionary containing X_train, y_train, X_val, y_val, X_test, y_test.
-        Each y array is a Series (single column from the DataFrame).
-        X arrays are created by subsetting feature_data using indices from y files.
     """
-    data: dict[str, pd.DataFrame | pd.Series] = {}
-
-    # Load training labels
-    y_train = pd.read_csv(
-        folder_path / "y_train.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
-    # Convert to Series (assume single column)
-    if isinstance(y_train, pd.DataFrame) and y_train.shape[1] == 1:
-        y_train = y_train.iloc[:, 0]
-
-    # Load validation labels
-    y_val = pd.read_csv(
-        folder_path / "y_val.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
-    if isinstance(y_val, pd.DataFrame) and y_val.shape[1] == 1:
-        y_val = y_val.iloc[:, 0]
-
-    # Load test labels
-    y_test = pd.read_csv(
-        folder_path / "y_test.tsv", sep="\t", index_col=0, dtype={"genomeID": str}
-    )
-    if isinstance(y_test, pd.DataFrame) and y_test.shape[1] == 1:
-        y_test = y_test.iloc[:, 0]
-
-    # Get indices that are in both split and feature data
-    train_indices = y_train.index.intersection(feature_data.index)
-    val_indices = y_val.index.intersection(feature_data.index)
-    test_indices = y_test.index.intersection(feature_data.index)
-
-    # Create X arrays from feature data using split indices
-    X_train = feature_data.loc[train_indices, :]
-    X_val = feature_data.loc[val_indices, :]
-    X_test = feature_data.loc[test_indices, :]
-
-    # Subset y arrays to match X arrays (in case some indices were missing)
-    y_train = y_train.loc[train_indices]
-    y_val = y_val.loc[val_indices]
-    y_test = y_test.loc[test_indices]
-
-    data["X_train"] = X_train
-    data["y_train"] = y_train
-    data["X_val"] = X_val
-    data["y_val"] = y_val
-    data["X_test"] = X_test
-    data["y_test"] = y_test
-
-    return data
+    return _load_single_split(folder_path, feature_data)
 
 
 def load_split_data(
@@ -97,147 +59,30 @@ def load_split_data(
     """
     Load all train/val/test splits from the base directory.
 
-    This function loads splits from all subdirectories in the base directory,
-    including random_split, dataset_split, and phylogeny_split (with in-clade
-    and out-of-clade variants). Feature data is loaded separately and used to
-    create X arrays based on split indices.
+    This is a wrapper around trait_prediction.pipeline.load_splits
+    for backward compatibility.
 
     Parameters
     ----------
     base_dir : Path, optional
-        Base directory containing split folders, by default
-        Path("data/processed/train_test_splits")
+        Base directory containing split folders
     split_types : list[str] | None, optional
-        List of split types to load. Options are: "random_split", "dataset_split",
-        "phylo_ooc" (out-of-clade), "phylo_ic" (in-clade). If None, loads all
-        split types, by default None
+        List of split types to load. Options: "random_split", "dataset_split",
+        "phylo_ooc", "phylo_ic". If None, loads all.
     feature_file : Path, optional
-        Path to combined feature file, by default
-        Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
+        Path to combined feature file
 
     Returns
     -------
     dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]]
-        Nested dictionary with structure:
-        {split_type: {phenotype_key: {X_train, y_train, X_val, y_val, X_test, y_test}}}
-
-        Where:
-        - split_type: One of "random_split", "dataset_split", "phylo_ooc", "phylo_ic"
-        - phenotype_key: Unique key like "Alanine_0" or "Serine_ooc_2"
-        - Inner dict contains the train/val/test data from load_single_split_data()
-
-    Examples
-    --------
-    Load all splits:
-    >>> data = load_split_data()
-    >>> print(data.keys())
-    dict_keys(['random_split', 'dataset_split', 'phylo_ooc', 'phylo_ic'])
-
-    Load only random splits:
-    >>> data = load_split_data(split_types=["random_split"])
-    >>> print(data.keys())
-    dict_keys(['random_split'])
-
-    Access a specific split:
-    >>> random_data = data["random_split"]["Alanine_0"]
-    >>> X_train = random_data["X_train"]
+        Nested dictionary: {split_type: {phenotype_key: {X_train, y_train, ...}}}
     """
-    # Default to loading all split types
-    if split_types is None:
-        split_types = ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
-
-    # Load feature data once
-    print(f"Loading feature data from {feature_file}")
-    feature_data = pd.read_csv(
-        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
+    return _load_splits(
+        base_dir=base_dir,
+        feature_file=feature_file,
+        split_types=split_types,
+        verbose=True,
     )
-    print(f"Feature data shape: {feature_data.shape}")
-
-    result: dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]] = {}
-
-    # Load random splits
-    if "random_split" in split_types:
-        random_split_dir = base_dir / "random_split"
-        if random_split_dir.exists():
-            random_split_data = {}
-            for phenotype_dir in tqdm(
-                list(random_split_dir.iterdir()), desc="Loading random splits"
-            ):
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                for repeat_dir in phenotype_dir.iterdir():
-                    if not repeat_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_{repeat_dir.name}"
-                    data = load_single_split_data(repeat_dir, feature_data)
-                    random_split_data[key] = data
-            result["random_split"] = random_split_data
-
-    # Load dataset splits
-    if "dataset_split" in split_types:
-        dataset_split_dir = base_dir / "dataset_split"
-        if dataset_split_dir.exists():
-            dataset_split_data = {}
-            for phenotype_dir in tqdm(
-                list(dataset_split_dir.iterdir()), desc="Loading dataset splits"
-            ):
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                for split_dir in phenotype_dir.iterdir():
-                    if not split_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_{split_dir.name}"
-                    data = load_single_split_data(split_dir, feature_data)
-                    dataset_split_data[key] = data
-            result["dataset_split"] = dataset_split_data
-
-    # Load phylogenetic out-of-clade splits
-    if "phylo_ooc" in split_types:
-        phylo_split_dir = base_dir / "phylogeny_split"
-        if phylo_split_dir.exists():
-            phylo_ooc_data = {}
-            for phenotype_dir in tqdm(
-                list(phylo_split_dir.iterdir()), desc="Loading phylo OOC splits"
-            ):
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                ooc_dir = phenotype_dir / "out-of-clade"
-                if not ooc_dir.exists():
-                    continue
-                for split_dir in ooc_dir.iterdir():
-                    if not split_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_ooc_{split_dir.name}"
-                    data = load_single_split_data(split_dir, feature_data)
-                    phylo_ooc_data[key] = data
-            result["phylo_ooc"] = phylo_ooc_data
-
-    # Load phylogenetic in-clade splits
-    if "phylo_ic" in split_types:
-        phylo_split_dir = base_dir / "phylogeny_split"
-        if phylo_split_dir.exists():
-            phylo_ic_data = {}
-            for phenotype_dir in tqdm(
-                list(phylo_split_dir.iterdir()), desc="Loading phylo IC splits"
-            ):
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                ic_dir = phenotype_dir / "in-clade"
-                if not ic_dir.exists():
-                    continue
-                for split_dir in ic_dir.iterdir():
-                    if not split_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_ic_{split_dir.name}"
-                    data = load_single_split_data(split_dir, feature_data)
-                    phylo_ic_data[key] = data
-            result["phylo_ic"] = phylo_ic_data
-
-    return result
 
 
 def perform_split_ml(
@@ -248,25 +93,15 @@ def perform_split_ml(
     X_test: pd.DataFrame,
     y_test: pd.Series,
     model_type: str = "cb",
-    scoring: list[str] = [
-        "accuracy",
-        "balanced_accuracy",
-        "matthews_corrcoef",
-        "precision",
-        "recall",
-        "f1",
-        "sensitivity",
-        "specificity",
-        "roc_auc",
-    ],
+    scoring: list[str] | None = None,
     **model_kwargs,
 ) -> dict[str, Any]:
     """
     Perform machine learning on a single train/val/test split.
 
-    This function trains a model on the training set with validation set for early
-    stopping (if applicable), evaluates on the test set, and returns performance
-    metrics along with feature importances.
+    This function trains a model on the training set with validation set for
+    early stopping (if applicable), evaluates on the test set, and returns
+    performance metrics along with feature importances.
 
     Parameters
     ----------
@@ -284,10 +119,8 @@ def perform_split_ml(
         Test target variable vector
     model_type : str, optional
         Type of classifier model to use ('cb', 'rf', 'dt', etc.), by default "cb"
-    scoring : list[str], optional
-        List of scoring metrics to evaluate, by default includes accuracy,
-        balanced_accuracy, matthews_corrcoef, precision, recall, f1,
-        sensitivity, specificity, and roc_auc
+    scoring : list[str] | None, optional
+        List of scoring metrics to evaluate. If None, uses default metrics.
     **model_kwargs
         Additional keyword arguments passed to the classifier
 
@@ -297,24 +130,24 @@ def perform_split_ml(
         Dictionary containing test scores (one key per scoring metric) and
         'features' key with list of top feature names sorted by importance
     """
-    random_state = model_kwargs.get("random_state", 42)
+    if scoring is None:
+        scoring = [
+            "accuracy",
+            "balanced_accuracy",
+            "matthews_corrcoef",
+            "precision",
+            "recall",
+            "f1",
+            "sensitivity",
+            "specificity",
+            "roc_auc",
+        ]
+
     model = make_classifier(model_type, **model_kwargs)
 
-    # Align columns between train and test/val
-    # Make sure X_test and X_val have the same columns as X_train
-    X_val_aligned = X_val.copy()
-    missing_cols_val = X_train.columns.difference(X_val_aligned.columns)
-    if len(missing_cols_val) > 0:
-        missing_df = pd.DataFrame(0, index=X_val_aligned.index, columns=missing_cols_val)
-        X_val_aligned = pd.concat([X_val_aligned, missing_df], axis=1)
-    X_val_aligned = X_val_aligned[X_train.columns]
-
-    X_test_aligned = X_test.copy()
-    missing_cols_test = X_train.columns.difference(X_test_aligned.columns)
-    if len(missing_cols_test) > 0:
-        missing_df = pd.DataFrame(0, index=X_test_aligned.index, columns=missing_cols_test)
-        X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
-    X_test_aligned = X_test_aligned[X_train.columns]
+    # Align columns using trait_prediction utility
+    X_val_aligned = align_columns(X_train, X_val)
+    X_test_aligned = align_columns(X_train, X_test)
 
     # Train model with eval_set for CatBoost models
     if model_type == "cb":
@@ -331,14 +164,24 @@ def perform_split_ml(
         model.fit(X_train, y_train, verbose=False)
     else:
         # Other models (RF, DT, etc.)
-        model.fit(X_train, y_train)  # type: ignore
+        model.fit(X_train, y_train)
 
-    # Get scores on test set
-    scores = _get_scores(model, X_test_aligned, y_test, scoring)
+    # Get scores on test set using trait_prediction utility
+    scores = get_scores(model, X_test_aligned, y_test, scoring)
 
-    # Get feature importances (returns list of feature names sorted by importance)
+    # Get feature importances using trait_prediction utility
     features = get_feature_importances(model, X_train).index.tolist()
-
     scores["features"] = features
 
     return scores
+
+
+# Re-export for convenience
+__all__ = [
+    "load_single_split_data",
+    "load_split_data",
+    "perform_split_ml",
+    "align_columns",
+    "get_feature_importances",
+    "get_scores",
+]
