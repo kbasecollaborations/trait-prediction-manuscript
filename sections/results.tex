@@ -36,14 +36,14 @@ Class distributions vary across phenotypes and datasets.
 }\label{fig:dataset_characteristics}
 \end{figure}
 
-To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth capabilities by assessing the completeness of metabolic pathways required for utilizing specific carbon sources \cite{Price2020-ts}; and (2) a phylogeny-based nearest neighbor classifier (k=3) that predicts phenotypes based on the growth outcomes of the three most closely related strains (see Methods).
+To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth capabilities by assessing the completeness of metabolic pathways required for utilizing specific carbon sources~\cite{Price2020GapMind,Price2024Improving}; and (2) a phylogeny-based nearest neighbor classifier (k=3) that predicts phenotypes based on the growth outcomes of the three most closely related strains (see Methods).
 
 GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A).
 While GapMind captures core mechanistic aspects of carbon utilization, these results indicate that pathway completeness alone does not account for the full complexity of microbial metabolism and regulation.
 
 The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
 Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages.
-A fundamental limitation of phylogeny-based methods is that they may not capture metabolic capabilities that vary even among closely related strains due to horizontal gene transfer, gene loss, or regulatory differences.
+A fundamental limitation of phylogeny-based methods is that they may not capture metabolic capabilities that vary even among closely related strains due to horizontal gene transfer, gene loss, or regulatory differences~\cite{Michener2014Phylogeny,Hong2004Phylogenetic,Ma2004Phylogenetic}.
 Notably, cellobiose and glycerol showed unexpectedly high accuracy ($>$0.80) in certain out-of-clade splits, potentially reflecting highly conserved pathways for these substrates that transcend phylogenetic boundaries.
 The limited performance of both baseline approaches, GapMind's incomplete mechanistic coverage and phylogeny's failure to generalize across clades, motivated us to develop machine learning models that could integrate genomic features more comprehensively.
 
@@ -104,7 +104,7 @@ Dotted line indicates GapMind baseline.
 \subsection*{Why are GapMind and ML models misclassifying?}
 
 To guide improvement strategies, we sought to understand why both GapMind and ML models fail to accurately predict certain samples.
-GapMind misclassifications can arise from multiple factors: incomplete pathway annotations, alternative metabolic routes not captured in curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions (Figure~\ref{fig:misclassification_diagnosis}A).
+GapMind misclassifications can arise from multiple factors: incomplete pathway annotations, alternative metabolic routes not captured in curated rules, and regulatory mechanisms that prevent pathway expression under certain conditions~\cite{Price2020GapMind,Price2024Improving,Griesemer2018Combining,Pan2018Advances} (Figure~\ref{fig:misclassification_diagnosis}A).
 To diagnose whether these issues are systematic, we analyzed misclassification patterns both per-phenotype and per-dataset (Figure~\ref{fig:misclassification_diagnosis}B).
 While some phenotypes show better GapMind performance (e.g., mannitol, galactose) than others (e.g., serine, alanine), there was no clear directional bias in misclassifications (false positives vs.\ false negatives).
 Similarly, datasets varied in overall discordance (Biolog: $\sim$30\%; Populus: $\sim$26\%) but without directional bias.
