@@ -4,7 +4,10 @@
 
 % Summary of findings
 Our results demonstrate that for microbial carbon utilization phenotypes, data quality rather than algorithmic limitations is the primary constraint on genotype-phenotype prediction.
-ML models achieved robust generalization when trained on high-quality (concordant) data but failed systematically when trained on mixed-quality data.
+\altsentence{Discussion — limitations. representational sufficiency}{
+Our results demonstrate that generalization failure in microbial genotype–phenotype prediction is not an intrinsic limitation of machine learning, but a consequence of heterogeneity in the coherence and representational sufficiency of genotype–phenotype relationships in the training data.
+}
+ML models achieved robust generalization when trained on high-quality (concordant) data but failed systematically when trained on mixed-quality data. Discordance can arise from at least two distinct sources. First, data fidelity failures—including annotation gaps, misannotation, and inconsistent phenotype measurements—obscure otherwise learnable relationships. Second, representational insufficiency reflects genuine biological dependencies, such as regulatory control or environmental context, that are not encoded in static genome-derived features.
 The problem is not that ML cannot learn metabolic mechanisms---it demonstrably can when given clean signal.
 Rather, discordant samples force models toward spurious correlations that are predictive within specific datasets or clades but do not transfer.
 This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge~\cite{Mey2021Improving}.
@@ -17,7 +20,7 @@ By filtering to concordant samples, models learn the core metabolic features com
 However, data quality encompasses multiple dimensions beyond mechanistic concordance.
 At the genomic level, quality depends on genome completeness, assembly accuracy, and annotation consistency.
 At the experimental level, quality depends on measurement reproducibility, standardized growth conditions, and reliable phenotype calling procedures.
-Discordant samples may arise from limitations at any of these levels---incomplete genome assemblies missing pathway genes, inconsistent annotations across databases, variable experimental conditions affecting pathway expression, or unreliable phenotype measurements---and disentangling these sources requires careful experimental design and quality control.
+Discordant samples may arise from limitations at any of these levels---incomplete genome assemblies missing pathway genes, inconsistent annotations across databases, variable experimental conditions affecting pathway expression, or unreliable phenotype measurements---and disentangling these sources requires careful experimental design and quality control. Discordance is not a single phenomenon, but a mixture of recoverable cases (e.g., annotation gaps) and irreducible cases where the relevant biological mechanism is not represented in the available data.
 
 % Interpreting discordances
 The partial predictability of discordant samples (balanced accuracy 0.18--0.60) suggests heterogeneous causes: some discordances are ``recoverable'' (annotation gaps where the mechanism exists but was not detected), while others are not (regulatory effects, alternative pathways, measurement error)~\cite{Galperin1998Sources,Snitkin2008Model}.
@@ -30,25 +33,31 @@ Dataset-specific discordance patterns likely reflect differences in experimental
 Previous work has demonstrated that ML models learn phylogenetic signal, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding~\cite{Li2023-up}.
 Our results provide an alternative interpretation: phylogenetic confounding emerges specifically when genuine mechanistic signal is diluted by discordant samples.
 When trained on concordant samples only, models identified mechanistic features and generalized across clades.
+\altsentence{Discussion — phylogenetic confounding}{
+Our results show that phylogenetic confounding emerges when the learning problem is unconditioned—i.e., when training data mix samples with coherent and incoherent genotype–phenotype relationships—but largely disappears when models are trained on samples governed by shared, well-encoded mechanisms
+}
 This success likely reflects that concordant samples represent broadly conserved pathways shared across phylogenetic lineages, allowing models to learn features that transfer rather than clade-specific patterns~\cite{Smith2022Phylogenomic,Knyshov2024Predicting}.
 The problem is thus signal-to-noise ratio rather than sample size per se.
 This aligns with observations that dataset composition and phylogenetic distance strongly affect model performance \cite{Martiny2013-ob,Martiny2015-ie}, but extends them by demonstrating that strategic data curation may be more valuable than brute-force data aggregation.
 Our finding that combined feature representations from multiple annotation sources improved within-dataset accuracy but not cross-dataset generalization is consistent with previous observations that biologically informed feature selection improves interpretability without sacrificing accuracy \cite{Li2023-up}.
 This finding suggests two distinct feature engineering strategies depending on the optimization goal: comprehensive features from multiple annotation sources maximize performance when test conditions match training, while biologically relevant features (e.g., pathway-specific genes) should be prioritized when cross-dataset or cross-phylogeny generalization is required.
-However, even when models identified biologically relevant features within datasets, the overlap across datasets remained limited, indicating that dataset-specific biases dominate when data quality is mixed~\cite{Chen2015Selecting}.
+However, even when models identified biologically relevant features within datasets, the overlap across datasets remained limited, indicating that dataset-specific biases dominate when data quality is mixed~\cite{Chen2015Selecting}. However, as a whole, our findings reinforce that feature selection conditions the representational space, while data stratification conditions the biological regime; robust generalization requires deliberate alignment of both.
 
 % Practical implications
 Our results provide actionable guidance for building generalizable phenotype predictors.
+We suggest that the primary design question in biological machine learning is not which algorithm to use, but how to condition the learning problem through data selection, representation, and evaluation.
 For model development, ML models should be trained on high-quality samples with clear genotype-phenotype mappings when possible; when mechanistic predictors like GapMind are available, concordant samples provide the highest-quality training data.
 When mechanistic predictors are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives that improve generalization without requiring external knowledge~\cite{Zhang2020Combining}.
 Without mechanistic knowledge, feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximizes performance and may be the preferred approach.
-Sample size requirements appear manageable: our learning curves for histidine suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation for other phenotypes.
+Sample size requirements appear manageable: our learning curves, for a well-characterized phenotype such as histidine utilization, suggest that 50--100 high-quality samples per phenotype may achieve robust performance, though this requires validation for other phenotypes.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables quality assessment and identification of unreliable phenotype calls.
 Emerging high-throughput phenotyping methods such as droplet microfluidics and robotics will accelerate data collection \cite{Gralka2023-ft,Huang2023-lh,Kehe2019-vr}, but quality must be prioritized alongside quantity.
 More broadly, the value of a phenotype dataset depends not just on size but on the reliability of genotype-phenotype relationships it contains; a smaller, high-quality dataset may outperform a larger, noisier dataset for training generalizable models.
-
+\begin{alttext}[Discussion — broader impact]
+A broader implication of this work is that the success of machine learning in biology depends not only on algorithmic advances, but on the availability of both explicit mechanistic models and the data required to instantiate those mechanisms. In this study, a curated mechanistic model enabled us to condition the learning problem by identifying samples governed by shared, well-encoded pathways. However, many biologically important phenotypes depend on regulatory, temporal, or contextual processes that are not captured by genome sequence alone. In such cases, mechanistic knowledge will only be learnable if the appropriate data modalities—such as transcriptomics, ribosome profiling, proteomics, or functional genomics—are collected and integrated. Progress therefore depends on a coupled effort: either the community must refine diverse data types into explicit mechanistic assertions that support data stratification and feature selection, or researchers seeking to learn biological mechanisms with machine learning must design experiments that generate the informative data required to represent those mechanisms. Without this alignment between question, data, and representation, machine learning models will remain limited regardless of scale.
+\end{alttext}
 % Limitations
 Our framework has important constraints.
 Our filtering approach requires mechanistic tools like GapMind, which exist only for well-characterized metabolic pathways, and extension to traits lacking comparable mechanistic predictors (e.g., stress tolerance, virulence) requires development of alternative quality assessment approaches.
@@ -69,3 +78,6 @@ In summary, we demonstrated that ML successfully learns mechanistic genotype-phe
 Generalization failures reflect data quality limitations---discordant samples where genotype-phenotype relationships are obscured by annotation gaps, regulatory complexity, or measurement error.
 Rather than pursuing ever-larger datasets or more sophisticated algorithms, the field should prioritize rigorous evaluation using cross-dataset and cross-phylogeny holdouts, quality diagnostics based on feature stability and biological relevance, and strategic curation of training data to maximize signal-to-noise ratio.
 These principles, validated here for microbial carbon utilization, provide a framework applicable to diverse biological prediction challenges where data quality varies and mechanistic knowledge is incomplete.
+\begin{alttext}[Conclusion- alternate closing]
+Rather than pursuing ever-larger datasets or increasingly complex algorithms, progress in biological machine learning will depend on infrastructure and experimental strategies that expose, evaluate, and condition on coherent genotype–phenotype relationships within appropriate representational spaces.
+\end{alttext}

@@ -77,6 +77,36 @@
 
   \usepackage[colorinlistoftodos]{todonotes}
   \usepackage{soul}
+  \usepackage{comment}
+  \usepackage{xcolor}
+  \usepackage{xcolor}
+  \usepackage{framed}
+
+  % Toggle: set \showalts true to display alternatives; false to hide
+  \newif\ifshowalts
+  \showaltstrue   % <-- change to \showaltsfalse to hide
+
+  \newenvironment{alttext}[1][]{
+    \ifshowalts
+      \begin{framed}
+      \noindent\textbf{ALT TEXT}\ifx\\#1\\\else\ \textbf{(#1)}\fi\par
+      \vspace{0.5ex}
+    \else
+      \expandafter\comment
+    \fi
+  }{
+    \ifshowalts
+      \end{framed}
+    \else
+      \endcomment
+    \fi
+  }
+  \newcommand{\altsentence}[2]{%
+  \ifshowalts
+    \begin{alttext}[#1]
+    #2
+    \end{alttext}
+  \fi} 
 
 %--------------------------------------------------------%
 % ACRONYMS
