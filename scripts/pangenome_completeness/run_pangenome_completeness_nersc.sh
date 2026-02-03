@@ -167,7 +167,7 @@ if [[ -n "${PSCRATCH:-}" ]]; then
 	echo "Using PSCRATCH for temp files: ${TMPDIR}"
 fi
 
-OUTPUT_FILE="${OUTPUT_DIR}/pangenome_completeness.csv"
+OUTPUT_FILE="${OUTPUT_DIR}/pangenome_completeness.tsv"
 
 echo ""
 echo "Command: python ${PYTHON_SCRIPT} \\"

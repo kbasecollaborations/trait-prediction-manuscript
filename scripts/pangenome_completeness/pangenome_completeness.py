@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 # Default paths and thresholds
 DEFAULT_MAPPING_PATH = Path("data/processed/pangenome/assignments.ani.merged.tsv")
-DEFAULT_OUTPUT_PATH = Path("completeness_results.csv")
+DEFAULT_OUTPUT_PATH = Path("completeness_results.tsv")
 # TODO: Consider lowering to 0.80 if completeness is underestimated. Standard pangenome
 # tools (PPanGGOLiN, PATO) use 80% identity. Higher thresholds may miss divergent homologs.
 DEFAULT_MIN_IDENTITY = 0.90
@@ -126,22 +126,38 @@ def extract_genome_name(faa_path: Path) -> str:
     """
     Extract genome name from a .faa filename.
 
+    Handles various naming conventions:
+    - 'Species_name_ID.fna.RAST.faa' -> 'Species_name_ID'
+    - 'Species_name_ID.RAST.faa' -> 'Species_name_ID'
+    - '104336.16.RAST.faa' -> '104336.16'
+    - '104336.16.faa' -> '104336.16'
+
     Parameters
     ----------
     faa_path : Path
-        Path to the .faa file (e.g., 'Chitinophaga_sp._YR627_2693429788.faa').
+        Path to the .faa file.
 
     Returns
     -------
     str
-        Genome name with .faa extension removed.
+        Genome name with extensions removed.
     """
-    return faa_path.stem
+    name = faa_path.stem  # removes .faa
+    # Remove common suffixes in order of specificity
+    for suffix in [".fna.RAST", ".RAST", ".fna"]:
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+            break
+    return name
 
 
 def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
     """
     Get path to core genes file for a species.
+
+    Tries multiple naming conventions:
+    - '{species_id}_unique_core_reps.faa' (e.g., from pangenome analysis)
+    - '{species_id}.faa' (simple naming)
 
     Parameters
     ----------
@@ -155,8 +171,12 @@ def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
     Path | None
         Path to the core genes file if it exists, None otherwise.
     """
-    core_path = core_genes_dir / f"{species_id}.faa"
-    return core_path if core_path.exists() else None
+    # Try different naming conventions
+    for suffix in ["_unique_core_reps.faa", ".faa"]:
+        core_path = core_genes_dir / f"{species_id}{suffix}"
+        if core_path.exists():
+            return core_path
+    return None
 
 
 def count_fasta_sequences(fasta_path: Path) -> int:
@@ -584,14 +604,14 @@ def process_all_genomes(
 
 def write_results(results: list[CompletenessResult], output_path: Path) -> None:
     """
-    Write completeness results to CSV file.
+    Write completeness results to TSV file.
 
     Parameters
     ----------
     results : list[CompletenessResult]
         List of completeness results.
     output_path : Path
-        Path for output CSV file.
+        Path for output TSV file.
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -599,9 +619,9 @@ def write_results(results: list[CompletenessResult], output_path: Path) -> None:
         {
             "genome_id": r.genome_id,
             "species": r.species,
-            "core_genes_found": r.core_genes_found,
-            "core_genes_total": r.core_genes_total,
-            "completeness": r.completeness,
+            "core_genes_expected": r.core_genes_total,
+            "core_genes_present": r.core_genes_found,
+            "completeness_pct": round(r.completeness * 100, 2),
             "status": r.status,
             "error_message": r.error_message,
         }
@@ -609,7 +629,7 @@ def write_results(results: list[CompletenessResult], output_path: Path) -> None:
     ]
 
     df = pd.DataFrame(rows)
-    df.to_csv(output_path, index=False)
+    df.to_csv(output_path, sep="\t", index=False)
 
 
 def print_summary(results: list[CompletenessResult]) -> None:
@@ -729,7 +749,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT_PATH,
-        help="Output CSV path for completeness results.",
+        help="Output TSV path for completeness results.",
     )
     parser.add_argument(
         "--min-identity",
