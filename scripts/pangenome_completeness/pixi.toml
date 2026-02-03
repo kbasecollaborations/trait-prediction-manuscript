@@ -1,0 +1,11 @@
+[project]
+name = "pangenome-completeness"
+version = "0.1.0"
+description = "Calculate genome completeness based on core gene presence from species pangenomes"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = ">=3.11"
+pandas = ">=2.0"
+mmseqs2 = ">=15.6"
