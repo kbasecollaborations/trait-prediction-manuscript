@@ -484,6 +484,7 @@ cython_debug/
 .claude/
 .serena/
 CLAUDE.md
+AGENTS.md
 prompts/
 
 # PyCharm
@@ -507,6 +508,7 @@ pyrightconfig.json
 .stfolder/
 .DS_Store
 .stignore
+*.pdf
 
 # Data and pdfs
 data/
