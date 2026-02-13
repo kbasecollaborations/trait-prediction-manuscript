@@ -63,3 +63,15 @@ Balanced accuracy of ML models across 15 phenotypes when evaluated on genomes wi
 The comparison reveals how phylogenetic distance between training and test samples affects model generalization.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figure_s4.pdf}
+\caption{\textbf{Pangenome-based genome completeness assessment.}
+Completeness was estimated as the fraction of species core genes detected in each genome using MMseqs2 (90\% identity, 80\% coverage).
+(\textbf{A}) Status breakdown: counts of genomes with successful assessment, no species assignment, no core-gene set, or processing error.
+(\textbf{B}) Distribution of completeness (\%) among successfully assessed genomes.
+(\textbf{C}) Completeness by species (top 15 by genome count; others grouped as ``Other'').
+(\textbf{D}) Core genes present versus expected for successful genomes, with points colored by completeness; the dashed line indicates perfect agreement.}
+\label{fig:pangenome_completeness}
+\end{figure}
