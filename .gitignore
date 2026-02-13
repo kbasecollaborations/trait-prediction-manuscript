@@ -450,7 +450,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
-.pixi/
+**/.pixi/
 env/
 venv/
 ENV/
