@@ -1,3 +1,6 @@
 {
-    "jupyter.notebookFileRoot": "${workspaceFolder}"
+  "jupyter.notebookFileRoot": "${workspaceFolder}",
+  "cSpell.enabledFileTypes": {
+    "markdown": false
+  }
 }
