@@ -1,12 +1,14 @@
 #!/bin/bash
 #SBATCH --job-name=pangenome_completeness
-#SBATCH --account=<YOUR_ACCOUNT>
+#SBATCH --account=kbase
 #SBATCH --qos=regular
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128
 #SBATCH --time=04:00:00
+#SBATCH --time-min=01:00:00
+#SBATCH --licenses=scratch,cfs
 #SBATCH --output=pangenome_completeness_%j.out
 #SBATCH --error=pangenome_completeness_%j.err
 
@@ -23,11 +25,17 @@
 #   Edit ALL_SEQS_DIR, CORE_GENES_DIR, MAPPING_FILE, OUTPUT_DIR, and
 #   PIXI_PROJECT_DIR below before running.
 #
+# NERSC Perlmutter CPU node settings (aligned with docs.nersc.gov):
+#   - CPU-only nodes: 128 physical cores (256 logical with SMT), 512 GB RAM.
+#   - cpus-per-task=128: use all 128 cores on one node (core-spec is not
+#     enabled at NERSC: AllowSpecResourcesUsage=No).
+#   - licenses=scratch,cfs: required because the job uses CFS and PSCRATCH;
+#     the job will not start if either file system is unavailable.
+#   - time-min helps backfill scheduling (short/variable jobs start sooner).
+#
 # Notes:
-#   - Perlmutter CPU nodes have 128 cores (2x AMD EPYC 7763)
-#   - Uses --jobs for parallel genome processing
-#   - Each genome is processed independently using MMseqs2
-#   - For ~1000 genomes, expect ~1-2 hours runtime depending on pangenome sizes
+#   - Uses --jobs for parallel genome processing (MMseqs2).
+#   - For ~1000 genomes, expect ~1-2 hours runtime depending on pangenome sizes.
 # =============================================================================
 
 set -euo pipefail
@@ -39,13 +47,13 @@ set -euo pipefail
 ALL_SEQS_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/gapmind_analysis/all_seqs"
 
 # Directory containing core gene .faa files (named by gtdb_species_clade_id)
-CORE_GENES_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/core_genes"
+CORE_GENES_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/unique_core_faas"
 
 # Path to genome-to-species mapping TSV file
-MAPPING_FILE="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/assignments.ani.merged.tsv"
+MAPPING_FILE="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/assignments.ani.merged_mmseqs90.tsv"
 
 # Output directory
-OUTPUT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome_completeness_output"
+OUTPUT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/output"
 
 # Number of parallel jobs (matches allocated CPUs)
 JOBS="${SLURM_CPUS_PER_TASK:-128}"
@@ -78,7 +86,7 @@ echo "=============================================="
 # -----------------------------------------------------------------------------
 # Set path to pixi project directory (where pixi.toml lives)
 # Modify this to point to your pixi project location
-PIXI_PROJECT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome_completeness"
+PIXI_PROJECT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/pangenome_completeness"
 
 if [[ ! -f "${PIXI_PROJECT_DIR}/pixi.toml" ]]; then
 	echo "ERROR: pixi.toml not found in ${PIXI_PROJECT_DIR}"
