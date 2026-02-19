@@ -88,8 +88,9 @@ def _save_model_artifacts(
     if hasattr(model, "save_model"):
         model.save_model(str(cbm_path), format="cbm")
 
-    # Feature importances (Series with feature names as index)
-    importances = get_feature_importances(model, X_train)
+    # Feature importances for all features (trait_prediction defaults to top 10 only)
+    n_feats = X_train.shape[1]
+    importances = get_feature_importances(model, X_train, n_features=n_feats)
     fi_path = out_dir / f"{base_name}_feature_importances.csv"
     importances_df = importances.reset_index()
     importances_df.columns = ["feature", "importance"]

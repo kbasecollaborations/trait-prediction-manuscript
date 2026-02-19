@@ -252,7 +252,9 @@ def perform_split_ml_with_model(
         model.fit(X_train, y_train)
 
     scores = get_scores(model, X_test_aligned, y_test, scoring)
-    features = get_feature_importances(model, X_train).index.tolist()
+    # Return all features (not just top 10) so callers can save full importances
+    n_feats = X_train.shape[1]
+    features = get_feature_importances(model, X_train, n_features=n_feats).index.tolist()
     scores["features"] = features
 
     return scores, model
