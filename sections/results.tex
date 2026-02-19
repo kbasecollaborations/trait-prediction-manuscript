@@ -82,10 +82,13 @@ However, cross-dataset performance dropped substantially (0.50--0.75; Figure~\re
 The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), indicating that dataset-specific and phylogenetic effects on generalization could not be clearly distinguished in this analysis. \altsentence{Results — reinterpret in-clade result}{
 The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalization cannot be explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships dominate model failure.
 }
-Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}. 
+Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalization due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
 Because most carbon source utilization pathways are catalyzed by evolutionarily conserved, well-characterized catabolic enzymes \cite{Gowda2022-cf}, we initially hypothesized that models trained on one dataset would generalize to others.
 The failure to generalize suggests that models learn dataset-specific or phylogeny-correlated features rather than the underlying mechanistic relationships.
+This pattern is consistent with the biological expectation that only a subset of organisms in each dataset utilize the same well-characterized catabolic pathways for a given carbon source, while the remainder rely on alternative routes, divergent enzymes, or regulatory strategies that differ across datasets and phylogenetic contexts.
+For organisms using such unique or poorly characterized mechanisms, the relevant genes are often absent from or inconsistently represented in standard annotation databases, leaving the feature matrix without strong mechanistic signal for these samples.
+In the absence of informative mechanistic features, models default to the strongest remaining signal---phylogenetic or dataset-specific correlations---which are predictive within a given dataset but do not transfer across experimental contexts.
 We note, however, that even modest improvements by ML models in cross-dataset scenarios could be valuable for practical applications, particularly when models can be trained on dataset- or phylogeny-specific data where they outperform existing mechanistic approaches.
 
 \begin{figure}[h]
@@ -146,7 +149,7 @@ An uncharacterized protein (K09975) appearing as a common feature for ATLeaf and
 
 \input{sections/table_feature_comparison}
 
-These results indicate that ML models learn few mechanistic features when trained on full datasets containing mixed-quality samples.
+These results indicate that ML models learn few transferable mechanistic features when trained on full datasets, because only a portion of organisms share the same well-characterized metabolic pathways for a given carbon source; for the remainder, the relevant genes are often poorly represented in annotation databases, leaving the model without informative mechanistic features and driving it toward dataset-specific or phylogenetic correlations instead.
 The limited feature overlap across datasets suggests that discordant samples, where genotype-phenotype relationships are obscured by annotation gaps, regulatory effects, or measurement error, may be forcing models toward spurious correlations.
 This raises a fundamental question: can ML learn actual mechanistic features when trained on samples where genotype-phenotype mappings are clearer?
 \begin{alttext}[Results ¶ — hypothesis leading to concordant training]
@@ -183,12 +186,13 @@ When concordant-trained models were applied to discordant samples (where GapMind
 Performance varied substantially across phenotypes, with some showing above-random accuracy while others did not.
 For phenotypes where concordant-trained models performed well on discordant samples, this suggests ML may capture features beyond GapMind's curated gene sets, potentially identifying alternative pathway genes or regulatory signatures.
 However, the wide performance range indicates that not all discordant samples are equally recoverable, likely reflecting heterogeneous causes of discordance.
+This result underscores a fundamental constraint: models trained on concordant samples effectively learn the conserved metabolic rules shared across taxa, but organisms whose phenotypes depend on unique pathways, divergent enzymes, or regulatory mechanisms outside this shared repertoire remain beyond the reach of such models regardless of training set size.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.85\textwidth]{figure5.pdf}
 \caption{
-\textbf{Models learn mechanistic features when trained on concordant data and are able to predict some discordant samples.} All models use the same architecture and feature representation as in Figure 3; only the training set is restricted to concordant samples. 
+\textbf{Models learn mechanistic features when trained on concordant data and are able to predict some discordant samples.} All models use the same architecture and feature representation as in Figure 3; only the training set is restricted to concordant samples.
 (A) Balanced accuracy of models trained on GapMind-concordant samples (where GapMind predictions match experimental outcomes) and tested on held-out concordant samples.
 The plot compares random split (green line) and cross-dataset split (blue boxes) evaluation scenarios across 15 phenotypes.
 (B) Cross-dataset feature stability analysis (similar to Figure 4C) for concordant-trained models using SHAP.
@@ -205,7 +209,7 @@ Test performance is evaluated using Random (green) and Cross-dataset (blue) spli
 
 \subsection*{Strategies to improve model performance}
 
-While concordant training yields the best results, it removes approximately 30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterized phenotypes. 
+While concordant training yields the best results, it removes approximately 30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterized phenotypes.
 These strategies are intended to approximate the effect of concordance by preferentially excluding samples with ambiguous or internally inconsistent genotype--phenotype relationships, rather than by introducing new biological information.
 
 We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions, making these approaches applicable to a broader range of traits (Figure~\ref{fig:improvement_strategies}A).
@@ -226,7 +230,7 @@ Depending on the application, prioritizing precision (minimizing false positives
 
 We also compared models trained using GapMind features alone versus combined features from GapMind, KOFAM, and RAST (Figure~\ref{fig:improvement_strategies}D).
 Feature combinations improved random split performance but not cross-dataset generalization, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalization \cite{Li2023-up}.
-These results suggest two distinct strategies depending on the application goal: for cross-dataset or cross-phylogeny generalization, biologically relevant features (e.g., GapMind pathway genes) should be prioritized; for maximizing performance when test conditions resemble training conditions, comprehensive feature sets may be preferred. 
+These results suggest two distinct strategies depending on the application goal: for cross-dataset or cross-phylogeny generalization, biologically relevant features (e.g., GapMind pathway genes) should be prioritized; for maximizing performance when test conditions resemble training conditions, comprehensive feature sets may be preferred.
 \altsentence{Results — improvement strategies synthesis}{
 Taken together, these results indicate that improvements in cross-dataset generalization arise when training data, feature representations, and underlying biological mechanisms are deliberately aligned: concordance-based filtering conditions the data on samples governed by canonical pathways, while pathway-focused feature sets condition the representation on those same mechanisms.
 }

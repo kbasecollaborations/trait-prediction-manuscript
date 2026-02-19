@@ -17,6 +17,9 @@ In this context, high-quality data refers to samples with clear, unambiguous gen
 We operationalized this through concordance with mechanistic predictions: concordant samples are those where pathway-based predictions match experimental outcomes, suggesting the canonical metabolic mechanism is both present and functional.
 Critically, concordant samples tend to represent organisms using broadly conserved, well-characterized metabolic pathways, precisely the pathways that are well-represented in annotation databases and training data.
 By filtering to concordant samples, models learn the core metabolic features common across diverse organisms rather than overfitting to rare or organism-specific pathways that may not generalize.
+This division reflects a fundamental aspect of microbial metabolic diversity: for any given carbon source, only a portion of organisms metabolize it through the canonical, well-characterized pathways that dominate annotation databases, while others employ alternative enzymes, divergent pathway variants, or complex regulatory strategies.
+For the latter organisms, the relevant genes are often poorly annotated or absent from standard databases, resulting in sparse or uninformative feature representations.
+When such organisms are included in training, the model lacks mechanistic signal for their phenotypes and instead relies on the strongest available correlates---typically phylogenetic or dataset-specific features---which are predictive locally but do not generalize across experimental contexts.
 However, data quality encompasses multiple dimensions beyond mechanistic concordance.
 At the genomic level, quality depends on genome completeness, assembly accuracy, and annotation consistency.
 At the experimental level, quality depends on measurement reproducibility, standardized growth conditions, and reliable phenotype calling procedures.
@@ -76,6 +79,7 @@ Testing whether concordance-based filtering generalizes to other trait types suc
 % Conclusion
 In summary, we demonstrated that ML successfully learns mechanistic genotype-phenotype relationships when provided with high-quality training data.
 Generalization failures reflect data quality limitations---discordant samples where genotype-phenotype relationships are obscured by annotation gaps, regulatory complexity, or measurement error.
+Crucially, even well-trained models face an inherent ceiling: organisms that rely on unique or poorly characterized metabolic strategies---whose genes are underrepresented in current annotation databases---will remain difficult to predict, a limitation that more data or more sophisticated algorithms alone cannot overcome without corresponding improvements in functional annotation and mechanistic knowledge.
 Rather than pursuing ever-larger datasets or more sophisticated algorithms, the field should prioritize rigorous evaluation using cross-dataset and cross-phylogeny holdouts, quality diagnostics based on feature stability and biological relevance, and strategic curation of training data to maximize signal-to-noise ratio.
 These principles, validated here for microbial carbon utilization, provide a framework applicable to diverse biological prediction challenges where data quality varies and mechanistic knowledge is incomplete.
 \begin{alttext}[Conclusion- alternate closing]
