@@ -104,7 +104,8 @@ The absence of systematic bias suggests that misclassification reflects heteroge
 
 To understand ML generalization failures, we performed feature importance stability analyses using SHAP (Figure~\ref{fig:misclassification_diagnosis}C).
 Across random splits of the aggregated dataset (top panel), at least one feature was consistently identified as important, indicating models learn common patterns when data distribution is uniform.
-However, when comparing stable features between individual datasets and the aggregated dataset (bottom panel; Populus excluded due to small sample size), only histidine, maltose, mannitol, and m-inositol shared at least one common stable feature across datasets.
+However, when comparing stable features between individual datasets and the aggregated dataset (bottom panel; Populus excluded due to small sample size), only histidine, maltose, mannitol, and m-inositol \cite{Weber2022-ce} shared at least one common stable feature across datasets.
+% CITATION ADDED: genome-wide survey of conserved inositol catabolic gene clusters
 % TODO: Account for highly correlated features that may be functionally equivalent
 
 \begin{figure}[h]
@@ -224,7 +225,8 @@ A practical question for experimental design is how many samples are needed to t
 Learning curves for concordant-trained models on the histidine phenotype (Figure~\ref{fig:model_sample_size_requirements}) illustrate how model performance varies with training sample size under different evaluation scenarios: random cross-validation splits, cross-dataset splits, and out-of-clade phylogenetic splits.
 Each panel further breaks down performance on full test samples, concordant test samples, and discordant test samples.
 
-For histidine utilization, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that when genotype--phenotype mappings are internally consistent and encoded within the feature space, robust generalization can be achieved with modest data.
+For histidine utilization, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that when genotype--phenotype mappings are internally consistent and encoded within the feature space, robust generalization can be achieved with modest data \cite{Figueroa2012SampleSize}.
+% CITATION ADDED: learning curve methodology for predicting sample size requirements
 While this finding requires validation across additional phenotypes, particularly for traits with stronger regulatory or contextual dependence, the relatively modest sample requirement suggests that strategic data collection focusing on quality over quantity may be more efficient than brute-force data aggregation for building generalizable models.
 
 \begin{figure}[h]

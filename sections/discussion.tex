@@ -32,11 +32,13 @@ Feature selection thus conditions the representational space, while data stratif
 
 % Practical implications
 Our results provide actionable guidance for building generalizable phenotype predictors.
-The primary design question in biological machine learning is not which algorithm to use, but how to condition the learning problem through data selection, representation, and evaluation.
+The primary design question in biological machine learning is not which algorithm to use, but how to condition the learning problem through data selection, representation, and evaluation \cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
+% CITATION ADDED: data-centric AI paradigm, data quality challenges, and data cascades in high-stakes AI
 ML models should be trained on high-quality samples with clear genotype--phenotype mappings when possible.
 When mechanistic predictors such as GapMind are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives~\cite{Zhang2020Combining}.
 Feature stability across independent training sets serves as a diagnostic for mechanistic versus spurious learning.
-Cross-dataset and out-of-clade evaluation provides realistic performance estimates, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
+Cross-dataset and out-of-clade evaluation provides realistic performance estimates \cite{Roberts2017CrossValidation}, as within-dataset cross-validation overestimates generalization by 0.15--0.25 balanced accuracy.
+% CITATION ADDED: cross-validation pitfalls for phylogenetically structured data
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximizes performance and may be the preferred approach.
 Sample size requirements appear manageable: learning curves for histidine utilization suggest that 50--100 high-quality samples per phenotype may suffice, though this requires validation for other phenotypes.
 For experimental design, standardization of growth conditions, measurement protocols, and phenotype calling criteria is essential for producing aggregatable data, and including positive and negative controls alongside replicate measurements enables identification of unreliable phenotype calls.
@@ -44,7 +46,8 @@ Emerging high-throughput phenotyping methods \cite{Bochner2001PM,Nichols2011Land
 
 More broadly, the success of machine learning in biology depends not only on algorithmic advances but on the availability of explicit mechanistic models and the data required to instantiate them.
 In this study, a curated mechanistic model enabled us to condition the learning problem by identifying samples governed by shared, well-encoded pathways.
-Many biologically important phenotypes, however, depend on regulatory, temporal, or contextual processes not captured by genome sequence alone; extending our approach to such phenotypes will require integration of additional data modalities---transcriptomics, proteomics, or functional genomics---together with mechanistic assertions that support data stratification.
+Many biologically important phenotypes, however, depend on regulatory, temporal, or contextual processes not captured by genome sequence alone; extending our approach to such phenotypes will require integration of additional data modalities---transcriptomics, proteomics, or functional genomics \cite{Arikan2023MultiOmics}---together with mechanistic assertions that support data stratification.
+% CITATION ADDED: multi-omics integration for microbial communities
 Without alignment between question, data, and representation, machine learning models will remain limited regardless of scale.
 % Limitations
 Our framework has important constraints.
@@ -52,12 +55,14 @@ Our filtering approach requires mechanistic tools like GapMind, which exist only
 We restricted analysis to binary growth/no-growth outcomes, and quantitative traits may require different filtering strategies.
 Filtering to concordant samples reduces training data substantially ($\sim$30\% removed), which may be prohibitive for rare phenotypes, though our results suggest that smaller high-quality datasets can outperform larger noisy ones for generalizable model training.
 By filtering to samples where mechanism-based predictions match experiments, we may be selecting for samples where the known pathway is the actual mechanism, potentially missing organisms using alternative routes; the partial predictability of discordant samples suggests this is a real limitation.
-Finally, all analyses rely on computational genome annotations, which have systematic biases across taxa \cite{Karlsen2023Genotype}, and poorly studied lineages may have lower concordance rates due to annotation gaps rather than genuinely different biology.
+Finally, all analyses rely on computational genome annotations, which have systematic biases across taxa \cite{Karlsen2023Genotype,Schnoes2009Annotation}, and poorly studied lineages may have lower concordance rates due to annotation gaps rather than genuinely different biology.
+% CITATION ADDED: annotation error rates in enzyme superfamilies
 
 % Future directions
 Discordances point toward specific research priorities.
 False negative discordances may indicate undiscovered alternative pathways, and systematic investigation of these cases could expand pathway databases; clades with elevated discordance rates may harbor novel metabolic strategies worth experimental characterization.
-Methods for identifying high-quality training samples without mechanistic knowledge---potentially using ensemble disagreement, prediction confidence, or cross-validation stability---would extend this approach to less-characterized phenotypes.
+Methods for identifying high-quality training samples without mechanistic knowledge---potentially using ensemble disagreement, prediction confidence, or cross-validation stability \cite{Northcutt2021Confident}---would extend this approach to less-characterized phenotypes.
+% CITATION ADDED: confident learning for dataset label quality assessment
 Integration of gene expression or regulatory information could capture context-dependence that static genomic features miss.
 Testing whether concordance-based filtering generalizes to other trait types such as antibiotic resistance, environmental tolerance, or host interactions would establish broader applicability.
 
