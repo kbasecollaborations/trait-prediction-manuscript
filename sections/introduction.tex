@@ -2,7 +2,7 @@
 
 \section*{Introduction}
 
-Microbial nutrient utilization phenotypes are key determinants of ecological niche and influence organism distribution, interactions, and functional roles within complex ecosystems \cite{Falkowski2008-bx}.
+Microbial nutrient utilization phenotypes are key determinants of ecological niche and influence organism distribution, interactions, and functional roles within complex ecosystems \cite{Falkowski2008-bx,Malik2020Defining}.
 A mechanistic understanding of these phenotypes is crucial for advancing microbial ecology, providing insights into community assembly, nutrient cycling, and biotechnological applications such as probiotic design or bioremediation \cite{Lu2014-zz}.
 Traditional laboratory-based cultivation methods have characterized most existing microbial phenotype data, but these methods cannot characterize the metabolic capabilities of unculturable taxa \cite{Lloyd2018-ar}, introducing significant biases and restricting our understanding of microbial diversity.
 Even for culturable organisms, comprehensive phenotypic characterization across environmental conditions remains resource-intensive \cite{Barberan2017-xi}.
@@ -10,17 +10,14 @@ Even for culturable organisms, comprehensive phenotypic characterization across 
 Rapid advances in genomics offer a promising path to overcome these limitations.
 The increasing availability of genomic data, including metagenome-assembled genomes (MAGs), presents an opportunity to predict phenotypes directly from genomic information \cite{Li2023-up}, bypassing extensive laboratory experiments.
 While phylogeny has commonly been used as a proxy for phenotype prediction, it is insufficient for characterizing novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Bradley2018-rs}.
-Genome-based predictions offer a powerful alternative, enabling characterization of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms driving phenotypic variation.
+Genome-based predictions offer a powerful alternative, enabling characterization of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms driving phenotypic variation \cite{Weimann2016Traitar,Brbic2016Landscape,Karlsen2023Genotype}.
 These predictions can leverage various genomic features, from general characteristics such as GC content \cite{Hu2022-fr} and genome size to specific information derived from gene annotations and inferred metabolic pathways \cite{Long2021-yz}.
 
-Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy}.
-These approaches typically encode genomes as presence/absence vectors of annotated genes or functional categories, then train supervised classifiers, such as gradient-boosted trees or random forests, to predict phenotypes from these feature vectors.
+Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy,Zampieri2019MLMetabolic}.
 However, the performance and generalizability of these models are constrained by data limitations and evaluation challenges.
 Limited and taxonomically biased training data can lead to overfitting and poor applicability to diverse microbial communities \cite{Ramoneda2024-yb,Albright2023-ze}.
-Furthermore, phylogenetic correlations among genomic features confound the identification of mechanistically relevant predictors, making it difficult to distinguish whether models learn true biological relationships or spurious patterns tied to evolutionary history \cite{Li2023-up}.
-Previous work has documented that genome-based machine learning models often fail to generalize across datasets and phylogenetic contexts, instead learning correlations tied to evolutionary relatedness or dataset composition.
-In particular, Li et al.\cite{Li2023-up} showed that phenotype predictors trained on limited or taxonomically biased data primarily capture phylogenetic signal, leading to poor cross-clade transfer, and concluded that very large datasets are required to overcome this confounding \cite{Ramoneda2024-yb,Albright2023-ze}.
-This interpretation is well supported given the available data and representations, but it leaves open an alternative possibility: that generalization failure reflects dilution of mechanistic signal by internally inconsistent genotype--phenotype mappings, rather than an inherent need for massive sample sizes.
+Furthermore, phylogenetic correlations among genomic features confound the identification of mechanistically relevant predictors; Li et al.\cite{Li2023-up} showed that predictors trained on taxonomically biased data primarily capture phylogenetic signal, leading to poor cross-clade transfer, and concluded that very large datasets are required to overcome this confounding \cite{Ramoneda2024-yb,Albright2023-ze}.
+This interpretation is well supported, but it leaves open an alternative possibility: that generalization failure reflects dilution of mechanistic signal by internally inconsistent genotype--phenotype mappings, rather than an inherent need for massive sample sizes.
 Given this interpretation, we sought a system where mechanistic expectations are strong, yet known representational and biological challenges remain.
 
 We tested this hypothesis using microbial carbon utilization as a model system.
@@ -30,11 +27,7 @@ This combination of well-understood chemistry and realistic representational lim
 We compiled a comprehensive dataset of 819 microbial genomes and their binary growth outcomes across 242 carbon sources from four independent experimental collections.
 We developed phenotype-specific classifiers using this dataset and employed various feature representations and evaluation strategies within a standardized framework.
 
-Our analyses revealed that models trained on aggregated data often fail to generalize across datasets and phylogenetic contexts, achieving high within-dataset accuracy while learning dataset- or phylogeny-specific correlations rather than mechanistic features.
-We hypothesized that this failure reflects heterogeneity in data coherence: some samples encode clear and learnable genotype--phenotype relationships within genome-derived feature spaces, while others do not due to annotation gaps, measurement variability, or biological dependencies not captured by static genomic features.
-By stratifying samples according to agreement between mechanistic predictions and experimental outcomes, we show that models trained on concordant samples---those with internally consistent genotype--phenotype mappings---achieve robust cross-dataset generalization and consistently recover established pathway genes as top predictive features.
-Critically, these models also correctly predict a subset of samples misclassified by the mechanistic predictor, demonstrating that machine learning captures information beyond curated pathway rules.
-We further evaluate improvement strategies applicable when mechanistic predictors are unavailable, including confidence-based filtering, and show that, for a well-characterized case, robust generalization can be achieved with modest numbers of high-quality training samples.
-When test conditions resemble training conditions, full-dataset training remains appropriate and maximizes performance for same-environment applications.
-Together, these findings support the hypothesis that generalization in phenotype prediction is constrained primarily by the coherence of genotype--phenotype relationships within the available data representations, rather than by algorithmic complexity alone, and they provide a framework for prioritizing data curation in biological machine learning.
+We show that models trained on concordant samples---those with internally consistent genotype--phenotype mappings---achieve robust cross-dataset generalization, consistently recovering established pathway genes as top predictive features while also correctly classifying samples misclassified by the mechanistic predictor.
+Robust generalization can be achieved with modest numbers of high-quality training samples, suggesting that data coherence, rather than dataset size alone, is the primary constraint on phenotype prediction.
+Together, these findings provide a practical framework for prioritizing data curation in biological machine learning.
 
