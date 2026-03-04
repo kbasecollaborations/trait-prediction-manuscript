@@ -8,13 +8,141 @@
   \renewcommand{\thetable}{S\arabic{table}}
   \setcounter{table}{0}
 
+% ============================================================
+%   SUPPLEMENTARY TEXT
+% ============================================================
+
+\subsection*{Supplementary Text S1: Dataset Descriptions}
+
+We compiled four binary carbon source utilization datasets spanning phylogenetically and ecologically diverse bacterial communities.
+Each dataset captures growth outcomes (growth vs.\ no-growth) of bacterial strains on various carbon substrates.
+Due to annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
+
+\paragraph*{ATLeaf.}
+The ATLeaf dataset~\cite{Schafer2023-nk} comprised 224 strains isolated from \textit{Arabidopsis thaliana} leaf surfaces, tested on 45 carbon substrates using minimal media on agar plates.
+After genome annotation and quality filtering, 206 genomes were retained.
+This dataset provided the broadest ecological coverage of phyllosphere-associated bacteria and served as one of three training/testing datasets.
+
+\paragraph*{Biolog.}
+The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies.
+Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilization via colorimetric tetrazolium-based redout in 96-well plates.
+After quality filtering, 327 genomes were retained.
+The standardized, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
+
+\paragraph*{Marine.}
+The Marine dataset~\cite{Gralka2023-ft} contained 175 heterotrophic marine bacteria assessed on 100 carbon substrates using carbon source utilization assays.
+All 172 genomes that passed annotation quality control were retained for analysis.
+This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
+
+\paragraph*{Populus.}
+The Populus dataset~\cite{Timm2015Populus} included 58 \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere, tested on 191 carbon sources.
+After filtering, 55 genomes were retained.
+Due to its small sample size and narrow phylogenetic breadth, Populus was reserved exclusively for independent validation and was not used during model training.
+
+All analyses focused on the 15 shared phenotypes present across all four datasets.
+
+\subsection*{Supplementary Text S2: Genome Quality Control}
+
+We applied a multi-stage quality control pipeline to ensure that only high-quality, non-redundant genomes were used in downstream analyses.
+
+\paragraph*{Assembly filtering.}
+As a first filter, we excluded highly fragmented genome assemblies by removing genomes with more than 500 contigs.
+This threshold retained well-assembled genomes while filtering out draft assemblies unlikely to yield reliable functional annotations.
+
+\paragraph*{CheckM2 quality assessment.}
+Remaining genomes were evaluated for assembly quality using CheckM2, which provides machine-learning-based estimates of genome completeness and contamination.
+We retained genomes with completeness $>$90\% and contamination $<$5\%, consistent with community standards for high-quality genome assemblies.
+
+\paragraph*{Outlier detection.}
+We performed statistical outlier detection on the KEGG feature matrix using Isolation Forest with 100 estimators, contamination rate of 0.05, and random state 42.
+This step identified genomes with anomalous functional profiles that could introduce noise into downstream machine learning models.
+
+\paragraph*{Pangenome-based completeness assessment.}
+As an independent quality metric, we estimated genome completeness based on the presence of species-specific core genes identified from pangenome analyses.
+Core gene detection used MMseqs2 with a minimum sequence identity of 90\%, coverage of 80\%, and E-value threshold of $10^{-3}$.
+Completeness was calculated as the fraction of species core genes detected in each genome (Figure~\ref{fig:pangenome_completeness}).
+The majority of successfully assessed genomes exceeded 90\% pangenome completeness, corroborating the CheckM2-based filtering.
+
+\subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
+
+We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types (Table~\ref{tab:best_models_counts}).
+In this table, ``cb'' denotes CatBoost, ``rf'' denotes Random Forest, and ``lit'' refers to the Biolog dataset.
+CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
+All models were evaluated using balanced accuracy as the primary reporting metric to account for class imbalance in phenotype data, where the proportion of positive (growth) and negative (no-growth) samples varied substantially across phenotypes and datasets.
+
+\subsection*{Supplementary Text S4: Feature Comparison Tables}
+
+Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant} present stable predictive features identified through SHAP (SHapley Additive exPlanations) analysis.
+Stable features were defined as those ranked among the top 10 by mean absolute SHAP value and appearing in at least 70\% of 20 random-seed training runs.
+Table~\ref{tab:feature_comparison} reports stable features from models trained on all samples using KOFAM annotations as features.
+Table~\ref{tab:feature_comparison_concordant} reports stable features from models trained on GapMind-concordant samples only, using GapMind pathway gene annotations as features.
+The contrast between these tables illustrates that concordant training produces more consistent, mechanistically interpretable features across datasets.
+
+% ============================================================
+%   TABLES
+% ============================================================
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrl}
+\hline
+\textbf{Dataset} & \textbf{Original Strains} & \textbf{Original Substrates} & \textbf{Genomes Used} & \textbf{Shared Phenotypes} & \textbf{Growth Assay} \\
+\hline
+ATLeaf  & 224 & 45  & 206 & 15 & Agar plate (minimal media) \\
+Biolog  & 362 & 64  & 327 & 15 & Biolog PM (colorimetric) \\
+Marine  & 175 & 100 & 172 & 15 & Carbon source assay \\
+Populus & 58  & 191 & 55  & 15 & Carbon source assay \\
+\hline
+\end{tabular}
+\caption{\textbf{Overview of carbon source utilization datasets.}
+``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
+``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
+The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
+ATLeaf, Biolog, and Marine were used for model training and testing; Populus was reserved for independent validation.}
+\label{tab:dataset_overview}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llllr}
+\hline
+\textbf{Train Dataset} & \textbf{Test Dataset} & \textbf{Feature Type} & \textbf{Best Model} & \textbf{Count} \\
+\hline
+ATLeaf & Biolog & KOFAM & CatBoost & 13 \\
+ATLeaf & Biolog & KOFAM & Random Forest & 3  \\
+ATLeaf & Biolog & RAST  & CatBoost & 11 \\
+ATLeaf & Biolog & RAST  & Random Forest & 5  \\
+Biolog & ATLeaf & KOFAM & CatBoost & 11 \\
+Biolog & ATLeaf & KOFAM & Random Forest & 5  \\
+Biolog & ATLeaf & RAST  & Random Forest & 9  \\
+Biolog & ATLeaf & RAST  & CatBoost & 7  \\
+\hline
+\end{tabular}
+\caption{\textbf{CatBoost vs.\ Random Forest performance comparison across dataset pairs and feature types.}
+For each combination of training dataset, test dataset, and feature type, the table shows how many of the 15 shared phenotypes were best predicted by each classifier (measured by balanced accuracy).
+CatBoost outperformed Random Forest in the majority of comparisons, particularly with KOFAM features (24 vs.\ 8 wins across both dataset orderings).
+See Methods for classifier hyperparameters and training details.}
+\label{tab:best_models_counts}
+\end{table}
+
+% REVISION: Tables moved from main text to comply with 8 data display limit
+\input{sections/table_feature_comparison}
+\input{sections/table_feature_comparison_concordant}
+
+% ============================================================
+%   FIGURES
+% ============================================================
+
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s1.pdf}
 \caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
-Phylogenetic tree displaying 819 genomes from four datasets: ATLeaf, Biolog, Marine, and Populus.
+Phylogenetic tree displaying 819 genomes from four datasets: ATLeaf (green), Biolog (blue), Marine (orange), and Populus (red).
+The tree was constructed using the Genome Taxonomy Database (GTDB)~\cite{Parks2018GTDB} as a reference framework, with phylogenetic distances calculated using the ETE 3 toolkit~\cite{HuertaCepas2016ETE3}.
 Branch colors indicate dataset membership.
-The tree reveals distinct taxonomic compositions across datasets, with some clades dominated by specific datasets while others show mixed representation.}
+The tree reveals distinct taxonomic compositions across datasets: the Marine dataset is enriched in Gammaproteobacteria and Alphaproteobacteria marine lineages, ATLeaf spans diverse phyllosphere-associated taxa, and Biolog covers a broad phylogenetic range compiled from multiple studies.
+Populus is restricted to \textit{Pseudomonas fluorescens} and closely related species from the \textit{Populus deltoides} rhizosphere and endosphere.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
@@ -22,60 +150,44 @@ The tree reveals distinct taxonomic compositions across datasets, with some clad
 \centering
 \includegraphics[width=\textwidth]{figure_s2.png}
 \caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
-Comparison of phylogenetic distances between training and test samples under different evaluation scenarios.
-The figure demonstrates that random splits sample from phylogenetically similar distributions, while cross-dataset and out-of-clade splits progressively increase the phylogenetic distance between training and test samples.}
+Distribution of cophenetic phylogenetic distances between training and test samples under different evaluation scenarios.
+Random splits (left) draw training and test samples from the same phylogenetic distribution, resulting in small distances.
+Cross-dataset splits (middle) increase distances by separating samples from different experimental contexts.
+Out-of-clade splits (right) produce the largest distances by ensuring test samples come from phylogenetically distant clades relative to training data.
+This progressive increase in phylogenetic distance between training and test sets mirrors the increasingly stringent generalization tests applied in the main text (Figure~\ref{fig:ml_performance}).}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{figure3_alt.pdf}
-\caption{\textbf{Intra-dataset and cross-dataset evaluation performance comparison.}}
-\label{fig:intra_cross_dataset_performance}
+\includegraphics[width=\textwidth]{figure_s3.png}
+\caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
+Balanced accuracy of CatBoost classifiers (using KOFAM features) across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
+Clade definitions follow the phylogenetic partitioning algorithm of Li et al.~\cite{Li2023-up}, with phenotype--dataset combinations excluded when fewer than 10 test samples or 10 minority-class samples were available.
+Out-of-clade performance was consistently lower, confirming that random cross-validation overestimates generalization by allowing phylogenetically similar samples to appear in both training and test sets.}
+\label{fig:in_clade_out_clade_performance}
 \end{figure}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{llllr}
-\hline
-train\_dataset & test\_dataset & feature\_type & best\_model & count \\
-\hline
-atleaf & lit    & kofam & cb & 13 \\
-atleaf & lit    & kofam & rf & 3  \\
-atleaf & lit    & rast  & cb & 11 \\
-atleaf & lit    & rast  & rf & 5  \\
-lit    & atleaf & kofam & cb & 11 \\
-lit    & atleaf & kofam & rf & 5  \\
-lit    & atleaf & rast  & rf & 9  \\
-lit    & atleaf & rast  & cb & 7  \\
-\hline
-\end{tabular}
-\caption{Best-performing models and counts across train-test dataset pairs and feature types.}
-\label{tab:best_models_counts}
-\end{table}
-
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{figure_s3.png}
-\caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
-Balanced accuracy of ML models across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
-The comparison reveals how phylogenetic distance between training and test samples affects model generalization.}
-\label{fig:in_clade_out_clade_performance}
+\includegraphics[width=\textwidth]{figure3_alt.pdf}
+\caption{\textbf{Intra-dataset and cross-dataset evaluation performance comparison.}
+Alternative visualization of the cross-dataset evaluation results presented in Figure~\ref{fig:ml_performance}.
+Each panel compares model performance when training and testing within the same dataset (intra-dataset, via random cross-validation) versus training on one dataset and testing on another (cross-dataset).
+The consistent performance gap between intra-dataset and cross-dataset evaluation across phenotypes illustrates that models learn dataset-specific patterns that do not transfer across experimental contexts, even when the same carbon source phenotype is being predicted.
+This visualization complements the main text by showing individual dataset pairs rather than aggregated results.}
+\label{fig:intra_cross_dataset_performance}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s4.pdf}
 \caption{\textbf{Pangenome-based genome completeness assessment.}
-Completeness was estimated as the fraction of species core genes detected in each genome using MMseqs2 (90\% identity, 80\% coverage).
+Completeness was estimated as the fraction of species core genes detected in each genome using MMseqs2 (90\% identity, 80\% coverage, E-value $10^{-3}$; see Supplementary Text S2 for full parameters).
 (\textbf{A}) Status breakdown: counts of genomes with successful assessment, no species assignment, no core-gene set, or processing error.
 (\textbf{B}) Distribution of completeness (\%) among successfully assessed genomes.
+The majority of genomes exceeded 90\% pangenome completeness, consistent with the CheckM2-based quality filtering applied upstream.
 (\textbf{C}) Completeness by species (top 15 by genome count; others grouped as ``Other'').
 (\textbf{D}) Core genes present versus expected for successful genomes, with points colored by completeness; the dashed line indicates perfect agreement.}
 \label{fig:pangenome_completeness}
 \end{figure}
-
-% REVISION: Tables moved from main text to comply with 8 data display limit
-\input{sections/table_feature_comparison}
-\input{sections/table_feature_comparison_concordant}
