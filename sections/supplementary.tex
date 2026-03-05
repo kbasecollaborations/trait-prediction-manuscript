@@ -14,7 +14,7 @@
 
 \subsection*{Supplementary Text S1: Dataset Descriptions}
 
-We compiled four binary carbon source utilization datasets spanning phylogenetically and ecologically diverse bacterial communities.
+We compiled four binary carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacterial communities.
 Each dataset captures growth outcomes (growth vs.\ no-growth) of bacterial strains on various carbon substrates.
 Due to annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
 
@@ -25,12 +25,12 @@ This dataset provided the broadest ecological coverage of phyllosphere-associate
 
 \paragraph*{Biolog.}
 The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies.
-Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilization via colorimetric tetrazolium-based redout in 96-well plates.
+Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilisation via colorimetric tetrazolium-based redout in 96-well plates.
 After quality filtering, 327 genomes were retained.
-The standardized, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
+The standardised, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
 
 \paragraph*{Marine.}
-The Marine dataset~\cite{Gralka2023-ft} contained 175 heterotrophic marine bacteria assessed on 100 carbon substrates using carbon source utilization assays.
+The Marine dataset~\cite{Gralka2023-ft} contained 175 heterotrophic marine bacteria assessed on 100 carbon substrates using carbon source utilisation assays.
 All 172 genomes that passed annotation quality control were retained for analysis.
 This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
 
@@ -98,7 +98,7 @@ Marine  & 175 & 100 & 172 & 15 & Carbon source assay \\
 Populus & 58  & 191 & 55  & 15 & Carbon source assay \\
 \hline
 \end{tabular}
-\caption{\textbf{Overview of carbon source utilization datasets.}
+\caption{\textbf{Overview of carbon source utilisation datasets.}
 ``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
 ``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
 The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
@@ -157,7 +157,7 @@ Distribution of cophenetic phylogenetic distances between training and test samp
 Random splits (left) draw training and test samples from the same phylogenetic distribution, resulting in small distances.
 Cross-dataset splits (middle) increase distances by separating samples from different experimental contexts.
 Out-of-clade splits (right) produce the largest distances by ensuring test samples come from phylogenetically distant clades relative to training data.
-This progressive increase in phylogenetic distance between training and test sets mirrors the increasingly stringent generalization tests applied in the main text (Figure~\ref{fig:ml_performance}).}
+This progressive increase in phylogenetic distance between training and test sets mirrors the increasingly stringent generalisation tests applied in the main text (Figure~\ref{fig:ml_performance}).}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
 
@@ -167,7 +167,7 @@ This progressive increase in phylogenetic distance between training and test set
 \caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
 Balanced accuracy of CatBoost classifiers (using KOFAM features) across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
 Clade definitions follow the phylogenetic partitioning algorithm of Li et al.~\cite{Li2023-up}, with phenotype--dataset combinations excluded when fewer than 10 test samples or 10 minority-class samples were available.
-Out-of-clade performance was consistently lower, confirming that random cross-validation overestimates generalization by allowing phylogenetically similar samples to appear in both training and test sets.}
+Out-of-clade performance was consistently lower, confirming that random cross-validation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
 
@@ -175,10 +175,10 @@ Out-of-clade performance was consistently lower, confirming that random cross-va
 \centering
 \includegraphics[width=\textwidth]{figure3_alt.pdf}
 \caption{\textbf{Intra-dataset and cross-dataset evaluation performance comparison.}
-Alternative visualization of the cross-dataset evaluation results presented in Figure~\ref{fig:ml_performance}.
+Alternative visualisation of the cross-dataset evaluation results presented in Figure~\ref{fig:ml_performance}.
 Each panel compares model performance when training and testing within the same dataset (intra-dataset, via random cross-validation) versus training on one dataset and testing on another (cross-dataset).
 The consistent performance gap between intra-dataset and cross-dataset evaluation across phenotypes illustrates that models learn dataset-specific patterns that do not transfer across experimental contexts, even when the same carbon source phenotype is being predicted.
-This visualization complements the main text by showing individual dataset pairs rather than aggregated results.}
+This visualisation complements the main text by showing individual dataset pairs rather than aggregated results.}
 \label{fig:intra_cross_dataset_performance}
 \end{figure}
 

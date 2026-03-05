@@ -1,2 +1,117 @@
 %!TEX root = ../main.tex
 
+\newpage
+
+\begin{figure}[h]
+\centering
+\begin{subfigure}[b]{0.90\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1a.pdf}
+\end{subfigure}
+\vspace{0.5cm}
+\begin{subfigure}[b]{0.90\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figure1b.pdf}
+\end{subfigure}
+\caption{
+\textbf{Microbial carbon utilisation prediction workflow.}
+(A) Overview of data collection, genome annotation, and machine learning workflow.
+We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 242 carbon sources from four datasets (ATLeaf, Biolog, Marine, Populus).
+Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used to train classifiers.
+(B) Phenotypic distribution for the 15 shared carbon sources across the four datasets.
+The bar plot displays sample counts and class distribution for each phenotype.
+Solid bars indicate growth (positive) samples; patterned bars indicate no-growth (negative) samples.
+Class distributions vary across phenotypes and datasets.
+}\label{fig:dataset_characteristics}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.90\textwidth]{figure2.pdf}
+\caption{
+\textbf{Baseline mechanistic and phylogenetic predictions show limited accuracy.}
+(A) Bar plot showing GapMind balanced accuracy across 15 phenotypes.
+GapMind predictions were compared against experimental outcomes using both strict and permissive pathway completeness thresholds.
+(B) Dot plot showing phylogeny-based nearest neighbour (k=3) balanced accuracy across 15 phenotypes under two evaluation scenarios: random split (top panel) and out-of-clade split (bottom panel).
+Circles and boxes indicate null model performance (Identity and Bernoulli baselines) and triangles indicate nearest neighbour performance.
+}\label{fig:baseline_predictions}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{figure3.pdf}
+\caption{
+\textbf{ML models excel within datasets but struggle to generalise across datasets.}
+(A) Box plot showing random cross-validation balanced accuracy for gradient-boosted tree classifiers (using KOFAM features) across 15 phenotypes.
+Dotted line indicates GapMind permissive baseline performance on the test set.
+(B) Dot plot showing cross-dataset balanced accuracy when training on three datasets and testing on the held-out fourth dataset.
+Dotted line indicates GapMind baseline.
+(C) Difference plot comparing model performance between regular cross-dataset splits and phylogenetically constrained in-clade cross-dataset splits.
+}\label{fig:ml_performance}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figure4.pdf}
+\caption{
+\textbf{Diagnosing GapMind misclassifications and ML generalisation failures.}
+(A) Conceptual framework outlining causes of concordant samples (where GapMind matches experiment) and discordant samples (where GapMind contradicts experiment).
+(B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
+Each bar displays proportions of true positives, true negatives, false positives (GapMind predicts complete pathway but no growth observed), and false negatives (GapMind predicts incomplete pathway but growth observed).
+(C) Feature importance stability analysis using SHAP.
+Top panel: number of stable features appearing in $\geq$70\% of model runs across random splits with 20 different random seeds.
+Bottom panel: cross-dataset stability comparing individual dataset features to aggregated dataset (combination of the three other datasets) features.
+Solid bars represent features common with the aggregated dataset; patterned bars represent dataset-unique features.
+}\label{fig:misclassification_diagnosis}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{figure5.pdf}
+\caption{
+\textbf{Models learn mechanistic features when trained on concordant data and are able to predict some discordant samples.} All models use the same architecture and feature representation as in Figure 3; only the training set is restricted to concordant samples.
+(A) Balanced accuracy of models trained on GapMind-concordant samples (where GapMind predictions match experimental outcomes) and tested on held-out concordant samples.
+The plot compares random split (green line) and cross-dataset split (blue boxes) evaluation scenarios across 15 phenotypes.
+(B) Cross-dataset feature stability analysis (similar to Figure 4C) for concordant-trained models using SHAP.
+Stable features are defined as those appearing in $\geq$70\% of runs across random seeds (see Methods). The consistent recovery of canonical histidine catabolism genes (hutH, hutI, hutU) across datasets indicates that concordant training enables learning of transferable mechanistic features.
+Solid bars: features common with aggregated dataset (combination of the three other datasets); patterned bars: dataset-unique features.
+(C) Box plot showing balanced accuracy of concordant-trained models when applied to discordant samples across phenotypes. Performance on discordant samples varies substantially across phenotypes, consistent with heterogeneous causes of discordance; values near random indicate cases where genome-derived features are insufficient to resolve the phenotype.
+Test performance is evaluated using Random (green) and Cross-dataset (blue) splits.
+}\label{fig:concordant_analysis}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.90\textwidth]{figure6.pdf}
+\caption{
+\textbf{Effects of data filtering and feature selection on model performance.}
+(A) Identification of problematic samples across datasets.
+Left: microbes showing zero growth on all substrates.
+Middle: microbes showing universal growth despite incomplete GapMind pathways.
+Right: top 20 most misclassified genomes across all datasets.
+(B) Grouped bar plot showing cross-dataset balanced accuracy after data filtering.
+Blue: concordant-trained models.
+Green: models after confidence-based filtering.
+Red: models after removing bad genomes from panel A.
+(C) Scatter plots of precision vs.\ recall.
+Left: filtered data strategies.
+Right: GapMind predictions alone (purple).
+Each point represents average performance for one phenotype across cross-dataset splits.
+(D) Effect of feature selection on model performance.
+Left: balanced accuracy comparison.
+Right: precision-recall trade-off.
+Circles: random splits; squares: cross-dataset splits.
+}\label{fig:improvement_strategies}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{figure7_gapmind_histidine_all_tests.pdf}
+\caption{
+\textbf{Sample size requirements for training generalisable models.}
+Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
+Columns represent evaluation scenarios: (left) random splits, (middle) cross-dataset splits, (right) out-of-clade splits.
+Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
+Each point indicates performance at training sizes of 50, 100, 200, 500, or full dataset. Performance on discordant test samples reflects cases where genome-derived features are insufficient to fully encode the phenotype; lack of saturation with additional training data indicates representational, not statistical, limits.
+}\label{fig:model_sample_size_requirements}
+\end{figure}

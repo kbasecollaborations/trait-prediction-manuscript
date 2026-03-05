@@ -3,17 +3,16 @@
 \begin{abstract}
 {
 \noindent
-Predicting microbial carbon utilization from genomic data remains challenging despite well-characterized metabolic pathways.
-Machine learning (ML) models aimed at genotype-phenotype prediction often struggle to generalize beyond their training datasets.
-Here, we investigated this generalization problem using microbial carbon utilization as a model system, compiling binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
-We show that generalization failures arise primarily from data coherence rather than algorithmic limitations: when training data contain internally inconsistent genotype-phenotype relationships, models achieve high within-dataset accuracy but fail to transfer across datasets and phylogenetic contexts, instead learning dataset- or phylogeny-correlated shortcuts.
-To address this, we stratified samples based on concordance between a mechanistic predictor of carbon utilization (GapMind pathway completeness) and experimental growth outcomes.
-Models trained exclusively on concordant samples---where genotype-phenotype mappings are internally consistent and encoded within the genomic feature space---achieved robust cross-dataset generalization and consistently recovered known pathway genes as top predictive features.
-These models also correctly predicted a subset of samples misclassified by the mechanistic predictor, indicating that ML captures information beyond curated pathway rules.
-As few as 50--100 high-quality training samples sufficed for robust generalization.
-We further evaluated data-driven filtering strategies that partially improve generalization when mechanistic predictors are unavailable.
-Together, these results reframe generalization in biological ML as a data coherence problem: when genotype-phenotype relationships are internally consistent, models learn transferable mechanistic features; when they are not, models default to spurious correlations.
+Predicting microbial carbon utilisation from genomic data remains challenging despite well-characterised metabolic pathways.
+Machine learning models aimed at genotype-phenotype prediction often struggle to generalise beyond their training datasets.
+Here, we investigated this generalisation problem using microbial carbon utilisation as a model system, compiling binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
+We show that generalisation failures arise primarily from data coherence rather than algorithmic limitations: when training data contain internally inconsistent genotype-phenotype relationships, models learn dataset- or phylogeny-correlated shortcuts instead of transferable features.
+To address this, we stratified samples based on concordance between a mechanistic predictor (GapMind pathway completeness) and experimental growth outcomes.
+Models trained exclusively on concordant samples achieved robust cross-dataset generalisation and consistently recovered known pathway genes as top predictive features.
+These models also correctly predicted a subset of samples misclassified by the mechanistic predictor, indicating that machine learning captures information beyond curated pathway rules.
+As few as 50--100 high-quality training samples sufficed for robust generalisation.
+Together, these results reframe generalisation in biological machine learning as a data coherence problem rather than an algorithmic one.
 }
 \end{abstract}
 
-\keywords{Machine learning, Microbial phenotypes, Genotype-phenotype mapping, Carbon utilization}
+\keywords{Machine learning, Microbial phenotypes, Genotype-phenotype mapping, Carbon utilisation}
