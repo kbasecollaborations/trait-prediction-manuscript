@@ -3,7 +3,7 @@
 \section*{Discussion}
 
 % Summary of findings
-Generalisation failure in microbial genotype--phenotype prediction is not an intrinsic limitation of machine learning, but a consequence of heterogeneity in the coherence and representational sufficiency of training data.
+Generalisation failure in microbial genotype--phenotype prediction need not be an intrinsic limitation of machine learning, but can arise as a consequence of heterogeneity in the coherence and representational sufficiency of training data.
 Discordance arises from two distinct sources: data fidelity failures---annotation gaps, misannotation, and inconsistent phenotype measurements---that obscure otherwise learnable relationships, and representational insufficiency, where genuine biological dependencies such as regulatory control or environmental context are not encoded in static genome-derived features.
 When discordant samples dominate training, models are forced toward spurious correlations that are predictive within specific datasets or clades but do not transfer.
 This reframes the ``generalizability crisis'' in biological ML from an algorithmic challenge to a data curation challenge~\cite{Mey2021Improving}.
@@ -32,7 +32,7 @@ Feature selection thus conditions the representational space, while data stratif
 
 % Practical implications
 Our results provide actionable guidance for building generalizable phenotype predictors.
-The primary design question in biological machine learning is not which algorithm to use, but how to condition the learning problem through data selection, representation, and evaluation \cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
+A central design question in microbial phenotype prediction is not which algorithm to use, but how to condition the learning problem through data selection, representation, and evaluation \cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
 % CITATION ADDED: data-centric AI paradigm, data quality challenges, and data cascades in high-stakes AI
 ML models should be trained on high-quality samples with clear genotype--phenotype mappings when possible.
 When mechanistic predictors such as GapMind are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives~\cite{Zhang2020Combining}.

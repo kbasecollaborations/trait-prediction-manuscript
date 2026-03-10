@@ -6,12 +6,12 @@
 Predicting microbial carbon utilisation from genomic data remains challenging despite well-characterised metabolic pathways.
 Machine learning models aimed at genotype-phenotype prediction often struggle to generalise beyond their training datasets.
 Here, we investigated this generalisation problem using microbial carbon utilisation as a model system, compiling binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
-We show that generalisation failures arise primarily from data coherence rather than algorithmic limitations: when training data contain internally inconsistent genotype-phenotype relationships, models learn dataset- or phylogeny-correlated shortcuts instead of transferable features.
+We show that generalisation failures arise in substantial part from data coherence rather than algorithmic limitations: when training data contain internally inconsistent genotype-phenotype relationships, models learn dataset- or phylogeny-correlated shortcuts instead of transferable features.
 To address this, we stratified samples based on concordance between a mechanistic predictor (GapMind pathway completeness) and experimental growth outcomes.
 Models trained exclusively on concordant samples achieved robust cross-dataset generalisation and consistently recovered known pathway genes as top predictive features.
 These models also correctly predicted a subset of samples misclassified by the mechanistic predictor, indicating that machine learning captures information beyond curated pathway rules.
-As few as 50--100 high-quality training samples sufficed for robust generalisation.
-Together, these results reframe generalisation in biological machine learning as a data coherence problem rather than an algorithmic one.
+For a well-characterised phenotype (histidine utilisation), as few as 50--100 high-quality training samples sufficed for robust generalisation.
+Together, these results reframe generalisation in microbial phenotype prediction as a data coherence problem rather than a purely algorithmic one.
 }
 \end{abstract}
 

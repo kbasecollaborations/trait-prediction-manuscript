@@ -4,7 +4,7 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets---ATLeaf \cite{Schafer2023-nk}, Biolog (see supplemental material), Marine \cite{Gralka2023-ft}, and Populus (see supplemental material)---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (see Methods for data sources, preprocessing, and quality control procedures).
+To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets---ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}---capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (see Methods for data sources, preprocessing, and quality control procedures).
 The overall workflow, including data aggregation, genome annotation (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A.
 All analyses focused on the 15 shared phenotypes across all datasets (Figure~\ref{fig:dataset_characteristics}B).
 We used ATLeaf, Biolog, and Marine datasets for model training and testing, reserving Populus for independent testing.
@@ -74,9 +74,10 @@ An uncharacterised protein (K09975) appearing as a common feature for ATLeaf and
 
 Together, these analyses indicate that models trained on aggregated datasets are exposed to samples with fundamentally different levels of learnability.
 We therefore hypothesised that restricting training to samples with internally consistent genotype--phenotype relationships would allow machine learning models to recover transferable mechanistic features and generalise across datasets and phylogenetic contexts.
+To test this, we leveraged GapMind concordance as a criterion for stratifying samples by mechanistic consistency, training models exclusively on samples where pathway-based predictions matched experimental outcomes.
 \FloatBarrier{}
 
-\subsection*{Can ML learn actual mechanisms? Testing on GapMind-concordant data}
+\subsection*{Can ML learn mechanistically relevant features? Testing on GapMind-concordant data}
 
 We defined concordant samples as those where GapMind predictions match experimental outcomes, reasoning that these likely represent organisms using broadly conserved metabolic pathways that are well represented in annotation databases.
 Concordance was used solely to stratify samples by mechanistic consistency; model architecture, feature encoding, training procedure, and evaluation strategy were otherwise unchanged.
@@ -86,7 +87,7 @@ We used GapMind features (presence/absence of pathway genes; $\sim$1000 features
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
 Cross-dataset splits filtered for concordance also achieved high accuracy ($>$0.90) on many phenotype-dataset combinations, indicating that when mechanisms are clear and features are mechanistically relevant, ML can learn and generalise well.
 However, even with concordant data, generalisation failed for some phenotypes (e.g., glucose, serine) despite common stable features across datasets, possibly due to imbalanced class distributions.
-Because no changes were made to the learning algorithm or evaluation scheme, these gains isolate training data coherence as the primary factor enabling cross-dataset generalisation.
+Because no changes were made to the learning algorithm or evaluation scheme, these gains point to training data coherence as a key factor enabling cross-dataset generalisation.
 % TODO: Class imbalance? Investiage
 
 Cross-dataset stability analysis (Figure~\ref{fig:concordant_analysis}B) showed a notable increase in shared stable features compared to models trained on full datasets (Figure~\ref{fig:misclassification_diagnosis}C), indicating concordant training helps models learn consistent mechanistic features.
@@ -103,7 +104,7 @@ For some phenotypes, above-random accuracy suggests ML may capture features beyo
 
 \subsection*{Strategies to improve model performance}
 
-While concordant training yielded the best results, it removes approximately 30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterised phenotypes.
+Although concordant training demonstrated the value of data coherence for generalisation, this approach has practical constraints: it removes approximately 30\% of samples and requires mechanistic predictors like GapMind, which exist only for well-characterised phenotypes.
 We therefore explored alternative strategies to improve model performance by addressing data quality issues without requiring external mechanistic predictions, making these approaches applicable to a broader range of traits (Figure~\ref{fig:improvement_strategies}A).
 
 We identified systematically problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabeled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
