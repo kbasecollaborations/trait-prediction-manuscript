@@ -55,7 +55,7 @@ All filtering was performed on training data to prevent data leakage.
 
 \subsection*{Machine Learning Classifiers}
 
-We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which showed slightly better performance than random forests in preliminary comparisons.
+We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in the majority of train--test dataset and feature type combinations (Supplementary Table~\ref{tab:best_models_counts}).
 CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with patience of 50 iterations.
 % REVISION: corrected split ratio to match code (70:15:15)
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
@@ -113,7 +113,7 @@ We developed a composite confidence score combining three information sources:
     \item Experimental data ($w=0.5$): Binary experimental outcome
 \end{itemize}
 Weights were assigned to reflect the relative reliability of each information source: experimental measurements received the highest weight (0.5) as direct observations, GapMind pathway completeness received intermediate weight (0.3) as a mechanistic predictor, and phylogenetic neighbour agreement received the lowest weight (0.2), consistent with our finding that phylogenetic similarity is a relatively weak predictor of metabolic phenotypes (Figure~\ref{fig:baseline_predictions}).
-The specific values were selected empirically.
+The specific values were selected empirically; alternative weightings were not systematically evaluated, and the sensitivity of downstream results to these choices remains to be characterised.
 GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
 Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
 % REVISION: resolved TODO — confidence weight rationale from figure6b_data.py

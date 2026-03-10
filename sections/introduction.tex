@@ -28,12 +28,12 @@ Given this interpretation, we sought a system where mechanistic expectations are
 
 We tested this hypothesis using microbial carbon utilisation as a model system.
 Carbon utilisation phenotypes are well suited for this purpose because they sit near the boundary of what genome-derived features can capture.
-The core biochemical transformations underlying many carbon catabolic pathways are well characterised and well-conserved, yet their genomic realisation is often ambiguous due to challenges in annotating, for example, transporters and broad-specificity enzymes, the presence of divergent or previously uncharacterised genes capable of performing similar chemistry, and regulatory mechanisms that are poorly characterised and conserved across phylogeny.
+The core biochemical transformations underlying many carbon catabolic pathways are well characterised and well-conserved, yet their genomic realisation is often ambiguous due to challenges in annotating, for example, transporters and broad-specificity enzymes, the presence of divergent or previously uncharacterised genes capable of performing similar chemistry, and regulatory mechanisms that are poorly characterised and inconsistently conserved across phylogeny.
 This combination of well-understood chemistry and realistic representational limitations makes carbon utilisation a stringent test of when genome-based machine learning should succeed, and when failure is expected.
 We compiled a comprehensive dataset of 819 microbial genomes and their binary growth outcomes across 242 carbon sources from four independent experimental collections.
 We developed phenotype-specific classifiers using this dataset and employed various feature representations and evaluation strategies within a standardised framework.
 
 We find that models trained on concordant samples---those with internally consistent genotype--phenotype mappings---achieve robust cross-dataset generalisation, consistently recovering established pathway genes as top predictive features while also correctly classifying samples misclassified by the mechanistic predictor.
-Robust generalisation can be achieved with modest numbers of high-quality training samples, suggesting that data coherence, rather than dataset size alone, is the primary constraint on phenotype prediction.
-Together, these findings provide a practical framework for prioritising data curation in biological machine learning.
+Robust generalisation can be achieved with modest numbers of high-quality training samples, consistent with the hypothesis that data coherence, rather than dataset size alone, is a key constraint on phenotype prediction.
+Together, these findings provide a practical framework for prioritising data curation in microbial phenotype prediction.
 

@@ -66,6 +66,11 @@ Core gene detection used MMseqs2 \cite{Steinegger2017MMseqs2} with a minimum seq
 Completeness was calculated as the fraction of species core genes detected in each genome (Figure~\ref{fig:pangenome_completeness}).
 The majority of successfully assessed genomes exceeded 90\% pangenome completeness, corroborating the CheckM2-based filtering.
 
+\paragraph*{Overall attrition.}
+Across all datasets, the quality control pipeline retained 760 of 819 input genomes (92.8\%).
+Per-dataset retention rates were: ATLeaf 206/224 (92.0\%), Biolog 327/362 (90.3\%), Marine 172/175 (98.3\%), and Populus 55/58 (94.8\%).
+The Biolog dataset had the highest absolute attrition (35 genomes), consistent with its compilation from multiple independent studies with heterogeneous assembly quality.
+
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
 
 We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types (Table~\ref{tab:best_models_counts}).
