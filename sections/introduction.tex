@@ -2,38 +2,32 @@
 
 \section*{Introduction}
 
-Microbial nutrient utilisation phenotypes are key determinants of ecological niche and influence organism distribution, interactions, and functional roles within complex ecosystems \cite{Falkowski2008-bx,Malik2020Defining}.
-A mechanistic understanding of these phenotypes is crucial for advancing microbial ecology, providing insights into community assembly, nutrient cycling, and biotechnological applications such as probiotic design or bioremediation \cite{Lu2014-zz}.
-Traditional laboratory-based cultivation methods have characterised most existing microbial phenotype data, but these methods cannot characterise the metabolic capabilities of unculturable taxa \cite{Lloyd2018-ar}, introducing significant biases and restricting our understanding of microbial diversity.
+Microbial nutrient utilisation phenotypes are key determinants of ecological niches and influence organism distribution, interactions, and functional roles within complex ecosystems \cite{Falkowski2008-bx,Malik2020Defining}.
+A mechanistic understanding of these phenotypes is crucial for advancing microbial ecology and providing insights into community assembly, nutrient cycling, and biotechnological applications, such as probiotic design or bioremediation \cite{Lu2014-zz}.
+Traditional laboratory-based cultivation methods have characterised most existing microbial phenotype data; however, these methods cannot characterise the metabolic capabilities of unculturable taxa \cite{Lloyd2018-ar}, introducing significant biases and restricting our understanding of microbial diversity.
 Even for culturable organisms, comprehensive phenotypic characterisation across environmental conditions remains resource-intensive \cite{Barberan2017-xi}.
 
 Rapid advances in genomics offer a promising path to overcome these limitations \cite{Quince2017Shotgun,Nayfach2021Catalog}.
-% CITATION ADDED: metagenomics advances enabling genome-resolved analysis
 The increasing availability of genomic data, including metagenome-assembled genomes (MAGs), presents an opportunity to predict phenotypes directly from genomic information \cite{Li2023-up}, bypassing extensive laboratory experiments.
-While phylogeny has commonly been used as a proxy for phenotype prediction, it is insufficient for characterising novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Bradley2018-rs}.
-Genome-based predictions offer a powerful alternative, enabling characterisation of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms driving phenotypic variation \cite{Weimann2016Traitar,Brbic2016Landscape,Karlsen2023Genotype,Lees2020Pangenome,Koblitz2025Phenotype}.
-% CITATION ADDED: pangenome-spanning genotype-phenotype regressions; bacterial phenotype prediction with curated data
-These predictions can leverage various genomic features, from general characteristics such as GC content \cite{Hu2022-fr} and genome size \cite{Chuckran2025-ap} to specific information derived from gene annotations and inferred metabolic pathways \cite{Long2021-yz}.
-% CITATION ADDED: genome size predicts bacterial growth phenotype
+Although phylogeny has commonly been used as a proxy for phenotype prediction, it is insufficient for characterising novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Bradley2018-rs}.
+Genome-based predictions offer a powerful alternative, enabling the characterisation of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms driving phenotypic variation \cite{Weimann2016Traitar,Brbic2016Landscape,Karlsen2023Genotype,Lees2020Pangenome,Koblitz2025Phenotype}.
+These predictions can leverage various genomic features, from general characteristics, such as GC content \cite{Hu2022-fr} and genome size \cite{Chuckran2025-ap} to specific information derived from gene annotations and inferred metabolic pathways \cite{Long2021-yz}.
 
-Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling the non-linear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy,Zampieri2019MLMetabolic,James2025OpenProblems}.
-% CITATION ADDED: review of open problems in bacterial whole-genome phenotype prediction
-However, the performance and generalizability of these models are constrained by data limitations and evaluation challenges \cite{Whalen2022Pitfalls}.
-% CITATION ADDED: pitfalls of ML in genomics (data quality, evaluation biases)
+Machine learning models have emerged as valuable tools for inferring phenotypes from complex genomic data, capable of handling nonlinear relationships and high dimensionality often encountered in biological systems \cite{Greener2022-dy,Zampieri2019MLMetabolic,James2025OpenProblems}.
+However, the performance and generalisability of these models are constrained by data limitations and evaluation challenges \cite{Whalen2022Pitfalls}.
 Limited and taxonomically biased training data can lead to overfitting and poor applicability to diverse microbial communities \cite{Ramoneda2024-yb,Albright2023-ze}.
 Furthermore, phylogenetic correlations among genomic features confound the identification of mechanistically relevant predictors; Li et al.\cite{Li2023-up} showed that predictors trained on taxonomically biased data primarily capture phylogenetic signal, leading to poor cross-clade transfer, and concluded that very large datasets are required to overcome this confounding \cite{Ramoneda2024-yb,Albright2023-ze}.
-This interpretation is well supported, but it leaves open an alternative possibility: that generalisation failure reflects dilution of mechanistic signal by internally inconsistent genotype--phenotype mappings \cite{Northcutt2021Confident}, rather than an inherent need for massive sample sizes.
-% CITATION ADDED: confident learning framework for noisy/inconsistent labels
-Given this interpretation, we sought a system where mechanistic expectations are strong, yet known representational and biological challenges remain.
+This interpretation is well supported; however, an alternative possibility remains: that generalisation failure reflects dilution of mechanistic signal by internally inconsistent genotype--phenotype mappings \cite{Northcutt2021Confident}, rather than an inherent need for massive sample sizes.
+Given this interpretation, we sought a system in which mechanistic expectations are strong, yet known representational and biological challenges remain.
 
 We tested this hypothesis using microbial carbon utilisation as a model system.
 Carbon utilisation phenotypes are well suited for this purpose because they sit near the boundary of what genome-derived features can capture.
-The core biochemical transformations underlying many carbon catabolic pathways are well characterised and well-conserved, yet their genomic realisation is often ambiguous due to challenges in annotating, for example, transporters and broad-specificity enzymes, the presence of divergent or previously uncharacterised genes capable of performing similar chemistry, and regulatory mechanisms that are poorly characterised and inconsistently conserved across phylogeny.
-This combination of well-understood chemistry and realistic representational limitations makes carbon utilisation a stringent test of when genome-based machine learning should succeed, and when failure is expected.
+The core biochemical transformations underlying many carbon catabolic pathways are well characterised and well conserved; however, their genomic realisation is often ambiguous due to challenges in annotating, for example, transporters and broad-specificity enzymes, the presence of divergent or previously uncharacterized genes capable of performing similar chemistry, and regulatory mechanisms that are poorly characterised and inconsistently conserved across phylogeny.
+This combination of well-understood chemistry and realistic representational limitations makes carbon utilisation a stringent test of when genome-based machine learning should succeed and when failure is expected.
 We compiled a comprehensive dataset of 819 microbial genomes and their binary growth outcomes across 242 carbon sources from four independent experimental collections.
 We developed phenotype-specific classifiers using this dataset and employed various feature representations and evaluation strategies within a standardised framework.
 
 We find that models trained on concordant samples---those with internally consistent genotype--phenotype mappings---achieve robust cross-dataset generalisation, consistently recovering established pathway genes as top predictive features while also correctly classifying samples misclassified by the mechanistic predictor.
-Robust generalisation can be achieved with modest numbers of high-quality training samples, consistent with the hypothesis that data coherence, rather than dataset size alone, is a key constraint on phenotype prediction.
+Robust generalisation can be achieved with a modest number of high-quality training samples, consistent with the hypothesis that data coherence, rather than dataset size alone, is a key constraint on phenotype prediction.
 Together, these findings provide a practical framework for prioritising data curation in microbial phenotype prediction.
 

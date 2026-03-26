@@ -51,18 +51,15 @@ This threshold retained well-assembled genomes while filtering out draft assembl
 
 \paragraph*{CheckM2 quality assessment.}
 Remaining genomes were evaluated for assembly quality using CheckM2 \cite{Chklovski2023CheckM2}, which provides machine-learning-based estimates of genome completeness and contamination.
-% CITATION ADDED: CheckM2 tool reference
 We retained genomes with completeness $>$90\% and contamination $<$5\%, consistent with community standards for high-quality genome assemblies.
 
 \paragraph*{Outlier detection.}
 We performed statistical outlier detection on the KEGG feature matrix using Isolation Forest \cite{Liu2008IsolationForest} with 100 estimators, contamination rate of 0.05, and random state 42.
-% CITATION ADDED: Isolation Forest algorithm reference
 This step identified genomes with anomalous functional profiles that could introduce noise into downstream machine learning models.
 
 \paragraph*{Pangenome-based completeness assessment.}
 As an independent quality metric, we estimated genome completeness based on the presence of species-specific core genes identified from pangenome analyses.
 Core gene detection used MMseqs2 \cite{Steinegger2017MMseqs2} with a minimum sequence identity of 90\%, coverage of 80\%, and E-value threshold of $10^{-3}$.
-% CITATION ADDED: MMseqs2 tool reference
 Completeness was calculated as the fraction of species core genes detected in each genome (Figure~\ref{fig:pangenome_completeness}).
 The majority of successfully assessed genomes exceeded 90\% pangenome completeness, corroborating the CheckM2-based filtering.
 
