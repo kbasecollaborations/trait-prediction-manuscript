@@ -55,7 +55,7 @@ All filtering was performed on training data to prevent data leakage.
 \subsection*{Machine Learning Classifiers}
 
 We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in the majority of train--test dataset and feature type combinations (Supplementary Table~\ref{tab:best_models_counts}).
-CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
+CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
 % REVISION: corrected split ratio to match code (70:15:15)
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
 Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
@@ -73,7 +73,7 @@ For cross-dataset testing, we mapped features from the training data to the test
 
 We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up}, which systematically separates training and test data based on phylogenetic relationships.
 % REVISION: corrected test set range to match code (12--18%)
-The algorithm selects test clades based on a target test set size range (12%--18% of samples) while ensuring phylogenetic separation from the training data.
+The algorithm selects test clades based on a target test set size range (12--18\% of samples) while ensuring phylogenetic separation from the training data.
 We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
 \subsection*{Concordant and Discordant Sample Analysis}
