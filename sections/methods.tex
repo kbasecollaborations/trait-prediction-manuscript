@@ -4,7 +4,7 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We compiled four binary growth datasets capturing growth outcomes of phylogenetically and ecologically diverse bacterial strains across various carbon sources.
+We compiled four binary growth datasets describing bacterial growth on defined carbon sources.
 ATLeaf \cite{Schafer2023-nk} comprised 224 strains tested on 45 carbon substrates using minimal media on agar plates.
 Biolog encompassed 362 strains across 64 substrates, compiled from published studies using Biolog Phenotype MicroArray technology \cite{Bochner2001PM,Bochner2009PM}.
 Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
@@ -13,18 +13,18 @@ Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carb
 Due to annotation pipeline limitations and incomplete phenotypic data, the final datasets used for analysis contained fewer genomes and phenotypes than the original datasets (Supplementary Table~\ref{tab:dataset_overview}).
 All analyses focused on the 15 shared phenotypes across all datasets.
 We used ATLeaf, Biolog, and Marine datasets for model training and testing, reserving Populus for independent validation.
-We standardised carbon source nomenclature across datasets using a phenotype name normalisation protocol.
+We standardised carbon source names across datasets before identifying the 15 phenotypes shared by all four collections.
 
 \subsection*{Genome Annotation}
 
-We processed all bacterial genomes using a standardised annotation pipeline with three complementary tools.
+We annotated each genome with RAST, KofamScan, and GapMind.
 Rapid Annotation using Subsystem Technology (RAST) \cite{Aziz2008RAST} provided functional predictions, with results parsed to extract subsystem ontology terms.
 KEGG Orthology-based annotation used KofamScan \cite{Aramaki2020KofamKOALA}, which assigns KEGG Orthologs (KOs) via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}, annotating each genome individually in parallel.
 GapMind~\cite{Price2020GapMind} predicted metabolic pathway completeness for carbon utilisation, with pathway scores ranging from 0 (incomplete) to 2 (high confidence).
 
 \subsection*{Phylogenetic Tree Construction}
 
-We constructed a comprehensive phylogenetic tree incorporating microorganisms from all phenotype datasets, using the Genome Taxonomy Database (GTDB) \cite{Parks2018GTDB} as a reference.
+We constructed a phylogenetic tree containing all genomes used in the phenotype analyses, using the Genome Taxonomy Database (GTDB) \cite{Parks2018GTDB} as a reference.
 Phylogenetic distances were calculated using the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
 
 \subsection*{Baseline Predictors}
@@ -39,12 +39,12 @@ We implemented a phylogenetic nearest-neighbor classifier that predicts phenotyp
 
 \subsubsection*{Null Models}
 
-We implemented two additional null models: an identity model (which assigns the most common training class) and a Bernoulli model (which assigns phenotypes according to observed training class probabilities).
+As null baselines, we used an identity model (which assigns the most common training class) and a Bernoulli model (which assigns phenotypes according to observed training class probabilities).
 
 \subsection*{Data Pre-processing and Feature Selection}
 
 Feature representations from KOFAM and GapMind annotations were converted into binary presence/absence matrices (except for GapMind pathway scores, which retained numeric values).
-We implemented two-stage filtering on the combined dataset across all training data:
+We applied two filtering steps to the training data before model fitting:
 \begin{itemize}
     \item Variance filtering: Removed features with variance below 0.01 using scikit-learn's \cite{Pedregosa2011Sklearn} VarianceThreshold
     \item Correlation filtering: Removed highly correlated features (Spearman $\rho > 0.95$) using a graph-based approach that retains features with highest connectivity
@@ -59,7 +59,7 @@ CatBoost was configured with the following parameters: 1000 iterations, learning
 % REVISION: corrected split ratio to match code (70:15:15)
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
 Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
-All experiments used a random seed of 42 for reproducibility.
+All experiments used random seed 42.
 
 \subsection*{Evaluation Strategies}
 
@@ -71,20 +71,17 @@ For cross-dataset testing, we mapped features from the training data to the test
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up}, which systematically separates training and test data based on phylogenetic relationships.
+We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up} to separate training and test sets by phylogenetic distance.
 % REVISION: corrected test set range to match code (12--18%)
 The algorithm selects test clades based on a target test set size range (12--18\% of samples) while ensuring phylogenetic separation from the training data.
 We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
 \subsection*{Concordant and Discordant Sample Analysis}
 
-To assess whether ML models learn mechanistic features, we stratified samples based on the agreement between GapMind predictions and experimental outcomes.
+We stratified samples based on the agreement between GapMind predictions and experimental outcomes.
 Concordant samples are those in which GapMind predictions match experimental results (correct predictions by the mechanistic model).
 Discordant samples are those in which GapMind predictions contradict experimental results (false positives or false negatives).
-We trained the models on concordant samples only and evaluated their performance on both concordant and discordant test sets to assess whether learned features generalise beyond the mechanistic predictor's coverage.
-
-This approach is not circular: GapMind provides a single aggregate pathway-completeness prediction, whereas ML models must learn which specific genes among approximately 1,000 features are predictive for each phenotype.
-However, concordance filtering may preferentially select samples in which the canonical pathway is the actual mechanism, potentially excluding organisms using alternative metabolic routes (see Discussion).
+We trained the models on concordant samples only and evaluated their performance on both concordant and discordant test sets.
 
 \subsection*{Feature Importance Analysis}
 
@@ -92,11 +89,11 @@ We identified stable predictive features using SHAP (SHapley Additive exPlanatio
 For the SHAP analyses, we used a fixed 500-iteration CatBoost variant without early stopping (to avoid validation-set dependence).
 For each phenotype and dataset configuration, we trained models across 20 random seeds, extracting the top 10 features by the mean absolute SHAP value from each run.
 Features appearing in at least 70\% of runs were designated as ``stable features.''
-We compared stable features across datasets to assess whether the models learned consistent mechanistic signatures or dataset-specific patterns.
+We compared stable features across datasets.
 
 \subsection*{Data Quality Filtering Strategies}
 
-We explored alternative approaches to improve model generalisation beyond concordant sample filtering.
+We evaluated two additional filtering strategies beyond concordant sample filtering.
 
 \subsubsection*{Problematic Sample Identification}
 
@@ -105,14 +102,13 @@ We systematically identified problematic samples: microbes showing zero growth o
 
 \subsubsection*{Confidence-Based Filtering}
 
-We developed a composite confidence score combining three information sources:
+We defined a composite confidence score from three inputs:
 \begin{itemize}
     \item Phylogenetic confidence ($w=0.2$): Agreement among $k=3$ nearest phylogenetic neighbours
     \item GapMind confidence ($w=0.3$): Pathway completeness score from GapMind
     \item Experimental data ($w=0.5$): Binary experimental outcome
 \end{itemize}
-Weights were assigned to reflect the relative reliability of each information source: experimental measurements received the highest weight (0.5) as direct observations, GapMind pathway completeness received intermediate weight (0.3) as a mechanistic predictor, and phylogenetic neighbour agreement received the lowest weight (0.2), consistent with our finding that phylogenetic similarity is a relatively weak predictor of metabolic phenotypes (Figure~\ref{fig:baseline_predictions}).
-The specific values were selected empirically; alternative weightings were not systematically evaluated, and the sensitivity of downstream results to these choices remains to be characterised.
+We weighted experimental outcome, GapMind score, and phylogenetic neighbour agreement as 0.5, 0.3, and 0.2, respectively.
 GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
 Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
 % REVISION: resolved TODO — confidence weight rationale from figure6b_data.py
@@ -120,5 +116,5 @@ Samples with composite confidence scores between 0.4 and 0.6 were considered amb
 \subsection*{Sample Size Requirements}
 
 We assessed the minimum training data requirements using learning curves.
-For the selected phenotypes, we trained models on subsets of training data (50, 100, 200, 500, and full samples) using stratified subsampling with three repeats per configuration.
+For each phenotype included in the learning-curve analysis, we trained models on subsets of training data (50, 100, 200, 500, and full samples) using stratified subsampling with three repeats per configuration.
 Performance was evaluated across random, cross-dataset, and out-of-clade splits, as well as on full, concordant, and discordant test subsets.
