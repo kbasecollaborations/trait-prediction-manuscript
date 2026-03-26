@@ -56,7 +56,6 @@ All filtering was performed on training data to prevent data leakage.
 
 We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in the majority of train--test dataset and feature type combinations (Supplementary Table~\ref{tab:best_models_counts}).
 CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
-% REVISION: corrected split ratio to match code (70:15:15)
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
 Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
 All experiments used random seed 42.
@@ -72,7 +71,6 @@ For cross-dataset testing, we mapped features from the training data to the test
 \subsubsection*{Phylogenetic Partitioning}
 
 We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up} to separate training and test sets by phylogenetic distance.
-% REVISION: corrected test set range to match code (12--18%)
 The algorithm selects test clades based on a target test set size range (12--18\% of samples) while ensuring phylogenetic separation from the training data.
 We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
@@ -98,8 +96,6 @@ We evaluated two additional filtering strategies beyond concordant sample filter
 \subsubsection*{Problematic Sample Identification}
 
 We systematically identified problematic samples: microbes showing zero growth on all substrates, microbes showing universal growth despite incomplete GapMind pathways, and the 20 genomes with the highest total GapMind misclassification count across all 15 phenotypes.
-% REVISION: resolved TODO — top-20 rank cutoff from figure6a_plot.py
-
 \subsubsection*{Confidence-Based Filtering}
 
 We defined a composite confidence score from three inputs:
@@ -111,8 +107,6 @@ We defined a composite confidence score from three inputs:
 We weighted experimental outcome, GapMind score, and phylogenetic neighbour agreement as 0.5, 0.3, and 0.2, respectively.
 GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
 Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
-% REVISION: resolved TODO — confidence weight rationale from figure6b_data.py
-
 \subsection*{Sample Size Requirements}
 
 We assessed the minimum training data requirements using learning curves.
