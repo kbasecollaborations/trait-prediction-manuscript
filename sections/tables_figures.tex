@@ -2,7 +2,7 @@
 
 \newpage
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \begin{subfigure}[b]{0.90\textwidth}
     \centering
@@ -25,7 +25,7 @@ Class distributions vary across phenotypes and datasets.
 }\label{fig:dataset_characteristics}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.90\textwidth]{figure2.pdf}
 \caption{
@@ -37,7 +37,7 @@ Circles and boxes indicate null model performance (Identity and Bernoulli baseli
 }\label{fig:baseline_predictions}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.85\textwidth]{figure3.pdf}
 \caption{
@@ -50,7 +50,7 @@ Dotted line indicates GapMind baseline.
 }\label{fig:ml_performance}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{figure4.pdf}
 \caption{
@@ -65,22 +65,21 @@ Solid bars represent features common with the aggregated dataset; patterned bars
 }\label{fig:misclassification_diagnosis}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
-\includegraphics[width=0.85\textwidth]{figure5.pdf}
+\includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
-\textbf{Models learn mechanistic features when trained on concordant data and are able to predict some discordant samples.} All models use the same architecture and feature representation as in Figure 3; only the training set is restricted to concordant samples.
-(A) Balanced accuracy of models trained on GapMind-concordant samples (where GapMind predictions match experimental outcomes) and tested on held-out concordant samples.
-The plot compares random split (green line) and cross-dataset split (blue boxes) evaluation scenarios across 15 phenotypes.
-(B) Cross-dataset feature stability analysis (similar to Figure 4C) for concordant-trained models using SHAP.
-Stable features are defined as those appearing in $\geq$70\% of runs across random seeds (see Methods). The consistent recovery of canonical histidine catabolism genes (hutH, hutI, hutU) across datasets indicates that concordant training enables learning of transferable mechanistic features.
-Solid bars: features common with aggregated dataset (combination of the three other datasets); patterned bars: dataset-unique features.
-(C) Box plot showing balanced accuracy of concordant-trained models when applied to discordant samples across phenotypes. Performance on discordant samples varies substantially across phenotypes, consistent with heterogeneous causes of discordance; values near random indicate cases where genome-derived features are insufficient to resolve the phenotype.
-Test performance is evaluated using Random (green) and Cross-dataset (blue) splits.
+\textbf{Concordant-trained models learn mechanistic features and partially predict discordant samples.}
+All models use the same architecture and feature representation as in Figure~3; only the training set is restricted to concordant samples.
+(A) Balanced accuracy on held-out GapMind-concordant samples under random split (green line) and cross-dataset split (blue boxes) across 15 phenotypes.
+(B) Cross-dataset feature stability analysis for concordant-trained models using SHAP (stable features are those that appear in $\geq$70\% of runs; see Methods).
+Solid bars: features common with the aggregated dataset; patterned bars: dataset-unique features.
+(C) Balanced accuracy of concordant-trained models applied to discordant samples.
+Performance varies substantially across phenotypes; values near random indicate cases where genome-derived features are insufficient to resolve the phenotype.
 }\label{fig:concordant_analysis}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.90\textwidth]{figure6.pdf}
 \caption{
@@ -104,7 +103,7 @@ Circles: random splits; squares: cross-dataset splits.
 }\label{fig:improvement_strategies}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[width=0.95\textwidth]{figure7_gapmind_histidine_all_tests.pdf}
 \caption{
