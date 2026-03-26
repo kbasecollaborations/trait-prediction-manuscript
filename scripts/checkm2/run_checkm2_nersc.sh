@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=checkm2
-#SBATCH --account=<YOUR_ACCOUNT>
+#SBATCH --account=kbase
 #SBATCH --qos=regular
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1

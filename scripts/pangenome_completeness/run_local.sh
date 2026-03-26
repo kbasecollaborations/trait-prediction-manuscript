@@ -5,7 +5,7 @@
 # This script runs the pangenome completeness calculation on local data.
 #
 # Usage:
-#   ./run_local.sh [--jobs N]
+#   ./run_local.sh
 #
 # Prerequisites:
 #   - pixi installed (https://prefix.dev/docs/pixi/overview)
@@ -23,17 +23,14 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # Input directories
 ALL_SEQS_DIR="${PROJECT_ROOT}/data/raw/all_seqs"
 CORE_GENES_DIR="${PROJECT_ROOT}/data/processed/unique_core_faas"
-MAPPING_FILE="${PROJECT_ROOT}/data/processed/pangenome/assignments.ani.merged.tsv"
+MAPPING_FILE="${PROJECT_ROOT}/data/processed/pangenome/assignments.ani.merged_mmseqs90.tsv"
 
 # Output directory
 OUTPUT_DIR="${PROJECT_ROOT}/data/outputs/pangenome_completeness"
 OUTPUT_FILE="${OUTPUT_DIR}/pangenome_completeness.tsv"
 
 # Default number of parallel jobs (adjust based on your CPU)
-JOBS="${1:-4}"
-if [[ "$1" == "--jobs" ]] && [[ -n "${2:-}" ]]; then
-    JOBS="$2"
-fi
+JOBS="20"
 
 # MMseqs2 thresholds (matching NERSC script)
 MIN_IDENTITY=0.90

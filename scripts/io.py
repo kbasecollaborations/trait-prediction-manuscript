@@ -19,8 +19,10 @@ def index_format_func(x):
     return (
         x.strip()
         .split("?")[-1]
+        .removesuffix(".contigs")
         .removesuffix(".RAST")
         .removesuffix(".fna")
+        .removesuffix("_assembly")
         .removeprefix("g")
     )
 

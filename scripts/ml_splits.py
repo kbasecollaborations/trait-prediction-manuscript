@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from sklearn.base import BaseEstimator
 
 # Import from trait_prediction
 from trait_prediction.pipeline import (
@@ -176,11 +177,95 @@ def perform_split_ml(
     return scores
 
 
+def perform_split_ml_with_model(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    X_val: pd.DataFrame,
+    y_val: pd.Series,
+    X_test: pd.DataFrame,
+    y_test: pd.Series,
+    model_type: str = "cb",
+    scoring: list[str] | None = None,
+    **model_kwargs,
+) -> tuple[dict[str, Any], BaseEstimator]:
+    """
+    Perform machine learning on a single train/val/test split and return the fitted model.
+
+    Same as perform_split_ml but also returns the fitted classifier for saving
+    (e.g. CatBoost .cbm, metadata, feature importances).
+
+    Parameters
+    ----------
+    X_train : pd.DataFrame
+        Training feature matrix
+    y_train : pd.Series
+        Training target variable vector
+    X_val : pd.DataFrame
+        Validation feature matrix
+    y_val : pd.Series
+        Validation target variable vector
+    X_test : pd.DataFrame
+        Test feature matrix
+    y_test : pd.Series
+        Test target variable vector
+    model_type : str, optional
+        Type of classifier model to use ('cb', 'rf', 'dt', etc.), by default "cb"
+    scoring : list[str] | None, optional
+        List of scoring metrics to evaluate. If None, uses default metrics.
+    **model_kwargs
+        Additional keyword arguments passed to the classifier
+
+    Returns
+    -------
+    tuple[dict[str, Any], BaseEstimator]
+        (scores_dict, fitted_model). scores_dict contains test scores and 'features' key.
+    """
+    if scoring is None:
+        scoring = [
+            "accuracy",
+            "balanced_accuracy",
+            "matthews_corrcoef",
+            "precision",
+            "recall",
+            "f1",
+            "sensitivity",
+            "specificity",
+            "roc_auc",
+        ]
+
+    model = make_classifier(model_type, **model_kwargs)
+
+    X_val_aligned = align_columns(X_train, X_val)
+    X_test_aligned = align_columns(X_train, X_test)
+
+    if model_type == "cb":
+        model.fit(
+            X_train,
+            y_train,
+            eval_set=(X_val_aligned, y_val),
+            use_best_model=True,
+            verbose=False,
+        )
+    elif model_type == "cb_noeval":
+        model.fit(X_train, y_train, verbose=False)
+    else:
+        model.fit(X_train, y_train)
+
+    scores = get_scores(model, X_test_aligned, y_test, scoring)
+    # Return all features (not just top 10) so callers can save full importances
+    n_feats = X_train.shape[1]
+    features = get_feature_importances(model, X_train, n_features=n_feats).index.tolist()
+    scores["features"] = features
+
+    return scores, model
+
+
 # Re-export for convenience
 __all__ = [
     "load_single_split_data",
     "load_split_data",
     "perform_split_ml",
+    "perform_split_ml_with_model",
     "align_columns",
     "get_feature_importances",
     "get_scores",
