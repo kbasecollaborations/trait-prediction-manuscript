@@ -23,7 +23,7 @@ Dataset-specific discordance patterns may reflect differences in experimental pr
 Previous work has demonstrated that ML models learn phylogenetic signals, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding~\cite{Li2023-up}.
 In our data, phylogenetic confounding was strongest when training included both concordant and discordant samples, and much weaker after concordance filtering, likely because concordant samples capture conserved pathways shared across lineages rather than clade-specific patterns~\cite{Smith2022Phylogenomic,Knyshov2024Predicting}.
 Sample size and data quality therefore interact: adding mixed-quality samples was less helpful than selecting samples with coherent mechanistic signal \cite{Martiny2013-ob,Martiny2015-ie}.
-Biologically informed feature selection improved interpretability without sacrificing accuracy \cite{Li2023-up}, but this benefit depended on training data quality---comprehensive feature sets improved within-dataset accuracy, whereas pathway-specific features paired with concordance filtering performed better across datasets.
+Biologically informed feature selection improved interpretability without sacrificing accuracy \cite{Li2023-up}, but this benefit depended on training data quality. Comprehensive feature sets improved within-dataset accuracy, whereas pathway-specific features paired with concordance filtering performed better across datasets.
 Limited feature overlap across datasets further indicates that dataset-specific biases dominate when data quality is mixed~\cite{Chen2015Selecting}.
 
 % Practical implications
@@ -40,7 +40,7 @@ Emerging high-throughput phenotyping methods \cite{Bochner2001PM,Nichols2011Land
 
 Our findings also highlight a broader limitation of genome-only prediction: models can learn only mechanisms that are represented in the annotations and in the training labels.
 In this study, a curated mechanistic model enabled us to condition the learning problem by identifying samples governed by shared, well-encoded pathways.
-However, many biologically important phenotypes depend on regulatory, temporal, or contextual processes not captured by genome sequence alone; extending our approach to such phenotypes will require the integration of additional data modalities---transcriptomics, proteomics, or functional genomics \cite{Arikan2023MultiOmics}---together with mechanistic assertions that support data stratification.
+However, many biologically important phenotypes depend on regulatory, temporal, or contextual processes not captured by genome sequence alone. Extending our approach to such phenotypes will require the integration of additional data modalities, including transcriptomics, proteomics, or functional genomics \cite{Arikan2023MultiOmics}, together with mechanistic assertions that support data stratification.
 Without that alignment between question, data, and representation, larger datasets alone are unlikely to solve the problem.
 % Limitations
 Our framework has important constraints.
@@ -54,11 +54,11 @@ Finally, all analyses rely on computational genome annotations, which have syste
 % Future directions
 Discordances point toward specific research priorities.
 False negative discordances may indicate undiscovered alternative pathways, and systematic study of these cases could expand pathway databases. Clades with elevated discordance rates may also harbour novel metabolic strategies worth experimental follow-up.
-Methods for identifying high-quality training samples without mechanistic knowledge---for example from ensemble disagreement, prediction confidence, or cross-validation stability \cite{Northcutt2021Confident}---would extend this approach to less-characterized phenotypes.
+Methods for identifying high-quality training samples without mechanistic knowledge, for example from ensemble disagreement, prediction confidence, or cross-validation stability \cite{Northcutt2021Confident}, would extend this approach to less-characterized phenotypes.
 Integration of gene expression or regulatory information could capture context-dependence that static genomic features miss.
 Testing whether concordance-based filtering generalises to other trait types, such as antibiotic resistance, environmental tolerance, or host interactions, would establish broader applicability.
 
 % Conclusion
 Overall, the models transferred best when training data were mechanistically coherent and the feature space matched known pathway biology. However, the scope of what they can capture is still bounded by the available genomic features.
-Even well-trained models face an inherent ceiling for organisms that rely on poorly characterised metabolic strategies, the genes of which are underrepresented in annotation databases---a limitation that scale alone cannot overcome.
+Even well-trained models face an inherent ceiling for organisms that rely on poorly characterised metabolic strategies whose genes are underrepresented in annotation databases; scale alone cannot overcome this limitation.
 Progress in biological machine learning will therefore depend on infrastructure and experimental strategies that expose, evaluate, and condition on coherent genotype--phenotype relationships within appropriate representational spaces.
