@@ -41,7 +41,7 @@ The performance difference between regular cross-dataset and in-clade cross-data
 The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalisation cannot be explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships dominate model failure.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalisation due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
-Despite the expectation that well-characterized catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf,Pasolli2016MetaAnalysis}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
+Despite the expectation that well-characterised catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf,Pasolli2016MetaAnalysis}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
 
 
 \FloatBarrier{}
@@ -56,7 +56,7 @@ Similarly, datasets varied in overall discordance (Biolog: $\sim$30\%; Populus: 
 This lack of directional bias suggests that discordance does not arise from a single dataset-specific artefact.
 
 To understand ML generalisation failures, we performed feature importance stability analyses using SHAP (Figure~\ref{fig:misclassification_diagnosis}C).
-Across random splits of the aggregated dataset (top panel), at least one feature was consistently identified as important, showing that the models recovered recurring predictors when train and test samples came from the same distribution.
+Across random splits of the aggregated dataset (top panel), at least one feature was consistently identified as important, showing that the models recovered recurring predictors when training and test samples came from the same distribution.
 However, when comparing stable features between individual and aggregated datasets (bottom panel; Populus excluded due to small sample size), only histidine, maltose, mannitol, and m-inositol \cite{Weber2022-ce} shared at least one common stable feature across datasets.
 
 
@@ -94,7 +94,7 @@ For some phenotypes, above-random accuracy suggests that ML may capture features
 
 \subsection*{Strategies to improve model performance}
 
-Concordance filtering improved transfer, but it has practical constraints: it removes approximately 30\% of the samples and requires mechanistic predictors, such as GapMind, which exist only for well-characterized phenotypes.
+Concordance filtering improved transfer, but it has practical constraints: it removes approximately 30\% of the samples and requires mechanistic predictors, such as GapMind, which exist only for well-characterised phenotypes.
 We therefore tested alternative filters that targeted data quality without requiring external mechanistic predictions (Figure~\ref{fig:improvement_strategies}A).
 
 We systematically identified problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabelled or unusual strains), and genomes with the highest misclassification rates across phenotypes.

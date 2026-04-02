@@ -30,7 +30,7 @@ Limited feature overlap across datasets further indicates that dataset-specific 
 These results suggest several practical choices for building phenotype predictors.
 In this study, changing the training set and feature representation mattered more than changing the classifier \cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
 ML models should be trained on high-quality samples with clear genotype--phenotype mappings when possible.
-When mechanistic predictors, such as GapMind, are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives\cite{Bernhardt2022LabelCleaning}.
+When mechanistic predictors, such as GapMind, are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives \cite{Bernhardt2022LabelCleaning}.
 Feature stability across independent training sets can help distinguish mechanistic from spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates \cite{Roberts2017CrossValidation}, as within-dataset cross-validation overestimates generalisation by 0.15--0.25 balanced accuracy.
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximises performance and may be the preferred approach.
@@ -44,7 +44,7 @@ However, many biologically important phenotypes depend on regulatory, temporal, 
 Without that alignment between question, data, and representation, larger datasets alone are unlikely to solve the problem.
 % Limitations
 Our framework has important constraints.
-Our filtering approach requires mechanistic tools such as GapMind, which exist only for well-characterized metabolic pathways, and extending it to traits lacking comparable mechanistic predictors (e.g., stress tolerance and virulence) requires the development of alternative quality assessment approaches.
+Our filtering approach requires mechanistic tools such as GapMind, which exist only for well-characterised metabolic pathways, and extending it to traits lacking comparable mechanistic predictors (e.g., stress tolerance and virulence) requires the development of alternative quality assessment approaches.
 We restricted the analysis to binary growth/no-growth outcomes, and quantitative traits may require different filtering strategies.
 Filtering to concordant samples reduces training data substantially ($\sim$30\% removed), which may be prohibitive for rare phenotypes, although our results suggest that smaller high-quality datasets can outperform larger noisy ones for generalisable model training.
 By filtering to samples where mechanism-based predictions match experiments, we may be selecting for samples where the known pathway is the actual mechanism, potentially missing organisms using alternative routes; the partial predictability of discordant samples suggests this is a real limitation.
@@ -54,7 +54,7 @@ Finally, all analyses rely on computational genome annotations, which have syste
 % Future directions
 Discordances point toward specific research priorities.
 False negative discordances may indicate undiscovered alternative pathways, and systematic study of these cases could expand pathway databases. Clades with elevated discordance rates may also harbour novel metabolic strategies worth experimental follow-up.
-Methods for identifying high-quality training samples without mechanistic knowledge, for example from ensemble disagreement, prediction confidence, or cross-validation stability \cite{Northcutt2021Confident}, would extend this approach to less-characterized phenotypes.
+Methods for identifying high-quality training samples without mechanistic knowledge, for example from ensemble disagreement, prediction confidence, or cross-validation stability \cite{Northcutt2021Confident}, would extend this approach to less-characterised phenotypes.
 Integration of gene expression or regulatory information could capture context-dependence that static genomic features miss.
 Testing whether concordance-based filtering generalises to other trait types, such as antibiotic resistance, environmental tolerance, or host interactions, would establish broader applicability.
 
