@@ -117,6 +117,7 @@ Cross-dataset performance improved most when the retained samples matched the pa
 Given that concordant training improved generalisation with fewer but higher-quality samples, we next asked how many such samples were needed.
 The learning curves for concordant-trained models on the histidine phenotype (Figure~\ref{fig:model_sample_size_requirements}) show how performance changed with training sample size under random cross-validation, cross-dataset, and out-of-clade splits.
 Each panel further breaks down performance on full test samples, concordant test samples, and discordant test samples.
+A corresponding learning-curve analysis for galactose is provided in Supplementary Figure~\ref{fig:galactose_sample_size_requirements}.
 
 For histidine utilisation, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that strong generalisation can be achieved with modest data when genotype--phenotype mappings are internally consistent and represented in the feature space \cite{Figueroa2012SampleSize}.
 While this finding requires validation across additional phenotypes, particularly for traits with stronger regulatory or contextual dependence, it suggests that, for histidine, collecting a smaller number of concordant samples may be more useful than pooling larger mixed-quality datasets.

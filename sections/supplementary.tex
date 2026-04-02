@@ -165,6 +165,7 @@ This progressive increase in phylogenetic distance between training and test set
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s3.png}
+% TODO: This figure should be updated, are these GapMind concordant samples?
 \caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
 Balanced accuracy of CatBoost classifiers (using KOFAM features) across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
 Clade definitions follow the phylogenetic partitioning algorithm of Li et al.~\cite{Li2023-up}, with phenotype--dataset combinations excluded when fewer than 10 test samples or 10 minority-class samples were available.
@@ -194,4 +195,20 @@ The majority of genomes exceeded 90\% pangenome completeness, consistent with th
 (\textbf{C}) Completeness by species (top 15 by genome count; others grouped as ``Other'').
 (\textbf{D}) Core genes present versus expected for successful genomes, with points colored by completeness; the dashed line indicates perfect agreement.}
 \label{fig:pangenome_completeness}
+\end{figure}
+
+% TODO: Add checkM2 figure
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{figure7_gapmind_galactose_all_tests.pdf}
+\caption{
+\textbf{Sample size requirements for training generalisable models for galactose utilisation.}
+Learning curves showing balanced accuracy as a function of training sample size for the galactose phenotype using GapMind-concordant data.
+Columns represent evaluation scenarios: (left) random splits, (middle) cross-dataset splits, and (right) out-of-clade splits.
+Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
+Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset.
+Performance on discordant test samples reflects cases in which genome-derived features are insufficient to fully encode the phenotype; lack of saturation with additional training data indicates representational, not statistical, limits.
+}
+\label{fig:galactose_sample_size_requirements}
 \end{figure}
