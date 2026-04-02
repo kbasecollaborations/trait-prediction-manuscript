@@ -16,7 +16,7 @@ To establish baseline performance, we evaluated two existing approaches: (1) Gap
 GapMind achieved a modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A).
 
 The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
-Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages~\cite{Michener2014Phylogeny,Hong2004Phylogenetic,Ma2004Phylogenetic}.
+Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages~\cite{Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
 Notably, cellobiose and glycerol showed unexpectedly high accuracy ($>$0.80) in certain out-of-clade splits, potentially reflecting highly conserved pathways for these substrates.
 The limited performance of both baseline approaches motivated us to test whether machine learning models integrating comprehensive genomic features could better capture the complexity of genotype-phenotype relationships and generalise across experimental contexts.
 
@@ -41,7 +41,7 @@ The performance difference between regular cross-dataset and in-clade cross-data
 The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalisation cannot be explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships dominate model failure.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalisation due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
-Despite the expectation that well-characterized catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
+Despite the expectation that well-characterized catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf,Pasolli2016MetaAnalysis}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
 
 
 \FloatBarrier{}

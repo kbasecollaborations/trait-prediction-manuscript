@@ -10,7 +10,7 @@ When such samples dominate the training set, models fit correlations that work w
 % What constitutes high-quality data
 In this study, we treated samples as high quality when mechanistic predictions and measured growth agreed, because those samples were more likely to reflect pathways already represented in the annotation space.
 Concordant samples tend to represent organisms that use broadly conserved, well-characterised metabolic pathways. Filtering to these samples therefore favours features that transfer across organisms rather than clade-specific correlates.
-For any given carbon source, however, a proportion of organisms employ alternative enzymes, divergent pathway variants, or complex regulatory strategies \cite{Soucy2015HGT}; when such organisms are included in training, the model lacks mechanistic signal and instead relies on phylogenetic or dataset-specific correlates that do not generalise.
+For any given carbon source, however, a proportion of organisms employ alternative enzymes, divergent pathway variants, or complex regulatory strategies \cite{Soucy2015HGT,Glasner2020Promiscuity}; when such organisms are included in training, the model lacks mechanistic signal and instead relies on phylogenetic or dataset-specific correlates that do not generalise.
 Data quality extends beyond mechanistic concordance to encompass genome completeness and annotation consistency \cite{Bowers2017MIMAG,Parks2015CheckM}, as well as measurement reproducibility and standardised phenotype calling.
 Discordance therefore includes both recoverable cases, such as annotation gaps, and cases in which the relevant mechanism is not represented in the available data.
 
@@ -21,16 +21,16 @@ Dataset-specific discordance patterns may reflect differences in experimental pr
 
 % Relationship to previous work
 Previous work has demonstrated that ML models learn phylogenetic signals, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding~\cite{Li2023-up}.
-In our data, phylogenetic confounding was strongest when training included both concordant and discordant samples, and much weaker after concordance filtering, likely because concordant samples capture conserved pathways shared across lineages rather than clade-specific patterns~\cite{Smith2022Phylogenomic,Knyshov2024Predicting}.
+In our data, phylogenetic confounding was strongest when training included both concordant and discordant samples, and much weaker after concordance filtering, likely because concordant samples capture conserved pathways shared across lineages rather than clade-specific patterns~\cite{Collins2018GWAS,Yu2025BiasedSampling}.
 Sample size and data quality therefore interact: adding mixed-quality samples was less helpful than selecting samples with coherent mechanistic signal \cite{Martiny2013-ob,Martiny2015-ie}.
 Biologically informed feature selection improved interpretability without sacrificing accuracy \cite{Li2023-up}, but this benefit depended on training data quality. Comprehensive feature sets improved within-dataset accuracy, whereas pathway-specific features paired with concordance filtering performed better across datasets.
-Limited feature overlap across datasets further indicates that dataset-specific biases dominate when data quality is mixed~\cite{Chen2015Selecting}.
+Limited feature overlap across datasets further indicates that dataset-specific biases dominate when data quality is mixed~\cite{Leek2010BatchEffects}.
 
 % Practical implications
 These results suggest several practical choices for building phenotype predictors.
 In this study, changing the training set and feature representation mattered more than changing the classifier \cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
 ML models should be trained on high-quality samples with clear genotype--phenotype mappings when possible.
-When mechanistic predictors, such as GapMind, are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives\cite{Zhang2020Combining}.
+When mechanistic predictors, such as GapMind, are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives\cite{Bernhardt2022LabelCleaning}.
 Feature stability across independent training sets can help distinguish mechanistic from spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates \cite{Roberts2017CrossValidation}, as within-dataset cross-validation overestimates generalisation by 0.15--0.25 balanced accuracy.
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximises performance and may be the preferred approach.
