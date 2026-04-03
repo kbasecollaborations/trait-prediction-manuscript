@@ -511,6 +511,11 @@ pyrightconfig.json
 .DS_Store
 .stignore
 *.pdf
+!figures/*.pdf
+!figures/**/*.pdf
+figures/misc/
+figures/v1/
+figures/old/
 
 # Data and pdfs
 data/

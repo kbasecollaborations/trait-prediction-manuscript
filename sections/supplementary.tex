@@ -212,3 +212,83 @@ Performance on discordant test samples reflects cases in which genome-derived fe
 }
 \label{fig:galactose_sample_size_requirements}
 \end{figure}
+
+\subsection*{Supplementary Text S5: Decoupling Feature Space from Concordance Criterion}
+
+In the main analysis, concordant-trained models used GapMind pathway features, raising the concern that improved performance reflects tautological alignment between the concordance criterion and the feature space rather than genuine data-quality effects.
+To address this, we repeated the cross-dataset evaluation using KOFAM annotations as an independent feature space while retaining GapMind concordance solely for sample selection.
+If concordant-trained models still outperform full-data models with KOFAM features, the improvement is attributable to training-data quality rather than feature--label circularity.
+
+Figure~\ref{fig:kofam_concordant} shows that concordant training improves cross-dataset balanced accuracy on concordant test samples even when the feature space (KOFAM) is independent of the concordance criterion (GapMind).
+The parity plot (panel~A) indicates that the majority of phenotype--split combinations achieve higher balanced accuracy with concordant training when evaluation is restricted to concordant held-out samples.
+Per-phenotype box plots (panel~B) confirm that this improvement is consistent across most phenotypes, supporting the interpretation that data coherence, rather than feature--criterion alignment, drives the generalisation gains reported in the main text.
+
+\begin{figure}[ht]
+\centering
+% TODO: Replace placeholder once figureS5_plot.py has been run
+\includegraphics[width=0.90\textwidth]{figure_s5.pdf}
+\caption{
+\textbf{Concordant training improves cross-dataset generalisation with independent KOFAM features.}
+GapMind concordance was used only for sample selection; KOFAM annotations served as an independent feature space.
+(\textbf{A}) Parity plot comparing cross-dataset balanced accuracy of concordant-trained vs.\ full-trained models (KOFAM features), evaluated on concordant test samples only.
+Each point represents one phenotype--split combination; points above the diagonal indicate improved performance with concordant training.
+(\textbf{B}) Per-phenotype grouped box plots of cross-dataset balanced accuracy on concordant test samples for full training (grey) and concordant training (blue), both using KOFAM features.
+}
+\label{fig:kofam_concordant}
+\end{figure}
+
+\subsection*{Supplementary Text S6: Learning Curves for All 15 Shared Phenotypes}
+
+The main text presents learning curves for histidine and galactose (Figure~\ref{fig:model_sample_size_requirements} and Figure~\ref{fig:galactose_sample_size_requirements}).
+To assess whether the ``50--100 high-quality samples'' observation generalises beyond these well-characterised pathways, we extended the analysis to all 15 shared phenotypes using concordant training with GapMind features.
+
+Figure~\ref{fig:all_phenotype_heatmap} summarises cross-dataset balanced accuracy as a function of training sample size for all 15 phenotypes.
+Across phenotypes, performance typically approached its maximum by 50--100 training samples.
+Only a small minority required 200 samples to reach the saturation threshold, and no phenotype showed a new saturation point beyond 200 samples.
+Figure~\ref{fig:all_phenotype_learning_curves} shows the full faceted learning curves (phenotypes~$\times$~split types).
+Figure~\ref{fig:all_phenotype_saturation} summarises the estimated saturation point per phenotype, defined as the smallest sample size at which cross-dataset performance reached $\geq$90\% of the full-dataset value.
+
+These results show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
+The distribution of saturation points suggests that many traits with coherent genotype--phenotype mappings can be learned efficiently, with only modest gains beyond 200 samples even for slower-saturating phenotypes.
+
+\begin{figure}[ht]
+\centering
+% TODO: Replace placeholder once figureS6_plot.py has been run
+\includegraphics[width=0.85\textwidth]{figure_s6_heatmap.pdf}
+\caption{
+\textbf{Cross-dataset performance by training sample size across all 15 shared phenotypes.}
+Heatmap of mean balanced accuracy for concordant-trained models (GapMind features) evaluated on the cross-dataset full test set.
+Rows are phenotypes; columns are training sample sizes (50, 100, 200, 500, and the full concordant training set).
+Most phenotypes approach their maximum cross-dataset performance by 50--100 samples, with little additional improvement beyond 200 samples.
+}
+\label{fig:all_phenotype_heatmap}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+% TODO: Replace placeholder once figureS6_plot.py has been run
+\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figure_s6_learning_curves.pdf}
+\caption{
+\textbf{Learning curves for all 15 shared phenotypes using concordant training.}
+Faceted plot with phenotypes as rows and evaluation scenarios as columns (random split, cross-dataset split, out-of-clade split).
+Each point shows balanced accuracy for one split--repeat at a given training sample size.
+Lines connect repeated measurements from the same split across sample sizes.
+All models use concordant training with GapMind features, evaluated on the full test set.
+Most cross-dataset curves flatten by 50--100 samples, and additional gains beyond 200 samples are generally small.
+}
+\label{fig:all_phenotype_learning_curves}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+% TODO: Replace placeholder once figureS6_plot.py has been run
+\includegraphics[width=0.85\textwidth]{figure_s6_saturation.pdf}
+\caption{
+\textbf{Estimated saturation sample size for each phenotype.}
+For each phenotype, saturation is defined as the smallest training sample size at which cross-dataset mean balanced accuracy (concordant training, GapMind features) reaches $\geq$90\% of the full-dataset value.
+Phenotypes are sorted by saturation size.
+Twelve phenotypes saturate by 50 samples, one by 100 samples, and two by 200 samples; no phenotype requires more than 200 samples to reach the saturation threshold.
+Colours indicate saturation category: green ($\leq$100 samples) and blue (101--200 samples).
+}
+\label{fig:all_phenotype_saturation}
+\end{figure}

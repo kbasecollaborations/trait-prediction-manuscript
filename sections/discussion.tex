@@ -24,6 +24,7 @@ Previous work has demonstrated that ML models learn phylogenetic signals, conclu
 In our data, phylogenetic confounding was strongest when training included both concordant and discordant samples, and much weaker after concordance filtering, likely because concordant samples capture conserved pathways shared across lineages rather than clade-specific patterns~\cite{Collins2018GWAS,Yu2025BiasedSampling}.
 Sample size and data quality therefore interact: adding mixed-quality samples was less helpful than selecting samples with coherent mechanistic signal \cite{Martiny2013-ob,Martiny2015-ie}.
 Biologically informed feature selection improved interpretability without sacrificing accuracy \cite{Li2023-up}, but this benefit depended on training data quality. Comprehensive feature sets improved within-dataset accuracy, whereas pathway-specific features paired with concordance filtering performed better across datasets.
+Importantly, the generalisation improvement from concordance filtering persisted when using KOFAM features independent of the GapMind concordance criterion and evaluating on concordant held-out samples (Supplementary Figure~\ref{fig:kofam_concordant}), confirming that the gains reflect data quality rather than tautological feature--criterion alignment.
 Limited feature overlap across datasets further indicates that dataset-specific biases dominate when data quality is mixed~\cite{Leek2010BatchEffects}.
 
 % Practical implications
@@ -34,7 +35,7 @@ When mechanistic predictors, such as GapMind, are available, concordant samples 
 Feature stability across independent training sets can help distinguish mechanistic from spurious learning.
 Cross-dataset and out-of-clade evaluation provides realistic performance estimates \cite{Roberts2017CrossValidation}, as within-dataset cross-validation overestimates generalisation by 0.15--0.25 balanced accuracy.
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximises performance and may be the preferred approach.
-Sample size requirements appear manageable: learning curves for histidine utilisation suggest that 50--100 high-quality samples per phenotype may suffice, although this requires validation for other phenotypes.
+Sample size requirements still depend on phenotype complexity, but the broader pattern was more compact than the histidine-only analysis initially suggested: across all 15 shared phenotypes, most reached the 90\% saturation threshold by 50--100 high-quality samples, only two required 200 samples, and none showed a new saturation point beyond 200 (Supplementary Figures~\ref{fig:all_phenotype_heatmap}--\ref{fig:all_phenotype_saturation}).
 For experimental design, standardising growth conditions, measurement protocols, and phenotype-calling criteria is important if datasets are to be aggregated. Positive and negative controls, together with replicate measurements, would also help identify unreliable phenotype calls.
 Emerging high-throughput phenotyping methods \cite{Bochner2001PM,Nichols2011Landscape,Gralka2023-ft,Huang2023-lh,Kehe2019-vr} will accelerate data collection; however, quality must be prioritised alongside quantity.
 

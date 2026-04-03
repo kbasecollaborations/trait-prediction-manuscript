@@ -73,7 +73,8 @@ To test this hypothesis, we leveraged GapMind concordance as a criterion for str
 \subsection*{Can ML learn mechanistically relevant features? Testing on GapMind-concordant data}
 
 We defined concordant samples as those in which GapMind predictions matched experimental outcomes. These samples likely overrepresent organisms using conserved pathways that are already captured in annotation databases.
-Concordance was used solely to stratify samples by mechanistic consistency; the model architecture, feature encoding, training procedure, and evaluation strategy were otherwise unchanged.
+Concordance was used solely to stratify samples by mechanistic consistency; the model architecture, training procedure, and evaluation strategy were otherwise unchanged.
+To verify that the gains were not artefacts of aligning the feature space with the concordance criterion, we repeated the cross-dataset evaluation using KOFAM annotations as an independent feature space while retaining GapMind concordance for sample selection only; the improvement persisted when evaluated on concordant held-out samples (Supplementary Figure~\ref{fig:kofam_concordant}).
 Concordance-based filtering preferentially selects samples in which the canonical pathway is the dominant mechanism underlying the observed phenotype; organisms relying on alternative pathways or regulatory contexts not captured by genome-derived features may be underrepresented.
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilisation phenotypes after correlation filtering) as the feature matrix so that the feature space remained tied to known metabolic mechanisms.
 
@@ -120,4 +121,6 @@ Each panel further breaks down performance on full test samples, concordant test
 A corresponding learning-curve analysis for galactose is provided in Supplementary Figure~\ref{fig:galactose_sample_size_requirements}.
 
 For histidine utilisation, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that strong generalisation can be achieved with modest data when genotype--phenotype mappings are internally consistent and represented in the feature space \cite{Figueroa2012SampleSize}.
-While this finding requires validation across additional phenotypes, particularly for traits with stronger regulatory or contextual dependence, it suggests that, for histidine, collecting a smaller number of concordant samples may be more useful than pooling larger mixed-quality datasets.
+Extending this analysis to all 15 shared phenotypes showed that the histidine result was broadly representative rather than exceptional (Supplementary Figures~\ref{fig:all_phenotype_heatmap}--\ref{fig:all_phenotype_saturation}).
+Most phenotypes reached the 90\% saturation threshold by 50--100 samples, only glucose and galacturonic acid required 200 samples, and no phenotype showed a new saturation point beyond 200 samples.
+Some phenotypes nevertheless remained limited in absolute performance, indicating that modest sample requirements do not guarantee high balanced accuracy when the underlying signal is weak or ambiguous.
