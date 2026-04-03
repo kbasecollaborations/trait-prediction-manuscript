@@ -37,7 +37,7 @@ This dataset offered taxonomic diversity distinct from the terrestrial datasets,
 \paragraph*{Populus.}
 The Populus dataset~\cite{Timm2015Populus} included 58 \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere, tested on 191 carbon sources.
 After filtering, 55 genomes were retained.
-Due to its small sample size and narrow phylogenetic breadth, Populus was reserved exclusively for independent validation and was not used during model training.
+Due to its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
 
 All analyses focused on the 15 shared phenotypes present across all four datasets.
 
@@ -104,7 +104,7 @@ Populus & 58  & 191 & 55  & 15 & Carbon source assay \\
 ``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
 ``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
 The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
-ATLeaf, Biolog, and Marine were used for model training and testing; Populus was reserved for independent validation.}
+All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.}
 \label{tab:dataset_overview}
 \end{table}
 
@@ -142,7 +142,7 @@ See Methods for classifier hyperparameters and training details.}
 \centering
 \includegraphics[width=\textwidth]{figure_s1.pdf}
 \caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
-Phylogenetic tree displaying 819 genomes from four datasets: ATLeaf (green), Biolog (blue), Marine (orange), and Populus (red).
+Phylogenetic tree displaying the 819 input genomes from four datasets: ATLeaf (green), Biolog (blue), Marine (orange), and Populus (red).
 The tree was constructed using the Genome Taxonomy Database (GTDB)~\cite{Parks2018GTDB} as a reference framework, with phylogenetic distances calculated using the ETE 3 toolkit~\cite{HuertaCepas2016ETE3}.
 Branch colors indicate dataset membership.
 The tree reveals distinct taxonomic compositions across datasets: the Marine dataset is enriched in Gammaproteobacteria and Alphaproteobacteria marine lineages, ATLeaf spans diverse phyllosphere-associated taxa, and Biolog covers a broad phylogenetic range compiled from multiple studies.
@@ -225,7 +225,6 @@ Per-phenotype box plots (panel~B) confirm that this improvement is consistent ac
 
 \begin{figure}[ht]
 \centering
-% TODO: Replace placeholder once figureS5_plot.py has been run
 \includegraphics[width=0.90\textwidth]{figure_s5.pdf}
 \caption{
 \textbf{Concordant training improves cross-dataset generalisation with independent KOFAM features.}
@@ -253,7 +252,6 @@ The distribution of saturation points suggests that many traits with coherent ge
 
 \begin{figure}[ht]
 \centering
-% TODO: Replace placeholder once figureS6_plot.py has been run
 \includegraphics[width=0.85\textwidth]{figure_s6_heatmap.pdf}
 \caption{
 \textbf{Cross-dataset performance by training sample size across all 15 shared phenotypes.}
@@ -266,7 +264,6 @@ Most phenotypes approach their maximum cross-dataset performance by 50--100 samp
 
 \begin{figure}[ht]
 \centering
-% TODO: Replace placeholder once figureS6_plot.py has been run
 \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figure_s6_learning_curves.pdf}
 \caption{
 \textbf{Learning curves for all 15 shared phenotypes using concordant training.}
@@ -281,7 +278,6 @@ Most cross-dataset curves flatten by 50--100 samples, and additional gains beyon
 
 \begin{figure}[ht]
 \centering
-% TODO: Replace placeholder once figureS6_plot.py has been run
 \includegraphics[width=0.85\textwidth]{figure_s6_saturation.pdf}
 \caption{
 \textbf{Estimated saturation sample size for each phenotype.}

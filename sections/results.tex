@@ -4,10 +4,10 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (see Methods for data sources, preprocessing, and quality control procedures).
+To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (819 input genomes, 760 retained after filtering; see Methods for data sources, preprocessing, and quality control procedures).
 The overall workflow, including data aggregation, genome annotation (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A.
 All analyses focused on the 15 shared phenotypes across all datasets (Figure~\ref{fig:dataset_characteristics}B).
-We used ATLeaf, Biolog, and Marine datasets for model training and testing, reserving Populus for independent testing.
+All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.
 The phylogenetic distribution of microbes across datasets is shown in Figure~\ref{fig:phylogenetic_distribution}.
 
 
@@ -38,7 +38,7 @@ For random splits, we verified that test samples were drawn from the same phylog
 In random cross-validation (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and significantly outperformed the GapMind baseline.
 However, the cross-dataset performance decreased substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts.
 The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C).
-The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalisation cannot be explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships dominate model failure.
+The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalisation is not explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships contribute substantially to model failure.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalisation due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
 Despite the expectation that well-characterised catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf,Pasolli2016MetaAnalysis}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
@@ -76,6 +76,7 @@ We defined concordant samples as those in which GapMind predictions matched expe
 Concordance was used solely to stratify samples by mechanistic consistency; the model architecture, training procedure, and evaluation strategy were otherwise unchanged.
 To verify that the gains were not artefacts of aligning the feature space with the concordance criterion, we repeated the cross-dataset evaluation using KOFAM annotations as an independent feature space while retaining GapMind concordance for sample selection only; the improvement persisted when evaluated on concordant held-out samples (Supplementary Figure~\ref{fig:kofam_concordant}).
 Concordance-based filtering preferentially selects samples in which the canonical pathway is the dominant mechanism underlying the observed phenotype; organisms relying on alternative pathways or regulatory contexts not captured by genome-derived features may be underrepresented.
+Accordingly, improved transfer in this setting should be interpreted as better learning on a more mechanistically homogeneous subset, not as recovery of all biologically valid utilisation strategies.
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilisation phenotypes after correlation filtering) as the feature matrix so that the feature space remained tied to known metabolic mechanisms.
 
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
@@ -100,6 +101,7 @@ We therefore tested alternative filters that targeted data quality without requi
 
 We systematically identified problematic samples: microbes showing zero growth on all substrates (potentially dead cultures or contaminated samples), growth on all substrates despite incomplete GapMind pathways (potentially mislabelled or unusual strains), and genomes with the highest misclassification rates across phenotypes.
 Removing these samples and filtering by measurement confidence (see Methods) improved cross-dataset performance, although not as much as concordant training (Figure~\ref{fig:improvement_strategies}B).
+This confidence-based filter was intentionally heuristic and was used to test whether a simple quality score could recover part of the concordance-filtering gain without requiring a mechanistic predictor.
 Confidence-based filtering removed substantially fewer samples than concordance filtering and produced smaller but consistent improvements in cross-dataset performance. This makes it a useful alternative when concordance filtering is not possible.
 
 Concordant-trained models showed the best precision-recall trade-off (Figure~\ref{fig:improvement_strategies}C) and substantially outperformed GapMind predictions alone.
@@ -120,7 +122,7 @@ The learning curves for concordant-trained models on the histidine phenotype (Fi
 Each panel further breaks down performance on full test samples, concordant test samples, and discordant test samples.
 A corresponding learning-curve analysis for galactose is provided in Supplementary Figure~\ref{fig:galactose_sample_size_requirements}.
 
-For histidine utilisation, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that strong generalisation can be achieved with modest data when genotype--phenotype mappings are internally consistent and represented in the feature space \cite{Figueroa2012SampleSize}.
+For histidine utilisation, performance plateaued at approximately 50--100 concordant training samples across evaluation scenarios, indicating that strong generalisation can be achieved with modest data in this shared carbon-utilisation setting when genotype--phenotype mappings are internally consistent and represented in the feature space \cite{Figueroa2012SampleSize}.
 Extending this analysis to all 15 shared phenotypes showed that the histidine result was broadly representative rather than exceptional (Supplementary Figures~\ref{fig:all_phenotype_heatmap}--\ref{fig:all_phenotype_saturation}).
-Most phenotypes reached the 90\% saturation threshold by 50--100 samples, only glucose and galacturonic acid required 200 samples, and no phenotype showed a new saturation point beyond 200 samples.
+Most shared phenotypes reached the 90\% saturation threshold by 50--100 samples, only glucose and galacturonic acid required 200 samples, and no phenotype showed a new saturation point beyond 200 samples.
 Some phenotypes nevertheless remained limited in absolute performance, indicating that modest sample requirements do not guarantee high balanced accuracy when the underlying signal is weak or ambiguous.

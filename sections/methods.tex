@@ -12,7 +12,7 @@ Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carb
 
 Due to annotation pipeline limitations and incomplete phenotypic data, the final datasets used for analysis contained fewer genomes and phenotypes than the original datasets (Supplementary Table~\ref{tab:dataset_overview}).
 All analyses focused on the 15 shared phenotypes across all datasets.
-We used ATLeaf, Biolog, and Marine datasets for model training and testing, reserving Populus for independent validation.
+We used all four datasets in the aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
 We standardised carbon source names across datasets before identifying the 15 phenotypes shared by all four collections.
 
 \subsection*{Genome Annotation}
@@ -107,6 +107,7 @@ We defined a composite confidence score from three inputs:
 We weighted experimental outcome, GapMind score, and phylogenetic neighbour agreement as 0.5, 0.3, and 0.2, respectively.
 GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
 Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
+These weights and thresholds were heuristic and were intended as a proof-of-concept quality filter rather than a tuned optimum.
 \subsection*{Sample Size Requirements}
 
 We assessed the minimum training data requirements using learning curves.
