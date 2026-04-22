@@ -488,6 +488,7 @@ cython_debug/
 CLAUDE.md
 AGENTS.md
 prompts/
+docs/plans/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

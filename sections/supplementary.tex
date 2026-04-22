@@ -245,14 +245,14 @@ Figure~\ref{fig:all_phenotype_heatmap} summarises cross-dataset balanced accurac
 Across phenotypes, performance typically approached its maximum by 50--100 training samples.
 Only a small minority required 200 samples to reach the saturation threshold, and no phenotype showed a new saturation point beyond 200 samples.
 Figure~\ref{fig:all_phenotype_learning_curves} shows the full faceted learning curves (phenotypes~$\times$~split types).
-Figure~\ref{fig:all_phenotype_saturation} summarises the estimated saturation point per phenotype, defined as the smallest sample size at which cross-dataset performance reached $\geq$90\% of the full-dataset value.
+Figure~\ref{fig:all_phenotype_saturation} compares the estimated saturation point per phenotype for random-split and cross-dataset evaluation, defined as the smallest sample size at which mean balanced accuracy reached $\geq$90\% of the corresponding full-dataset value.
 
 These results show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
 The distribution of saturation points suggests that many traits with coherent genotype--phenotype mappings can be learned efficiently, with only modest gains beyond 200 samples even for slower-saturating phenotypes.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.85\textwidth]{figure_s6_heatmap.pdf}
+\includegraphics[width=0.85\textwidth]{figure_s8.pdf}
 \caption{
 \textbf{Cross-dataset performance by training sample size across all 15 shared phenotypes.}
 Heatmap of mean balanced accuracy for concordant-trained models (GapMind features) evaluated on the cross-dataset full test set.
@@ -264,12 +264,11 @@ Most phenotypes approach their maximum cross-dataset performance by 50--100 samp
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figure_s6_learning_curves.pdf}
+\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figure_s9.pdf}
 \caption{
 \textbf{Learning curves for all 15 shared phenotypes using concordant training.}
-Faceted plot with phenotypes as rows and evaluation scenarios as columns (random split, cross-dataset split, out-of-clade split).
-Each point shows balanced accuracy for one split--repeat at a given training sample size.
-Lines connect repeated measurements from the same split across sample sizes.
+Faceted plot with one panel per phenotype.
+Coloured lines show mean balanced accuracy across split--repeat measurements for random-split, cross-dataset, and out-of-clade evaluation.
 All models use concordant training with GapMind features, evaluated on the full test set.
 Most cross-dataset curves flatten by 50--100 samples, and additional gains beyond 200 samples are generally small.
 }
@@ -278,13 +277,13 @@ Most cross-dataset curves flatten by 50--100 samples, and additional gains beyon
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.85\textwidth]{figure_s6_saturation.pdf}
+\includegraphics[width=0.85\textwidth]{figure_s10.pdf}
 \caption{
-\textbf{Estimated saturation sample size for each phenotype.}
-For each phenotype, saturation is defined as the smallest training sample size at which cross-dataset mean balanced accuracy (concordant training, GapMind features) reaches $\geq$90\% of the full-dataset value.
-Phenotypes are sorted by saturation size.
-Twelve phenotypes saturate by 50 samples, one by 100 samples, and two by 200 samples; no phenotype requires more than 200 samples to reach the saturation threshold.
-Colours indicate saturation category: green ($\leq$100 samples) and blue (101--200 samples).
+\textbf{Estimated saturation sample size for each phenotype under random-split and cross-dataset evaluation.}
+For each phenotype, saturation is defined as the smallest training sample size at which mean balanced accuracy (concordant training, GapMind features) reaches $\geq$90\% of the corresponding full-dataset value.
+Phenotypes are sorted by cross-dataset saturation size.
+Random-split performance saturates at 50 samples for all phenotypes, whereas cross-dataset saturation varies modestly and reaches 200 samples only for galacturonic acid and glucose.
+Colours distinguish intra-dataset random-split estimates (green) from cross-dataset dataset-split estimates (blue).
 }
 \label{fig:all_phenotype_saturation}
 \end{figure}
