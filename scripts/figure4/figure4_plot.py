@@ -9,6 +9,7 @@ import seaborn as sns
 from scripts.figure4.figure4a_quadrant import create_quadrant_plot
 from scripts.figure4.figure4b_plot import create_confusion_matrix_plots
 from scripts.figure4.figure4c_plot import create_panel_c_plots
+from scripts.figure4.style import PANEL_LABEL_SIZE
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
@@ -24,26 +25,45 @@ def create_figure4(output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Create figure - increased height for panel C
-    fig = plt.figure(figsize=(20, 18))
+    # Keep the physical figure size closer to the final manuscript scale so
+    # labels remain legible after LaTeX includes the PDF at \textwidth.
+    fig = plt.figure(figsize=(12.5, 10.4))
 
     # Create grid: 2 rows, top row has 2 columns, bottom row spans full width
     import matplotlib.gridspec as gridspec
 
-    # Main grid: 2 rows - increased first row height for taller panel A
-    main_gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.5, 0.8], hspace=0.12)
+    # Main grid: tighten the top row so panels A/B do not carry excess empty
+    # space relative to panel C.
+    main_gs = gridspec.GridSpec(
+        2,
+        1,
+        figure=fig,
+        height_ratios=[1.28, 0.82],
+        hspace=0.18,
+    )
 
-    # Top row grid: 2 columns for panels A and B - A wider, B narrower
+    # Top row grid: allocate slightly more width to panel B to reduce empty
+    # margins around panel A while preserving readability of the bar labels.
     top_gs = gridspec.GridSpecFromSubplotSpec(
-        1, 2, subplot_spec=main_gs[0, :], width_ratios=[1.4, 0.8], wspace=0.18
+        1,
+        2,
+        subplot_spec=main_gs[0, :],
+        width_ratios=[1.08, 0.92],
+        wspace=0.12,
     )
 
     # Left side: Figure 4A (quadrant plot)
     ax_quadrant = fig.add_subplot(top_gs[0, 0])
 
-    # Right side: Figure 4B (2 vertically stacked subplots)
+    # Right side: Figure 4B (2 vertically stacked subplots).
+    # Keep the per-phenotype plot slightly shorter than before so the stacked
+    # bars do not dominate the top row.
     right_gs = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=top_gs[0, 1], height_ratios=[3, 1], hspace=0.3
+        2,
+        1,
+        subplot_spec=top_gs[0, 1],
+        height_ratios=[1.45, 1],
+        hspace=0.68,
     )
 
     ax_b1 = fig.add_subplot(right_gs[0, 0])  # Top subplot
@@ -51,7 +71,7 @@ def create_figure4(output_file: Path) -> None:
 
     # Bottom row: Figure 4C (2 vertically stacked subplots with shared x-axis)
     bottom_panel_gs = gridspec.GridSpecFromSubplotSpec(
-        2, 1, subplot_spec=main_gs[1, :], hspace=0.25
+        2, 1, subplot_spec=main_gs[1, :], hspace=0.56
     )
 
     ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])  # Top subplot
@@ -67,18 +87,27 @@ def create_figure4(output_file: Path) -> None:
     print("\nCreating Figure 4C (feature stability and comparison)...")
     create_panel_c_plots(ax_c1, ax_c2)
 
-    # Add panel labels
-    ax_quadrant.text(
-        -0.1, 1.05, "(A)", transform=ax_quadrant.transAxes,
-        fontsize=14, fontweight="bold", va="top", ha="right"
+    # Add panel labels. (A) and (B) share an explicit figure-level y so they
+    # render at the same vertical position regardless of subplot heights.
+    panel_label_y = 0.985
+    fig.text(
+        0.05, panel_label_y, "(A)",
+        fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
-    ax_b1.text(
-        -0.15, 1.18, "(B)", transform=ax_b1.transAxes,
-        fontsize=14, fontweight="bold", va="top", ha="right"
+    b1_bbox = ax_b1.get_position()
+    fig.text(
+        b1_bbox.x0, panel_label_y, "(B)",
+        fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
-    ax_c1.text(
-        -0.05, 1.05, "(C)", transform=ax_c1.transAxes,
-        fontsize=14, fontweight="bold", va="top", ha="right"
+    c1_bbox = ax_c1.get_position()
+    fig.text(
+        c1_bbox.x0 - 0.085,
+        c1_bbox.y1 + 0.01,
+        "(C)",
+        fontsize=PANEL_LABEL_SIZE,
+        fontweight="bold",
+        va="top",
+        ha="left",
     )
 
     # Save figure

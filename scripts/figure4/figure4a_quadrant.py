@@ -7,6 +7,17 @@ import matplotlib.pyplot as plt
 import scienceplots
 from matplotlib.patches import FancyBboxPatch
 
+from scripts.figure4.style import (
+    PANEL_A_AXIS_LABEL_SIZE,
+    PANEL_A_BADGE_SIZE,
+    PANEL_A_BODY_SIZE,
+    PANEL_A_BULLET_SIZE,
+    PANEL_A_SECTION_HEADING_SIZE,
+    PANEL_A_SECTION_SUBHEADING_SIZE,
+    PANEL_A_SUBTITLE_SIZE,
+    PANEL_A_TITLE_SIZE,
+)
+
 # Apply publication-ready style
 plt.style.use(["science", "nature"])
 
@@ -19,9 +30,9 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     ax : plt.Axes
         Matplotlib axes object to plot on.
     """
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 13)  # Reduced from 14 to decrease white space
-    ax.set_aspect("equal")
+    ax.set_xlim(-0.55, 9.85)
+    ax.set_ylim(0.15, 12.7)
+    ax.set_aspect("auto")
     ax.axis("off")
 
     # Define colors
@@ -84,68 +95,65 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     )
     ax.add_patch(quad_br)
 
-    # Font size multiplier
-    fs = 1.2  # Reduced from 1.3 to fit text better within quadrants
-
     # Add axis labels (adjusted for taller layout)
     ax.text(
         5,
-        12.8,
+        12.45,
         "GapMind Prediction",
         ha="center",
         va="bottom",
-        fontsize=14 * fs,
+        fontsize=PANEL_A_TITLE_SIZE,
         fontweight="bold",
     )
     ax.text(
         2.65,
-        12.0,
+        11.75,
         "Pathway Present (+)",
         ha="center",
         va="bottom",
-        fontsize=12 * fs,
+        fontsize=PANEL_A_SUBTITLE_SIZE,
         fontweight="bold",
         color="#2e7d32",
     )
     ax.text(
         7.35,
-        12.0,
+        11.75,
         "Pathway Absent (−)",
         ha="center",
         va="bottom",
-        fontsize=12 * fs,
+        fontsize=PANEL_A_SUBTITLE_SIZE,
         fontweight="bold",
         color="#c62828",
     )
 
     ax.text(
-        -0.3,
-        6.1,  # Center of all quadrants (0.5 to 11.7)
+        -0.38,
+        6.1,
         "Experimental Outcome",
         ha="center",
         va="center",
-        fontsize=14 * fs,
+        fontsize=PANEL_A_AXIS_LABEL_SIZE,
         fontweight="bold",
         rotation=90,
     )
     ax.text(
-        0.15,
+        0.08,
         8.95,  # Center of top quadrants (6.2 + 5.5/2)
         "Growth (+)",
         ha="center",
         va="center",
-        fontsize=12 * fs,
+        fontsize=PANEL_A_AXIS_LABEL_SIZE,
         fontweight="bold",
         color="#2e7d32",
         rotation=90,
     )
     ax.text(
-        0.15,
+        0.08,
         3.25,  # Center of bottom quadrants (0.5 + 5.5/2)
         "No Growth (−)",
         ha="center",
         va="center",
-        fontsize=12 * fs,
+        fontsize=PANEL_A_AXIS_LABEL_SIZE,
         fontweight="bold",
         color="#c62828",
         rotation=90,
@@ -159,7 +167,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "CONCORDANT",
         ha="center",
         va="center",
-        fontsize=11 * fs,
+        fontsize=PANEL_A_SECTION_HEADING_SIZE,
         fontweight="bold",
         color="#1b5e20",
     )
@@ -169,7 +177,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "True Positive",
         ha="center",
         va="center",
-        fontsize=10 * fs,
+        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
         fontstyle="italic",
         color="#2e7d32",
     )
@@ -179,7 +187,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Genes present and functional",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#1b5e20",
     )
     ax.text(
@@ -188,7 +196,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Pathway correctly annotated",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#1b5e20",
     )
     ax.text(
@@ -197,7 +205,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Experiment accurately measured",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#1b5e20",
     )
     ax.text(
@@ -206,7 +214,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "High-quality training samples",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BADGE_SIZE,
         fontweight="bold",
         color="#1b5e20",
         bbox=dict(boxstyle="round", facecolor="white", edgecolor="#388e3c", alpha=0.8),
@@ -220,7 +228,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "DISCORDANT",
         ha="center",
         va="center",
-        fontsize=11 * fs,
+        fontsize=PANEL_A_SECTION_HEADING_SIZE,
         fontweight="bold",
         color="#e65100",
     )
@@ -230,7 +238,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "False Negative",
         ha="center",
         va="center",
-        fontsize=10 * fs,
+        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
         fontstyle="italic",
         color="#f57c00",
     )
@@ -242,7 +250,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Possible Causes:",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         fontweight="bold",
         color="#e65100",
     )
@@ -252,7 +260,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Annotation: homolog not detected",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -261,7 +269,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Biology: alternative pathway",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -270,7 +278,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Biology: promiscuous enzymes",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -279,7 +287,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Measurement: false positive",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -288,7 +296,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Media: growth on base media",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
 
@@ -298,7 +306,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Growth via unknown\nmechanism",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BADGE_SIZE,
         fontweight="bold",
         color="#e65100",
         bbox=dict(boxstyle="round", facecolor="white", edgecolor="#f57c00", alpha=0.8),
@@ -312,7 +320,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "DISCORDANT",
         ha="center",
         va="center",
-        fontsize=11 * fs,
+        fontsize=PANEL_A_SECTION_HEADING_SIZE,
         fontweight="bold",
         color="#b71c1c",
     )
@@ -322,7 +330,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "False Positive",
         ha="center",
         va="center",
-        fontsize=10 * fs,
+        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
         fontstyle="italic",
         color="#c62828",
     )
@@ -334,7 +342,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Possible Causes:",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         fontweight="bold",
         color="#b71c1c",
     )
@@ -344,7 +352,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Regulation: pathway repressed",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -353,7 +361,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Measurement: insufficient time",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -362,7 +370,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Media: missing cofactors",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -371,7 +379,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Annotation: false positive call",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
     ax.text(
@@ -380,7 +388,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "• Biology: incomplete pathway",
         ha="left",
         va="center",
-        fontsize=7.5 * fs,
+        fontsize=PANEL_A_BULLET_SIZE,
         color="#424242",
     )
 
@@ -390,7 +398,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Genes present but\nnot functional",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BADGE_SIZE,
         fontweight="bold",
         color="#b71c1c",
         bbox=dict(boxstyle="round", facecolor="white", edgecolor="#d32f2f", alpha=0.8),
@@ -404,7 +412,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "CONCORDANT",
         ha="center",
         va="center",
-        fontsize=11 * fs,
+        fontsize=PANEL_A_SECTION_HEADING_SIZE,
         fontweight="bold",
         color="#0d47a1",
     )
@@ -414,7 +422,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "True Negative",
         ha="center",
         va="center",
-        fontsize=10 * fs,
+        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
         fontstyle="italic",
         color="#1976d2",
     )
@@ -424,7 +432,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Genes absent",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#0d47a1",
     )
     ax.text(
@@ -433,7 +441,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "No alternative pathway",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#0d47a1",
     )
     ax.text(
@@ -442,7 +450,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Experiment accurately measured",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BODY_SIZE,
         color="#0d47a1",
     )
     ax.text(
@@ -451,7 +459,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "High-quality training samples",
         ha="center",
         va="center",
-        fontsize=8 * fs,
+        fontsize=PANEL_A_BADGE_SIZE,
         fontweight="bold",
         color="#0d47a1",
         bbox=dict(boxstyle="round", facecolor="white", edgecolor="#1976d2", alpha=0.8),

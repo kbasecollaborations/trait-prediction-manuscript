@@ -8,11 +8,19 @@ import numpy as np
 import pandas as pd
 import scienceplots
 
-from scripts.visualization import configure_plot_style, format_dataset_names, get_dataset_colors
+from scripts.visualization import (
+    configure_plot_style,
+    format_dataset_names,
+    get_dataset_colors,
+)
+from scripts.figure4.style import (
+    AXIS_LABEL_SIZE,
+    LEGEND_FONT_SIZE,
+    TICK_LABEL_SIZE,
+)
 
 plt.style.use(["science", "nature"])
 configure_plot_style()
-
 
 def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
     """Load GapMind predictions.
@@ -318,11 +326,21 @@ def create_confusion_matrix_plots(
         color=colors["FN"],
     )
 
-    ax1.set_ylabel("Count", fontsize=12)
-    ax1.set_xlabel("Phenotype", fontsize=12)
+    ax1.set_ylabel("Count", fontsize=AXIS_LABEL_SIZE)
+    ax1.set_xlabel("Phenotype", fontsize=AXIS_LABEL_SIZE, labelpad=1)
     ax1.set_xticks(x)
-    ax1.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=10)
-    ax1.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.05), frameon=False)
+    ax1.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=TICK_LABEL_SIZE)
+    ax1.tick_params(axis="x", pad=0.5)
+    ax1.tick_params(axis="y", labelsize=TICK_LABEL_SIZE)
+    ax1.legend(
+        ncol=4,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.15),
+        frameon=False,
+        fontsize=LEGEND_FONT_SIZE,
+        handlelength=1.4,
+        columnspacing=1.0,
+    )
     ax1.grid(axis="y", alpha=0.3)
 
     # Bottom plot: Combined performance across all phenotypes for each dataset
@@ -349,11 +367,12 @@ def create_confusion_matrix_plots(
         color=colors["FN"],
     )
 
-    ax2.set_ylabel("Count", fontsize=11)
-    ax2.set_xlabel("Dataset", fontsize=11)
+    ax2.set_ylabel("Count", fontsize=AXIS_LABEL_SIZE)
+    ax2.set_xlabel("Dataset", fontsize=AXIS_LABEL_SIZE, labelpad=2)
     ax2.set_xticks(x)
-    ax2.set_xticklabels(format_dataset_names(datasets), fontsize=10)
-    ax2.tick_params(axis="y", labelsize=10)
+    ax2.set_xticklabels(format_dataset_names(datasets), fontsize=TICK_LABEL_SIZE)
+    ax2.tick_params(axis="x", pad=1)
+    ax2.tick_params(axis="y", labelsize=TICK_LABEL_SIZE)
     ax2.grid(axis="y", alpha=0.3)
 
     print("\n=== Figure 4B Summary ===")
@@ -373,8 +392,8 @@ def create_figure4b(output_file: Path) -> None:
     """
     import matplotlib.gridspec as gridspec
 
-    fig = plt.figure(figsize=(12, 10))
-    gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[3, 1], hspace=0.4)
+    fig = plt.figure(figsize=(12, 8.5))
+    gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.45, 1], hspace=0.45)
 
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0])

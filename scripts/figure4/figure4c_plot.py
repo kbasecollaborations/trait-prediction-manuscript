@@ -10,6 +10,13 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 
+from scripts.figure4.style import (
+    ANNOTATION_FONT_SIZE,
+    AXIS_LABEL_SIZE,
+    LEGEND_FONT_SIZE,
+    LEGEND_TITLE_SIZE,
+    TICK_LABEL_SIZE,
+)
 from scripts.visualization import format_dataset_names, get_dataset_colors
 
 
@@ -60,12 +67,12 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot
-    ax.set_ylabel("Number of Stable Features\n(combined)", fontsize=12)
+    ax.set_ylabel("Stable Features\n(Combined)", fontsize=AXIS_LABEL_SIZE, labelpad=1)
     # Set ticks to match bottom subplot
     ax.set_xticks(x_pos + bar_center_offset)
     ax.set_xticklabels([])  # No labels on top plot
     ax.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
-    ax.tick_params(axis="y", labelsize=11)
+    ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE, pad=1)
     # ax.spines["top"].set_visible(False)
     # ax.spines["right"].set_visible(False)
 
@@ -84,7 +91,7 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
             f"{count}",
             ha="center",
             va="bottom",
-            fontsize=10,
+            fontsize=ANNOTATION_FONT_SIZE,
         )
 
 
@@ -196,9 +203,14 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         dataset_display_names,
         title="Dataset",
         loc="upper left",
-        bbox_to_anchor=(0.0, 1.25),
+        bbox_to_anchor=(0.0, 1.37),
         ncol=len(datasets),
         frameon=False,
+        fontsize=LEGEND_FONT_SIZE,
+        title_fontsize=LEGEND_TITLE_SIZE,
+        borderaxespad=0.0,
+        handletextpad=0.4,
+        columnspacing=0.8,
     )
     ax.add_artist(legend1)
 
@@ -207,9 +219,14 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         handles=feature_handles,
         title="Stable features",
         loc="upper right",
-        bbox_to_anchor=(1.0, 1.25),
+        bbox_to_anchor=(1.0, 1.37),
         ncol=2,
         frameon=False,
+        fontsize=LEGEND_FONT_SIZE,
+        title_fontsize=LEGEND_TITLE_SIZE,
+        borderaxespad=0.0,
+        handletextpad=0.4,
+        columnspacing=0.8,
     )
 
     # Calculate the center offset for grouped bars
@@ -223,13 +240,15 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot (matching Figure 1C)
-    ax.set_ylabel("Number of Stable Features\n(individual datasets)", fontsize=12)
-    ax.set_xlabel("Phenotype", fontsize=12)
+    ax.set_ylabel(
+        "Stable Features\n(Per Dataset)", fontsize=AXIS_LABEL_SIZE, labelpad=1
+    )
+    ax.set_xlabel("Phenotype", fontsize=AXIS_LABEL_SIZE)
     # Center x-tick labels in the middle of the group of bars (matching Figure 1C)
     ax.set_xticks(x_pos + bar_group_center)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=11)
+    ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=TICK_LABEL_SIZE)
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
-    ax.tick_params(axis="y", labelsize=11)
+    ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE, pad=1)
     # ax.spines["top"].set_visible(False)
     # ax.spines["right"].set_visible(False)
 
