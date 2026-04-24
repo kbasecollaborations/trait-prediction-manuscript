@@ -9,7 +9,9 @@ This figure shows:
 """
 
 import json
+import warnings
 from pathlib import Path
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,6 +21,7 @@ import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
+from scipy.stats import wilcoxon
 
 from scripts.visualization import (
     configure_plot_style,
@@ -32,6 +35,123 @@ configure_plot_style()
 
 # Set random seed for reproducible jitter
 np.random.seed(42)
+
+
+def _format_p_value(p_value: float | None) -> str:
+    """Format a p-value compactly for panel annotations.
+
+    Parameters
+    ----------
+    p_value : float | None
+        P-value to format.
+
+    Returns
+    -------
+    str
+        Compact string representation for manuscript figures.
+    """
+    if p_value is None:
+        return "n/a"
+    if p_value < 1e-3:
+        return f"{p_value:.1e}"
+    return f"{p_value:.3f}"
+
+
+def _paired_panel_pvalue(
+    left_values: pd.Series,
+    right_values: pd.Series,
+    phenotypes: list[str],
+) -> tuple[float | None, int]:
+    """Compute a paired phenotype-level Wilcoxon p-value.
+
+    Phenotype means are compared pairwise to avoid cluttering the figure with
+    per-phenotype significance annotations.
+
+    Parameters
+    ----------
+    left_values : pd.Series
+        Phenotype-level values for the first condition. The series index must be
+        phenotype names.
+    right_values : pd.Series
+        Phenotype-level values for the second condition. The series index must be
+        phenotype names.
+    phenotypes : list[str]
+        Phenotypes displayed in the panel. Only overlapping phenotypes from this
+        plotted list are used in the paired comparison.
+
+    Returns
+    -------
+    tuple[float | None, int]
+        The Wilcoxon p-value and the number of paired phenotypes used. Returns
+        ``None`` when too few overlapping pairs are available or the test is not
+        numerically well-defined.
+    """
+    paired_phenotypes = [
+        phenotype
+        for phenotype in phenotypes
+        if phenotype in left_values.index and phenotype in right_values.index
+    ]
+    n_pairs = len(paired_phenotypes)
+    if n_pairs < 2:
+        return None, n_pairs
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            test_result = wilcoxon(
+                left_values.loc[paired_phenotypes],
+                right_values.loc[paired_phenotypes],
+                alternative="two-sided",
+                zero_method="wilcox",
+                method="auto",
+            )
+    except ValueError:
+        return None, n_pairs
+
+    p_value = float(test_result.pvalue)
+    if not np.isfinite(p_value):
+        return None, n_pairs
+    return p_value, n_pairs
+
+
+def _add_panel_pvalue_annotation(
+    ax: Axes,
+    p_value: float | None,
+    n_pairs: int,
+    position: Literal["top_right", "bottom_right"] = "top_right",
+) -> None:
+    """Add a compact panel-level p-value annotation.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to annotate.
+    p_value : float | None
+        Paired comparison p-value.
+    n_pairs : int
+        Number of phenotype pairs used in the comparison.
+    position : Literal["top_right", "bottom_right"]
+        Anchor location of the annotation within the axes. ``"top_right"``
+        places the text at the upper-right corner; ``"bottom_right"`` places
+        it at the lower-right corner.
+    """
+    if position == "top_right":
+        x, y, ha, va = 0.98, 0.97, "right", "top"
+    else:
+        x, y, ha, va = 0.98, 0.05, "right", "bottom"
+
+    ax.text(
+        x,
+        y,
+        f"Phenotype means\npaired Wilcoxon, n={n_pairs}, p={_format_p_value(p_value)}",
+        transform=ax.transAxes,
+        ha=ha,
+        va=va,
+        fontsize=10,
+        bbox=dict(
+            boxstyle="round,pad=0.25", facecolor="white", edgecolor="none", alpha=0.9
+        ),
+    )
 
 
 def plot_dataset_split_performance(
@@ -62,6 +182,11 @@ def plot_dataset_split_performance(
     # Set up positions
     x = np.arange(len(phenotypes))
 
+    # Alternating phenotype background bands for visual grouping
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+
     # Prepare data for box plot - combining all datasets
     box_data = []
     for phenotype in phenotypes:
@@ -71,17 +196,16 @@ def plot_dataset_split_performance(
         box_data.append(phenotype_data)
 
     # Create box plot
-    bp = ax.boxplot(
+    ax.boxplot(
         box_data,
         positions=x,
         widths=0.6,
         patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor="#2E86AB", alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+        showfliers=False,
+        boxprops=dict(facecolor="#2E86AB", alpha=0.65, linewidth=1.1),
+        medianprops=dict(color="black", linewidth=1.4),
+        whiskerprops=dict(linewidth=1.1),
+        capprops=dict(linewidth=1.1),
     )
 
     # Calculate mean random split performance
@@ -96,8 +220,8 @@ def plot_dataset_split_performance(
                 [random_means[phenotype], random_means[phenotype]],
                 color="#06A77D",
                 linestyle="-",
-                linewidth=2,
-                alpha=0.7,
+                linewidth=1.6,
+                alpha=0.65,
                 zorder=1,
             )
 
@@ -116,16 +240,20 @@ def plot_dataset_split_performance(
         ),
     ]
 
-    # Add alternating background colors for x-axis categories
-    for i in range(len(phenotypes)):
-        if i % 2 == 0:
-            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
-
     # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
     ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
     ax.set_ylim(0, 1.05)
+
+    dataset_means = dataset_df.groupby("phenotype")["balanced_accuracy"].mean()
+    random_mean_series = pd.Series(random_means)
+    p_value, n_pairs = _paired_panel_pvalue(
+        dataset_means,
+        random_mean_series,
+        phenotypes,
+    )
+    _add_panel_pvalue_annotation(ax, p_value, n_pairs, position="bottom_right")
 
     # Add subplot label
     ax.text(
@@ -183,6 +311,11 @@ def create_feature_comparison_plot(
     # Calculate offset to center the grouped bars at each x position
     bar_group_center = bar_width * (len(datasets) - 1) / 2
 
+    # Alternating phenotype background bands for visual grouping
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+
     # Plot for each dataset
     for i, dataset in enumerate(datasets):
         dataset_df = df[df["test_dataset"] == dataset].set_index("phenotype")
@@ -223,14 +356,11 @@ def create_feature_comparison_plot(
             hatch="//",
         )
 
-    # Create custom legend with both datasets and feature types
-    # Dataset legend entries
+    # Create separate legend entries for datasets and feature types
     dataset_handles = [
         Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
         for i in range(len(datasets))
     ]
-
-    # Feature type legend entries
     feature_handles = [
         Rectangle(
             (0, 0),
@@ -250,36 +380,30 @@ def create_feature_comparison_plot(
             label="Unique to Individual",
         ),
     ]
-
-    # Add dataset legend (positioned left side of top)
     legend1 = ax.legend(
         dataset_handles,
         dataset_display_names,
         title="Dataset",
         loc="upper left",
-        bbox_to_anchor=(0.0, 1.20),
+        bbox_to_anchor=(0.0, 1.13),
         ncol=len(datasets),
         frameon=False,
+        fontsize=8,
     )
     ax.add_artist(legend1)
 
-    # Add feature type legend (positioned right side of top)
     ax.legend(
         handles=feature_handles,
         title="Stable features",
         loc="upper right",
-        bbox_to_anchor=(1.0, 1.20),
+        bbox_to_anchor=(1.0, 1.13),
         ncol=2,
         frameon=False,
+        fontsize=8,
     )
 
-    # Add alternating background colors for x-axis categories
-    for i in range(len(phenotypes)):
-        if i % 2 == 0:
-            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
-
     # Customize plot
-    ax.set_ylabel("Number of Stable Features\n(concordant samples)", fontsize=10)
+    ax.set_ylabel("Stable features (n)", fontsize=10)
     ax.set_xlabel("")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y")
@@ -334,6 +458,11 @@ def plot_concordant_train_performance(
     # Set up positions
     x = np.arange(len(phenotypes))
 
+    # Alternating phenotype background bands for visual grouping
+    for i in range(len(phenotypes)):
+        if i % 2 == 0:
+            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
+
     # Create grouped box plots
     box_data_random = []
     box_data_dataset = []
@@ -356,31 +485,29 @@ def plot_concordant_train_performance(
 
     # Create box plots
     # Random split: green (#06A77D) to match figure3 panel A
-    bp1 = ax.boxplot(
+    ax.boxplot(
         box_data_random,
         positions=positions_random,
         widths=width * 0.8,
         patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor="#06A77D", alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+        showfliers=False,
+        boxprops=dict(facecolor="#06A77D", alpha=0.65, linewidth=1.1),
+        medianprops=dict(color="black", linewidth=1.4),
+        whiskerprops=dict(linewidth=1.1),
+        capprops=dict(linewidth=1.1),
     )
 
     # Dataset split: blue (#2E86AB) as complementary color
-    bp2 = ax.boxplot(
+    ax.boxplot(
         box_data_dataset,
         positions=positions_dataset,
         widths=width * 0.8,
         patch_artist=True,
-        showfliers=True,
-        boxprops=dict(facecolor="#2E86AB", alpha=0.7, linewidth=1.5),
-        medianprops=dict(color="black", linewidth=2),
-        whiskerprops=dict(linewidth=1.5),
-        capprops=dict(linewidth=1.5),
-        flierprops=dict(marker="o", markersize=4, alpha=0.5),
+        showfliers=False,
+        boxprops=dict(facecolor="#2E86AB", alpha=0.65, linewidth=1.1),
+        medianprops=dict(color="black", linewidth=1.4),
+        whiskerprops=dict(linewidth=1.1),
+        capprops=dict(linewidth=1.1),
     )
 
     # Create legend handles
@@ -391,16 +518,28 @@ def plot_concordant_train_performance(
         Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split"),
     ]
 
-    # Add alternating background colors for x-axis categories
-    for i in range(len(phenotypes)):
-        if i % 2 == 0:
-            ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
-
     # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
+
+    random_means = (
+        ml_df[ml_df["split_type"] == "random_split"]
+        .groupby("phenotype")["balanced_accuracy"]
+        .mean()
+    )
+    dataset_means = (
+        ml_df[ml_df["split_type"] == "dataset_split"]
+        .groupby("phenotype")["balanced_accuracy"]
+        .mean()
+    )
+    p_value, n_pairs = _paired_panel_pvalue(
+        dataset_means,
+        random_means,
+        phenotypes,
+    )
+    _add_panel_pvalue_annotation(ax, p_value, n_pairs)
 
     # Add subplot label
     ax.text(
@@ -455,7 +594,9 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     print(f" - Feature comparison phenotypes: {len(feature_phenotypes)}")
     print(f" - Test type phenotypes (discordant): {len(test_phenotypes)}")
     common_phenotypes = sorted(
-        dataset_phenotypes.intersection(feature_phenotypes).intersection(test_phenotypes)
+        dataset_phenotypes.intersection(feature_phenotypes).intersection(
+            test_phenotypes
+        )
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
