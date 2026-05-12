@@ -1,35 +1,33 @@
 #!/usr/bin/env python3
-"""
-Create Figure 6: Comprehensive analysis of model performance and GapMind predictions.
+"""Create Figure 6: hybrid composition of filtering and feature-selection diagnostics.
 
-This figure includes:
-- Panel A: GapMind misclassification patterns (3 subplots)
-- Panel B: Performance on confident samples
-- Panel C: Impact of filtering problematic samples (3 metrics)
-- Panel D: Combined vs phenotype-filtered features (2 split types)
+Layout (after the hybrid revision):
+
+- Panel A (row 1, two columns): condensed problematic-sample summary on the left
+  and the ranked top-20 misclassified microbe diagnostic on the right.
+- Panel B (row 2, full width): per-phenotype grouped balanced-accuracy bars across
+  three filtering strategies, with sample-removal annotations.
+- Panel C and D (row 3, two columns): combined ML+GapMind precision-recall
+  scatter on the left and combined-vs-phenotype-filtered balanced-accuracy
+  scatter on the right.
 """
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import scienceplots
 import seaborn as sns
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
-from scripts.figure6.figure6a_plot import create_misclassification_plots
-from scripts.visualization import configure_plot_style
+from scripts.figure6.figure6a_plot import (
+    plot_microbe_misclassification_ranking,
+    plot_problematic_sample_summary,
+)
 from scripts.figure6.figure6b_plot import plot_confident_samples_performance
-from scripts.figure6.figure6c_plot import (
-    plot_gapmind_precision_recall_scatter,
-    plot_precision_recall_scatter,
-)
-from scripts.figure6.figure6d_plot import (
-    plot_balanced_accuracy_scatter,
-    plot_precision_recall_scatter_by_feature_type,
-    plot_split_comparison,
-)
+from scripts.figure6.figure6c_plot import plot_precision_recall_scatter
+from scripts.figure6.figure6d_plot import plot_balanced_accuracy_scatter
+from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -37,29 +35,20 @@ configure_plot_style()
 
 
 def create_figure6(output_file: Path) -> None:
-    """Create Figure 6 with all panels arranged vertically.
+    """Create the hybrid four-panel Figure 6.
 
     Parameters
     ----------
     output_file : Path
         Path to save the output figure.
     """
-    # Data directories
     data_dir = Path("data/outputs/figure6")
 
-    # Load data to determine common phenotypes
     print("Loading data files...")
-
-    # Figure 6B data
     ml_df_6b = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
-
-    # Figure 6C data
     df_6c = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
-
-    # Figure 6D data
     df_6d = pd.read_csv(data_dir / "figure6d_all_results.csv")
 
-    # Get phenotypes from each dataset
     phenotypes_6b_dataset = set(
         ml_df_6b[ml_df_6b["split_type"] == "dataset_split"]["phenotype"].unique()
     )
@@ -69,13 +58,6 @@ def create_figure6(output_file: Path) -> None:
     phenotypes_6c = set(df_6c["phenotype"].unique())
     phenotypes_6d = set(df_6d["phenotype"].unique())
 
-    # Use intersection to ensure consistent x-axis across all panels
-    print("Determining common phenotypes...")
-    print(f" - Figure 6B dataset split: {len(phenotypes_6b_dataset)}")
-    print(f" - Figure 6B random split: {len(phenotypes_6b_random)}")
-    print(f" - Figure 6C: {len(phenotypes_6c)}")
-    print(f" - Figure 6D: {len(phenotypes_6d)}")
-
     common_phenotypes = sorted(
         phenotypes_6b_dataset.intersection(phenotypes_6b_random)
         .intersection(phenotypes_6c)
@@ -83,66 +65,58 @@ def create_figure6(output_file: Path) -> None:
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Create figure with complex layout using GridSpec
-    # Panel A: 3 plots horizontal (row 0)
-    # Panel B: Performance comparison (row 1)
-    # Panel C: Precision-recall scatter - 2 side-by-side (row 2)
-    # Panel D: Feature comparison scatter - 2 side-by-side (row 3)
-    fig = plt.figure(figsize=(18, 24))
+    fig = plt.figure(figsize=(9, 9.5))
     gs = GridSpec(
-        4, 2, figure=fig, height_ratios=[1, 1, 1.5, 1.5], hspace=0.3, wspace=0.4
+        3,
+        1,
+        figure=fig,
+        height_ratios=[1.2, 1.0, 1.6],
+        hspace=0.72,
     )
 
-    # Panel A: GapMind misclassification patterns (3 subplots horizontal)
-    # Create a nested GridSpec for Panel A with 3 columns
-    # Adjust width ratios: give less space to first two plots, more to third plot with labels
-    print("\nCreating Panel A: GapMind misclassification patterns...")
+    # --- Panel A: condensed summary (left) + ranked microbe diagnostic (right) ---
+    print("Creating Panel A...")
     gs_a = GridSpecFromSubplotSpec(
-        1, 3, subplot_spec=gs[0, :], wspace=0.35, hspace=0, width_ratios=[1, 1, 1.5]
+        1, 2, subplot_spec=gs[0, 0], width_ratios=[1.0, 1.18], wspace=0.45
     )
-    ax_a1 = fig.add_subplot(gs_a[0, 0])
-    ax_a2 = fig.add_subplot(gs_a[0, 1])
-    ax_a3 = fig.add_subplot(gs_a[0, 2])
-    create_misclassification_plots(ax_a1, ax_a2, ax_a3)
+    ax_a_left = fig.add_subplot(gs_a[0, 0])
+    ax_a_right = fig.add_subplot(gs_a[0, 1])
+    plot_problematic_sample_summary(ax_a_left)
+    plot_microbe_misclassification_ranking(ax_a_right)
 
-    # Panel B: Performance on confident samples (spans all 2 columns)
-    print("Creating Panel B: Performance on confident samples...")
-    ax_b = fig.add_subplot(gs[1, :])
+    # --- Panel B: per-phenotype grouped filtering comparison ---
+    print("Creating Panel B...")
+    ax_b = fig.add_subplot(gs[1, 0])
     plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
+    ax_b.set_xlabel("Phenotype", labelpad=4)
 
-    # Panel C: Precision-recall scatter plots (2 side-by-side: ML and GapMind)
-    print("Creating Panel C: Precision-recall scatter plots...")
-    gs_c = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, :], wspace=0.3)
-    ax_c1 = fig.add_subplot(gs_c[0, 0])
-    ax_c2 = fig.add_subplot(gs_c[0, 1])
-    plot_precision_recall_scatter(ax_c1, data_dir, common_phenotypes)
-    plot_gapmind_precision_recall_scatter(ax_c2, common_phenotypes)
+    # --- Panel C (left) and Panel D (right): compact lower diagnostic block ---
+    print("Creating Panels C and D...")
+    gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.20)
+    ax_c = fig.add_subplot(gs_cd[0, 0])
+    ax_d = fig.add_subplot(gs_cd[0, 1])
+    plot_precision_recall_scatter(ax_c, data_dir, common_phenotypes)
+    plot_balanced_accuracy_scatter(ax_d, df_6d, common_phenotypes)
 
-    # Panel D: Combined vs phenotype-filtered features (2 scatter plots side-by-side)
-    print("Creating Panel D: Combined vs phenotype-filtered features...")
-    gs_d = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[3, :], wspace=0.3)
-    ax_d1 = fig.add_subplot(gs_d[0, 0])
-    ax_d2 = fig.add_subplot(gs_d[0, 1])
-    plot_balanced_accuracy_scatter(ax_d1, df_6d, common_phenotypes)
-    plot_precision_recall_scatter_by_feature_type(ax_d2, df_6d, common_phenotypes)
-
-    # Collect all axes in order
-    all_axes = [ax_a1, ax_a2, ax_a3, ax_b, ax_c1, ax_c2, ax_d1, ax_d2]
-
-    # Add main panel labels
-    panel_labels_map = {
-        ax_a1: "(A)",  # First misclassification plot
-        ax_b: "(B)",  # Confident samples
-        ax_c1: "(C)",  # Precision-recall scatter (ML)
-        ax_d1: "(D)",  # First feature comparison
+    panel_label_axes: dict[str, plt.Axes] = {
+        "(A)": ax_a_left,
+        "(B)": ax_b,
+        "(C)": ax_c,
+        "(D)": ax_d,
     }
-
-    for ax, label in panel_labels_map.items():
-        # Use different x-position for Panel A due to nested GridSpec
-        x_pos = -0.30 if ax == ax_a1 else -0.08
+    for label, ax in panel_label_axes.items():
+        if ax is ax_a_left:
+            x_pos = -0.18
+            y_pos = 1.05
+        elif ax is ax_b:
+            x_pos = -0.08
+            y_pos = 1.05
+        else:
+            x_pos = -0.20
+            y_pos = 1.02
         ax.text(
             x_pos,
-            1.05,
+            y_pos,
             label,
             transform=ax.transAxes,
             fontweight="bold",
@@ -151,20 +125,9 @@ def create_figure6(output_file: Path) -> None:
             fontsize=14,
         )
 
-    # Remove x-tick labels from Panel B (phenotype bar plot)
-    ax_b.set_xlabel("")
-    ax_b.set_xticklabels([])
-
-    # Adjust x-axis limits for phenotype bar plot (Panel B only)
-    x_pos = np.arange(len(common_phenotypes))
-    ax_b.set_xlim(-0.5, len(common_phenotypes) - 0.5)
-    ax_b.set_xticks(x_pos)
-
-    # Save figure
-    plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved combined figure to {output_file}")
-    plt.close()
+    plt.close(fig)
 
 
 if __name__ == "__main__":

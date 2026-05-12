@@ -82,25 +82,15 @@ Performance varied substantially across phenotypes; values near random indicate 
 \begin{figure}[ht]
 \thisfloatpagestyle{empty}
 \centering
-\includegraphics[width=0.90\textwidth]{figure6.pdf}
+\includegraphics[width=0.93\textwidth]{figure6.pdf}
 \caption{
 \textbf{Effects of data filtering and feature selection on model performance.}
-(A) Identification of problematic samples across datasets.
-Left: microbes showing zero growth on all substrates.
-Middle: microbes showing universal growth despite incomplete GapMind pathways.
-Right: Top 20 most misclassified genomes across all datasets.
-(B) Grouped bar plot showing cross-dataset balanced accuracy after data filtering.
-Blue: concordant-trained models.
-Green: models after confidence-based filtering.
-Red: models after removing bad genomes from panel A.
-(C) Scatter plots of precision vs.\ recall.
-Left: filtered data strategies.
-Right: GapMind predictions alone (purple).
-Each point represents average performance for one phenotype across cross-dataset splits.
-(D) Effect of feature selection on model performance.
-Right: precision-recall trade-off.
-Right: precision-recall trade-off.
-Circles: random splits; squares: cross-dataset splits.
+(A) Left: condensed summary of problematic genomes across datasets, showing the number of genomes in two discordant categories (no observed growth despite at least one GapMind growth prediction; universal observed growth despite incomplete GapMind pathways).
+Right: top-20 most frequently misclassified microbes, ranked by number of phenotypes for which GapMind disagrees with the experimental label and coloured by membership in those discordant categories or neither category.
+(B) Per-phenotype balanced accuracy on the cross-dataset split for three filtering strategies (concordant samples in blue; $Y_{\mathrm{soft}}$ confidence-filtered samples in green; problematic samples removed in red).
+Numbers above each bar indicate the number of training samples removed by that filter relative to the full dataset; error bars show the standard deviation across replicate runs.
+(C) Precision-recall scatter for the three filtering strategies across phenotypes, with the dashed line indicating equal precision and recall.
+(D) Combined-features (GapMind + KOFAM + RAST) versus phenotype-filtered (GapMind-only) balanced-accuracy scatter under random and cross-dataset splits; the dashed line marks equal performance, and points above the diagonal indicate that the phenotype-filtered feature set outperforms the combined set.
 }\label{fig:improvement_strategies}
 \end{figure}
 

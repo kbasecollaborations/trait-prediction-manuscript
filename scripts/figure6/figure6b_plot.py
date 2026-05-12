@@ -171,37 +171,40 @@ def plot_confident_samples_performance(
 
         # Add annotations if samples were removed
         if not np.isnan(concordant_removed.iloc[i]) and concordant_removed.iloc[i] > 0:
+            concordant_ha = "left" if i == 0 else "center"
             ax.text(
                 i - width,
                 y1 + 0.02,
                 f"-{int(concordant_removed.iloc[i])}",
-                ha="center",
+                ha=concordant_ha,
                 va="bottom",
-                fontsize=10,
+                fontsize=6.5,
                 color="#2E86AB",
                 weight="bold",
             )
 
         if not np.isnan(ysoft_removed.iloc[i]) and ysoft_removed.iloc[i] > 0:
+            ysoft_ha = "right" if i == len(phenotypes) - 1 else "center"
             ax.text(
                 i,
                 y2 + 0.02,
                 f"-{int(ysoft_removed.iloc[i])}",
-                ha="center",
+                ha=ysoft_ha,
                 va="bottom",
-                fontsize=10,
+                fontsize=6.5,
                 color="#06A77D",
                 weight="bold",
             )
 
         if not np.isnan(misclass_removed.iloc[i]) and misclass_removed.iloc[i] > 0:
+            misclass_ha = "right" if i == len(phenotypes) - 1 else "center"
             ax.text(
                 i + width,
                 y3 + 0.02,
                 f"-{int(misclass_removed.iloc[i])}",
-                ha="center",
+                ha=misclass_ha,
                 va="bottom",
-                fontsize=10,
+                fontsize=6.5,
                 color="#E63946",
                 weight="bold",
             )
@@ -215,13 +218,24 @@ def plot_confident_samples_performance(
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xticks(x)
-    ax.set_xticklabels(phenotypes, rotation=45, ha="right")
-    ax.set_ylim(0, 1.05)
+    ax.set_xticklabels(
+        phenotypes,
+        rotation=45,
+        ha="right",
+        rotation_mode="anchor",
+        fontsize=9,
+    )
+    ax.tick_params(axis="x", which="major", pad=1)
+    ax.set_xlim(float(x[0] - width * 1.5), float(x[-1] + width * 1.5))
+    # Headroom above 1.0 leaves room for the `-N samples removed` annotations
+    # printed on top of each bar.
+    ax.set_ylim(0, 1.18)
 
-    # Add legend
+    # Legend sits just above the headroom region so it does not collide with
+    # the per-bar annotations.
     ax.legend(
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.10),
+        bbox_to_anchor=(0.5, 1.25),
         ncol=3,
         frameon=False,
     )

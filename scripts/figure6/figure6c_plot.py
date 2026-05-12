@@ -75,33 +75,33 @@ def plot_precision_recall_scatter(
     ax.scatter(
         concordant_summary["recall"],
         concordant_summary["precision"],
-        s=200,
+        s=60,
         alpha=0.7,
         color="#2E86AB",
         edgecolors="black",
-        linewidths=2,
+        linewidths=1,
         label="Concordant Samples",
         zorder=3,
     )
     ax.scatter(
         ysoft_summary["recall"],
         ysoft_summary["precision"],
-        s=200,
+        s=60,
         alpha=0.7,
         color="#06A77D",
         edgecolors="black",
-        linewidths=2,
+        linewidths=1,
         label="Y_soft Filtered",
         zorder=3,
     )
     ax.scatter(
         misclass_summary["recall"],
         misclass_summary["precision"],
-        s=200,
+        s=60,
         alpha=0.7,
         color="#E63946",
         edgecolors="black",
-        linewidths=2,
+        linewidths=1,
         label="Misclassified Removed",
         zorder=3,
     )
@@ -114,7 +114,13 @@ def plot_precision_recall_scatter(
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=True, labelspacing=1.2)
+    ax.legend(
+        loc="lower right",
+        frameon=True,
+        fontsize=8,
+        labelspacing=0.6,
+        markerscale=0.7,
+    )
     ax.set_aspect("equal")
 
 

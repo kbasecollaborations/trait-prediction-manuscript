@@ -208,11 +208,11 @@ def plot_balanced_accuracy_scatter(
         ax.scatter(
             combined_vals,
             filtered_vals,
-            s=200,
+            s=60,
             alpha=0.7,
             facecolors="white",
             edgecolors="black",
-            linewidths=2,
+            linewidths=1,
             marker=markers[split_type],
             label=split_labels[split_type],
             zorder=3,
@@ -226,7 +226,13 @@ def plot_balanced_accuracy_scatter(
     ax.set_ylabel("Phenotype-Filtered\n(Balanced Accuracy)")
     ax.set_xlim(0.4, 1.05)
     ax.set_ylim(0.4, 1.05)
-    ax.legend(loc="lower right", frameon=True, labelspacing=1.2)
+    ax.legend(
+        loc="lower right",
+        frameon=True,
+        fontsize=8,
+        labelspacing=0.6,
+        markerscale=0.7,
+    )
     ax.set_aspect("equal")
 
 

@@ -121,7 +121,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
         "incomplete": 0,
         "not_present": 0,
     }
-    gapmind_data_replaced = gapmind_data.replace(replace_dict)
+    gapmind_data_replaced = gapmind_data.apply(lambda column: column.map(replace_dict))
     return gapmind_data_replaced.astype(np.uint8)
 
 
@@ -506,6 +506,251 @@ def create_misclassification_plots(
     print(f"Overlap 1-3: {len(overlap_13)} genomes")
     print(f"Overlap 2-3: {len(overlap_23)} genomes")
     print(f"Overlap 1-2-3: {len(overlap_123)} genomes")
+
+
+def plot_microbe_misclassification_ranking(
+    ax: plt.Axes,
+    gapmind_data_dir: Path | None = None,
+) -> None:
+    """Plot the ranked top-20 microbe misclassification diagnostic.
+
+    This is the third subplot from the original ``create_misclassification_plots``
+    pulled out as a stand-alone helper so it can be combined with the new
+    condensed problematic-sample summary in the hybrid Figure 6 layout.
+
+    Parameters
+    ----------
+    ax : plt.Axes
+        Axes on which to draw the ranked horizontal bar chart.
+    gapmind_data_dir : Path | None
+        Directory containing GapMind feature files. If ``None``, uses the
+        default path used elsewhere in this module.
+    """
+    if gapmind_data_dir is None:
+        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
+
+    phenotype_dict = {
+        "alanine": "Alanine",
+        "arginine": "Arginine",
+        "histidine": "Histidine",
+        "serine": "Serine",
+        "fructose": "Fructose",
+        "galactose": "Galactose",
+        "glucose": "Glucose",
+        "maltose": "Maltose",
+        "mannose": "Mannose",
+        "sucrose": "Sucrose",
+        "myoinositol": "m-Inositol",
+        "mannitol": "Mannitol",
+        "glycerol": "Glycerol",
+        "galacturonate": "Galacturonic-Acid",
+        "cellobiose": "Cellobiose",
+    }
+
+    gapmind_data_pheno = load_gapmind_predictions(phenotype_dict)
+    phenotypes_combined = load_experimental_phenotypes(phenotype_dict)
+    cat1_microbes, cat2_microbes, _ = identify_microbe_categories(
+        phenotypes_combined, gapmind_data_pheno
+    )
+
+    misclassifications: dict[str, pd.Series] = dict()
+    for phenotype_name in phenotypes_combined.columns:
+        exp_data = phenotypes_combined.loc[:, phenotype_name].dropna().astype(np.uint8)
+        gapmind_data_pheno_subset = (
+            gapmind_data_pheno.loc[:, phenotype_name].dropna().astype(np.uint8)
+        )
+        common_inds = exp_data.index.intersection(gapmind_data_pheno_subset.index)
+        exp_data = exp_data.loc[common_inds]
+        gapmind_data_pheno_subset = gapmind_data_pheno_subset.loc[common_inds]
+        misclassified = exp_data[exp_data != gapmind_data_pheno_subset]
+        misclassifications[phenotype_name] = misclassified
+
+    missclassified_genomes: list[str] = []
+    for misclassified in misclassifications.values():
+        missclassified_genomes.extend(misclassified.index.unique().tolist())
+    missclassified_counts = Counter(missclassified_genomes)
+
+    cat1_set = set(cat1_microbes)
+    cat2_set = set(cat2_microbes)
+
+    top_20_data: list[dict[str, object]] = []
+    for genome_id, count in missclassified_counts.most_common(20):
+        if genome_id in cat1_set:
+            color = "#e377c2"
+        elif genome_id in cat2_set:
+            color = "#17becf"
+        else:
+            color = "#7f7f7f"
+        top_20_data.append(
+            {"genome_id": genome_id, "count": count, "color": color}
+        )
+
+    top_20_df = pd.DataFrame(top_20_data)
+
+    y_positions = np.arange(len(top_20_df))
+    ax.barh(
+        y_positions,
+        top_20_df["count"],
+        height=0.5,
+        color=top_20_df["color"],
+        alpha=0.75,
+        align="center",
+        zorder=2,
+    )
+    ax.set_xlabel("Number of misclassifications")
+    ax.set_ylabel("Microbe ID", labelpad=8)
+    ax.set_yticks(y_positions)
+    short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
+    ax.set_yticklabels(short_labels, fontsize=7)
+    ax.invert_yaxis()
+    ax.set_ylim(float(len(top_20_df) - 0.5), -0.5)
+    ax.tick_params(axis="y", which="major", pad=3)
+    ax.set_xlim(0, float(top_20_df["count"].max()) * 1.1)
+    ax.grid(axis="x", alpha=0.15, linewidth=0.6)
+
+    from matplotlib.patches import Patch
+
+    category_handles = [
+        Patch(facecolor="#e377c2", alpha=0.75, label="No growth"),
+        Patch(facecolor="#17becf", alpha=0.75, label="Universal growth"),
+        Patch(facecolor="#7f7f7f", alpha=0.75, label="Neither"),
+    ]
+    ax.legend(
+        handles=category_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.14),
+        ncol=3,
+        frameon=False,
+        fontsize=8,
+    )
+
+
+def get_problematic_sample_summary(
+    gapmind_data_dir: Path | None = None,
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    """Summarize problematic-sample categories retained in the redesigned panel.
+
+    Parameters
+    ----------
+    gapmind_data_dir : Path | None
+        Directory containing GapMind feature files. If None, uses the default
+        path used elsewhere in this module.
+
+    Returns
+    -------
+    tuple[pd.DataFrame, dict[str, int]]
+        A dataframe with per-dataset counts and totals for the two retained
+        problematic-sample categories, and summary metadata.
+    """
+    if gapmind_data_dir is None:
+        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
+
+    phenotype_dict = {
+        "alanine": "Alanine",
+        "arginine": "Arginine",
+        "histidine": "Histidine",
+        "serine": "Serine",
+        "fructose": "Fructose",
+        "galactose": "Galactose",
+        "glucose": "Glucose",
+        "maltose": "Maltose",
+        "mannose": "Mannose",
+        "sucrose": "Sucrose",
+        "myoinositol": "m-Inositol",
+        "mannitol": "Mannitol",
+        "glycerol": "Glycerol",
+        "galacturonate": "Galacturonic-Acid",
+        "cellobiose": "Cellobiose",
+    }
+    datasets = ["atleaf", "lit", "pmi", "marine"]
+
+    gapmind_data_pheno = load_gapmind_predictions(phenotype_dict)
+    phenotypes_combined = load_experimental_phenotypes(phenotype_dict)
+    genomeid_dataset_map = get_genomeid_dataset_map()
+    cat1_microbes, cat2_microbes, _ = identify_microbe_categories(
+        phenotypes_combined, gapmind_data_pheno
+    )
+
+    def count_by_dataset(microbe_list: list[str]) -> dict[str, int]:
+        counts: dict[str, int] = defaultdict(int)
+        for microbe in microbe_list:
+            dataset = genomeid_dataset_map.get(microbe, "unknown")
+            counts[dataset] += 1
+        return counts
+
+    category_counts = {
+        "No growth,\nGapMind predicts growth": count_by_dataset(cat1_microbes),
+        "Universal growth,\nGapMind incomplete": count_by_dataset(cat2_microbes),
+    }
+    summary_df = pd.DataFrame(category_counts).T.reindex(columns=datasets, fill_value=0)
+    summary_df["total"] = summary_df.sum(axis=1)
+
+    metadata = {
+        "category_1_total": len(cat1_microbes),
+        "category_2_total": len(cat2_microbes),
+        "category_overlap": len(set(cat1_microbes).intersection(cat2_microbes)),
+    }
+    return summary_df, metadata
+
+
+def plot_problematic_sample_summary(
+    ax: plt.Axes,
+    gapmind_data_dir: Path | None = None,
+) -> None:
+    """Plot the condensed problematic-sample summary used in Figure 6A.
+
+    Parameters
+    ----------
+    ax : plt.Axes
+        Axes on which to draw the summary.
+    gapmind_data_dir : Path | None
+        Directory containing GapMind feature files. If None, uses the default
+        path used elsewhere in this module.
+    """
+    summary_df, _ = get_problematic_sample_summary(gapmind_data_dir)
+    datasets = ["atleaf", "lit", "pmi", "marine"]
+    dataset_colors = get_dataset_colors()
+
+    y_positions = np.arange(len(summary_df))
+    left = np.zeros(len(summary_df))
+    for dataset in datasets:
+        values = summary_df[dataset].to_numpy(dtype=float)
+        ax.barh(
+            y_positions,
+            values,
+            left=left,
+            height=0.38,
+            color=dataset_colors[dataset],
+            edgecolor="white",
+            linewidth=0.8,
+            label=format_dataset_names([dataset])[0],
+        )
+        left += values
+
+    for y_position, total in zip(y_positions, summary_df["total"], strict=True):
+        ax.text(
+            float(total) + 0.8,
+            y_position,
+            f"{int(total)}",
+            va="center",
+            ha="left",
+            fontsize=9,
+            fontweight="bold",
+        )
+
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(summary_df.index)
+    ax.invert_yaxis()
+    ax.set_xlabel("Number of genomes")
+    ax.set_xlim(0, float(summary_df["total"].max()) * 1.18)
+    ax.grid(axis="x", alpha=0.15, linewidth=0.6)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.14),
+        frameon=False,
+        ncol=4,
+        fontsize=8,
+    )
 
 
 def create_figure6a(
