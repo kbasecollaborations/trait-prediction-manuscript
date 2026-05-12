@@ -70,8 +70,8 @@ def create_figure6(output_file: Path) -> None:
         3,
         1,
         figure=fig,
-        height_ratios=[1.2, 1.0, 1.6],
-        hspace=0.72,
+        height_ratios=[1.05, 0.9, 2.25],
+        hspace=0.5,
     )
 
     # --- Panel A: condensed summary (left) + ranked microbe diagnostic (right) ---
@@ -88,11 +88,11 @@ def create_figure6(output_file: Path) -> None:
     print("Creating Panel B...")
     ax_b = fig.add_subplot(gs[1, 0])
     plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
-    ax_b.set_xlabel("Phenotype", labelpad=4)
+    ax_b.set_xlabel("")
 
     # --- Panel C (left) and Panel D (right): compact lower diagnostic block ---
     print("Creating Panels C and D...")
-    gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.20)
+    gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.14)
     ax_c = fig.add_subplot(gs_cd[0, 0])
     ax_d = fig.add_subplot(gs_cd[0, 1])
     plot_precision_recall_scatter(ax_c, data_dir, common_phenotypes)
@@ -111,6 +111,9 @@ def create_figure6(output_file: Path) -> None:
         elif ax is ax_b:
             x_pos = -0.08
             y_pos = 1.05
+        elif ax is ax_d:
+            x_pos = -0.08
+            y_pos = 1.02
         else:
             x_pos = -0.20
             y_pos = 1.02

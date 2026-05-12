@@ -89,8 +89,9 @@ Performance varied substantially across phenotypes; values near random indicate 
 Right: top-20 most frequently misclassified microbes, ranked by number of phenotypes for which GapMind disagrees with the experimental label and coloured by membership in those discordant categories or neither category.
 (B) Per-phenotype balanced accuracy on the cross-dataset split for three filtering strategies (concordant samples in blue; $Y_{\mathrm{soft}}$ confidence-filtered samples in green; problematic samples removed in red).
 Numbers above each bar indicate the number of training samples removed by that filter relative to the full dataset; error bars show the standard deviation across replicate runs.
-(C) Precision-recall scatter for the three filtering strategies across phenotypes, with the dashed line indicating equal precision and recall.
+(C) Precision-recall scatter for the three filtering strategies and the GapMind baseline across phenotypes, with the dashed line indicating equal precision and recall.
 (D) Combined-features (GapMind + KOFAM + RAST) versus phenotype-filtered (GapMind-only) balanced-accuracy scatter under random and cross-dataset splits; the dashed line marks equal performance, and points above the diagonal indicate that the phenotype-filtered feature set outperforms the combined set.
+The inset shows the corresponding precision-recall distribution for combined features (blue) and phenotype-filtered features (red) using the same split-type marker shapes; the annotation gives paired Wilcoxon p-values across phenotype means.
 }\label{fig:improvement_strategies}
 \end{figure}
 

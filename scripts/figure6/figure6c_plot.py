@@ -70,12 +70,20 @@ def plot_precision_recall_scatter(
         .mean()
         .reindex(phenotypes)
     )
+    gapmind_df = pd.read_csv(
+        Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv"), sep="\t"
+    )
+    gapmind_summary = (
+        gapmind_df.groupby("phenotype")[["precision", "recall"]]
+        .mean()
+        .reindex(phenotypes)
+    )
 
     # Plot scatter points for each condition (per-phenotype means)
     ax.scatter(
         concordant_summary["recall"],
         concordant_summary["precision"],
-        s=60,
+        s=42,
         alpha=0.7,
         color="#2E86AB",
         edgecolors="black",
@@ -86,7 +94,7 @@ def plot_precision_recall_scatter(
     ax.scatter(
         ysoft_summary["recall"],
         ysoft_summary["precision"],
-        s=60,
+        s=42,
         alpha=0.7,
         color="#06A77D",
         edgecolors="black",
@@ -97,12 +105,23 @@ def plot_precision_recall_scatter(
     ax.scatter(
         misclass_summary["recall"],
         misclass_summary["precision"],
-        s=60,
+        s=42,
         alpha=0.7,
         color="#E63946",
         edgecolors="black",
         linewidths=1,
         label="Misclassified Removed",
+        zorder=3,
+    )
+    ax.scatter(
+        gapmind_summary["recall"],
+        gapmind_summary["precision"],
+        s=42,
+        alpha=0.8,
+        facecolors="none",
+        edgecolors="#8B5CF6",
+        linewidths=1,
+        label="GapMind",
         zorder=3,
     )
 

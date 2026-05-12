@@ -9,6 +9,7 @@ This figure shows the performance difference between:
 Performance is shown for both random split and dataset split approaches.
 """
 
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -17,12 +18,180 @@ import pandas as pd
 import scienceplots
 import seaborn as sns
 from matplotlib.axes import Axes
+from scipy.stats import wilcoxon
 
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
+
+
+def _format_p_value(p_value: float | None) -> str:
+    """Format a p-value compactly for panel annotations.
+
+    Parameters
+    ----------
+    p_value : float | None
+        P-value to format.
+
+    Returns
+    -------
+    str
+        Compact string representation for manuscript figures.
+    """
+    if p_value is None:
+        return "n/a"
+    if p_value < 1e-3:
+        return f"{p_value:.1e}"
+    return f"{p_value:.3f}"
+
+
+def _paired_panel_pvalue(
+    left_values: pd.Series,
+    right_values: pd.Series,
+    phenotypes: list[str],
+) -> tuple[float | None, int]:
+    """Compute a paired phenotype-level Wilcoxon p-value.
+
+    Parameters
+    ----------
+    left_values : pd.Series
+        Phenotype-level values for the first condition. The series index must be
+        phenotype names.
+    right_values : pd.Series
+        Phenotype-level values for the second condition. The series index must
+        be phenotype names.
+    phenotypes : list[str]
+        Phenotypes displayed in the panel. Only overlapping phenotypes from this
+        plotted list are used in the paired comparison.
+
+    Returns
+    -------
+    tuple[float | None, int]
+        The Wilcoxon p-value and the number of paired phenotypes used. Returns
+        ``None`` when too few pairs are available or the test is not numerically
+        well-defined.
+    """
+    paired_phenotypes = [
+        phenotype
+        for phenotype in phenotypes
+        if phenotype in left_values.index and phenotype in right_values.index
+    ]
+    n_pairs = len(paired_phenotypes)
+    if n_pairs < 2:
+        return None, n_pairs
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            test_result = wilcoxon(
+                left_values.loc[paired_phenotypes],
+                right_values.loc[paired_phenotypes],
+                alternative="two-sided",
+                zero_method="wilcox",
+                method="auto",
+            )
+    except ValueError:
+        return None, n_pairs
+
+    p_value = float(test_result.pvalue)
+    if not np.isfinite(p_value):
+        return None, n_pairs
+    return p_value, n_pairs
+
+
+def _add_pvalue_text(
+    ax: Axes,
+    random_p_value: float | None,
+    random_n: int,
+    dataset_p_value: float | None,
+    dataset_n: int,
+) -> None:
+    """Add compact paired-test annotations for split-specific comparisons.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to annotate.
+    random_p_value : float | None
+        Paired Wilcoxon p-value for random split comparisons.
+    random_n : int
+        Number of random split phenotype pairs.
+    dataset_p_value : float | None
+        Paired Wilcoxon p-value for dataset split comparisons.
+    dataset_n : int
+        Number of dataset split phenotype pairs.
+    """
+    ax.text(
+        0.02,
+        1.04,
+        (
+            "Wilcoxon p: "
+            f"random={_format_p_value(random_p_value)}; "
+            f"dataset={_format_p_value(dataset_p_value)} "
+            f"(n={min(random_n, dataset_n)})"
+        ),
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=8,
+    )
+
+
+def _plot_feature_precision_recall_inset(
+    ax: Axes,
+    data: pd.DataFrame,
+    phenotypes: list[str],
+) -> None:
+    """Plot a compact precision-recall inset for feature-set comparisons.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to plot on.
+    data : pd.DataFrame
+        Results dataframe with all data.
+    phenotypes : list[str]
+        List of phenotypes to include.
+    """
+    inset_ax = ax.inset_axes([0.08, 0.62, 0.32, 0.32])
+    summary = (
+        data.groupby(["phenotype", "experiment", "split_type"])[["precision", "recall"]]
+        .mean()
+        .reset_index()
+    )
+    summary = summary[summary["phenotype"].isin(phenotypes)]
+
+    colors = {"combined": "#2E86AB", "phenotype_filtered": "#E63946"}
+    markers = {"random_split": "o", "dataset_split": "s"}
+
+    for experiment in ["combined", "phenotype_filtered"]:
+        for split_type in ["random_split", "dataset_split"]:
+            subset = summary[
+                (summary["experiment"] == experiment)
+                & (summary["split_type"] == split_type)
+            ]
+            inset_ax.scatter(
+                subset["recall"],
+                subset["precision"],
+                s=12,
+                alpha=0.7,
+                color=colors[experiment],
+                edgecolors="black",
+                linewidths=0.4,
+                marker=markers[split_type],
+                zorder=3,
+            )
+
+    inset_ax.plot([0, 1], [0, 1], "k--", alpha=0.25, linewidth=0.8, zorder=1)
+    inset_ax.set_xlim(0, 1.05)
+    inset_ax.set_ylim(0, 1.05)
+    inset_ax.set_xticks([0, 1.0])
+    inset_ax.set_yticks([0, 1.0])
+    inset_ax.tick_params(labelsize=6, pad=1)
+    inset_ax.set_title("Precision-recall", fontsize=8, pad=2)
+    inset_ax.set_aspect("equal")
 
 
 def plot_split_comparison(
@@ -187,6 +356,10 @@ def plot_balanced_accuracy_scatter(
     # Define markers for split type (no fill colors, just shape difference)
     markers = {"random_split": "o", "dataset_split": "s"}
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
+    random_p_value = None
+    random_n = 0
+    dataset_p_value = None
+    dataset_n = 0
 
     # Plot combined vs filtered for each phenotype and split type
     for split_type in ["random_split", "dataset_split"]:
@@ -208,7 +381,7 @@ def plot_balanced_accuracy_scatter(
         ax.scatter(
             combined_vals,
             filtered_vals,
-            s=60,
+            s=42,
             alpha=0.7,
             facecolors="white",
             edgecolors="black",
@@ -217,6 +390,14 @@ def plot_balanced_accuracy_scatter(
             label=split_labels[split_type],
             zorder=3,
         )
+
+        p_value, n_pairs = _paired_panel_pvalue(combined, filtered, common)
+        if split_type == "random_split":
+            random_p_value = p_value
+            random_n = n_pairs
+        else:
+            dataset_p_value = p_value
+            dataset_n = n_pairs
 
     # Add diagonal line (y = x)
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
@@ -234,6 +415,8 @@ def plot_balanced_accuracy_scatter(
         markerscale=0.7,
     )
     ax.set_aspect("equal")
+    _add_pvalue_text(ax, random_p_value, random_n, dataset_p_value, dataset_n)
+    _plot_feature_precision_recall_inset(ax, data, phenotypes)
 
 
 def plot_precision_recall_scatter_by_feature_type(

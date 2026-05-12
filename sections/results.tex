@@ -106,11 +106,13 @@ This confidence-based filter was intentionally heuristic and was used to test wh
 Confidence-based filtering removed substantially fewer samples than concordance filtering and produced smaller but consistent improvements in cross-dataset performance. This makes it a useful alternative when concordance filtering is not possible.
 
 Among the three filtering strategies, concordant-trained models showed the best precision-recall trade-off (Figure~\ref{fig:improvement_strategies}C).
-Removing problematic genomes and confidence-based filtering provided modest improvements.
+The GapMind baseline occupied a similar precision-recall range to the two weaker filtering strategies, indicating that these filters recovered only part of the concordance-filtering advantage.
+Removing problematic genomes and confidence-based filtering therefore provided modest improvements rather than fully restoring the concordant-sample performance.
 Depending on the application, prioritising precision (minimising false positives) or recall (minimising false negatives) may be more informative than balanced accuracy.
 
 We also compared models trained using combined features from GapMind, KOFAM, and RAST with models trained using phenotype-filtered GapMind features (Figure~\ref{fig:improvement_strategies}D).
-Feature filtering had little effect under random splits but improved cross-dataset balanced accuracy, consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalisation \cite{Li2023-up}.
+Feature filtering had little effect under random splits but improved cross-dataset balanced accuracy (paired Wilcoxon test across phenotype means: random split, $p=0.173$; cross-dataset split, $p=0.004$), consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalisation \cite{Li2023-up}.
+The precision-recall inset showed a similar pattern: phenotype-filtered features primarily improved cross-dataset recall without a large precision penalty.
 Cross-dataset performance improved most when the retained samples matched the pathway-based feature space; adding broader feature sets alone did not produce the same gain.
 
 
