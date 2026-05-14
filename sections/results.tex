@@ -4,7 +4,7 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (819 input genomes, 760 retained after filtering; see Methods for data sources, preprocessing, and quality control procedures).
+To investigate the factors governing genotype-phenotype prediction accuracy and generalisation, we compiled four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) capturing growth outcomes of phylogenetically and ecologically diverse microbial strains in various carbon sources (819 input genomes, 795 retained after filtering; see Methods for data sources, preprocessing, and quality control procedures).
 The overall workflow, including data aggregation, genome annotation (RAST, KOFAM, GapMind), and the machine learning pipeline, is depicted in Figure~\ref{fig:dataset_characteristics}A.
 All analyses focused on the 15 shared phenotypes across all datasets (Figure~\ref{fig:dataset_characteristics}B).
 All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.
@@ -13,7 +13,7 @@ The phylogenetic distribution of microbes across datasets is shown in Figure~\re
 
 To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth capabilities by assessing the completeness of metabolic pathways required for utilising specific carbon sources~\cite{Price2020GapMind,Price2024Improving}, and (2) a phylogeny-based nearest neighbour classifier (k=3) that predicts phenotypes based on the growth outcomes of the three most closely related strains (see Methods).
 
-GapMind achieved a modest balanced accuracy across the 15 shared phenotypes (strict threshold: $\sim$0.65; permissive: $\sim$0.70; Figure~\ref{fig:baseline_predictions}A).
+GapMind achieved a modest balanced accuracy across the 15 shared phenotypes (strict threshold: $0.65 \pm 0.04$; permissive: $0.70 \pm 0.08$; Figure~\ref{fig:baseline_predictions}A).
 
 The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
 Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages~\cite{Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
@@ -35,13 +35,14 @@ We aggregated data from all four datasets and assessed model performance using f
 (4) out-of-clade splits, where training and test samples are phylogenetically distant.
 For random splits, we verified that test samples were drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).
 
-In random cross-validation (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and significantly outperformed the GapMind baseline.
+In random cross-validation (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and outperformed the GapMind baseline (paired Wilcoxon signed-rank test across the 15 shared phenotypes, $p < 0.001$).
 However, the cross-dataset performance decreased substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts.
 The performance difference between regular cross-dataset and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C).
 The minimal difference between unrestricted and in-clade cross-dataset performance indicates that poor generalisation is not explained by phylogenetic distance alone, suggesting that dataset-level inconsistencies in genotype--phenotype relationships contribute substantially to model failure.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with previous observations that random splits overestimate generalisation due to fitting phylogeny-specific patterns \cite{Martiny2015-ie,Li2023-up}.
 
 Despite the expectation that well-characterised catabolic pathways would enable cross-dataset transfer \cite{Gowda2022-cf,Pasolli2016MetaAnalysis}, these results indicate that models trained on aggregated data do not consistently learn transferable mechanistic features.
+For cross-dataset testing, features absent from the training feature matrix were imputed as zero in the test data; this conflates true gene absence with annotation mismatch and may contribute to the cross-dataset performance drop reported above.
 
 
 \FloatBarrier{}
@@ -80,6 +81,7 @@ Accordingly, improved transfer in this setting should be interpreted as better l
 We used GapMind features (presence/absence of pathway genes; $\sim$1000 features across all GapMind carbon utilisation phenotypes after correlation filtering) as the feature matrix so that the feature space remained tied to known metabolic mechanisms.
 
 Models trained on concordant samples achieved near-perfect balanced accuracy ($>$0.95) on held-out concordant test data for random split evaluation (Figure~\ref{fig:concordant_analysis}A).
+This near-perfect performance is expected: filtering to concordant samples removes the harder, ambiguously-labelled cases, so the random-split number serves mainly as a sanity check; the cross-dataset performance reported next is the more informative measure of generalisation.
 Cross-dataset splits filtered for concordance also achieved high accuracy ($>$0.90) on many phenotype-dataset combinations, showing that concordance filtering improved transfer when the retained samples were supported by pathway-linked features.
 However, even with concordant data, generalisation failed for some phenotypes (e.g., glucose and serine), despite common stable features across datasets, possibly due to imbalanced class distributions.
 Because the learning algorithm and evaluation scheme were unchanged, these gains point to the training data as the main difference.
@@ -90,6 +92,9 @@ Supplementary Table~\ref{tab:feature_comparison_concordant} further shows that t
 When concordantly trained models were applied to discordant samples (where GapMind predictions contradicted experimental outcomes), they achieved a balanced accuracy of 0.18--0.60 (Figure~\ref{fig:concordant_analysis}C).
 Performance varied substantially across phenotypes, with the wide range likely reflecting heterogeneous causes of discordance.
 For some phenotypes, above-random accuracy suggests that ML may capture features beyond GapMind's curated gene sets; however, organisms whose phenotypes depend on unique pathways or regulatory mechanisms remain beyond the reach of such models.
+
+For completeness, Figure~\ref{fig:concordant_analysis}D reports the same concordant-trained models evaluated on the full held-out cross-dataset test set (concordant and discordant pooled), with the residual error decomposed into false-positive-discordant and false-negative-discordant contributions.
+The full-test balanced accuracies (median 0.67) fall between the concordant-only (panel A) and discordant-only (panel C) values, as expected by composition; the residual error is dominated by false-positive-discordant samples for most phenotypes.
 
 
 \FloatBarrier{}

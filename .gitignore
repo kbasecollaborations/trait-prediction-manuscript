@@ -524,3 +524,4 @@ old_versions/
 build/
 notebooks/
 revisions/
+/plans

@@ -24,8 +24,10 @@ GapMind~\cite{Price2020GapMind} predicted metabolic pathway completeness for car
 
 \subsection*{Phylogenetic Tree Construction}
 
-We constructed a phylogenetic tree containing all genomes used in the phenotype analyses, using the Genome Taxonomy Database (GTDB) \cite{Parks2018GTDB} as a reference.
-Phylogenetic distances were calculated using the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
+We assigned taxonomy to each input genome using GTDB-Tk \cite{Chaumeil2020GTDBTk} % TODO(CITATION NEEDED): Chaumeil 2020 GTDB-Tk
+\ (v2.x with the GTDB R214 reference) and placed genomes into the Genome Taxonomy Database (GTDB) \cite{Parks2018GTDB} reference tree using the GTDB-Tk \texttt{classify\_wf} workflow.
+For analyses that required a single tree spanning all study genomes, we extracted the corresponding subtree using the GTDB reference tree and the GTDB-Tk--assigned taxonomic identifiers; cophenetic distances between tips were computed using the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
+Where genomes lacked a GTDB-Tk species-level assignment, the genus- or family-level placement was used; such cases are flagged in the supplementary metadata.
 
 \subsection*{Baseline Predictors}
 
@@ -51,6 +53,7 @@ We applied two filtering steps to the training data before model fitting:
 \end{itemize}
 KOFAM annotations yielded approximately 4000--5000 features per dataset after filtering; GapMind features yielded approximately 1000 features.
 All filtering was performed on training data to prevent data leakage.
+The variance threshold (0.01) and Spearman correlation threshold (0.95) were selected as project-wide defaults that retain features with at least minimal cross-genome variability while collapsing redundant gene-family annotations; we did not tune these thresholds per phenotype.
 
 \subsection*{Machine Learning Classifiers}
 
@@ -59,6 +62,10 @@ CatBoost was configured with the following parameters: 1000 iterations, learning
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
 Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
 All experiments used random seed 42.
+The CatBoost hyperparameters listed above are project-wide defaults documented in \texttt{scripts/ml.py}; they were not re-tuned per phenotype, and the results that follow should therefore be read as performance achievable with sensible default settings rather than as the result of phenotype-specific hyperparameter optimisation.
+
+SHAP-based feature stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B) were repeated across 20 random seeds (see \S\,Feature Importance Analysis below).
+Performance figures were generated with a single random seed (\texttt{random\_state=42}); CatBoost training with early stopping is largely deterministic for the dataset sizes considered, but residual stochasticity is therefore not reflected in the reported balanced accuracies.
 
 \subsection*{Evaluation Strategies}
 
@@ -67,6 +74,7 @@ All experiments used random seed 42.
 We evaluated model performance using four scenarios: (i) random cross-validation within the aggregated dataset, (ii) cross-dataset evaluation (training on three datasets and testing on the held-out fourth), (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples, and (iv) out-of-clade evaluation on phylogenetically distant samples.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded.
 For cross-dataset testing, we mapped features from the training data to the test data and imputed missing features as zero values.
+This imputation conflates true gene absence with annotation mismatch between datasets, and may therefore underestimate cross-dataset performance for phenotypes whose mechanistic genes are inconsistently annotated across feature pipelines.
 
 \subsubsection*{Phylogenetic Partitioning}
 
@@ -79,6 +87,7 @@ We supplemented this with manual class-level partitioning using Gammaproteobacte
 We stratified samples based on the agreement between GapMind predictions and experimental outcomes.
 Concordant samples are those in which GapMind predictions match experimental results (correct predictions by the mechanistic model).
 Discordant samples are those in which GapMind predictions contradict experimental results (false positives or false negatives).
+Throughout, GapMind concordance was defined using the permissive (loose) pathway-completeness threshold; this is the threshold underlying the data file used by all concordance-based analyses (\texttt{gapmind\_phenotypes\_loose.tsv}).
 We trained the models on concordant samples only and evaluated their performance on both concordant and discordant test sets.
 
 \subsection*{Feature Importance Analysis}
@@ -95,7 +104,8 @@ We evaluated two additional filtering strategies beyond concordant sample filter
 
 \subsubsection*{Problematic Sample Identification}
 
-We systematically identified problematic samples: microbes showing zero growth on all substrates, microbes showing universal growth despite incomplete GapMind pathways, and the 20 genomes with the highest total GapMind misclassification count across all 15 phenotypes.
+We systematically identified problematic samples in two categories: microbes showing zero growth on all substrates despite at least one GapMind growth prediction, and microbes showing growth on all substrates despite incomplete GapMind pathways.
+The 20 genomes with the highest total GapMind misclassification count across the 15 phenotypes were inspected and the majority belonged to one of these two categories.
 \subsubsection*{Confidence-Based Filtering}
 
 We defined a composite confidence score from three inputs:

@@ -26,7 +26,7 @@ This dataset provided the broadest ecological coverage of phyllosphere-associate
 \paragraph*{Biolog.}
 The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies.
 Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilisation via colorimetric tetrazolium-based readout in 96-well plates.
-After quality filtering, 327 genomes were retained.
+All 362 genomes passed quality control and were retained for downstream analysis.
 The standardised, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
 
 \paragraph*{Marine.}
@@ -64,14 +64,14 @@ Completeness was calculated as the fraction of species core genes detected in ea
 The majority of successfully assessed genomes exceeded 90\% pangenome completeness, corroborating the CheckM2-based filtering.
 
 \paragraph*{Overall attrition.}
-Across all datasets, the quality control pipeline retained 760 of 819 input genomes (92.8\%).
-Per-dataset retention rates were: ATLeaf 206/224 (92.0\%), Biolog 327/362 (90.3\%), Marine 172/175 (98.3\%), and Populus 55/58 (94.8\%).
-The Biolog dataset had the highest absolute attrition (35 genomes), consistent with its compilation from multiple independent studies with heterogeneous assembly quality.
+Across all datasets, the quality control pipeline retained 795 of 819 input genomes (97.1\%).
+Per-dataset retention rates were: ATLeaf 206/224 (92.0\%), Biolog 362/362 (100.0\%), Marine 172/175 (98.3\%), and Populus 55/58 (94.8\%).
+ATLeaf showed the highest absolute attrition, attributable to assembly fragmentation and CheckM2 quality filtering; the Biolog phenotype set passed quality control without further attrition because its constituent strains were curated upstream.
 
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
 
 We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types (Table~\ref{tab:best_models_counts}).
-In this table, ``cb'' denotes CatBoost, ``rf'' denotes Random Forest, and ``lit'' refers to the Biolog dataset.
+In this table, ``cb'' denotes CatBoost and ``rf'' denotes Random Forest.
 CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
 All models were evaluated using balanced accuracy as the primary reporting metric to account for class imbalance in phenotype data, where the proportion of positive (growth) and negative (no-growth) samples varied substantially across phenotypes and datasets.
 
@@ -95,7 +95,7 @@ The contrast between these tables illustrates that concordant training produces 
 \textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Genomes} \\ \textbf{Used}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 15 & Agar plate (minimal media) \\
-Biolog  & 362 & 64  & 327 & 15 & Biolog PM (colorimetric) \\
+Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
 Marine  & 175 & 100 & 172 & 15 & Carbon source assay \\
 Populus & 58  & 191 & 55  & 15 & Carbon source assay \\
 \hline
@@ -164,12 +164,14 @@ This progressive increase in phylogenetic distance between training and test set
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{figure_s3.png}
-% TODO: This figure should be updated, are these GapMind concordant samples?
-\caption{\textbf{Comparison of model performance under in-clade and out-of-clade evaluation scenarios.}
-Balanced accuracy of CatBoost classifiers (using KOFAM features) across 15 phenotypes when evaluated on genomes within the same phylogenetic clade as the training set (in-clade) versus genomes from phylogenetically distant clades (out-of-clade).
-Clade definitions follow the phylogenetic partitioning algorithm of Li et al.~\cite{Li2023-up}, with phenotype--dataset combinations excluded when fewer than 10 test samples or 10 minority-class samples were available.
-Out-of-clade performance was consistently lower, confirming that random cross-validation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
+\includegraphics[width=\textwidth]{figure_s3.pdf}
+\caption{\textbf{In-clade vs out-of-clade performance across the 15 shared phenotypes (full unfiltered training data).}
+Balanced accuracy of CatBoost classifiers using KOFAM features across the 15 shared phenotypes and the four leave-one-dataset-out combinations.
+Top: in-clade splits (test samples drawn from clades represented in the training set).
+Bottom: out-of-clade splits (test samples drawn from clades not represented in training).
+Clade definitions were derived by Agglomerative clustering of the held-out test set on the phylogenetic distance matrix using the same parameters as Figure~\ref{fig:ml_performance}C; in-clade samples cluster with at least two training samples, out-of-clade samples form clusters lacking training representation.
+Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded; 45 of 120 combinations were excluded under this rule, including all 15 Populus-held-out out-of-clade combinations because Populus tips lie within clades represented in the other three training datasets.
+Out-of-clade balanced accuracies were consistently lower than in-clade (mean 0.629 vs 0.696), confirming that random cross-validation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
 
@@ -196,8 +198,6 @@ The majority of genomes exceeded 90\% pangenome completeness, consistent with th
 (\textbf{D}) Core genes present versus expected for successful genomes, with points colored by completeness; the dashed line indicates perfect agreement.}
 \label{fig:pangenome_completeness}
 \end{figure}
-
-% TODO: Add checkM2 figure
 
 \begin{figure}[ht]
 \centering
@@ -286,4 +286,60 @@ Random-split performance saturates at 50 samples for all phenotypes, whereas cro
 Colours distinguish intra-dataset random-split estimates (green) from cross-dataset dataset-split estimates (blue).
 }
 \label{fig:all_phenotype_saturation}
+\end{figure}
+
+\subsection*{Supplementary Text S7: Feature-Direction SHAP for Concordant Models}
+
+While Figure~\ref{fig:concordant_analysis}B reports SHAP-based feature \emph{stability} across random seeds for concordant-trained models, it does not show the direction in which feature value influences prediction.
+Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with GapMind features under the random-split evaluation.
+For both phenotypes, the top-ranked SHAP features include the canonical catabolic enzymes for the corresponding pathway (histidine: \textit{hutI}, \textit{hutU} = K01712, \textit{hutH}; galactose: \textit{galT}, \textit{mglA}), and feature presence (binary 1) consistently shifts predictions toward growth, supporting the interpretation that the concordant-trained models recover mechanistically meaningful signals rather than dataset-correlated shortcuts.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\textwidth]{figure_s11.pdf}
+\caption{
+\textbf{SHAP beeswarm plots for histidine and galactose under concordant training.}
+Top: histidine. Bottom: galactose.
+Each row within a panel is one of the top 15 features (by mean absolute SHAP value); each point is one held-out concordant test sample, coloured by feature value (presence/absence of the corresponding GapMind pathway gene).
+Positive SHAP values shift the model toward predicting growth.
+}
+\label{fig:shap_beeswarm}
+\end{figure}
+
+\subsection*{Supplementary Text S8: Per-Phenotype, Per-Dataset Concordant and Discordant Sample Counts}
+
+To make the post-filtering training set sizes transparent, Figure~\ref{fig:concordance_counts} reports the number of concordant, false-positive-discordant (GapMind predicts growth, experiment shows none), and false-negative-discordant (GapMind predicts no growth, experiment shows growth) samples for each (phenotype, dataset) combination, together with the number of samples excluded for missing GapMind predictions or missing experimental phenotypes.
+Concordance is defined throughout using GapMind's permissive (loose) pathway-completeness threshold (see Methods).
+Across the 15 shared phenotypes and four datasets, 71.5\% of labelled samples are concordant.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figure_s12.pdf}
+\caption{
+\textbf{Concordant and discordant sample counts per phenotype and dataset.}
+Each cell of the heatmap reports the number of genomes per (phenotype, dataset) combination in four categories: concordant (green), false-positive discordant (red), false-negative discordant (yellow), and excluded for missing data (grey).
+Per-dataset row sums per phenotype equal the post-QC retained genome counts: ATLeaf 206, Biolog 362, Marine 172, Populus 55.
+Counts use the permissive (loose) GapMind threshold for concordance.
+}
+\label{fig:concordance_counts}
+\end{figure}
+
+\subsection*{Supplementary Text S9: Taxonomic Composition Before and After Concordance Filtering}
+
+Concordance filtering may preferentially retain genomes whose canonical pathways are well represented in annotation databases, which could bias the resulting training sets toward better-studied taxa.
+We quantified this bias along three axes for each of the 15 shared phenotypes: (i) class-level composition before vs after filtering (Panel~A), (ii) phylogenetic-diversity retention computed as the total branch length spanning the retained tips divided by the corresponding length for the unfiltered set (Panel~B), and (iii) train/test taxonomic overlap before vs after filtering across the four leave-one-dataset-out combinations (Panel~C).
+Filtering modestly reduced phylogenetic diversity (median Faith-PD retention $= 0.87$ across phenotypes; range $0.74$--$0.93$) and produced a small enrichment of Gammaproteobacteria ($+3.2$ percentage points on average) at the expense of unclassified genomes; class-rank train/test overlap was essentially unchanged because the small number of major bacterial classes is present across all four datasets.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figure_s13.pdf}
+\caption{
+\textbf{Taxonomic bias introduced by concordance filtering.}
+(\textbf{A}) Class-level composition of retained genomes before vs after concordance filtering, per phenotype.
+Composition is computed for the subset of genomes with GTDB-Tk class-level assignments (approximately 63\% of the retained set); genomes lacking such assignments are shown as a separate \textit{Unassigned} category in grey.
+(\textbf{B}) Phylogenetic-diversity retention: total branch length spanning concordant tips vs the unfiltered set; the dashed line marks $y=x$.
+(\textbf{C}) Train/test class-level overlap before vs after filtering, averaged across the four leave-one-dataset-out combinations.
+Concordance is defined using the permissive (loose) GapMind threshold.
+}
+\label{fig:taxonomic_bias}
 \end{figure}
