@@ -343,3 +343,21 @@ Concordance is defined using the permissive (loose) GapMind threshold.
 }
 \label{fig:taxonomic_bias}
 \end{figure}
+
+\subsection*{Supplementary Text S10: Concordant-Trained Model Performance on the Full Held-Out Test Set}
+
+Figure~\ref{fig:concordant_analysis}A reports concordant-trained model performance on held-out concordant samples; Figure~\ref{fig:concordant_analysis}C reports performance on held-out discordant samples.
+The natural composition --- performance on the full held-out test set, with concordant and discordant samples pooled --- is shown in Figure~\ref{fig:full_held_out_test} for completeness.
+The full-test balanced accuracy (median 0.67 across phenotypes; range 0.47--0.95) falls between the concordant-only (median 0.89) and discordant-only values, as expected by the test-set composition reported in Panel~B; the residual error is dominated by false-positive-discordant samples for most phenotypes.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{figure_s14.pdf}
+\caption{
+\textbf{Concordant-trained model performance on the full held-out cross-dataset test set.}
+(\textbf{A}) Per-phenotype balanced accuracy on the full held-out cross-dataset test set (concordant and discordant pooled), evaluated for each of the four leave-one-dataset-out combinations.
+The dashed horizontal line indicates random performance (balanced accuracy~$=0.5$).
+(\textbf{B}) Per-phenotype composition of the held-out test set, summed across the four leave-one-dataset-out combinations: GapMind concordant (blue), false-positive discordant (red), and false-negative discordant (orange).
+}
+\label{fig:full_held_out_test}
+\end{figure}

@@ -88,13 +88,15 @@ Because the learning algorithm and evaluation scheme were unchanged, these gains
 
 Cross-dataset stability analysis (Figure~\ref{fig:concordant_analysis}B) showed a notable increase in shared stable features compared to models trained on full, unfiltered datasets (Figure~\ref{fig:misclassification_diagnosis}C), in which only four of 15 phenotypes shared any common stable features across datasets. After concordance filtering, cross-dataset feature overlap increased, consistent with less dataset-specific fitting.
 Supplementary Table~\ref{tab:feature_comparison_concordant} further shows that these shared features often correspond to established pathway genes. This cross-dataset convergence was not observed when the models were trained on aggregated data (Supplementary Table~\ref{tab:feature_comparison}).
+Beyond stability, feature-direction analysis for representative phenotypes (Supplementary Figure~\ref{fig:shap_beeswarm}) confirmed that gene presence consistently shifted predictions toward growth for canonical pathway genes (urocanate hydratase \textit{hutU} for histidine; the Leloir-pathway galactose-1-phosphate uridyltransferase \textit{galT} and the galactose ABC transporter \textit{mglA} for galactose), supporting a mechanistic reading of the learned models.
 
 When concordantly trained models were applied to discordant samples (where GapMind predictions contradicted experimental outcomes), they achieved a balanced accuracy of 0.18--0.60 (Figure~\ref{fig:concordant_analysis}C).
 Performance varied substantially across phenotypes, with the wide range likely reflecting heterogeneous causes of discordance.
 For some phenotypes, above-random accuracy suggests that ML may capture features beyond GapMind's curated gene sets; however, organisms whose phenotypes depend on unique pathways or regulatory mechanisms remain beyond the reach of such models.
 
-For completeness, Figure~\ref{fig:concordant_analysis}D reports the same concordant-trained models evaluated on the full held-out cross-dataset test set (concordant and discordant pooled), with the residual error decomposed into false-positive-discordant and false-negative-discordant contributions.
-The full-test balanced accuracies (median 0.67) fall between the concordant-only (panel A) and discordant-only (panel C) values, as expected by composition; the residual error is dominated by false-positive-discordant samples for most phenotypes.
+In practice, applying a concordant-trained model to a new dataset means evaluating it on samples that have not been pre-selected for concordance. We therefore re-evaluated the same concordant-trained models on the full held-out cross-dataset test set, with the residual error decomposed into false-positive-discordant and false-negative-discordant contributions (Supplementary Figure~\ref{fig:full_held_out_test}).
+Median balanced accuracy on the full test set was 0.67 (range 0.47--0.95), substantially above random and intermediate between the concordant-only (Figure~\ref{fig:concordant_analysis}A) and discordant-only (Figure~\ref{fig:concordant_analysis}C) values reported above.
+The residual error was dominated by false-positive-discordant samples for most phenotypes, indicating that the dominant failure mode is organisms for which GapMind asserts a complete pathway but no growth is observed --- a pattern more consistent with regulatory repression or experimental artefact than with missing gene content.
 
 
 \FloatBarrier{}
