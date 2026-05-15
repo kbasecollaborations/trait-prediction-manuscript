@@ -3,14 +3,14 @@
 \begin{abstract}
 {
 \noindent
-Predicting microbial carbon utilisation from genomic data remains challenging despite well-characterised metabolic pathways, and machine learning (ML) models for genotype-phenotype prediction often struggle to generalise beyond their training data.
-Here, we investigated this problem using microbial carbon utilisation as a model system by compiling binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
-We found that generalisation failures arose primarily from data coherence rather than algorithmic limitations: when training data contained internally inconsistent genotype-phenotype relationships, models achieved high within-dataset performance but transferred poorly across datasets and phylogenetic contexts, instead learning dataset- or phylogeny-correlated shortcuts.
-When test conditions resembled training conditions, training on the full dataset maximised performance, making this strategy appropriate for same-environment applications.
+Machine learning models for predicting microbial phenotypes from genomes routinely achieve high within-dataset accuracy yet fail to generalise across experimental contexts or phylogenetic lineages.
+Whether this failure reflects algorithmic limitations or properties of the training data has remained unresolved.
+We investigated this question using microbial carbon utilisation as a model system, compiling binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets.
+Generalisation failures arose primarily from data coherence rather than algorithmic limitations: when training data contained internally inconsistent genotype--phenotype relationships, models achieved high within-dataset performance but transferred poorly across datasets and phylogenetic contexts, instead learning dataset- or phylogeny-correlated shortcuts.
 To improve transferability, we stratified samples by concordance between a mechanistic predictor of carbon utilisation, GapMind pathway completeness, and experimental growth outcomes.
-Models trained on concordant samples, where genotype-phenotype relationships were internally consistent and represented in the genomic feature space, achieved robust cross-dataset generalisation and consistently recovered known pathway genes as top predictive features.
-These models also correctly classified a subset of samples misclassified by the mechanistic predictor, indicating that ML captures information beyond curated pathway rules.
-For histidine utilisation, robust generalisation required only 50--100 high-quality training samples.
+Models trained on concordant samples, where genotype--phenotype relationships were internally consistent and represented in the genomic feature space, achieved robust cross-dataset generalisation and consistently recovered known pathway genes as top predictive features.
+On natural-composition held-out data, these models retained intermediate accuracy (median balanced accuracy 0.67), indicating partial recovery of signal beyond the curated pathway rules.
+For most of the 15 shared phenotypes, 50--100 high-quality samples were sufficient for near-saturation.
 Together, these results reframe ML generalisation as a data coherence problem: when mappings are internally consistent and biologically encoded in the available features, models learn transferable mechanistic signals; when they are not, they default to spurious correlations that fail to generalise.
 }
 \end{abstract}

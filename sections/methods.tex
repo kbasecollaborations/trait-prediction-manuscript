@@ -10,10 +10,8 @@ Biolog encompassed 362 strains across 64 substrates, compiled from published stu
 Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
 Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carbon sources.
 
-Due to annotation pipeline limitations and incomplete phenotypic data, the final datasets used for analysis contained fewer genomes and phenotypes than the original datasets (Supplementary Table~\ref{tab:dataset_overview}).
-All analyses focused on the 15 shared phenotypes across all datasets.
-We used all four datasets in the aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
-We standardised carbon source names across datasets before identifying the 15 phenotypes shared by all four collections.
+Annotation pipeline limitations and incomplete phenotypic data reduced the final analysis sets relative to the originals (Supplementary Table~\ref{tab:dataset_overview}).
+We standardised carbon source names across datasets and focused all analyses on the 15 phenotypes shared by the four collections, using all four datasets for aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
 
 \subsection*{Genome Annotation}
 
@@ -24,10 +22,10 @@ GapMind~\cite{Price2020GapMind} predicted metabolic pathway completeness for car
 
 \subsection*{Phylogenetic Tree Construction}
 
-We assigned taxonomy to each input genome using GTDB-Tk \cite{Chaumeil2020GTDBTk} % TODO(CITATION NEEDED): Chaumeil 2020 GTDB-Tk
-\ (v2.x with the GTDB R214 reference) and placed genomes into the Genome Taxonomy Database (GTDB) \cite{Parks2018GTDB} reference tree using the GTDB-Tk \texttt{classify\_wf} workflow.
-For analyses that required a single tree spanning all study genomes, we extracted the corresponding subtree using the GTDB reference tree and the GTDB-Tk--assigned taxonomic identifiers; cophenetic distances between tips were computed using the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
-Where genomes lacked a GTDB-Tk species-level assignment, the genus- or family-level placement was used; such cases are flagged in the supplementary metadata.
+We assigned taxonomy with GTDB-Tk \cite{Chaumeil2020GTDBTk} % TODO(CITATION NEEDED): Chaumeil 2020 GTDB-Tk
+\ (v2.x, GTDB R214 reference) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using the \texttt{classify\_wf} workflow.
+For analyses requiring a single tree spanning all study genomes, we extracted the corresponding subtree and computed cophenetic distances between tips with the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
+Genomes lacking a species-level assignment were placed at the genus or family level, with such cases flagged in the supplementary metadata.
 
 \subsection*{Baseline Predictors}
 
@@ -53,7 +51,6 @@ We applied two filtering steps to the training data before model fitting:
 \end{itemize}
 KOFAM annotations yielded approximately 4000--5000 features per dataset after filtering; GapMind features yielded approximately 1000 features.
 All filtering was performed on training data to prevent data leakage.
-The variance threshold (0.01) and Spearman correlation threshold (0.95) were selected as project-wide defaults that retain features with at least minimal cross-genome variability while collapsing redundant gene-family annotations; we did not tune these thresholds per phenotype.
 
 \subsection*{Machine Learning Classifiers}
 
@@ -62,10 +59,10 @@ CatBoost was configured with the following parameters: 1000 iterations, learning
 For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
 Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
 All experiments used random seed 42.
-The CatBoost hyperparameters listed above are project-wide defaults documented in \texttt{scripts/ml.py}; they were not re-tuned per phenotype, and the results that follow should therefore be read as performance achievable with sensible default settings rather than as the result of phenotype-specific hyperparameter optimisation.
+Hyperparameters were not tuned per phenotype; reported performance reflects default settings.
 
 SHAP-based feature stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B) were repeated across 20 random seeds (see \S\,Feature Importance Analysis below).
-Performance figures were generated with a single random seed (\texttt{random\_state=42}); CatBoost training with early stopping is largely deterministic for the dataset sizes considered, but residual stochasticity is therefore not reflected in the reported balanced accuracies.
+Performance figures used a single seed (\texttt{random\_state=42}); SHAP stability analyses used 20 seeds (see below).
 
 \subsection*{Evaluation Strategies}
 
@@ -73,21 +70,17 @@ Performance figures were generated with a single random seed (\texttt{random\_st
 
 We evaluated model performance using four scenarios: (i) random cross-validation within the aggregated dataset, (ii) cross-dataset evaluation (training on three datasets and testing on the held-out fourth), (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples, and (iv) out-of-clade evaluation on phylogenetically distant samples.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded.
-For cross-dataset testing, we mapped features from the training data to the test data and imputed missing features as zero values.
-This imputation conflates true gene absence with annotation mismatch between datasets, and may therefore underestimate cross-dataset performance for phenotypes whose mechanistic genes are inconsistently annotated across feature pipelines.
+For cross-dataset testing, we mapped features from training to test data and imputed missing features as zero, which conflates true gene absence with cross-dataset annotation mismatch and may underestimate cross-dataset performance.
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We implemented the out-of-clade partitioning algorithm described by \cite{Li2023-up} to separate training and test sets by phylogenetic distance.
-The algorithm selects test clades based on a target test set size range (12--18\% of samples) while ensuring phylogenetic separation from the training data.
+We implemented the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades within a target size range (12--18\% of samples).
 We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
 \subsection*{Concordant and Discordant Sample Analysis}
 
-We stratified samples based on the agreement between GapMind predictions and experimental outcomes.
-Concordant samples are those in which GapMind predictions match experimental results (correct predictions by the mechanistic model).
-Discordant samples are those in which GapMind predictions contradict experimental results (false positives or false negatives).
-Throughout, GapMind concordance was defined using the permissive (loose) pathway-completeness threshold; this is the threshold underlying the data file used by all concordance-based analyses (\texttt{gapmind\_phenotypes\_loose.tsv}).
+We stratified samples by agreement between GapMind predictions and experimental outcomes: concordant samples are those where GapMind matches the experiment (correct mechanistic predictions), and discordant samples are those where GapMind contradicts it (false positives or negatives).
+Concordance used GapMind's permissive (loose) pathway-completeness threshold throughout.
 We trained the models on concordant samples only and evaluated their performance on both concordant and discordant test sets.
 Per-phenotype, per-dataset counts of concordant and discordant samples (and exclusions) are reported in Supplementary Figure~\ref{fig:concordance_counts}.
 
@@ -105,8 +98,8 @@ We evaluated two additional filtering strategies beyond concordant sample filter
 
 \subsubsection*{Problematic Sample Identification}
 
-We systematically identified problematic samples in two categories: microbes showing zero growth on all substrates despite at least one GapMind growth prediction, and microbes showing growth on all substrates despite incomplete GapMind pathways.
-The 20 genomes with the highest total GapMind misclassification count across the 15 phenotypes were inspected and the majority belonged to one of these two categories.
+We identified problematic samples in two categories: microbes with zero growth on all substrates despite at least one GapMind growth prediction, and microbes with growth on all substrates despite incomplete GapMind pathways.
+Inspection of the 20 genomes with the highest GapMind misclassification count across the 15 phenotypes showed most belonged to one of these categories.
 \subsubsection*{Confidence-Based Filtering}
 
 We defined a composite confidence score from three inputs:
@@ -115,13 +108,17 @@ We defined a composite confidence score from three inputs:
     \item GapMind confidence ($w=0.3$): Pathway completeness score from GapMind
     \item Experimental data ($w=0.5$): Binary experimental outcome
 \end{itemize}
-We weighted experimental outcome, GapMind score, and phylogenetic neighbour agreement as 0.5, 0.3, and 0.2, respectively.
+The experimental-outcome component of this composite score is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, because feature matrices supplied to the classifier do not include the phenotype label.
 GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
 Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
-These weights and thresholds were heuristic and were intended as a proof-of-concept quality filter rather than a tuned optimum.
-For comparisons between combined and phenotype-filtered feature sets, we computed paired Wilcoxon signed-rank tests across phenotype-level mean balanced accuracies separately for random and cross-dataset splits.
 \subsection*{Sample Size Requirements}
 
 We assessed the minimum training data requirements using learning curves.
 For each phenotype included in the learning-curve analysis, we trained models on subsets of training data (50, 100, 200, 500, and full samples) using stratified subsampling with three repeats per configuration.
 Performance was evaluated across random, cross-dataset, and out-of-clade splits, as well as on full, concordant, and discordant test subsets.
+
+\subsection*{Statistical Analysis}
+
+Paired comparisons of balanced accuracy across phenotypes (model versus baseline; combined versus phenotype-filtered features; random versus cross-dataset splits) used the two-sided Wilcoxon signed-rank test on phenotype-level mean balanced accuracies, computed with \texttt{scipy.stats.wilcoxon}.
+P-values are reported uncorrected; the tests are intended as descriptive summaries of paired differences rather than confirmatory inferences, and no multiple-testing adjustment was applied.
+Summary statistics in the text are reported as mean $\pm$ standard deviation across folds or repeats unless otherwise noted.
