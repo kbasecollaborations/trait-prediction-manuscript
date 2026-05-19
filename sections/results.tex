@@ -12,12 +12,10 @@ Datasets differed in taxonomic coverage (Figure~\ref{fig:phylogenetic_distributi
 
 
 To establish baseline performance, we evaluated two existing approaches: (1) GapMind, a mechanistic pathway-based tool that predicts growth capabilities by assessing the completeness of metabolic pathways required for utilising specific carbon sources~\cite{Price2020GapMind,Price2024Improving}, and (2) a phylogeny-based nearest neighbour classifier (k=3) that predicts phenotypes based on the growth outcomes of the three most closely related strains (see Methods).
-
 GapMind achieved a modest balanced accuracy across the 15 shared phenotypes (strict threshold: $0.65 \pm 0.04$; permissive: $0.70 \pm 0.08$; Figure~\ref{fig:baseline_predictions}A).
-
 The phylogeny-based approach, which leverages the well-documented association between metabolic phenotypes and phylogenetic relationships \cite{Langille2013-fh,Martiny2013-ob}, performed well within clades (random split: 0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade split: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B).
 Out-of-clade performance approached null model levels, demonstrating that phylogenetic relatedness alone is insufficient for accurate prediction across diverse lineages~\cite{Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
-Cellobiose and glycerol showed unexpectedly high out-of-clade accuracy ($>$0.80), potentially reflecting highly conserved pathways.
+% Cellobiose and glycerol showed unexpectedly high out-of-clade accuracy ($>$0.80), potentially reflecting highly conserved pathways.
 The limited performance of both baseline approaches motivated us to test whether machine learning models integrating comprehensive genomic features could better capture the complexity of genotype-phenotype relationships and generalise across experimental contexts.
 
 
@@ -25,7 +23,7 @@ The limited performance of both baseline approaches motivated us to test whether
 
 \subsection*{Machine learning models generalise within but not across datasets}
 
-We trained gradient-boosted tree (GBT) classifiers using KOFAM annotations as features ($\sim$4000--5000 features per genome after correlation filtering; see Methods).
+To test whether machine learning could overcome the limitations of the baseline approaches, we trained gradient-boosted tree (GBT) classifiers using KOFAM annotations as features ($\sim$4000--5000 features per genome after correlation filtering; see Methods).
 All models were evaluated using balanced accuracy to account for class imbalance across phenotypes.
 
 We aggregated data from all four datasets and assessed model performance using four evaluation scenarios designed to progressively test generalisation:
@@ -70,7 +68,7 @@ To test this hypothesis, we leveraged GapMind concordance as a criterion for str
 
 \subsection*{Training on GapMind-concordant samples recovers mechanistic features and improves transfer}
 
-We defined concordant samples as those in which GapMind predictions matched experimental outcomes. These samples likely overrepresent organisms using conserved pathways that are already captured in annotation databases.
+To implement this stratification, we defined concordant samples as those in which GapMind predictions matched experimental outcomes. These samples likely overrepresent organisms using conserved pathways that are already captured in annotation databases.
 Concordance served only to stratify samples; the model architecture, training procedure, and evaluation strategy were unchanged.
 To rule out tautological alignment between the concordance criterion and the feature space, we repeated the cross-dataset evaluation with KOFAM features (independent of GapMind) and retained the improvement on concordant held-out samples (Supplementary Figure~\ref{fig:kofam_concordant}).
 This filter preferentially selects organisms whose canonical pathways are captured in annotation databases; organisms using alternative pathways or context-dependent regulation are underrepresented, so improved transfer should be read as better learning on a mechanistically homogeneous subset rather than recovery of all valid utilisation strategies.
