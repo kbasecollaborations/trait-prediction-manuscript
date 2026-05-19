@@ -114,6 +114,7 @@ We also compared models trained using combined features from GapMind, KOFAM, and
 Feature filtering had little effect under random splits but improved cross-dataset balanced accuracy (paired Wilcoxon test across phenotype means: random split, $p=0.173$; cross-dataset split, $p=0.004$), consistent with previous findings that biologically relevant features outperform comprehensive feature sets for generalisation \cite{Li2023-up}.
 The precision-recall inset showed a similar pattern: phenotype-filtered features primarily improved cross-dataset recall without a large precision penalty.
 Cross-dataset performance improved most when the retained samples matched the pathway-based feature space; adding broader feature sets alone did not produce the same gain.
+Overall, quality-based sample filtering and pathway-restricted features each recovered only part of the concordance-driven gain in cross-dataset transfer, narrowing but not closing the gap relative to training on mechanistically concordant samples.
 
 
 \FloatBarrier{}
@@ -128,3 +129,4 @@ A corresponding learning-curve analysis for galactose is provided in Supplementa
 Across all 15 shared phenotypes, performance plateaued at approximately 50--100 concordant training samples under random and cross-dataset splits, with only glucose and galacturonic acid requiring 200 samples and no phenotype showing a new saturation point beyond 200 (Supplementary Figures~\ref{fig:all_phenotype_heatmap}--\ref{fig:all_phenotype_saturation}).
 Strong generalisation is therefore achievable with modest data when genotype--phenotype mappings are internally consistent and represented in the feature space~\cite{Figueroa2012SampleSize}.
 Some phenotypes remained limited in absolute performance, indicating that modest sample requirements do not guarantee high balanced accuracy when the underlying signal is weak or ambiguous.
+Sample size was therefore rarely the binding constraint for these carbon-utilisation phenotypes; where performance remained low, the limitation lay in the strength of the underlying genotype--phenotype signal rather than in the amount of training data.
