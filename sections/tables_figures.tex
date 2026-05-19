@@ -70,9 +70,9 @@ Solid bars represent features common to the aggregated dataset, and patterned ba
 \includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
 \textbf{Concordant-trained models learn mechanistic features and partially predict discordant samples.}
-All models used the same architecture and feature representation as in Figure~3; only the training set was restricted to concordant samples.
+All models used the same architecture and KOFAM feature representation as in Figure~3; only the training set was restricted to GapMind-concordant samples.
 (A) Balanced accuracy on held-out GapMind-concordant samples under random split (green line) and cross-dataset split (blue boxes) across 15 phenotypes.
-(B) Cross-dataset feature stability analysis for concordant-trained models using SHAP (stable features are those that appear in $\geq$70\% of runs; see Methods).
+(B) Cross-dataset feature stability analysis for concordant-trained models using SHAP after KOFAM candidate-feature screening (stable features are those that appear in $\geq$70\% of runs; see Methods).
 Solid bars: features common to the aggregated dataset; patterned bars: dataset-unique features.
 (C) Balanced accuracy of concordant-trained models applied to discordant samples.
 Performance varied substantially across phenotypes; values near random indicate cases in which genome-derived features were insufficient to resolve the phenotype.
@@ -105,4 +105,16 @@ Columns represent evaluation scenarios: (left) random splits, (middle) cross-dat
 Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
 Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects cases in which genome-derived features are insufficient to fully encode the phenotype; lack of saturation with additional training data indicates representational, not statistical, limits.
 }\label{fig:model_sample_size_requirements}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.95\textwidth]{figure8.pdf}
+\caption{
+\textbf{Model confidence and GapMind agreement define an applicability domain for concordant-trained models.}
+(\textbf{A}) Risk--coverage curve for concordant-trained models on the full held-out cross-dataset test set, pooled across phenotypes and held-out datasets.
+Genomes are ranked by model confidence ($\max(p,\,1-p)$); the curve shows balanced accuracy on the retained subset as a function of coverage, the fraction of genomes the model commits to.
+(\textbf{B}) Balanced accuracy split by agreement between the GapMind call and the machine learning prediction.
+The dotted line marks balanced accuracy on the full test set and the dashed line marks random performance (balanced accuracy~$=0.5$).
+}\label{fig:selective_prediction}
 \end{figure}

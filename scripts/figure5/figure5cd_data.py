@@ -403,6 +403,9 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     GAPMIND_FILE = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
+    KOFAM_FEATURE_FILE = Path(
+        "data/processed/features_reduced/combined_datasets/kofam.tsv"
+    )
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
     # Define which split types to process (only random and dataset splits)
@@ -423,7 +426,11 @@ def main() -> None:
 
     # Load splits
     print("\nLoading train-test splits...")
-    split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
+    split_data = load_split_data(
+        base_dir=SPLITS_DIR,
+        split_types=SPLIT_TYPES,
+        feature_file=KOFAM_FEATURE_FILE,
+    )
 
     # Print summary of loaded data
     print("\nLoaded splits summary:")

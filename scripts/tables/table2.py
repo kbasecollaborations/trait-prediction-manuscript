@@ -32,7 +32,7 @@ def create_feature_table(
     phenotypes: list[str],
     output_file: Path,
 ) -> None:
-    """Create LaTeX table showing common and unique features for each dataset (concordant samples).
+    """Create LaTeX table showing common and unique KOFAM features.
 
     Parameters
     ----------
@@ -123,8 +123,9 @@ def create_feature_table(
     # Close table
     latex_lines.append("\\end{tabular}")
     latex_lines.append(
-        "\\caption{Stable features identified by machine learning models for selected phenotypes "
-        "when trained on GapMind-concordant samples only. \\textbf{Common Features} are those "
+        "\\caption{Stable KOFAM features identified by machine learning models for selected phenotypes "
+        "when trained on GapMind-concordant samples only, after screening each model to a broad "
+        "candidate set by CatBoost feature importance. \\textbf{Common Features} are those "
         "appearing in both the combined (all datasets) and individual dataset models. "
         "\\textbf{Unique Features} are those appearing only in the individual dataset model. "
         "Features shown are consistent across multiple random seeds (appearing in $\\geq$70\\% "

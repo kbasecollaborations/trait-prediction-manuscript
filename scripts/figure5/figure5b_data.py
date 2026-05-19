@@ -3,6 +3,8 @@
 Generate SHAP-based feature importance data for Figure 5B (concordant samples only).
 
 This script is similar to Figure 4C analysis but only uses GapMind-concordant samples.
+KOFAM annotations provide the model feature space; GapMind is used only for
+sample stratification.
 It performs two main analyses:
 1. Trains ML models on combined train-test splits (concordant samples only) and identifies
    consistent top features using SHAP values across multiple random seeds.
@@ -10,6 +12,9 @@ It performs two main analyses:
    consistent top features using SHAP values across multiple random seeds.
 
 The script uses CatBoost's native SHAP implementation for feature importance.
+For high-dimensional KOFAM matrices, each phenotype/split is first screened to a
+broad set of CatBoost-important candidate features before seeded SHAP stability
+analysis is run on the reduced matrix.
 """
 
 import json
@@ -210,7 +215,11 @@ def get_shap_top_features(
     pool = Pool(data=X, label=y)
 
     # Get SHAP values using CatBoost's native implementation
-    shap_values = model.get_feature_importance(data=pool, type="ShapValues")
+    shap_values = model.get_feature_importance(
+        data=pool,
+        type="ShapValues",
+        thread_count=-1,
+    )
 
     # Remove last column (base value) and take mean absolute SHAP value per feature
     shap_values = shap_values[:, :-1]
@@ -221,6 +230,78 @@ def get_shap_top_features(
     feature_importance.sort_values(ascending=False, inplace=True)
 
     return feature_importance.head(n_features).index.tolist()
+
+
+def get_screened_feature_names(
+    X: pd.DataFrame,
+    y: pd.Series,
+    n_candidate_features: int,
+    random_state: int = 42,
+) -> list[str]:
+    """Select a broad KOFAM candidate set before SHAP calculation.
+
+    Parameters
+    ----------
+    X : pd.DataFrame
+        Training feature matrix.
+    y : pd.Series
+        Training labels.
+    n_candidate_features : int
+        Number of candidate features to retain.
+    random_state : int, optional
+        Random state for the screening model, by default 42.
+
+    Returns
+    -------
+    list[str]
+        Feature names ranked by CatBoost PredictionValuesChange importance.
+    """
+    model = make_classifier("cb_noeval", random_state=random_state)
+    model.fit(X, y, verbose=False)
+
+    importances = model.get_feature_importance(
+        type="PredictionValuesChange",
+        thread_count=-1,
+    )
+    feature_importance = pd.Series(importances, index=X.columns)
+    feature_importance.sort_values(ascending=False, inplace=True)
+
+    n_keep = min(n_candidate_features, len(feature_importance))
+    return feature_importance.head(n_keep).index.tolist()
+
+
+def get_screened_split_data(
+    split_data: dict[str, pd.DataFrame | pd.Series],
+    n_candidate_features: int,
+) -> dict[str, pd.DataFrame | pd.Series]:
+    """Restrict a train/validation split to screened candidate features.
+
+    Parameters
+    ----------
+    split_data : dict[str, pd.DataFrame | pd.Series]
+        Split data with ``X_train``, ``X_val``, ``y_train``, and ``y_val``.
+    n_candidate_features : int
+        Number of candidate features to retain.
+
+    Returns
+    -------
+    dict[str, pd.DataFrame | pd.Series]
+        Copy of ``split_data`` with feature matrices restricted to candidates.
+    """
+    X_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
+    y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
+    candidate_features = get_screened_feature_names(
+        X_combined,
+        y_combined,
+        n_candidate_features=n_candidate_features,
+    )
+
+    return {
+        "X_train": split_data["X_train"].loc[:, candidate_features],
+        "y_train": split_data["y_train"],
+        "X_val": split_data["X_val"].loc[:, candidate_features],
+        "y_val": split_data["y_val"],
+    }
 
 
 def get_consistent_features(
@@ -276,7 +357,7 @@ def load_individual_dataset(
         Feature matrix and target variable
     """
     features_path = (
-        Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
+        Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
     )
     phenotype_path = (
         Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
@@ -333,7 +414,7 @@ def load_all_datasets_combined(
 
     for dataset_name in datasets:
         features_path = (
-            Path("data/processed/features_reduced") / dataset_name / "gapmind.tsv"
+            Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
         )
         phenotype_path = (
             Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
@@ -476,6 +557,7 @@ def analyze_combined_splits(
     n_seeds: int = 20,
     threshold: float = 0.7,
     n_features: int = 10,
+    n_candidate_features: int = 300,
 ) -> dict[str, list[str]]:
     """
     Analyze combined train-test splits and get consistent top features (concordant samples only).
@@ -494,6 +576,9 @@ def analyze_combined_splits(
         Minimum proportion for consistent features, by default 0.7
     n_features : int, optional
         Number of top features per run, by default 10
+    n_candidate_features : int, optional
+        Number of candidate KOFAM features retained before seeded SHAP analysis,
+        by default 300.
 
     Returns
     -------
@@ -506,7 +591,7 @@ def analyze_combined_splits(
     phenotypes = [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
 
     # Load feature data once
-    feature_file = Path("data/processed/features_reduced/combined_datasets/gapmind.tsv")
+    feature_file = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
     feature_data = pd.read_csv(
         feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
     )
@@ -577,6 +662,11 @@ def analyze_combined_splits(
                 "y_val": y_val_conc,
             }
 
+            filtered_split_data = get_screened_split_data(
+                filtered_split_data,
+                n_candidate_features=n_candidate_features,
+            )
+
             # Run for multiple seeds
             feature_lists = []
             for seed in range(n_seeds):
@@ -607,6 +697,7 @@ def analyze_individual_datasets(
     n_seeds: int = 20,
     threshold: float = 0.7,
     n_features: int = 10,
+    n_candidate_features: int = 300,
 ) -> dict[str, dict[str, list[str]]]:
     """
     Analyze individual datasets and get consistent top features (concordant samples only).
@@ -627,6 +718,9 @@ def analyze_individual_datasets(
         Minimum proportion for consistent features, by default 0.7
     n_features : int, optional
         Number of top features per run, by default 10
+    n_candidate_features : int, optional
+        Number of candidate KOFAM features retained before seeded SHAP analysis,
+        by default 300.
 
     Returns
     -------
@@ -668,6 +762,13 @@ def analyze_individual_datasets(
                 if class_counts.min() < 10:
                     continue
 
+                candidate_features = get_screened_feature_names(
+                    X_concordant,
+                    y_concordant,
+                    n_candidate_features=n_candidate_features,
+                )
+                X_concordant = X_concordant.loc[:, candidate_features]
+
                 # Run for multiple seeds
                 feature_lists = []
                 for seed in range(n_seeds):
@@ -707,6 +808,7 @@ def analyze_all_datasets_combined(
     n_seeds: int = 20,
     threshold: float = 0.7,
     n_features: int = 10,
+    n_candidate_features: int = 300,
 ) -> dict[str, list[str]]:
     """
     Analyze all datasets combined and get consistent top features (concordant samples only).
@@ -727,6 +829,9 @@ def analyze_all_datasets_combined(
         Minimum proportion for consistent features, by default 0.7
     n_features : int, optional
         Number of top features per run, by default 10
+    n_candidate_features : int, optional
+        Number of candidate KOFAM features retained before seeded SHAP analysis,
+        by default 300.
 
     Returns
     -------
@@ -766,6 +871,13 @@ def analyze_all_datasets_combined(
             class_counts = y_concordant.value_counts()
             if class_counts.min() < 10:
                 continue
+
+            candidate_features = get_screened_feature_names(
+                X_concordant,
+                y_concordant,
+                n_candidate_features=n_candidate_features,
+            )
+            X_concordant = X_concordant.loc[:, candidate_features]
 
             # Run for multiple seeds
             feature_lists = []
@@ -886,6 +998,7 @@ def main() -> None:
     N_SEEDS = 20
     THRESHOLD = 0.7
     N_FEATURES = 10
+    N_CANDIDATE_FEATURES = 300
     DATASETS = ["atleaf", "lit", "marine"]
 
     # Load GapMind predictions and experimental phenotypes
@@ -913,6 +1026,7 @@ def main() -> None:
 
     print("\nStep 1: Analyzing combined train-test splits (concordant samples)...")
     print(f"  - Running {N_SEEDS} random seeds per split")
+    print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per split")
     print(f"  - Extracting top {N_FEATURES} features per run")
     print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
@@ -923,6 +1037,7 @@ def main() -> None:
         n_seeds=N_SEEDS,
         threshold=THRESHOLD,
         n_features=N_FEATURES,
+        n_candidate_features=N_CANDIDATE_FEATURES,
     )
 
     # Filter to only include common phenotypes
@@ -948,6 +1063,7 @@ def main() -> None:
     print(f"  - Concordant samples only")
     print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
     print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
+    print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per dataset/phenotype")
     print(f"  - Extracting top {N_FEATURES} features per run")
     print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
@@ -959,6 +1075,7 @@ def main() -> None:
         n_seeds=N_SEEDS,
         threshold=THRESHOLD,
         n_features=N_FEATURES,
+        n_candidate_features=N_CANDIDATE_FEATURES,
     )
 
     print(f"\nCompleted analysis for individual datasets:")

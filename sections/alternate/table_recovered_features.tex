@@ -1,0 +1,35 @@
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{|l|c|p{10.5cm}|}
+\hline
+\textbf{Phenotype} & \textbf{N} & \textbf{Top candidate features (KO: function; mean SHAP toward growth)} \\
+\hline
+Mannose & 117 & K01214: isoamylase ($+0.09$) \newline K24163 ($+0.06$) \newline K10545: D-xylose transport system ATP-binding protein ($+0.05$) \newline K00700: 1,4-alpha-glucan branching enzyme ($+0.05$) \newline K01809: mannose-6-phosphate isomerase ($+0.04$) \\
+\hline
+Galactose & 67 & K01190: beta-galactosidase ($+0.14$) \newline K01785: aldose 1-epimerase ($+0.11$) \newline K01805: xylose isomerase ($+0.05$) \newline K07407: alpha-galactosidase ($+0.03$) \newline K00700: 1,4-alpha-glucan branching enzyme ($+0.02$) \\
+\hline
+Fructose & 62 & K02529: LacI family transcriptional regulator ($+0.09$) \newline K05799: GntR family transcriptional regulator, transcri... ($+0.04$) \newline K02027: multiple sugar transport system substrate-bindi... ($+0.03$) \newline K07407: alpha-galactosidase ($+0.02$) \newline K10441: ribose transport system ATP-binding protein ($+0.02$) \\
+\hline
+Glucose & 60 & K03925: MraZ protein ($+0.03$) \newline K00386 ($+0.02$) \newline K11250: leucine efflux protein ($+0.01$) \newline K07216: hemerythrin ($+0.01$) \newline K07473: DNA-damage-inducible protein J ($+0.01$) \\
+\hline
+m-Inositol & 52 & K00010: myo-inositol 2-dehydrogenase / D-chiro-inositol... ($+1.75$) \newline K03337: 5-deoxy-glucuronate isomerase ($+1.58$) \newline K03335: inosose dehydratase ($+0.79$) \newline K02058: simple sugar transport system substrate-binding... ($+0.49$) \newline K24995 ($+0.19$) \\
+\hline
+Sucrose & 42 & K01187: alpha-glucosidase ($+0.80$) \newline K00849: galactokinase ($+0.05$) \newline K13628: iron-sulfur cluster assembly protein ($+0.04$) \newline K00700: 1,4-alpha-glucan branching enzyme ($+0.04$) \newline K01214: isoamylase ($+0.04$) \\
+\hline
+Histidine & 36 & K01712: urocanate hydratase ($+0.85$) \newline K01468: imidazolonepropionase ($+0.60$) \newline K09975: uncharacterized protein ($+0.45$) \newline K05836: GntR family transcriptional regulator, histidin... ($+0.21$) \newline K01745: histidine ammonia-lyase ($+0.08$) \\
+\hline
+Maltose & 35 & K00975: glucose-1-phosphate adenylyltransferase ($+0.10$) \newline K00857: thymidine kinase ($+0.09$) \newline K01190: beta-galactosidase ($+0.08$) \newline K05349: beta-glucosidase ($+0.07$) \newline K00849: galactokinase ($+0.07$) \\
+\hline
+Alanine & 33 & K00020: 3-hydroxyisobutyrate dehydrogenase ($+0.10$) \newline K06113: arabinan endo-1,5-alpha-L-arabinosidase ($+0.06$) \newline K13282: cyanophycinase ($+0.06$) \newline K15383: MtN3 and saliva related transmembrane protein ($+0.04$) \newline K15923: alpha-L-fucosidase 2 ($+0.03$) \\
+\hline
+Cellobiose & 29 & K07216: hemerythrin ($+0.04$) \newline K02529: LacI family transcriptional regulator ($+0.03$) \newline K20034: 3-(methylthio)propionyl---CoA ligase ($+0.03$) \newline K07755: arsenite methyltransferase ($+0.03$) \newline K03829: putative acetyltransferase ($+0.02$) \\
+\hline
+Mannitol & 29 & K02027: multiple sugar transport system substrate-bindi... ($+0.41$) \newline K10228: sorbitol/mannitol transport system permease pro... ($+0.15$) \newline K00854: xylulokinase ($+0.09$) \newline K00852: ribokinase ($+0.07$) \newline K00847: fructokinase ($+0.06$) \\
+\hline
+Glycerol & 21 & K17322: glycerol transport system permease protein ($+0.45$) \newline K02444: DeoR family transcriptional regulator, glycerol... ($+0.27$) \newline K02057: simple sugar transport system permease protein ($+0.16$) \newline K10439: ribose transport system substrate-binding prote... ($+0.14$) \newline K17315: glucose/mannose transport system substrate-bind... ($+0.09$) \\
+\hline
+\end{tabular}
+\caption{Candidate non-canonical predictors of growth recovered by concordant-trained models. For each phenotype, FN-discordant held-out genomes (GapMind predicts no growth, growth observed experimentally) that the concordant-trained model nonetheless classifies correctly as growth were pooled across held-out datasets. \textbf{N} is the number of such recovered genomes. Features are ranked by mean signed CatBoost SHAP contribution toward the growth class; positive values indicate features that push the prediction toward growth. These features are hypothesis-generating candidates, not validated mechanisms. Only phenotypes with at least 20 recovered genomes are shown.}
+\label{tab:recovered_features}
+\end{table}

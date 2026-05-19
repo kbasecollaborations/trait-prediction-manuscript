@@ -80,7 +80,7 @@ All models were evaluated using balanced accuracy as the primary reporting metri
 Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant} present stable predictive features identified through SHAP (SHapley Additive exPlanations) analysis.
 Stable features were defined as those ranked among the top 10 by mean absolute SHAP value and appearing in at least 70\% of 20 random-seed training runs.
 Table~\ref{tab:feature_comparison} reports stable features from models trained on all samples using KOFAM annotations as features.
-Table~\ref{tab:feature_comparison_concordant} reports stable features from models trained on GapMind-concordant samples only, using GapMind pathway gene annotations as features.
+Table~\ref{tab:feature_comparison_concordant} reports stable KOFAM features from models trained on GapMind-concordant samples only, after a broad CatBoost-importance screen to make SHAP analysis tractable in the larger KOFAM feature space.
 The contrast between these tables illustrates that concordant training produces more consistent, mechanistically interpretable features across datasets.
 
 % ============================================================
@@ -177,17 +177,6 @@ Out-of-clade balanced accuracies were consistently lower than in-clade (mean 0.6
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.85\textwidth]{figure3_alt.pdf}
-\caption{\textbf{Intra-dataset and cross-dataset evaluation performance comparison.}
-Alternative visualisation of the cross-dataset evaluation results presented in Figure~\ref{fig:ml_performance}.
-Each panel compares model performance when training and testing within the same dataset (intra-dataset, via random cross-validation) versus training on one dataset and testing on another (cross-dataset).
-The consistent performance gap between intra-dataset and cross-dataset evaluation across phenotypes illustrates that models learn dataset-specific patterns that do not transfer across experimental contexts, even when the same carbon source phenotype is being predicted.
-This visualisation complements the main text by showing individual dataset pairs rather than aggregated results.}
-\label{fig:intra_cross_dataset_performance}
-\end{figure}
-
-\begin{figure}[h]
-\centering
 \includegraphics[width=\textwidth]{figure_s4.pdf}
 \caption{\textbf{Pangenome-based genome completeness assessment.}
 Completeness was estimated as the fraction of species core genes detected in each genome using MMseqs2 (90\% identity, 80\% coverage, E-value $10^{-3}$; see Supplementary Text S2 for full parameters).
@@ -199,27 +188,13 @@ The majority of genomes exceeded 90\% pangenome completeness, consistent with th
 \label{fig:pangenome_completeness}
 \end{figure}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.95\textwidth]{figure7_gapmind_galactose_all_tests.pdf}
-\caption{
-\textbf{Sample size requirements for training generalisable models for galactose utilisation.}
-Learning curves showing balanced accuracy as a function of training sample size for the galactose phenotype using GapMind-concordant data.
-Columns represent evaluation scenarios: (left) random splits, (middle) cross-dataset splits, and (right) out-of-clade splits.
-Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
-Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset.
-Performance on discordant test samples reflects cases in which genome-derived features are insufficient to fully encode the phenotype; lack of saturation with additional training data indicates representational, not statistical, limits.
-}
-\label{fig:galactose_sample_size_requirements}
-\end{figure}
+\subsection*{Supplementary Text S5: Concordant Training Under the KOFAM Feature Space}
 
-\subsection*{Supplementary Text S5: Decoupling Feature Space from Concordance Criterion}
+In the main analysis, GapMind concordance was used only to select training samples, whereas KOFAM annotations provided the model feature space.
+This design decouples the concordance criterion from the model input features and avoids a tautological comparison in which GapMind-derived features are used to recover GapMind-defined concordance.
+To isolate the effect of concordant training, we compared KOFAM-based models trained on all samples with KOFAM-based models trained only on GapMind-concordant samples.
 
-In the main analysis, concordant-trained models used GapMind pathway features, raising the concern that improved performance reflects tautological alignment between the concordance criterion and the feature space rather than genuine data-quality effects.
-To address this, we repeated the cross-dataset evaluation using KOFAM annotations as an independent feature space while retaining GapMind concordance solely for sample selection.
-If concordant-trained models still outperform full-data models with KOFAM features, the improvement is attributable to training-data quality rather than feature--label circularity.
-
-Figure~\ref{fig:kofam_concordant} shows that concordant training improves cross-dataset balanced accuracy on concordant test samples even when the feature space (KOFAM) is independent of the concordance criterion (GapMind).
+Figure~\ref{fig:kofam_concordant} shows that concordant training improves cross-dataset balanced accuracy on concordant test samples under the same KOFAM feature space used in the main analysis.
 The parity plot (panel~A) indicates that the majority of phenotype--split combinations achieve higher balanced accuracy with concordant training when evaluation is restricted to concordant held-out samples.
 Per-phenotype box plots (panel~B) confirm that this improvement is consistent across most phenotypes, supporting the interpretation that data coherence, rather than feature--criterion alignment, drives the generalisation gains reported in the main text.
 
@@ -227,8 +202,8 @@ Per-phenotype box plots (panel~B) confirm that this improvement is consistent ac
 \centering
 \includegraphics[width=0.90\textwidth]{figure_s5.pdf}
 \caption{
-\textbf{Concordant training improves cross-dataset generalisation with independent KOFAM features.}
-GapMind concordance was used only for sample selection; KOFAM annotations served as an independent feature space.
+\textbf{Concordant training improves cross-dataset generalisation under KOFAM features.}
+GapMind concordance was used only for sample selection; KOFAM annotations served as the model feature space.
 (\textbf{A}) Parity plot comparing cross-dataset balanced accuracy of concordant-trained vs.\ full-trained models (KOFAM features), evaluated on concordant test samples only.
 Each point represents one phenotype--split combination; points above the diagonal indicate improved performance with concordant training.
 (\textbf{B}) Per-phenotype grouped box plots of cross-dataset balanced accuracy on concordant test samples for full training (grey) and concordant training (blue), both using KOFAM features.
@@ -238,14 +213,13 @@ Each point represents one phenotype--split combination; points above the diagona
 
 \subsection*{Supplementary Text S6: Learning Curves for All 15 Shared Phenotypes}
 
-The main text presents learning curves for histidine and galactose (Figure~\ref{fig:model_sample_size_requirements} and Figure~\ref{fig:galactose_sample_size_requirements}).
-To assess whether the ``50--100 high-quality samples'' observation generalises beyond these well-characterised pathways, we extended the analysis to all 15 shared phenotypes using concordant training with GapMind features.
+The main text presents learning curves for histidine (Figure~\ref{fig:model_sample_size_requirements}).
+To assess whether the ``50--100 high-quality samples'' observation generalises beyond this well-characterised pathway, we extended the analysis to all 15 shared phenotypes using concordant training with KOFAM features.
 
 Figure~\ref{fig:all_phenotype_heatmap} summarises cross-dataset balanced accuracy as a function of training sample size for all 15 phenotypes.
 Across phenotypes, performance typically approached its maximum by 50--100 training samples.
 Only a small minority required 200 samples to reach the saturation threshold, and no phenotype showed a new saturation point beyond 200 samples.
-Figure~\ref{fig:all_phenotype_learning_curves} shows the full faceted learning curves (phenotypes~$\times$~split types).
-Figure~\ref{fig:all_phenotype_saturation} compares the estimated saturation point per phenotype for random-split and cross-dataset evaluation, defined as the smallest sample size at which mean balanced accuracy reached $\geq$90\% of the corresponding full-dataset value.
+The estimated saturation point varied modestly across phenotypes, where saturation was defined as the smallest sample size at which mean balanced accuracy reached $\geq$90\% of the corresponding full-dataset value.
 
 These results show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
 The distribution of saturation points suggests that many traits with coherent genotype--phenotype mappings can be learned efficiently, with only modest gains beyond 200 samples even for slower-saturating phenotypes.
@@ -255,44 +229,20 @@ The distribution of saturation points suggests that many traits with coherent ge
 \includegraphics[width=0.85\textwidth]{figure_s8.pdf}
 \caption{
 \textbf{Cross-dataset performance by training sample size across all 15 shared phenotypes.}
-Heatmap of mean balanced accuracy for concordant-trained models (GapMind features) evaluated on the cross-dataset full test set.
+Heatmap of mean balanced accuracy for concordant-trained models (KOFAM features) evaluated on the cross-dataset full test set.
 Rows are phenotypes; columns are training sample sizes (50, 100, 200, 500, and the full concordant training set).
 Most phenotypes approach their maximum cross-dataset performance by 50--100 samples, with little additional improvement beyond 200 samples.
 }
 \label{fig:all_phenotype_heatmap}
 \end{figure}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{figure_s9.pdf}
-\caption{
-\textbf{Learning curves for all 15 shared phenotypes using concordant training.}
-Faceted plot with one panel per phenotype.
-Coloured lines show mean balanced accuracy across split--repeat measurements for random-split, cross-dataset, and out-of-clade evaluation.
-All models use concordant training with GapMind features, evaluated on the full test set.
-Most cross-dataset curves flatten by 50--100 samples, and additional gains beyond 200 samples are generally small.
-}
-\label{fig:all_phenotype_learning_curves}
-\end{figure}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.85\textwidth]{figure_s10.pdf}
-\caption{
-\textbf{Estimated saturation sample size for each phenotype under random-split and cross-dataset evaluation.}
-For each phenotype, saturation is defined as the smallest training sample size at which mean balanced accuracy (concordant training, GapMind features) reaches $\geq$90\% of the corresponding full-dataset value.
-Phenotypes are sorted by cross-dataset saturation size.
-Random-split performance saturates at 50 samples for all phenotypes, whereas cross-dataset saturation varies modestly and reaches 200 samples only for galacturonic acid and glucose.
-Colours distinguish intra-dataset random-split estimates (green) from cross-dataset dataset-split estimates (blue).
-}
-\label{fig:all_phenotype_saturation}
-\end{figure}
-
 \subsection*{Supplementary Text S7: Feature-Direction SHAP for Concordant Models}
 
 While Figure~\ref{fig:concordant_analysis}B reports SHAP-based feature \emph{stability} across random seeds for concordant-trained models, it does not show the direction in which feature value influences prediction.
-Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with GapMind features under the random-split evaluation.
-For both phenotypes, the top-ranked SHAP features include the canonical catabolic enzymes for the corresponding pathway (histidine: \textit{hutI}, \textit{hutU} = K01712, \textit{hutH}; galactose: \textit{galT}, \textit{mglA}), and feature presence (binary 1) consistently shifts predictions toward growth, supporting the interpretation that the concordant-trained models recover mechanistically meaningful signals rather than dataset-correlated shortcuts.
+Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with KOFAM features under the random-split evaluation.
+For histidine, the top-ranked KOFAM features include canonical histidine-utilisation enzymes (K01468 imidazolonepropionase, K01712 urocanate hydratase, and K01745 histidine ammonia-lyase) together with the histidine-utilisation regulator K05836.
+For galactose, the leading features include beta-galactosidase K01190 and additional KOFAM annotations associated with carbohydrate metabolism or transport.
+For both phenotypes, feature presence consistently shifts predictions toward growth, supporting the interpretation that the concordant-trained models recover mechanistically meaningful signals rather than dataset-correlated shortcuts.
 
 \begin{figure}[ht]
 \centering
@@ -300,7 +250,7 @@ For both phenotypes, the top-ranked SHAP features include the canonical cataboli
 \caption{
 \textbf{SHAP beeswarm plots for histidine and galactose under concordant training.}
 Top: histidine. Bottom: galactose.
-Each row within a panel is one of the top 15 features (by mean absolute SHAP value); each point is one held-out concordant test sample, coloured by feature value (presence/absence of the corresponding GapMind pathway gene).
+Each row within a panel is one of the top 15 features (by mean absolute SHAP value); each point is one held-out concordant test sample, coloured by feature value (presence/absence of the corresponding KOFAM annotation).
 Positive SHAP values shift the model toward predicting growth.
 }
 \label{fig:shap_beeswarm}
@@ -348,7 +298,7 @@ Concordance is defined using the permissive (loose) GapMind threshold.
 
 Figure~\ref{fig:concordant_analysis}A reports concordant-trained model performance on held-out concordant samples; Figure~\ref{fig:concordant_analysis}C reports performance on held-out discordant samples.
 The natural composition (performance on the full held-out test set, with concordant and discordant samples pooled) is shown in Figure~\ref{fig:full_held_out_test} for completeness.
-The full-test balanced accuracy (median 0.67 across phenotypes; range 0.47--0.95) falls between the concordant-only (median 0.89) and discordant-only values, as expected by the test-set composition reported in Panel~B; the residual error is dominated by false-positive-discordant samples for most phenotypes.
+The full-test balanced accuracy (median 0.67 across phenotype--held-out-dataset pairs; range 0.47--0.94) falls between the concordant-only (median 0.89) and discordant-only values, as expected by the test-set composition reported in Panel~B; the residual error is dominated by false-positive-discordant samples for most phenotypes.
 
 \begin{figure}[ht]
 \centering

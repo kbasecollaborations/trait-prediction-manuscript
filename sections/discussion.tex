@@ -23,13 +23,19 @@ Dataset-specific discordance patterns may reflect differences in experimental pr
 Previous work has demonstrated that ML models learn phylogenetic signals, concluding that massive datasets ($>$1000 genomes) are needed to overcome confounding~\cite{Li2023-up}.
 In our data, phylogenetic confounding appeared strongest when training included both concordant and discordant samples, and weaker after concordance filtering, likely because concordant samples capture conserved pathways shared across lineages rather than clade-specific patterns~\cite{Collins2018GWAS,Yu2025BiasedSampling}.
 Sample size and data quality therefore interact: adding mixed-quality samples was less helpful than selecting samples with coherent mechanistic signal \cite{Martiny2013-ob,Martiny2015-ie}.
-Biologically informed feature selection improved interpretability without sacrificing accuracy~\cite{Li2023-up}, but this benefit depended on training-data quality: comprehensive feature sets improved within-dataset accuracy, whereas pathway-specific features paired with concordance filtering performed better across datasets.
+Biologically informed feature selection improved interpretability without sacrificing accuracy~\cite{Li2023-up}, but this benefit depended on training-data quality: comprehensive feature sets improved within-dataset accuracy, whereas pathway-linked features paired with concordance filtering performed better across datasets.
 Limited feature overlap across datasets further indicates that dataset-specific biases dominate when data quality is mixed~\cite{Leek2010BatchEffects}.
 
+% Specialisation versus coverage
+A concordant-trained model is necessarily a specialist: by retaining organisms whose phenotype the known pathway already explains, concordance filtering restricts the training distribution, and therefore the model's applicability domain, to known-mechanism organisms~\cite{Zadrozny2004SelectionBias}.
+Such a model cannot predict, or discover, mechanisms absent from that distribution.
+This is a real limitation, but it is not one that an unfiltered model escapes: a novel mechanism is typically confined to a few organisms within a single lineage or dataset, so a model trained on the full data does not learn it as a transferable rule but instead memorises those organisms as phylogenetic correlates, which is why apparent performance on such samples collapses under cross-dataset evaluation.
+The practical choice is therefore not between a specialist and a general predictor, but between a model that is honestly bounded and one whose breadth is an artefact of shortcut learning; concordance filtering exposes this limit rather than creating it.
+
 % Addressing circularity
-A natural concern is that pairing GapMind-defined concordance with GapMind-derived features creates a tautological loop in which the model recovers the same pathway genes used to define the labels.
+A natural concern is that using GapMind-defined concordance could bias the retained samples toward the same canonical pathways encoded by the model features.
 Two observations argue against this reading.
-First, when we replaced GapMind features with KOFAM annotations while retaining the GapMind concordance criterion for sample selection alone, cross-dataset improvements on concordant held-out samples persisted (Supplementary Figure~\ref{fig:kofam_concordant}), indicating that the gains reflect training-data quality rather than feature--criterion alignment.
+First, the concordant-trained models used KOFAM annotations as inputs while retaining the GapMind concordance criterion for sample selection alone, so the feature space was decoupled from the rule set used to define concordance.
 Second, concordant-trained models retained intermediate accuracy on the natural-composition (concordant plus discordant) held-out test set (Supplementary Figure~\ref{fig:full_held_out_test}), classifying samples that the mechanistic predictor itself misclassifies and indicating that the learned signal extends beyond the curated rule set used to define concordance.
 
 % Practical implications
@@ -38,8 +44,10 @@ Changing the training set and feature representation mattered more than changing
 When mechanistic predictors, such as GapMind, are available, concordant samples provide the highest-quality training data; when they are unavailable, confidence-based filtering and removal of systematically problematic samples offer practical alternatives \cite{Bernhardt2022LabelCleaning}.
 Feature stability across independent training sets can help distinguish mechanistic from spurious learning.
 Cross-dataset and out-of-clade evaluation provide realistic performance estimates~\cite{Roberts2017CrossValidation}, whereas within-dataset cross-validation overestimates generalisation by a substantial margin.
+For deployment on genomes whose concordance cannot be established in advance, the model's own prediction confidence and its agreement with the mechanistic predictor provide label-free reliability signals: abstaining on the least-confident genomes raised pooled balanced accuracy from 0.71 to 0.79 at half coverage, and predictions on which GapMind and the model disagreed were close to random (0.49; Figure~\ref{fig:selective_prediction}).
+These signals define a practical applicability domain for genome-based phenotype prediction~\cite{Weaver2008AppDomain,Papangelou2025Conformal,Hendrickx2024Reject} and, because they require no experimental outcome, can in principle extend to traits for which no mechanistic predictor is available.
 However, when test conditions are expected to resemble training conditions, such as predictions within the same experimental system or phylogenetic context, full-dataset training maximises performance and may be the preferred approach.
-Sample-size requirements depend on phenotype complexity but were modest across the 15 shared carbon-utilisation phenotypes analysed here (Supplementary Figures~\ref{fig:all_phenotype_heatmap}--\ref{fig:all_phenotype_saturation}), pointing to coherent labels rather than raw scale as the binding constraint.
+Sample-size requirements depend on phenotype complexity but were modest across the 15 shared carbon-utilisation phenotypes analysed here (Supplementary Figure~\ref{fig:all_phenotype_heatmap}), pointing to coherent labels rather than raw scale as the binding constraint.
 For experimental design, standardising growth conditions, measurement protocols, and phenotype-calling criteria is essential if datasets are to be aggregated, and replicate measurements with positive and negative controls would help flag unreliable calls.
 Emerging high-throughput phenotyping methods~\cite{Bochner2001PM,Nichols2011Landscape,Gralka2023-ft,Huang2023-lh,Kehe2019-vr} will accelerate data collection, but quality must be prioritised alongside quantity.
 

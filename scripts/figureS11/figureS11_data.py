@@ -6,10 +6,12 @@ For each target phenotype the script:
 1. Loads the canonical random-split fold (fold 0) for the phenotype.
 2. Restricts both training and held-out test samples to GapMind-concordant
    genomes (as in Figure 5B).
-3. Trains a single CatBoost classifier with ``make_classifier("cb_noeval")``.
-4. Computes SHAP values on the concordant held-out test set with
+3. Uses KOFAM annotations as the feature space; GapMind is used only to define
+   concordance.
+4. Trains a single CatBoost classifier with ``make_classifier("cb_noeval")``.
+5. Computes SHAP values on the concordant held-out test set with
    ``shap.TreeExplainer``.
-5. Persists ``shap_values``, ``feature_values``, ``feature_names``,
+6. Persists ``shap_values``, ``feature_values``, ``feature_names``,
    ``predictions``, and ``y_true`` to a compressed ``.npz`` file.
 """
 
@@ -39,7 +41,7 @@ RANDOM_STATE: int = 42
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
 SPLITS_DIR: Path = REPO_ROOT / "data/processed/train_test_splits/random_split"
 FEATURE_FILE: Path = (
-    REPO_ROOT / "data/processed/features_reduced/combined_datasets/gapmind.tsv"
+    REPO_ROOT / "data/processed/features_reduced/combined_datasets/kofam.tsv"
 )
 GAPMIND_FILE: Path = REPO_ROOT / "data/outputs/figure2/gapmind_phenotypes_loose.tsv"
 PHENOTYPE_DIR: Path = REPO_ROOT / "data/processed/phenotypes"
@@ -64,7 +66,7 @@ def load_concordant_train_test(
         Path to a single random-split fold directory containing
         ``y_train.tsv``, ``y_val.tsv``, ``y_test.tsv``.
     feature_data : pd.DataFrame
-        GapMind feature matrix indexed by genomeID.
+        KOFAM feature matrix indexed by genomeID.
     gapmind_predictions : pd.DataFrame
         GapMind prediction table with genomes as index, phenotypes as columns.
     experimental_phenotypes : pd.DataFrame
@@ -162,7 +164,7 @@ def generate_phenotype_data(
     phenotype : str
         Phenotype name to process.
     feature_data : pd.DataFrame
-        GapMind feature matrix (combined datasets).
+        KOFAM feature matrix (combined datasets).
     gapmind_predictions : pd.DataFrame
         GapMind predictions used for concordance filtering.
     experimental_phenotypes : pd.DataFrame
@@ -263,7 +265,7 @@ def main() -> None:
     args = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Loading GapMind feature matrix (combined datasets)...")
+    print("Loading KOFAM feature matrix (combined datasets)...")
     feature_data = pd.read_csv(
         FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )

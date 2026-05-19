@@ -2,12 +2,9 @@
 """
 Generate data for Supplementary Figure S5: KOFAM features on concordant samples.
 
-This script addresses the circularity concern in the main analysis by decoupling
-the feature space from the concordance criterion. GapMind concordance is used
-*only* to select training samples; KOFAM annotations provide an independent
-feature space. If concordant-trained models still generalise better with KOFAM
-features, the improvement is attributable to data quality, not to tautological
-feature-label alignment.
+GapMind concordance is used *only* to select training samples; KOFAM
+annotations provide the model feature space. The comparison isolates the effect
+of concordant training under the same KOFAM feature representation.
 
 Comparisons
 -----------

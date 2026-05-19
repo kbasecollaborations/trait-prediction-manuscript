@@ -43,6 +43,9 @@ from trait_prediction.pipeline import align_columns
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
 OUTPUT_DIR: Path = Path("data/outputs/figure5")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
+KOFAM_FEATURE_FILE: Path = Path(
+    "data/processed/features_reduced/combined_datasets/kofam.tsv"
+)
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 EXISTING_5C_FILE: Path = OUTPUT_DIR / "figure5c_concordant_train_different_test.csv"
 S12_COUNTS_FILE: Path = Path("data/outputs/figureS12/concordance_counts.tsv")
@@ -383,7 +386,9 @@ def main() -> None:
 
     print("Loading dataset_split train-test splits...")
     split_data = load_split_data(
-        base_dir=SPLITS_DIR, split_types=["dataset_split"]
+        base_dir=SPLITS_DIR,
+        split_types=["dataset_split"],
+        feature_file=KOFAM_FEATURE_FILE,
     )
 
     table = build_full_test_table(

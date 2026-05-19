@@ -90,6 +90,7 @@ We identified stable predictive features using SHAP (SHapley Additive exPlanatio
 For the SHAP analyses, we used a fixed 500-iteration CatBoost variant without early stopping (to avoid validation-set dependence).
 For each phenotype and dataset configuration, we trained models across 20 random seeds, extracting the top 10 features by the mean absolute SHAP value from each run.
 Features appearing in at least 70\% of runs were designated as ``stable features.''
+For the high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B, each phenotype--dataset configuration was first screened to the top 300 KOFAM features by CatBoost PredictionValuesChange importance; SHAP stability analysis was then performed on this screened feature matrix.
 We compared stable features across datasets.
 
 \subsection*{Data Quality Filtering Strategies}

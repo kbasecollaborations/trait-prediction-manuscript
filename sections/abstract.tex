@@ -10,6 +10,7 @@ Generalisation failures arose primarily from data coherence: when training data 
 To improve transferability, we stratified samples by concordance between a mechanistic predictor (GapMind pathway completeness) and experimental growth outcomes.
 Models trained exclusively on concordant samples achieved robust cross-dataset generalisation and consistently recovered known pathway genes as top predictive features.
 On held-out data of natural composition, these models retained intermediate accuracy (median balanced accuracy 0.67), indicating that machine learning captures some signal beyond the curated pathway rules used to define concordance.
+For such predictions, the model's own confidence and its agreement with the mechanistic predictor flagged, without any experimental data, which genomes could be predicted reliably.
 Learning curves further showed that robust generalisation required only modest numbers of high-quality samples (approximately 50--100).
 Together, these results reframe generalisation in biological machine learning as a problem of data coherence rather than data volume or algorithm choice: when genotype--phenotype relationships are internally consistent and represented in the available feature space, models learn transferable mechanistic features; otherwise they default to spurious correlations that fail to generalise.
 }
