@@ -22,7 +22,7 @@ GapMind~\cite{Price2020GapMind} predicted metabolic pathway completeness for car
 
 \subsection*{Phylogenetic Tree Construction}
 
-We assigned taxonomy with GTDB-Tk \cite{Chaumeil2020GTDBTk} % TODO(CITATION NEEDED): Chaumeil 2020 GTDB-Tk
+We assigned taxonomy with GTDB-Tk \cite{Chaumeil2022GTDBTk}
 \ (v2.x, GTDB R214 reference) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using the \texttt{classify\_wf} workflow.
 For analyses requiring a single tree spanning all study genomes, we extracted the corresponding subtree and computed cophenetic distances between tips with the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
 Genomes lacking a species-level assignment were placed at the genus or family level, with such cases flagged in the supplementary metadata.
