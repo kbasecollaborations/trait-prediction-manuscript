@@ -90,7 +90,7 @@ For some phenotypes, above-random accuracy suggests that ML may capture features
 
 In practice, applying a concordant-trained model to a new dataset means evaluating it on samples that have not been pre-selected for concordance. We therefore re-evaluated the same concordant-trained models on the full held-out cross-dataset test set, with the residual error decomposed into false-positive-discordant and false-negative-discordant contributions (Supplementary Figure~\ref{fig:full_held_out_test}).
 Median balanced accuracy on the full test set was 0.67 (range 0.47--0.95), substantially above random and intermediate between the concordant-only (Figure~\ref{fig:concordant_analysis}A) and discordant-only (Figure~\ref{fig:concordant_analysis}C) values reported above.
-The residual error was dominated by false-positive-discordant samples for most phenotypes, indicating that the dominant failure mode is organisms for which GapMind asserts a complete pathway but no growth is observed --- a pattern more consistent with regulatory repression or experimental artefact than with missing gene content.
+The residual error was dominated by false-positive-discordant samples for most phenotypes, indicating that the dominant failure mode is organisms for which GapMind asserts a complete pathway but no growth is observed, a pattern more consistent with regulatory repression or experimental artefact than with missing gene content.
 
 
 \FloatBarrier{}
