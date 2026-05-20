@@ -117,5 +117,7 @@ Genomes are ranked by model confidence ($\max(p,\,1-p)$); the curve shows balanc
 The dotted line marks balanced accuracy on the full test set and the dashed line marks random performance (balanced accuracy~$=0.5$).
 (\textbf{C}) Per-phenotype diagnostic: the shortcut gap of the full-data model (mean random-split balanced accuracy minus mean cross-dataset balanced accuracy) versus the concordance benefit (mean concordant cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy).
 The observed pattern is consistent with phenotypes whose full-data models rely most on dataset- or phylogeny-specific shortcuts also gaining most from concordance filtering, providing a heuristic for when filtering is likely to pay off.
+(\textbf{D}) Retrospective active-learning pilot for the lowest- and highest-shortcut-gap phenotypes from panel C.
+Bars show the mean change in balanced accuracy after adding 25 simulated held-out labels selected either at random or by GapMind--ML disagreement; points and connecting lines show paired held-out dataset and seed runs.
 }\label{fig:selective_prediction}
 \end{figure}
