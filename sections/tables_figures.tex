@@ -114,7 +114,7 @@ Each point indicates performance at training sizes of 50, 100, 200, 500, or the 
 (\textbf{A}) Risk--coverage curve for concordant-trained models on the full held-out cross-dataset test set, pooled across phenotypes and held-out datasets.
 Genomes are ranked by model confidence ($\max(p,\,1-p)$); the curve shows balanced accuracy on the retained subset as a function of coverage, the fraction of genomes the model commits to.
 (\textbf{B}) Balanced accuracy split by agreement between the GapMind call and the machine learning prediction; the disagreement subset prioritises candidates for follow-up, including cases that may reflect alternative mechanisms, annotation gaps, regulation, or experimental artefacts.
-The dotted line marks balanced accuracy on the full test set and the dashed line marks random performance (balanced accuracy~$=0.5$).
+The blue dotted line marks overall balanced accuracy on the full test set and the grey dashed line marks random performance (balanced accuracy~$=0.5$).
 (\textbf{C}) Per-phenotype diagnostic: the shortcut gap of the full-data model (mean random-split balanced accuracy minus mean cross-dataset balanced accuracy) versus the concordance benefit (mean concordant cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy).
 The observed pattern is consistent with phenotypes whose full-data models rely most on dataset- or phylogeny-specific shortcuts also gaining most from concordance filtering, providing a heuristic for when filtering is likely to pay off.
 (\textbf{D}) Retrospective active-learning pilot for the lowest- and highest-shortcut-gap phenotypes from panel C.

@@ -233,26 +233,33 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
         alpha=0.9,
         zorder=2,
     )
-    ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7, zorder=1)
+    ax.axhline(
+        0.5,
+        linestyle="--",
+        color="0.55",
+        linewidth=0.8,
+        alpha=0.8,
+        zorder=1,
+    )
 
     if "all" in indexed.index:
         full_ba = float(indexed.loc["all", "balanced_accuracy"])
         ax.axhline(
             full_ba,
             linestyle=":",
-            color="black",
+            color=PRIMARY_COLOR,
             linewidth=1.0,
-            alpha=0.8,
+            alpha=0.95,
             zorder=1,
         )
         ax.text(
-            -0.55,
-            full_ba - 0.015,
-            f"full test set ({full_ba:.2f})",
-            ha="left",
-            va="top",
+            1.45,
+            full_ba + 0.015,
+            f"overall BA = {full_ba:.2f}",
+            ha="right",
+            va="bottom",
             fontsize=8,
-            color="black",
+            color=PRIMARY_COLOR,
         )
 
     for bar, subset in zip(bars, order, strict=True):
