@@ -34,7 +34,7 @@ RANDOM_STATE = 42
 
 # Feature type to use: "gapmind", "kofam", or "rast"
 # Change this line to switch between feature types
-FEATURE_TYPE = "gapmind"
+FEATURE_TYPE = "kofam"
 
 # Scoring metrics
 SCORING = [
@@ -331,6 +331,7 @@ def run_data_requirements_analysis(
     split_data: dict[str, dict[str, dict[str, pd.Series]]],
     feature_data: pd.DataFrame,
     gapmind_data: pd.DataFrame,
+    checkpoint_file: Path | None = None,
 ) -> pd.DataFrame:
     """
     Run data requirements analysis across all splits and configurations.
@@ -343,6 +344,9 @@ def run_data_requirements_analysis(
         Feature matrix with samples as rows and features as columns.
     gapmind_data : pd.DataFrame
         GapMind predictions for identifying concordant samples.
+    checkpoint_file : Path, optional
+        Path to incremental checkpoint CSV. If it exists, already-completed
+        (split_type, key) combinations are skipped and the file is appended to.
 
     Returns
     -------
@@ -350,6 +354,17 @@ def run_data_requirements_analysis(
         Results dataframe with performance metrics.
     """
     results = []
+
+    # Resume from checkpoint if available
+    done_keys: set[tuple[str, str]] = set()
+    if checkpoint_file is not None and checkpoint_file.exists():
+        existing = pd.read_csv(checkpoint_file)
+        done_keys = set(
+            (row["split_type"], row["key"])
+            for _, row in existing[["split_type", "key"]].drop_duplicates().iterrows()
+        )
+        results.extend(existing.to_dict("records"))
+        print(f"  Resuming: {len(done_keys)} (split_type, key) combinations already done.")
 
     # Count total iterations for progress bar
     total_iterations = 0
@@ -364,6 +379,11 @@ def run_data_requirements_analysis(
             for key in split_data[split_type]:
                 phenotype_name = key.split("_")[0]
                 pbar.set_postfix_str(f"{split_type}/{key}")
+
+                # Skip if already done in checkpoint
+                if (split_type, key) in done_keys:
+                    pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
+                    continue
 
                 # Get split data
                 y_train = split_data[split_type][key]["y_train"]
@@ -533,6 +553,10 @@ def run_data_requirements_analysis(
                                 result_discordant["repeat"] = repeat_idx
                                 results.append(result_discordant)
 
+                # Checkpoint after finishing this (split_type, key)
+                if checkpoint_file is not None and len(results) > 0:
+                    pd.DataFrame(results).to_csv(checkpoint_file, index=False)
+
     return pd.DataFrame(results)
 
 
@@ -574,7 +598,12 @@ def main() -> None:
     print(f"  Training types: full, concordant")
     print(f"  Test subsets: full, concordant, discordant")
 
-    results = run_data_requirements_analysis(split_data, feature_data, gapmind_data)
+    checkpoint_file = (
+        OUTPUT_DIR / f"figure7_data_requirements_{FEATURE_TYPE}_checkpoint.csv"
+    )
+    results = run_data_requirements_analysis(
+        split_data, feature_data, gapmind_data, checkpoint_file=checkpoint_file
+    )
 
     # Add feature type to results
     results["feature_type"] = FEATURE_TYPE

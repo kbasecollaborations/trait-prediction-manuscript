@@ -44,7 +44,7 @@ SAMPLE_SIZES: list[int | str] = [50, 100, 200, 500, "full"]
 N_REPEATS = 3
 SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
 RANDOM_STATE = 42
-FEATURE_TYPE = "gapmind"
+FEATURE_TYPE = "kofam"
 
 SCORING = [
     "accuracy",
@@ -263,13 +263,17 @@ def run_learning_curve_analysis(
     split_data: dict[str, dict[str, dict[str, pd.Series]]],
     feature_data: pd.DataFrame,
     gapmind_data: pd.DataFrame,
+    chunk_dir: Path | None = None,
 ) -> pd.DataFrame:
     """
     Run learning-curve analysis for all 15 phenotypes.
 
     For each split × phenotype × training type × sample size × repeat,
     trains a CatBoost model and evaluates on full / concordant / discordant
-    test subsets.
+    test subsets. If ``chunk_dir`` is provided, results for each
+    (split_type, key, training_type) combination are written to a per-chunk
+    CSV inside that directory, and chunks already present on disk are
+    skipped on a subsequent run (resume support).
 
     Parameters
     ----------
@@ -279,6 +283,10 @@ def run_learning_curve_analysis(
         Feature matrix (genomes × features).
     gapmind_data : pd.DataFrame
         Binary GapMind predictions.
+    chunk_dir : Path, optional
+        Directory to write/read per-chunk checkpoint CSVs. When ``None``,
+        all results are accumulated in memory and no checkpoints are
+        written.
 
     Returns
     -------
@@ -339,6 +347,21 @@ def run_learning_curve_analysis(
                     base_tr = train_idx if training_type == "full" else conc_tr
                     base_vl = val_idx if training_type == "full" else conc_vl
 
+                    chunk_file: Path | None = None
+                    if chunk_dir is not None:
+                        chunk_file = chunk_dir / f"{split_type}__{key}__{training_type}.csv"
+                        if chunk_file.exists():
+                            # Resume: load cached chunk and skip recomputation.
+                            try:
+                                cached = pd.read_csv(chunk_file).to_dict("records")
+                                results.extend(cached)
+                                pbar.update(len(SAMPLE_SIZES) * N_REPEATS)
+                                continue
+                            except (pd.errors.EmptyDataError, pd.errors.ParserError):
+                                # Corrupt/empty checkpoint; recompute.
+                                chunk_file.unlink(missing_ok=True)
+
+                    chunk_results: list[dict] = []
                     for sample_size in SAMPLE_SIZES:
                         for rep in range(N_REPEATS):
                             pbar.update(1)
@@ -409,7 +432,13 @@ def run_learning_curve_analysis(
                                         "repeat": rep,
                                     }
                                 )
+                                chunk_results.append(scores)
                                 results.append(scores)
+
+                    if chunk_file is not None:
+                        # Always write the chunk file (even if empty) so a
+                        # resumed run does not redo this combination.
+                        pd.DataFrame(chunk_results).to_csv(chunk_file, index=False)
 
     return pd.DataFrame(results)
 
@@ -422,6 +451,8 @@ def main() -> None:
     )
     output_dir = Path("data/outputs/figureS6")
     output_dir.mkdir(parents=True, exist_ok=True)
+    chunk_dir = output_dir / f"_chunks_{FEATURE_TYPE}"
+    chunk_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading {FEATURE_TYPE.upper()} features...")
     features = pd.read_csv(
@@ -439,7 +470,10 @@ def main() -> None:
         print(f"  {st}: {len(sv)} splits")
 
     print(f"\nRunning learning curves for {len(COMMON_PHENOTYPES)} phenotypes...")
-    results = run_learning_curve_analysis(splits, features, gapmind)
+    print(f"Checkpoint chunks: {chunk_dir}")
+    results = run_learning_curve_analysis(
+        splits, features, gapmind, chunk_dir=chunk_dir
+    )
     results["feature_type"] = FEATURE_TYPE
 
     out_file = output_dir / f"figureS6_learning_curves_{FEATURE_TYPE}.csv"

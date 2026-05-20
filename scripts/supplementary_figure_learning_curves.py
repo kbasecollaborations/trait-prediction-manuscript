@@ -19,7 +19,7 @@ sns.set_context("paper")
 configure_plot_style()
 
 
-FEATURE_TYPE = "gapmind"
+FEATURE_TYPE = "kofam"
 COMMON_PHENOTYPES = [
     "Alanine",
     "Arginine",

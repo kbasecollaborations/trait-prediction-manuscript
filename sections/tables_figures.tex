@@ -80,24 +80,23 @@ Performance varied substantially across phenotypes; values near random indicate 
 \end{figure}
 
 \begin{figure}[ht]
-\thisfloatpagestyle{empty}
 \centering
 \includegraphics[width=0.93\textwidth]{figure6.pdf}
 \caption{
 \textbf{Effects of data filtering and feature selection on model performance.}
-(A) Left: condensed summary of problematic genomes across datasets, showing the number of genomes in two discordant categories (no observed growth despite at least one GapMind growth prediction; universal observed growth despite incomplete GapMind pathways).
-Right: top-20 most frequently misclassified microbes, ranked by number of phenotypes for which GapMind disagrees with the experimental label and coloured by membership in those discordant categories or neither category.
-(B) Per-phenotype balanced accuracy on the cross-dataset split for three filtering strategies (concordant samples in blue; $Y_{\mathrm{soft}}$ confidence-filtered samples in green; problematic samples removed in red).
-Numbers above each bar indicate the number of training samples removed by that filter relative to the full dataset; error bars show the standard deviation across replicate runs.
-(C) Precision-recall scatter for the three filtering strategies and the GapMind baseline across phenotypes, with the dashed line indicating equal precision and recall.
-(D) Combined-features (GapMind + KOFAM + RAST) versus phenotype-filtered (GapMind-only) balanced-accuracy scatter under random and cross-dataset splits; the dashed line marks equal performance, and points above the diagonal indicate that the phenotype-filtered feature set outperforms the combined set.
-The inset shows the corresponding precision-recall distribution for combined features (blue) and phenotype-filtered features (red) using the same split-type marker shapes; the annotation gives paired Wilcoxon p-values across phenotype means.
+(A) Left: counts of problematic genomes per dataset in two discordant categories: no observed growth despite at least one GapMind growth prediction, and universal observed growth despite incomplete GapMind pathways.
+Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those discordant categories or neither.
+(B) Per-phenotype balanced accuracy on the cross-dataset split for three filtering strategies (concordant samples, blue; $Y_{\mathrm{soft}}$ confidence-filtered, green; problematic samples removed, red).
+Numbers above each bar give the training samples removed by that filter relative to the full dataset; error bars show standard deviation across replicate runs.
+(C) Precision-recall scatter for the three filtering strategies and the GapMind baseline across phenotypes; the dashed line marks equal precision and recall.
+(D) Balanced-accuracy scatter under random and cross-dataset splits comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (GapMind-only) features; points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
+Inset: precision-recall distribution for combined (blue) and phenotype-filtered (red) features with the same split-type markers; annotation gives paired Wilcoxon p-values across phenotype means.
 }\label{fig:improvement_strategies}
 \end{figure}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.95\textwidth]{figure7_gapmind_histidine_all_tests.pdf}
+\includegraphics[width=0.95\textwidth]{figure7.pdf}
 \caption{
 \textbf{Sample size requirements for training generalisable models.}
 Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
@@ -111,10 +110,12 @@ Each point indicates performance at training sizes of 50, 100, 200, 500, or the 
 \centering
 \includegraphics[width=0.95\textwidth]{figure8.pdf}
 \caption{
-\textbf{Model confidence and GapMind agreement define an applicability domain for concordant-trained models.}
+\textbf{Diagnostic and applicability-domain signals for genome-based phenotype prediction.}
 (\textbf{A}) Risk--coverage curve for concordant-trained models on the full held-out cross-dataset test set, pooled across phenotypes and held-out datasets.
 Genomes are ranked by model confidence ($\max(p,\,1-p)$); the curve shows balanced accuracy on the retained subset as a function of coverage, the fraction of genomes the model commits to.
-(\textbf{B}) Balanced accuracy split by agreement between the GapMind call and the machine learning prediction.
+(\textbf{B}) Balanced accuracy split by agreement between the GapMind call and the machine learning prediction; the disagreement subset is the natural priority list for experimental characterisation of novel mechanisms.
 The dotted line marks balanced accuracy on the full test set and the dashed line marks random performance (balanced accuracy~$=0.5$).
+(\textbf{C}) Per-phenotype diagnostic: the shortcut gap of the full-data model (mean random-split balanced accuracy minus mean cross-dataset balanced accuracy) versus the concordance benefit (mean concordant cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy).
+A positive trend indicates that phenotypes whose full-data models rely most on dataset- or phylogeny-specific shortcuts are also those that gain most from concordance filtering, providing an a-priori signal of when filtering is likely to pay off.
 }\label{fig:selective_prediction}
 \end{figure}

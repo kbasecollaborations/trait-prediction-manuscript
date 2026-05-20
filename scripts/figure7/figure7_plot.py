@@ -22,10 +22,17 @@ configure_plot_style()
 
 # Feature type to use: "gapmind", "kofam", or "rast"
 # Change this line to match the feature type used in figure7_data.py
-FEATURE_TYPE = "gapmind"
+FEATURE_TYPE = "kofam"
 
 # Sample sizes used in figure7_data.py
 SAMPLE_SIZES = [50, 100, 200, 500, "full"]
+
+# Manuscript figure routing: only the Histidine combined-test grid appears in
+# the manuscript (as figure7.pdf). All other variants — the Full/Concordant/
+# Discordant test-subset 2x3 grids and the Galactose combined-test grid — go to
+# figures/alternate/ to keep the manuscript figures directory uncluttered.
+MANUSCRIPT_PHENOTYPE = "Histidine"
+MANUSCRIPT_FIGURE_NAME = "figure7.pdf"
 
 
 def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -266,23 +273,32 @@ def plot_all_test_subsets(df: pd.DataFrame, output_dir: Path) -> None:
 
     for test_subset in test_subsets:
         subset_name = test_subset.lower().replace(" ", "_")
-        output_file = output_dir / f"figure7_{FEATURE_TYPE}_{subset_name}.pdf"
+        output_file = output_dir / f"figure7_{subset_name}.pdf"
         plot_performance_vs_sample_size(df, output_file, test_subset=test_subset)
 
 
-def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
+def plot_combined_test_subsets(
+    df: pd.DataFrame,
+    manuscript_dir: Path,
+    alternate_dir: Path,
+) -> None:
     """
     Plot all test subsets together for comparison.
 
-    Creates separate figures for each phenotype showing all test subsets.
-    Lines connect points with the same key and repeat across sample sizes.
+    Creates one combined-test-subset grid per phenotype. The
+    ``MANUSCRIPT_PHENOTYPE`` grid is saved as ``manuscript_dir /
+    MANUSCRIPT_FIGURE_NAME`` (the manuscript Figure 7); the remaining
+    phenotypes are saved under ``alternate_dir`` to keep the manuscript
+    figures directory uncluttered.
 
     Parameters
     ----------
     df : pd.DataFrame
         Prepared plot data.
-    output_file : Path
-        Path to save the output figure.
+    manuscript_dir : Path
+        Directory for the manuscript Figure 7 PDF.
+    alternate_dir : Path
+        Directory for non-manuscript phenotype grids.
     """
     phenotypes = sorted(df["phenotype"].unique())
     split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
@@ -436,10 +452,12 @@ def plot_combined_test_subsets(df: pd.DataFrame, output_file: Path) -> None:
         )
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])
-        phenotype_file = (
-            output_file.parent
-            / f"figure7_{FEATURE_TYPE}_{phenotype.lower()}_all_tests.pdf"
-        )
+        if phenotype == MANUSCRIPT_PHENOTYPE:
+            phenotype_file = manuscript_dir / MANUSCRIPT_FIGURE_NAME
+        else:
+            phenotype_file = (
+                alternate_dir / f"figure7_{phenotype.lower()}_all_tests.pdf"
+            )
         fig.savefig(phenotype_file, dpi=300, bbox_inches="tight")
         print(f"Saved plot to {phenotype_file}")
         plt.close()
@@ -504,27 +522,33 @@ def main() -> None:
     # Prepare data
     plot_data = prepare_plot_data(df)
 
-    # Create output directory
+    # Create output directories. The manuscript figure (figure7.pdf) lives in
+    # figures/; all other variants are routed to figures/alternate/.
     output_dir = Path("figures")
+    alternate_dir = output_dir / "alternate"
     output_dir.mkdir(parents=True, exist_ok=True)
+    alternate_dir.mkdir(parents=True, exist_ok=True)
 
     # Create plots
     print("\nGenerating plots...")
 
-    # Main plot: Full test set only
-    print("  Creating main plot (Full Test)...")
+    # Auxiliary main plot (Full Test only, 2x3 grid for both phenotypes): alternate.
+    print("  Creating auxiliary Full Test plot (alternate)...")
     plot_performance_vs_sample_size(
-        plot_data, output_dir / f"figure7_{FEATURE_TYPE}.pdf", test_subset="Full Test"
+        plot_data, alternate_dir / "figure7_full_test_2x3.pdf", test_subset="Full Test"
     )
 
-    # Individual plots for each test subset
-    print("  Creating plots for each test subset...")
-    plot_all_test_subsets(plot_data, output_dir)
+    # Per-test-subset plots: alternate.
+    print("  Creating per-test-subset plots (alternate)...")
+    plot_all_test_subsets(plot_data, alternate_dir)
 
-    # Combined plots showing all test subsets per phenotype
-    print("  Creating combined plots per phenotype...")
+    # Combined-test-subset plots per phenotype. The MANUSCRIPT_PHENOTYPE goes to
+    # figures/figure7.pdf; the rest land in figures/alternate/.
+    print("  Creating combined-test-subset plots per phenotype...")
     plot_combined_test_subsets(
-        plot_data, output_dir / f"figure7_{FEATURE_TYPE}_combined.pdf"
+        plot_data,
+        manuscript_dir=output_dir,
+        alternate_dir=alternate_dir,
     )
 
     # Print summary statistics

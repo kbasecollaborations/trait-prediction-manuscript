@@ -10,116 +10,109 @@ Biolog encompassed 362 strains across 64 substrates, compiled from published stu
 Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
 Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carbon sources.
 
-Annotation pipeline limitations and incomplete phenotypic data reduced the final analysis sets relative to the originals (Supplementary Table~\ref{tab:dataset_overview}).
-We standardised carbon source names across datasets and focused all analyses on the 15 phenotypes shared by the four collections, using all four datasets for aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
+Annotation and phenotype completeness reduced the final analysis sets (Supplementary Table~\ref{tab:dataset_overview}).
+We standardised carbon source names and restricted analyses to the 15 phenotypes shared across the four datasets, used jointly for aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
 
 \subsection*{Genome Annotation}
 
-We annotated each genome with RAST, KofamScan, and GapMind.
-Rapid Annotation using Subsystem Technology (RAST) \cite{Aziz2008RAST} provided functional predictions, with results parsed to extract subsystem ontology terms.
-KEGG Orthology-based annotation used KofamScan \cite{Aramaki2020KofamKOALA}, which assigns KEGG Orthologs (KOs) via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}, annotating each genome individually in parallel.
-GapMind~\cite{Price2020GapMind} predicted metabolic pathway completeness for carbon utilisation, with pathway scores ranging from 0 (incomplete) to 2 (high confidence).
+Each genome was annotated with three tools.
+RAST \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
+KofamScan \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}, run per genome in parallel.
+GapMind~\cite{Price2020GapMind} predicted carbon-utilisation pathway completeness, with scores ranging from 0 (incomplete) to 2 (high confidence).
 
 \subsection*{Phylogenetic Tree Construction}
 
 We assigned taxonomy with GTDB-Tk \cite{Chaumeil2022GTDBTk}
 \ (v2.x, GTDB R214 reference) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using the \texttt{classify\_wf} workflow.
-For analyses requiring a single tree spanning all study genomes, we extracted the corresponding subtree and computed cophenetic distances between tips with the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
-Genomes lacking a species-level assignment were placed at the genus or family level, with such cases flagged in the supplementary metadata.
+For analyses requiring a single tree across all genomes, we extracted the corresponding subtree and computed cophenetic distances between tips with the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
+Genomes lacking species-level assignments were placed at the genus or family level and flagged in the supplementary metadata.
 
 \subsection*{Baseline Predictors}
 
 \subsubsection*{GapMind Mechanistic Predictions}
 
-We evaluated GapMind as a mechanistic baseline predictor by applying two thresholds to the pathway completeness scores: strict (requiring complete pathways) and permissive (allowing likely complete pathways).
+We evaluated GapMind as a mechanistic baseline using two thresholds on the pathway completeness scores: strict (complete pathways) and permissive (likely complete pathways).
 
 \subsubsection*{Phylogeny-Based Nearest Neighbor}
 
-We implemented a phylogenetic nearest-neighbor classifier that predicts phenotypes based on the $k=3$ closest relatives in the training data, assigning the phenotype by majority vote.
+A phylogenetic nearest-neighbor classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives.
 
 \subsubsection*{Null Models}
 
-As null baselines, we used an identity model (which assigns the most common training class) and a Bernoulli model (which assigns phenotypes according to observed training class probabilities).
+Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
 
 \subsection*{Data Pre-processing and Feature Selection}
 
-Feature representations from KOFAM and GapMind annotations were converted into binary presence/absence matrices (except for GapMind pathway scores, which retained numeric values).
-We applied two filtering steps to the training data before model fitting:
+KOFAM and GapMind annotations were converted into binary presence/absence matrices (GapMind pathway scores retained numeric values).
+Two filtering steps were applied to the training data only, to prevent leakage:
 \begin{itemize}
-    \item Variance filtering: Removed features with variance below 0.01 using scikit-learn's \cite{Pedregosa2011Sklearn} VarianceThreshold
-    \item Correlation filtering: Removed highly correlated features (Spearman $\rho > 0.95$) using a graph-based approach that retains features with highest connectivity
+    \item Variance filtering: removed features with variance below 0.01 using scikit-learn's \cite{Pedregosa2011Sklearn} VarianceThreshold.
+    \item Correlation filtering: removed highly correlated features (Spearman $\rho > 0.95$) via a graph-based approach retaining the most connected features.
 \end{itemize}
-KOFAM annotations yielded approximately 4000--5000 features per dataset after filtering; GapMind features yielded approximately 1000 features.
-All filtering was performed on training data to prevent data leakage.
+After filtering, KOFAM yielded approximately 4000--5000 features per dataset and GapMind approximately 1000.
 
 \subsection*{Machine Learning Classifiers}
 
-We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in the majority of train--test dataset and feature type combinations (Supplementary Table~\ref{tab:best_models_counts}).
-CatBoost was configured with the following parameters: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
-For random splits, training used a 70:15:15 train:validation:test split; for cross-dataset and phylogenetic splits, the non-test data were split 85:15 for train:validation.
-Early stopping was based on validation set Logloss, with balanced accuracy used as the primary reporting metric to account for class imbalance in phenotype data.
-All experiments used random seed 42.
-Hyperparameters were not tuned per phenotype; reported performance reflects default settings.
-
-SHAP-based feature stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B) were repeated across 20 random seeds (see \S\,Feature Importance Analysis below).
-Performance figures used a single seed (\texttt{random\_state=42}); SHAP stability analyses used 20 seeds (see below).
+We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}).
+CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
+Random splits used a 70:15:15 train:validation:test partition; cross-dataset and phylogenetic splits used 85:15 train:validation on the non-test data.
+Early stopping was based on validation Logloss, and balanced accuracy was the primary reporting metric to account for class imbalance.
+Hyperparameters were not tuned per phenotype; reported performance reflects the above settings with \texttt{random\_state=42}, except for SHAP stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B), which used 20 seeds (see below).
 
 \subsection*{Evaluation Strategies}
 
 \subsubsection*{Cross-Validation and Cross-Dataset Testing}
 
-We evaluated model performance using four scenarios: (i) random cross-validation within the aggregated dataset, (ii) cross-dataset evaluation (training on three datasets and testing on the held-out fourth), (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples, and (iv) out-of-clade evaluation on phylogenetically distant samples.
+Performance was evaluated under four scenarios: (i) random cross-validation within the aggregated dataset; (ii) cross-dataset evaluation (training on three datasets, testing on the held-out fourth); (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples; and (iv) out-of-clade evaluation on phylogenetically distant samples.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded.
-For cross-dataset testing, we mapped features from training to test data and imputed missing features as zero, which conflates true gene absence with cross-dataset annotation mismatch and may underestimate cross-dataset performance.
+For cross-dataset testing, features were mapped from training to test data with missing features imputed as zero; this conflates true gene absence with annotation mismatch and may underestimate cross-dataset performance.
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We implemented the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades within a target size range (12--18\% of samples).
-We supplemented this with manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
+We applied the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades within a target size range (12--18\% of samples), supplemented by manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
 
 \subsection*{Concordant and Discordant Sample Analysis}
 
-We stratified samples by agreement between GapMind predictions and experimental outcomes: concordant samples are those where GapMind matches the experiment (correct mechanistic predictions), and discordant samples are those where GapMind contradicts it (false positives or negatives).
-Concordance used GapMind's permissive (loose) pathway-completeness threshold throughout.
-We trained the models on concordant samples only and evaluated their performance on both concordant and discordant test sets.
+Samples were stratified by agreement between GapMind predictions and experimental outcomes: concordant (GapMind matches the experiment) and discordant (GapMind contradicts it).
+Concordance was defined using GapMind's permissive (loose) pathway-completeness threshold throughout.
+Models were trained on concordant samples only and evaluated on both concordant and discordant test sets.
 Per-phenotype, per-dataset counts of concordant and discordant samples (and exclusions) are reported in Supplementary Figure~\ref{fig:concordance_counts}.
 
 \subsection*{Feature Importance Analysis}
 
-We identified stable predictive features using SHAP (SHapley Additive exPlanations) analysis \cite{Lundberg2017SHAP}.
-For the SHAP analyses, we used a fixed 500-iteration CatBoost variant without early stopping (to avoid validation-set dependence).
-For each phenotype and dataset configuration, we trained models across 20 random seeds, extracting the top 10 features by the mean absolute SHAP value from each run.
-Features appearing in at least 70\% of runs were designated as ``stable features.''
-For the high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B, each phenotype--dataset configuration was first screened to the top 300 KOFAM features by CatBoost PredictionValuesChange importance; SHAP stability analysis was then performed on this screened feature matrix.
-We compared stable features across datasets.
+Stable predictive features were identified using SHAP (SHapley Additive exPlanations) analysis \cite{Lundberg2017SHAP}.
+SHAP analyses used a fixed 500-iteration CatBoost variant without early stopping (to avoid validation-set dependence).
+For each phenotype--dataset configuration, models were trained across 20 random seeds, extracting the top 10 features by mean absolute SHAP value per run.
+Features appearing in at least 70\% of runs were designated ``stable features'' and compared across datasets.
+For the high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B, each configuration was first screened to the top 300 KOFAM features by CatBoost PredictionValuesChange importance, with SHAP stability analysis then performed on the screened matrix.
 
 \subsection*{Data Quality Filtering Strategies}
 
-We evaluated two additional filtering strategies beyond concordant sample filtering.
+Two additional filtering strategies were evaluated beyond concordant sample filtering.
 
 \subsubsection*{Problematic Sample Identification}
 
-We identified problematic samples in two categories: microbes with zero growth on all substrates despite at least one GapMind growth prediction, and microbes with growth on all substrates despite incomplete GapMind pathways.
+Problematic samples were identified in two categories: microbes with zero growth on all substrates despite at least one GapMind growth prediction, and microbes with growth on all substrates despite incomplete GapMind pathways.
 Inspection of the 20 genomes with the highest GapMind misclassification count across the 15 phenotypes showed most belonged to one of these categories.
 \subsubsection*{Confidence-Based Filtering}
 
-We defined a composite confidence score from three inputs:
+A composite confidence score was defined from three inputs:
 \begin{itemize}
-    \item Phylogenetic confidence ($w=0.2$): Agreement among $k=3$ nearest phylogenetic neighbours
-    \item GapMind confidence ($w=0.3$): Pathway completeness score from GapMind
-    \item Experimental data ($w=0.5$): Binary experimental outcome
+    \item Phylogenetic confidence ($w=0.2$): agreement among $k=3$ nearest phylogenetic neighbours.
+    \item GapMind confidence ($w=0.3$): pathway completeness score from GapMind.
+    \item Experimental data ($w=0.5$): binary experimental outcome.
 \end{itemize}
-The experimental-outcome component of this composite score is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, because feature matrices supplied to the classifier do not include the phenotype label.
-GapMind confidence was mapped to a graded six-level scale (0.0--1.0) based on pathway completeness categories.
-Samples with composite confidence scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
+The experimental-outcome component is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, since feature matrices supplied to the classifier do not include the phenotype label.
+GapMind confidence was mapped to a six-level scale (0.0--1.0) based on pathway completeness categories.
+Samples with composite scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
 \subsection*{Sample Size Requirements}
 
-We assessed the minimum training data requirements using learning curves.
-For each phenotype included in the learning-curve analysis, we trained models on subsets of training data (50, 100, 200, 500, and full samples) using stratified subsampling with three repeats per configuration.
-Performance was evaluated across random, cross-dataset, and out-of-clade splits, as well as on full, concordant, and discordant test subsets.
+Minimum training data requirements were assessed using learning curves.
+For each phenotype, models were trained on stratified subsets of 50, 100, 200, 500, and full training samples with three repeats per configuration.
+Performance was evaluated across random, cross-dataset, and out-of-clade splits, and on full, concordant, and discordant test subsets.
 
 \subsection*{Statistical Analysis}
 
 Paired comparisons of balanced accuracy across phenotypes (model versus baseline; combined versus phenotype-filtered features; random versus cross-dataset splits) used the two-sided Wilcoxon signed-rank test on phenotype-level mean balanced accuracies, computed with \texttt{scipy.stats.wilcoxon}.
-P-values are reported uncorrected; the tests are intended as descriptive summaries of paired differences rather than confirmatory inferences, and no multiple-testing adjustment was applied.
-Summary statistics in the text are reported as mean $\pm$ standard deviation across folds or repeats unless otherwise noted.
+P-values are uncorrected and are reported as descriptive summaries of paired differences rather than confirmatory inferences.
+Summary statistics are reported as mean $\pm$ standard deviation across folds or repeats unless otherwise noted.

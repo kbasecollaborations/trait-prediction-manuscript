@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
 """
-Plot Supplementary Figure S15: selective prediction / applicability domain for
-concordant-trained models on the full held-out cross-dataset test set.
+Plot Figure 8: diagnostic and applicability-domain toolkit for genome-based
+phenotype prediction.
 
-Two panels:
+Three panels span two levels of reliability assessment --- per genome and
+per phenotype:
 
     (A) Risk-coverage curve -- balanced accuracy on the retained subset as a
         function of coverage, where the least-confident genomes are abstained
         on first. Confidence is the model's own ``max(p, 1 - p)``.
     (B) Balanced accuracy split by GapMind-ML agreement -- when the curated
-        mechanistic call and the ML prediction coincide versus disagree. Both
-        signals are computable without the experimental outcome of a new genome.
+        mechanistic call and the ML prediction coincide versus disagree. The
+        disagreement subset is the experimental-priority list for novel
+        mechanism discovery. Both per-genome signals are computable without
+        the experimental outcome of a new genome.
+    (C) Per-phenotype diagnostic for the value of concordance filtering --
+        the shortcut gap of the full-data model (random-split balanced
+        accuracy minus cross-dataset balanced accuracy) plotted against the
+        concordance benefit (concordant cross-dataset BA minus full-data
+        cross-dataset BA). A positive relationship indicates that phenotypes
+        whose full-data models rely on dataset- or phylogeny-specific
+        shortcuts are also those that gain most from concordance filtering,
+        providing an a-priori signal that filtering will pay off.
 """
 
 from __future__ import annotations
@@ -33,11 +44,14 @@ configure_plot_style()
 DATA_DIR: Path = Path("data/outputs/figureS15")
 RISK_FILE: Path = DATA_DIR / "figureS15_risk_coverage.tsv"
 AGREEMENT_FILE: Path = DATA_DIR / "figureS15_agreement.tsv"
+ML_RESULTS_FILE: Path = Path("data/outputs/figure3/ml_results.csv")
+FULL_TEST_FILE: Path = Path("data/outputs/figure5/figure5d_full_test.tsv")
 OUTPUT_FILE: Path = Path("figures/figure8.pdf")
 
 CURVE_COLOR: str = "#2E86AB"
 AGREE_COLOR: str = "#2E86AB"
 DISAGREE_COLOR: str = "#E76F51"
+DIAGNOSTIC_COLOR: str = "#2E86AB"
 
 AGREEMENT_LABELS: dict[str, str] = {
     "gapmind_ml_agree": "GapMind-ML\nagree",
@@ -189,9 +203,121 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
     _panel_label(ax, "(B)")
 
 
+def compute_phenotype_diagnostic(
+    ml_results_file: Path, full_test_file: Path
+) -> pd.DataFrame:
+    """
+    Build the per-phenotype shortcut-gap vs concordance-benefit table.
+
+    The shortcut gap of the full-data (unfiltered) model is the average
+    random-split balanced accuracy minus the average cross-dataset balanced
+    accuracy. A large gap means the full-data model relies on dataset- or
+    phylogeny-specific patterns that do not transfer. The concordance benefit
+    is the average cross-dataset balanced accuracy of the concordant-trained
+    model on the full natural-composition held-out test set minus the
+    cross-dataset balanced accuracy of the full-data model.
+
+    Parameters
+    ----------
+    ml_results_file : Path
+        Path to the Figure 3 ``ml_results.csv`` (full-data KOFAM model).
+    full_test_file : Path
+        Path to ``figure5d_full_test.tsv`` (concordant-trained model on the
+        full held-out cross-dataset test set).
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per phenotype with columns ``phenotype``, ``random_ba``,
+        ``cross_ba_full``, ``cross_ba_concordant``, ``shortcut_gap``,
+        ``concordance_benefit``.
+    """
+    ml = pd.read_csv(ml_results_file)
+    ml = ml[ml["split_type"].isin(["random_split", "dataset_split"])]
+    pivot = (
+        ml.groupby(["phenotype", "split_type"])["balanced_accuracy"]
+        .mean()
+        .unstack("split_type")
+        .rename(
+            columns={"random_split": "random_ba", "dataset_split": "cross_ba_full"}
+        )
+    )
+
+    full_test = pd.read_csv(full_test_file, sep="\t")
+    concordant_cross = (
+        full_test.groupby("phenotype")["balanced_accuracy_full"]
+        .mean()
+        .rename("cross_ba_concordant")
+    )
+
+    diagnostic = pivot.join(concordant_cross, how="inner").reset_index()
+    diagnostic["shortcut_gap"] = (
+        diagnostic["random_ba"] - diagnostic["cross_ba_full"]
+    )
+    diagnostic["concordance_benefit"] = (
+        diagnostic["cross_ba_concordant"] - diagnostic["cross_ba_full"]
+    )
+    return diagnostic
+
+
+def plot_diagnostic(ax: Axes, diagnostic: pd.DataFrame) -> None:
+    """
+    Plot the per-phenotype shortcut-gap vs concordance-benefit scatter.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to draw on.
+    diagnostic : pd.DataFrame
+        Output of :func:`compute_phenotype_diagnostic`.
+    """
+    from scipy.stats import spearmanr
+
+    x = diagnostic["shortcut_gap"].to_numpy()
+    y = diagnostic["concordance_benefit"].to_numpy()
+
+    ax.scatter(
+        x,
+        y,
+        s=44,
+        color=DIAGNOSTIC_COLOR,
+        edgecolor="black",
+        linewidth=0.4,
+        zorder=3,
+    )
+
+    for _, row in diagnostic.iterrows():
+        ax.annotate(
+            row["phenotype"],
+            xy=(row["shortcut_gap"], row["concordance_benefit"]),
+            xytext=(4, 3),
+            textcoords="offset points",
+            fontsize=7,
+        )
+
+    ax.axhline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7)
+    ax.axvline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7)
+
+    rho, p_value = spearmanr(x, y)
+    ax.text(
+        0.02,
+        0.97,
+        f"Spearman $\\rho$ = {rho:.2f}\n$p$ = {p_value:.2g}\n$n$ = {len(diagnostic)}",
+        transform=ax.transAxes,
+        va="top",
+        ha="left",
+        fontsize=9,
+        bbox=dict(facecolor="white", edgecolor="gray", linewidth=0.4, pad=3),
+    )
+
+    ax.set_xlabel("Full-data shortcut gap\n(random$-$cross-dataset BA)")
+    ax.set_ylabel("Concordance benefit\n(concordant$-$full-data cross-dataset BA)")
+    _panel_label(ax, "(C)")
+
+
 def create_figure(output_file: Path) -> None:
     """
-    Build and persist Supplementary Figure S15.
+    Build and persist Figure 8.
 
     Parameters
     ----------
@@ -200,10 +326,16 @@ def create_figure(output_file: Path) -> None:
     """
     risk = pd.read_csv(RISK_FILE, sep="\t")
     agreement = pd.read_csv(AGREEMENT_FILE, sep="\t")
+    diagnostic = compute_phenotype_diagnostic(ML_RESULTS_FILE, FULL_TEST_FILE)
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-    plot_risk_coverage(axes[0], risk)
-    plot_agreement(axes[1], agreement)
+    fig = plt.figure(figsize=(12, 10))
+    gs = fig.add_gridspec(2, 2)
+    ax_a = fig.add_subplot(gs[0, 0])
+    ax_b = fig.add_subplot(gs[0, 1])
+    ax_c = fig.add_subplot(gs[1, :])
+    plot_risk_coverage(ax_a, risk)
+    plot_agreement(ax_b, agreement)
+    plot_diagnostic(ax_c, diagnostic)
 
     plt.tight_layout()
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -213,7 +345,7 @@ def create_figure(output_file: Path) -> None:
 
 
 def main() -> None:
-    """Build Supplementary Figure S15."""
+    """Build Figure 8."""
     create_figure(OUTPUT_FILE)
 
 
