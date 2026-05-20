@@ -41,27 +41,59 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-DATA_DIR: Path = Path("data/outputs/figureS15")
-RISK_FILE: Path = DATA_DIR / "figureS15_risk_coverage.tsv"
-AGREEMENT_FILE: Path = DATA_DIR / "figureS15_agreement.tsv"
+DATA_DIR: Path = Path("data/outputs/figure8")
+RISK_FILE: Path = DATA_DIR / "figure8_risk_coverage.tsv"
+AGREEMENT_FILE: Path = DATA_DIR / "figure8_agreement.tsv"
 ML_RESULTS_FILE: Path = Path("data/outputs/figure3/ml_results.csv")
 FULL_TEST_FILE: Path = Path("data/outputs/figure5/figure5d_full_test.tsv")
 OUTPUT_FILE: Path = Path("figures/figure8.pdf")
 
-CURVE_COLOR: str = "#2E86AB"
-AGREE_COLOR: str = "#2E86AB"
-DISAGREE_COLOR: str = "#E76F51"
-DIAGNOSTIC_COLOR: str = "#2E86AB"
+# Colour palette: seaborn ``colorblind`` (matches ``visualization.get_dataset_colors``).
+# Index 0 (blue ``#0173b2``) is reused across panels as the primary accent so
+# Figure 8 sits visually next to Figures 3 and 5; index 3 (vermillion
+# ``#d55e00``) is the discordance highlight, mirroring the same role red plays
+# in Figure 5D's discordance categories.
+_PALETTE = sns.color_palette("colorblind", n_colors=6)
+PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
+ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
+
+CURVE_COLOR: str = PRIMARY_COLOR
+AGREE_COLOR: str = PRIMARY_COLOR
+DISAGREE_COLOR: str = ACCENT_COLOR
+DIAGNOSTIC_COLOR: str = PRIMARY_COLOR
 
 AGREEMENT_LABELS: dict[str, str] = {
     "gapmind_ml_agree": "GapMind-ML\nagree",
     "gapmind_ml_disagree": "GapMind-ML\ndisagree",
 }
 
+# Hand-tuned label offsets (in points) for Panel C phenotypes whose default
+# positions overlap or run off-axis. Phenotypes not listed here use the default.
+_PANEL_C_LABEL_OFFSETS: dict[str, tuple[float, float]] = {
+    "Galacturonic-Acid": (6, -10),
+    "Mannose": (6, 6),
+    "Fructose": (-6, -10),
+    "Cellobiose": (6, -3),
+    "Alanine": (6, -3),
+    "Serine": (6, 4),
+    "m-Inositol": (6, 4),
+    "Maltose": (-58, 4),
+    "Glycerol": (-44, 4),
+    "Arginine": (6, 4),
+    "Histidine": (6, -3),
+    "Mannitol": (6, 4),
+    "Galactose": (6, -3),
+    "Sucrose": (-44, 4),
+    "Glucose": (-44, 4),
+}
+
 
 def _panel_label(ax: Axes, label: str) -> None:
     """
     Draw a bold panel label in the upper-left corner of an axes.
+
+    Position and size match the convention used in Figures 3 and 5
+    (``(-0.08, 1.05)`` in axes coordinates, ``fontsize=14``, bold).
 
     Parameters
     ----------
@@ -71,7 +103,7 @@ def _panel_label(ax: Axes, label: str) -> None:
         Panel label text, e.g. ``"(A)"``.
     """
     ax.text(
-        -0.12,
+        -0.08,
         1.05,
         label,
         transform=ax.transAxes,
@@ -86,17 +118,38 @@ def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
     """
     Plot the balanced-accuracy risk-coverage curve.
 
+    A shaded band between the curve and the random-baseline line conveys the
+    "value above chance" of every coverage level at a glance.
+
     Parameters
     ----------
     ax : Axes
         Matplotlib axes to draw on.
     risk : pd.DataFrame
-        Contents of ``figureS15_risk_coverage.tsv``.
+        Contents of ``figure8_risk_coverage.tsv``.
     """
     risk = risk.sort_values("coverage")
+    coverage = risk["coverage"].to_numpy()
+    ba = risk["balanced_accuracy"].to_numpy()
+
+    # Shaded band: curve vs. random baseline (0.5).
+    ax.fill_between(
+        coverage,
+        0.5,
+        ba,
+        where=ba >= 0.5,
+        color=CURVE_COLOR,
+        alpha=0.12,
+        linewidth=0,
+        zorder=1,
+    )
+
+    # Random-chance reference.
+    ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7, zorder=2)
+
     ax.plot(
-        risk["coverage"],
-        risk["balanced_accuracy"],
+        coverage,
+        ba,
         marker="o",
         markersize=5,
         linewidth=1.8,
@@ -105,15 +158,15 @@ def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
         markeredgewidth=0.4,
         zorder=3,
     )
-    ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7)
 
     full = risk[np.isclose(risk["coverage"], 1.0)].iloc[0]
     half = risk.iloc[(risk["coverage"] - 0.5).abs().argmin()]
-    for point, va in [(full, "top"), (half, "bottom")]:
+    # Push annotations away from the curve so labels never sit on the marker.
+    for point, va, dy in [(full, "top", -14), (half, "bottom", 12)]:
         ax.annotate(
-            f"{point['balanced_accuracy']:.2f}",
+            f"BA = {point['balanced_accuracy']:.2f}",
             xy=(point["coverage"], point["balanced_accuracy"]),
-            xytext=(0, -12 if va == "top" else 10),
+            xytext=(0, dy),
             textcoords="offset points",
             ha="center",
             va=va,
@@ -126,9 +179,11 @@ def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
     ax.set_ylabel("Balanced accuracy (retained subset)")
     ax.set_xlim(0.0, 1.05)
     ax.set_ylim(0.45, 1.0)
+    ax.minorticks_on()
+    ax.tick_params(axis="both", which="minor", length=2)
     ax.text(
         0.98,
-        0.52,
+        0.51,
         "random (0.5)",
         ha="right",
         va="bottom",
@@ -142,12 +197,15 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
     """
     Plot balanced accuracy split by GapMind-ML agreement.
 
+    Each bar carries a compact two-line stat block: the headline balanced
+    accuracy on top, and the coverage / sample-size pair underneath.
+
     Parameters
     ----------
     ax : Axes
         Matplotlib axes to draw on.
     agreement : pd.DataFrame
-        Contents of ``figureS15_agreement.tsv``.
+        Contents of ``figure8_agreement.tsv``.
     """
     indexed = agreement.set_index("subset")
     order = ["gapmind_ml_agree", "gapmind_ml_disagree"]
@@ -157,42 +215,58 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
     bars = ax.bar(
         x,
         [indexed.loc[s, "balanced_accuracy"] for s in order],
-        width=0.6,
+        width=0.55,
         color=colors,
         edgecolor="black",
-        linewidth=0.6,
+        linewidth=0.7,
+        alpha=0.9,
         zorder=2,
     )
-    ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7)
+    ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7, zorder=1)
 
     if "all" in indexed.index:
+        full_ba = float(indexed.loc["all", "balanced_accuracy"])
         ax.axhline(
-            float(indexed.loc["all", "balanced_accuracy"]),
+            full_ba,
             linestyle=":",
             color="black",
             linewidth=1.0,
             alpha=0.8,
+            zorder=1,
         )
         ax.text(
-            len(order) - 0.5,
-            float(indexed.loc["all", "balanced_accuracy"]) + 0.012,
-            "full test set",
-            ha="right",
-            va="bottom",
+            -0.55,
+            full_ba - 0.015,
+            f"full test set ({full_ba:.2f})",
+            ha="left",
+            va="top",
             fontsize=8,
+            color="black",
         )
 
     for bar, subset in zip(bars, order, strict=True):
         ba = float(indexed.loc[subset, "balanced_accuracy"])
         coverage = float(indexed.loc[subset, "coverage"])
         n = int(indexed.loc[subset, "n_samples"])
+        # Headline BA, larger and bold.
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            ba + 0.055,
+            f"BA = {ba:.2f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            fontweight="bold",
+        )
+        # Coverage / n sub-label, smaller and de-emphasised.
         ax.text(
             bar.get_x() + bar.get_width() / 2,
             ba + 0.015,
-            f"BA = {ba:.2f}\n{coverage * 100:.0f}\\% of genomes\n(n = {n})",
+            f"{coverage * 100:.0f}\\% of genomes, $n$ = {n:,}",
             ha="center",
             va="bottom",
-            fontsize=8.5,
+            fontsize=8,
+            color="0.25",
         )
 
     ax.set_xticks(x)
@@ -200,6 +274,7 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
     ax.set_ylabel("Balanced accuracy")
     ax.set_ylim(0.0, 1.0)
     ax.set_xlim(-0.6, len(order) - 0.4)
+    ax.tick_params(axis="x", which="minor", bottom=False, top=False)
     _panel_label(ax, "(B)")
 
 
@@ -264,6 +339,10 @@ def plot_diagnostic(ax: Axes, diagnostic: pd.DataFrame) -> None:
     """
     Plot the per-phenotype shortcut-gap vs concordance-benefit scatter.
 
+    A faint linear-fit guide visualises the positive monotone trend reported
+    in the Spearman annotation. Per-point labels are placed with hand-tuned
+    offsets to avoid the dense Fructose / Mannose / Galacturonic-Acid cluster.
+
     Parameters
     ----------
     ax : Axes
@@ -276,42 +355,86 @@ def plot_diagnostic(ax: Axes, diagnostic: pd.DataFrame) -> None:
     x = diagnostic["shortcut_gap"].to_numpy()
     y = diagnostic["concordance_benefit"].to_numpy()
 
+    # Faint linear-fit guide for the trend.
+    slope, intercept = np.polyfit(x, y, 1)
+    x_line = np.linspace(x.min() - 0.01, x.max() + 0.01, 100)
+    ax.plot(
+        x_line,
+        slope * x_line + intercept,
+        linestyle="-",
+        color=DIAGNOSTIC_COLOR,
+        linewidth=1.2,
+        alpha=0.35,
+        zorder=2,
+    )
+
+    # Zero reference lines.
+    ax.axhline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7, zorder=1)
+    ax.axvline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7, zorder=1)
+
     ax.scatter(
         x,
         y,
-        s=44,
+        s=64,
         color=DIAGNOSTIC_COLOR,
+        edgecolor="white",
+        linewidth=0.8,
+        zorder=4,
+    )
+    # Thin dark outline for better separation against the fit line.
+    ax.scatter(
+        x,
+        y,
+        s=64,
+        facecolor="none",
         edgecolor="black",
         linewidth=0.4,
-        zorder=3,
+        zorder=5,
     )
 
     for _, row in diagnostic.iterrows():
+        offset = _PANEL_C_LABEL_OFFSETS.get(row["phenotype"], (5, 4))
         ax.annotate(
             row["phenotype"],
             xy=(row["shortcut_gap"], row["concordance_benefit"]),
-            xytext=(4, 3),
+            xytext=offset,
             textcoords="offset points",
-            fontsize=7,
+            fontsize=8,
+            zorder=6,
         )
-
-    ax.axhline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7)
-    ax.axvline(0.0, color="gray", linewidth=0.8, linestyle="--", alpha=0.7)
 
     rho, p_value = spearmanr(x, y)
     ax.text(
-        0.02,
-        0.97,
-        f"Spearman $\\rho$ = {rho:.2f}\n$p$ = {p_value:.2g}\n$n$ = {len(diagnostic)}",
+        0.98,
+        0.05,
+        (
+            f"Spearman $\\rho$ = {rho:.2f}\n"
+            f"$p$ = {p_value:.2g}\n"
+            f"$n$ = {len(diagnostic)}"
+        ),
         transform=ax.transAxes,
-        va="top",
-        ha="left",
-        fontsize=9,
-        bbox=dict(facecolor="white", edgecolor="gray", linewidth=0.4, pad=3),
+        va="bottom",
+        ha="right",
+        fontsize=10,
+        bbox=dict(
+            boxstyle="round,pad=0.3",
+            facecolor="white",
+            edgecolor="none",
+            alpha=0.9,
+        ),
     )
 
-    ax.set_xlabel("Full-data shortcut gap\n(random$-$cross-dataset BA)")
-    ax.set_ylabel("Concordance benefit\n(concordant$-$full-data cross-dataset BA)")
+    ax.set_xlabel(
+        "Full-data shortcut gap (random $-$ cross-dataset BA)"
+    )
+    ax.set_ylabel(
+        "Concordance benefit\n(concordant $-$ full-data cross-dataset BA)"
+    )
+    # Pad axes so labels don't run off the panel.
+    ax.set_xlim(x.min() - 0.03, x.max() + 0.04)
+    ax.set_ylim(y.min() - 0.03, y.max() + 0.04)
+    ax.minorticks_on()
+    ax.tick_params(axis="both", which="minor", length=2)
     _panel_label(ax, "(C)")
 
 
@@ -328,8 +451,17 @@ def create_figure(output_file: Path) -> None:
     agreement = pd.read_csv(AGREEMENT_FILE, sep="\t")
     diagnostic = compute_phenotype_diagnostic(ML_RESULTS_FILE, FULL_TEST_FILE)
 
-    fig = plt.figure(figsize=(12, 10))
-    gs = fig.add_gridspec(2, 2)
+    fig = plt.figure(figsize=(12, 11))
+    # Row 1 (A, B) gets slightly less height than row 2 (C), so the wider
+    # scatter has room to breathe; column widths are equal so the two top
+    # panels share the same footprint.
+    gs = fig.add_gridspec(
+        2,
+        2,
+        height_ratios=[1.0, 1.2],
+        hspace=0.35,
+        wspace=0.28,
+    )
     ax_a = fig.add_subplot(gs[0, 0])
     ax_b = fig.add_subplot(gs[0, 1])
     ax_c = fig.add_subplot(gs[1, :])
@@ -337,7 +469,6 @@ def create_figure(output_file: Path) -> None:
     plot_agreement(ax_b, agreement)
     plot_diagnostic(ax_c, diagnostic)
 
-    plt.tight_layout()
     output_file.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved figure to {output_file}")

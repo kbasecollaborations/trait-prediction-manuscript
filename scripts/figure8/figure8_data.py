@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate Supplementary Figure S15 data: selective prediction / applicability
+Generate Figure 8 data: selective prediction / applicability
 domain for concordant-trained models on the full held-out cross-dataset test set.
 
 The manuscript shows that concordant-trained models retain only intermediate
@@ -22,10 +22,10 @@ knowing the experimental outcome of the test genome:
 From these it produces risk-coverage curves (balanced accuracy on the retained
 subset versus the fraction of genomes the model commits to).
 
-Outputs (all under ``data/outputs/figureS15/``):
-    - ``figureS15_per_sample.tsv``      one row per held-out test genome
-    - ``figureS15_risk_coverage.tsv``   pooled balanced accuracy vs. coverage
-    - ``figureS15_agreement.tsv``       balanced accuracy split by GapMind-ML agreement
+Outputs (all under ``data/outputs/figure8/``):
+    - ``figure8_per_sample.tsv``      one row per held-out test genome
+    - ``figure8_risk_coverage.tsv``   pooled balanced accuracy vs. coverage
+    - ``figure8_agreement.tsv``       balanced accuracy split by GapMind-ML agreement
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ from scripts.ml_splits import load_split_data
 from trait_prediction.pipeline import align_columns
 
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
-OUTPUT_DIR: Path = Path("data/outputs/figureS15")
+OUTPUT_DIR: Path = Path("data/outputs/figure8")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 # KOFAM feature matrix, matching the concordant-trained models of Figure 5.
 KOFAM_FEATURE_FILE: Path = Path(
@@ -381,11 +381,11 @@ def main() -> None:
     risk_coverage = build_risk_coverage(per_sample)
     agreement = build_agreement_table(per_sample)
 
-    per_sample.to_csv(OUTPUT_DIR / "figureS15_per_sample.tsv", sep="\t", index=False)
+    per_sample.to_csv(OUTPUT_DIR / "figure8_per_sample.tsv", sep="\t", index=False)
     risk_coverage.to_csv(
-        OUTPUT_DIR / "figureS15_risk_coverage.tsv", sep="\t", index=False
+        OUTPUT_DIR / "figure8_risk_coverage.tsv", sep="\t", index=False
     )
-    agreement.to_csv(OUTPUT_DIR / "figureS15_agreement.tsv", sep="\t", index=False)
+    agreement.to_csv(OUTPUT_DIR / "figure8_agreement.tsv", sep="\t", index=False)
 
     print(f"\nSaved Supplementary Figure S15 data to {OUTPUT_DIR}")
     print(f"  pooled held-out test genomes: {len(per_sample)}")
