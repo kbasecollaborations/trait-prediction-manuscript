@@ -246,7 +246,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     # --- Axis limits -------------------------------------------------------
     # Keep the data range tight to the actual drawn content so matplotlib's
     # auto aspect stretches the layout across the entire panel A slot.
-    ax.set_xlim(-0.55, total_right + 0.08)
+    ax.set_xlim(-0.18, total_right + 0.08)
     ax.set_ylim(-0.18, 10.40)
     ax.set_aspect("auto")
     ax.margins(0, 0)
@@ -332,24 +332,16 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     subtitle_y = 9.78
 
     title_center = (left_x + total_right) / 2.0
+    # Single bold text with the parenthetical rendered as math-italic so the
+    # whole label is one continuous block centered on title_center.
     ax.text(
-        title_center - 0.06,
+        title_center,
         title_y,
-        "GapMind prediction",
+        r"GapMind prediction $\mathit{(in\ silico)}$",
         fontsize=FS_TOP_TITLE,
         fontweight="bold",
         color=TXT_DARK,
-        ha="right",
-        va="center",
-    )
-    ax.text(
-        title_center + 0.06,
-        title_y,
-        "(in silico)",
-        fontsize=FS_TOP_TITLE_ITALIC,
-        fontstyle="italic",
-        color=TXT_ITALIC,
-        ha="left",
+        ha="center",
         va="center",
     )
 
@@ -376,13 +368,12 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         va="center",
     )
 
-    # --- Left axis: brackets, row labels, outer label ----------------------
-    bracket_x = -0.18
-    row_label_x = -0.02
-    outer_label_x = -0.40
-
-    # _draw_bracket(ax, bracket_x, top_y, top_y + box_h)
-    # _draw_bracket(ax, bracket_x, bottom_y, bottom_y + box_h)
+    # --- Left axis: row labels and outer label -----------------------------
+    # row_label_x is positioned so the gap from the row-label edge to the box
+    # edge mirrors the vertical gap between the top subtitle and the box top
+    # (both look like one comfortable line-height of breathing room).
+    row_label_x = 0.18
+    outer_label_x = -0.05
 
     ax.text(
         row_label_x,
@@ -408,28 +399,16 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     )
 
     overall_cy = (bottom_y + top_y + box_h) / 2.0
-    # Mirror the top-title trick: right-anchor the bold half and left-anchor
-    # the italic half around a small offset so the rotated label reads as one
-    # continuous block ("Experimental outcome (in vivo)").
+    # Single bold rotated text with the parenthetical as math-italic so the
+    # whole rotated label reads as one continuous, centered phrase.
     ax.text(
         outer_label_x,
-        overall_cy - 0.06,
-        "Experimental outcome",
-        fontsize=FS_TOP_TITLE,
+        overall_cy,
+        r"Experimental outcome $\mathit{(in\ vivo)}$",
+        fontsize=FS_OUTER_LABEL,
         fontweight="bold",
         color=TXT_DARK,
-        ha="right",
-        va="center",
-        rotation=90,
-    )
-    ax.text(
-        outer_label_x,
-        overall_cy + 0.06,
-        "(in vivo)",
-        fontsize=FS_TOP_TITLE_ITALIC,
-        fontstyle="italic",
-        color=TXT_ITALIC,
-        ha="left",
+        ha="center",
         va="center",
         rotation=90,
     )

@@ -79,9 +79,10 @@ All models were evaluated using balanced accuracy as the primary reporting metri
 
 Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant} present stable predictive features identified through SHAP (SHapley Additive exPlanations) analysis.
 Stable features were defined as those ranked among the top 10 by mean absolute SHAP value and appearing in at least 70\% of 20 random-seed training runs.
+To avoid counting biologically redundant KOs (paralogues, alternative enzymes in one pathway) as distinct features, the union of stable KOs per phenotype was further grouped into target-aware redundancy clusters using \texttt{shap.utils.hclust} on the pooled concordant feature matrix at a default cut-off of 0.5 (Methods); the ``Shared stable features'' column annotates KOs with a cluster label (\verb|[Cluster A]|, etc.) when they belong to the same cluster.
 Table~\ref{tab:feature_comparison} reports stable features from models trained on all samples using KOFAM annotations as features.
 Table~\ref{tab:feature_comparison_concordant} reports stable KOFAM features from models trained on GapMind-concordant samples only, after a broad CatBoost-importance screen to make SHAP analysis tractable in the larger KOFAM feature space.
-The contrast between these tables illustrates that concordant training produces more consistent, mechanistically interpretable features across datasets.
+The contrast between these tables illustrates that concordant training produces more consistent, mechanistically interpretable feature clusters across datasets.
 
 % ============================================================
 %   TABLES
