@@ -372,8 +372,8 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     # row_label_x is positioned so the gap from the row-label edge to the box
     # edge mirrors the vertical gap between the top subtitle and the box top
     # (both look like one comfortable line-height of breathing room).
-    row_label_x = 0.18
-    outer_label_x = -0.05
+    row_label_x = 0.25
+    outer_label_x = -0.10
 
     ax.text(
         row_label_x,
@@ -405,7 +405,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         outer_label_x,
         overall_cy,
         r"Experimental outcome $\mathit{(in\ vivo)}$",
-        fontsize=FS_OUTER_LABEL,
+        fontsize=FS_TOP_TITLE,
         fontweight="bold",
         color=TXT_DARK,
         ha="center",
