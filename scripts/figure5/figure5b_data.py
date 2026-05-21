@@ -908,15 +908,48 @@ def analyze_all_datasets_combined(
     return results
 
 
+def _kos_to_clusters(
+    kos: list[str], ko_to_cluster: dict[str, int] | None
+) -> set[int | str]:
+    """Map a list of KOs to the set of redundancy clusters they belong to.
+
+    Parameters
+    ----------
+    kos : list[str]
+        KO identifiers.
+    ko_to_cluster : dict[str, int] | None
+        Per-phenotype mapping from KO to cluster ID. If ``None``, return an
+        empty set.
+
+    Returns
+    -------
+    set[int | str]
+        Cluster identifiers represented in ``kos``. KOs absent from the
+        mapping fall back to a singleton string identifier so they remain
+        comparable across lists.
+    """
+    if ko_to_cluster is None:
+        return set()
+    out: set[int | str] = set()
+    for ko in kos:
+        if ko in ko_to_cluster:
+            out.add(int(ko_to_cluster[ko]))
+        else:
+            out.add(f"singleton:{ko}")
+    return out
+
+
 def compare_features(
     combined_results: dict[str, list[str]],
     individual_results: dict[str, dict[str, list[str]]],
+    ko_clusters_by_phenotype: dict[str, dict[str, int]] | None = None,
 ) -> pd.DataFrame:
     """
     Compare features between combined train-test splits and individual dataset models.
 
     For each combination where the dataset was not used in training the combined model,
-    find the intersection and unique features.
+    find the intersection and unique features at both the KO level and (when a
+    cluster mapping is supplied) at the redundancy-cluster level.
 
     Parameters
     ----------
@@ -924,14 +957,18 @@ def compare_features(
         Results from combined splits: {key: [features]}
     individual_results : dict[str, dict[str, list[str]]]
         Results from individual datasets: {dataset: {phenotype: [features]}}
+    ko_clusters_by_phenotype : dict[str, dict[str, int]] | None, optional
+        Per-phenotype mapping from KO identifier to integer cluster ID, as
+        produced by ``scripts/feature_clustering.py``. When supplied, every
+        comparison row gains cluster-level counts.
 
     Returns
     -------
     pd.DataFrame
-        Comparison summary DataFrame with structure:
-        comparison, phenotype, test_dataset, n_combined_features, n_individual_features,
-        n_intersection, n_unique_to_individual, n_unique_to_combined, intersection,
-        unique_to_individual, unique_to_combined
+        Comparison summary DataFrame with KO-level columns plus, when a
+        cluster mapping is supplied, ``n_intersection_clusters``,
+        ``n_unique_to_individual_clusters``, ``n_unique_to_combined_clusters``,
+        ``n_combined_clusters``, ``n_individual_clusters``.
     """
     summary_data = []
 
@@ -963,21 +1000,42 @@ def compare_features(
             unique_to_combined = sorted(list(combined_set - individual_set))
 
             comparison_key = f"{phenotype}_{test_dataset}"
-            summary_data.append(
-                {
-                    "comparison": comparison_key,
-                    "phenotype": phenotype,
-                    "test_dataset": test_dataset,
-                    "n_combined_features": len(combined_features),
-                    "n_individual_features": len(individual_features),
-                    "n_intersection": len(intersection),
-                    "n_unique_to_individual": len(unique_to_individual),
-                    "n_unique_to_combined": len(unique_to_combined),
-                    "intersection": ";".join(intersection),
-                    "unique_to_individual": ";".join(unique_to_individual),
-                    "unique_to_combined": ";".join(unique_to_combined),
-                }
-            )
+            row: dict[str, Any] = {
+                "comparison": comparison_key,
+                "phenotype": phenotype,
+                "test_dataset": test_dataset,
+                "n_combined_features": len(combined_features),
+                "n_individual_features": len(individual_features),
+                "n_intersection": len(intersection),
+                "n_unique_to_individual": len(unique_to_individual),
+                "n_unique_to_combined": len(unique_to_combined),
+                "intersection": ";".join(intersection),
+                "unique_to_individual": ";".join(unique_to_individual),
+                "unique_to_combined": ";".join(unique_to_combined),
+            }
+
+            if ko_clusters_by_phenotype is not None:
+                ko_to_cluster = ko_clusters_by_phenotype.get(phenotype)
+                combined_clusters = _kos_to_clusters(combined_features, ko_to_cluster)
+                individual_clusters = _kos_to_clusters(
+                    individual_features, ko_to_cluster
+                )
+                cluster_intersection = combined_clusters & individual_clusters
+                cluster_unique_individual = individual_clusters - combined_clusters
+                cluster_unique_combined = combined_clusters - individual_clusters
+                row.update(
+                    {
+                        "n_intersection_clusters": len(cluster_intersection),
+                        "n_unique_to_individual_clusters": len(
+                            cluster_unique_individual
+                        ),
+                        "n_unique_to_combined_clusters": len(cluster_unique_combined),
+                        "n_combined_clusters": len(combined_clusters),
+                        "n_individual_clusters": len(individual_clusters),
+                    }
+                )
+
+            summary_data.append(row)
 
     return pd.DataFrame(summary_data)
 
@@ -1024,74 +1082,105 @@ def main() -> None:
     # Step 1: Analyze combined train-test splits (concordant samples)
     combined_file = OUTPUT_DIR / "figure5b_combined_splits_shap_features.json"
 
-    print("\nStep 1: Analyzing combined train-test splits (concordant samples)...")
-    print(f"  - Running {N_SEEDS} random seeds per split")
-    print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per split")
-    print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
+    if combined_file.exists():
+        print("\nStep 1: Loading existing combined splits results (concordant)...")
+        with open(combined_file, "r") as f:
+            combined_results_filtered = json.load(f)
+        print(f"  Loaded {len(combined_results_filtered)} combined splits from: {combined_file}")
+    else:
+        print("\nStep 1: Analyzing combined train-test splits (concordant samples)...")
+        print(f"  - Running {N_SEEDS} random seeds per split")
+        print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per split")
+        print(f"  - Extracting top {N_FEATURES} features per run")
+        print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
-    combined_results = analyze_combined_splits(
-        SPLITS_DIR,
-        gapmind_predictions,
-        experimental_phenotypes,
-        n_seeds=N_SEEDS,
-        threshold=THRESHOLD,
-        n_features=N_FEATURES,
-        n_candidate_features=N_CANDIDATE_FEATURES,
-    )
+        combined_results = analyze_combined_splits(
+            SPLITS_DIR,
+            gapmind_predictions,
+            experimental_phenotypes,
+            n_seeds=N_SEEDS,
+            threshold=THRESHOLD,
+            n_features=N_FEATURES,
+            n_candidate_features=N_CANDIDATE_FEATURES,
+        )
 
-    # Filter to only include common phenotypes
-    combined_results_filtered = {
-        k: v
-        for k, v in combined_results.items()
-        if k.split("_")[0] in COMMON_PHENOTYPES
-    }
+        # Filter to only include common phenotypes
+        combined_results_filtered = {
+            k: v
+            for k, v in combined_results.items()
+            if k.split("_")[0] in COMMON_PHENOTYPES
+        }
 
-    print(
-        f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (concordant samples)"
-    )
+        print(
+            f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (concordant samples)"
+        )
 
-    # Save combined results
-    with open(combined_file, "w") as f:
-        json.dump(combined_results_filtered, f, indent=2)
-    print(f"Saved combined results to: {combined_file}")
+        # Save combined results
+        with open(combined_file, "w") as f:
+            json.dump(combined_results_filtered, f, indent=2)
+        print(f"Saved combined results to: {combined_file}")
 
     # Step 2: Analyze individual datasets (concordant samples)
     individual_file = OUTPUT_DIR / "figure5b_individual_datasets_shap_features.json"
 
-    print(f"\nStep 2: Analyzing individual datasets: {DATASETS}")
-    print(f"  - Concordant samples only")
-    print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
-    print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
-    print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per dataset/phenotype")
-    print(f"  - Extracting top {N_FEATURES} features per run")
-    print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
+    if individual_file.exists():
+        print("\nStep 2: Loading existing individual datasets results (concordant)...")
+        with open(individual_file, "r") as f:
+            individual_results = json.load(f)
+        print(f"  Loaded results for {len(individual_results)} datasets from: {individual_file}")
+        for dataset, phenotypes in individual_results.items():
+            print(f"  - {dataset}: {len(phenotypes)} phenotypes")
+    else:
+        print(f"\nStep 2: Analyzing individual datasets: {DATASETS}")
+        print(f"  - Concordant samples only")
+        print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
+        print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
+        print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per dataset/phenotype")
+        print(f"  - Extracting top {N_FEATURES} features per run")
+        print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
-    individual_results = analyze_individual_datasets(
-        DATASETS,
-        COMMON_PHENOTYPES,
-        gapmind_predictions,
-        experimental_phenotypes,
-        n_seeds=N_SEEDS,
-        threshold=THRESHOLD,
-        n_features=N_FEATURES,
-        n_candidate_features=N_CANDIDATE_FEATURES,
-    )
+        individual_results = analyze_individual_datasets(
+            DATASETS,
+            COMMON_PHENOTYPES,
+            gapmind_predictions,
+            experimental_phenotypes,
+            n_seeds=N_SEEDS,
+            threshold=THRESHOLD,
+            n_features=N_FEATURES,
+            n_candidate_features=N_CANDIDATE_FEATURES,
+        )
 
-    print(f"\nCompleted analysis for individual datasets:")
-    for dataset, phenotypes in individual_results.items():
-        print(f"  - {dataset}: {len(phenotypes)} phenotypes")
+        print(f"\nCompleted analysis for individual datasets:")
+        for dataset, phenotypes in individual_results.items():
+            print(f"  - {dataset}: {len(phenotypes)} phenotypes")
 
-    # Save individual results
-    with open(individual_file, "w") as f:
-        json.dump(individual_results, f, indent=2)
-    print(f"Saved individual results to: {individual_file}")
+        # Save individual results
+        with open(individual_file, "w") as f:
+            json.dump(individual_results, f, indent=2)
+        print(f"Saved individual results to: {individual_file}")
 
     # Step 3: Compare features between combined splits and individual datasets
+    # Always re-run the comparison step (cheap) so cluster-mapping updates propagate.
     comparison_file = OUTPUT_DIR / "figure5b_feature_comparison_summary.csv"
 
+    # Load redundancy-cluster mapping if available.
+    cluster_file = Path("data/outputs/clustering/ko_clusters_shap_hclust.json")
+    if cluster_file.exists():
+        with open(cluster_file, "r") as f:
+            ko_clusters_by_phenotype = json.load(f)
+        print(
+            f"\nStep 3: Loaded cluster mapping for {len(ko_clusters_by_phenotype)} phenotypes"
+        )
+    else:
+        ko_clusters_by_phenotype = None
+        print(f"\nStep 3: cluster mapping not found at {cluster_file}; skipping cluster columns")
+
     print("\nStep 3: Comparing features between combined splits and individual models...")
-    summary_df = compare_features(combined_results_filtered, individual_results)
+    summary_df = compare_features(
+        combined_results_filtered,
+        individual_results,
+        ko_clusters_by_phenotype=ko_clusters_by_phenotype,
+    )
 
     print(f"\nFound {len(summary_df)} valid comparisons")
 

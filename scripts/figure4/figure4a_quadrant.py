@@ -2,24 +2,224 @@
 
 from pathlib import Path
 
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import scienceplots
-from matplotlib.patches import FancyBboxPatch
-
-from scripts.figure4.style import (
-    PANEL_A_AXIS_LABEL_SIZE,
-    PANEL_A_BADGE_SIZE,
-    PANEL_A_BODY_SIZE,
-    PANEL_A_BULLET_SIZE,
-    PANEL_A_SECTION_HEADING_SIZE,
-    PANEL_A_SECTION_SUBHEADING_SIZE,
-    PANEL_A_SUBTITLE_SIZE,
-    PANEL_A_TITLE_SIZE,
-)
+from matplotlib.patches import FancyBboxPatch, Rectangle
 
 # Apply publication-ready style
 plt.style.use(["science", "nature"])
+
+
+# --- Quadrant border / fill palette -----------------------------------------
+COL_TP = "#3a8a83"  # teal
+COL_FN = "#c47a3d"  # amber
+COL_FP = "#a85060"  # rose
+COL_TN = "#5876a0"  # muted blue
+
+BG_TP = "#e8f1ef"
+BG_FN = "#fbf3e9"
+BG_FP = "#f3e6e9"
+BG_TN = "#e7ecf3"
+
+# --- Bullet category colors --------------------------------------------------
+CAT_ANNOTATION = "#6f5fb0"  # purple
+CAT_BIOLOGY = "#3d6e3f"  # dark green
+CAT_MEASUREMENT = "#6c7a89"  # slate gray
+CAT_MEDIA = "#8a6d3a"  # brown
+CAT_REGULATION = "#9c8a35"  # olive yellow
+
+# --- Neutral text colors -----------------------------------------------------
+TXT_DARK = "#1f1f1f"
+TXT_BODY = "#333333"
+TXT_ITALIC = "#6f6f6f"
+
+# --- Font sizes (tuned for the composite Figure 4 slot) ---------------------
+FS_LETTER = 14
+FS_BOX_TITLE = 9
+FS_BOX_SUB = 6.5
+FS_SECTION = 7.5
+FS_BODY = 7
+FS_BULLET = 7
+FS_CORNER = 6.5
+FS_TOP_TITLE = 11
+FS_TOP_TITLE_ITALIC = 9
+FS_COL_SUB = 9
+FS_ROW_LABEL = 8
+FS_OUTER_LABEL = 9
+FS_OUTER_ITALIC = 8
+
+
+def _draw_box(
+    ax: plt.Axes,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
+    border: str,
+    bg: str,
+) -> None:
+    """Draw a rounded rectangle quadrant box."""
+    patch = FancyBboxPatch(
+        (x, y),
+        w,
+        h,
+        boxstyle="round,pad=0.0,rounding_size=0.15",
+        facecolor=bg,
+        edgecolor=border,
+        linewidth=1.6,
+        joinstyle="round",
+    )
+    ax.add_patch(patch)
+
+
+def _draw_header(
+    ax: plt.Axes,
+    bx: float,
+    by: float,
+    bh: float,
+    letter: str,
+    title: str,
+    subtitle: str,
+    color: str,
+) -> None:
+    """Draw a quadrant header: large letter + colored caps title + italic subtitle."""
+    letter_y = by + bh - 0.35
+    ax.text(
+        bx + 0.18,
+        letter_y,
+        letter,
+        fontsize=FS_LETTER,
+        fontweight="bold",
+        color=TXT_DARK,
+        ha="left",
+        va="center",
+    )
+    ax.text(
+        bx + 0.58,
+        letter_y + 0.02,
+        title,
+        fontsize=FS_BOX_TITLE,
+        fontweight="bold",
+        color=color,
+        ha="left",
+        va="center",
+    )
+    ax.text(
+        bx + 0.58,
+        letter_y - 0.27,
+        subtitle,
+        fontsize=FS_BOX_SUB,
+        fontstyle="italic",
+        color=TXT_ITALIC,
+        ha="left",
+        va="center",
+    )
+
+
+def _draw_section_heading(ax: plt.Axes, x: float, y: float, text: str) -> None:
+    ax.text(
+        x,
+        y,
+        text,
+        fontsize=FS_SECTION,
+        fontweight="bold",
+        color=TXT_DARK,
+        ha="left",
+        va="center",
+    )
+
+
+def _draw_body_line(ax: plt.Axes, x: float, y: float, text: str) -> None:
+    ax.text(
+        x,
+        y,
+        text,
+        fontsize=FS_BODY,
+        color=TXT_BODY,
+        ha="left",
+        va="center",
+    )
+
+
+def _draw_bullet_row(
+    ax: plt.Axes,
+    x: float,
+    y: float,
+    cat_color: str,
+    category: str,
+    description: str,
+) -> None:
+    """Draw a "possible causes" bullet row: colored square + category + description."""
+    sq_size = 0.11
+    ax.add_patch(
+        Rectangle(
+            (x, y - sq_size / 2),
+            sq_size,
+            sq_size,
+            facecolor=cat_color,
+            edgecolor="none",
+        )
+    )
+    ax.text(
+        x + 0.27,
+        y,
+        category,
+        fontsize=FS_BULLET,
+        fontweight="bold",
+        color=cat_color,
+        ha="left",
+        va="center",
+    )
+    ax.text(
+        x + 2.05,
+        y,
+        description,
+        fontsize=FS_BULLET,
+        color=TXT_BODY,
+        ha="left",
+        va="center",
+    )
+
+
+def _draw_corner_note(
+    ax: plt.Axes,
+    bx: float,
+    by: float,
+    bw: float,
+    text: str,
+    color: str,
+) -> None:
+    """Draw the bottom-right italic colored note in a quadrant."""
+    ax.text(
+        bx + bw - 0.2,
+        by + 0.25,
+        text,
+        fontsize=FS_CORNER,
+        fontstyle="italic",
+        fontweight="bold",
+        color=color,
+        ha="right",
+        va="center",
+    )
+
+
+def _draw_bracket(
+    ax: plt.Axes,
+    x: float,
+    y_bot: float,
+    y_top: float,
+    serif_len: float = 0.13,
+    color: str = "#2a2a2a",
+    lw: float = 0.7,
+) -> None:
+    """Draw a [-style bracket along the left edge of a row."""
+    ax.plot([x, x], [y_bot, y_top], color=color, lw=lw, solid_capstyle="butt")
+    ax.plot(
+        [x, x + serif_len], [y_top, y_top], color=color, lw=lw, solid_capstyle="butt"
+    )
+    ax.plot(
+        [x, x + serif_len], [y_bot, y_bot], color=color, lw=lw, solid_capstyle="butt"
+    )
 
 
 def create_quadrant_plot(ax: plt.Axes) -> None:
@@ -30,448 +230,218 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     ax : plt.Axes
         Matplotlib axes object to plot on.
     """
-    ax.set_xlim(-0.55, 9.85)
-    ax.set_ylim(0.15, 12.7)
+    # --- Layout dimensions -------------------------------------------------
+    box_w = 5.8
+    box_h = 4.55
+    h_gap = 0.32
+    v_gap = 0.40
+
+    left_x = 0.55
+    right_x = left_x + box_w + h_gap
+    bottom_y = 0.0
+    top_y = bottom_y + box_h + v_gap
+
+    total_right = right_x + box_w
+
+    # --- Axis limits -------------------------------------------------------
+    # Keep the data range tight to the actual drawn content so matplotlib's
+    # auto aspect stretches the layout across the entire panel A slot.
+    ax.set_xlim(-0.55, total_right + 0.08)
+    ax.set_ylim(-0.18, 10.40)
     ax.set_aspect("auto")
+    ax.margins(0, 0)
     ax.axis("off")
 
-    # Define colors
-    concordant_color = "#c8e6c9"  # Light green for concordant
-    discordant_fp_color = "#ffcdd2"  # Light red for false positive
-    discordant_fn_color = "#fff9c4"  # Light yellow for false negative
-    concordant_tn_color = "#e3f2fd"  # Light blue for true negative
+    # --- Quadrant boxes ----------------------------------------------------
+    _draw_box(ax, left_x, top_y, box_w, box_h, COL_TP, BG_TP)
+    _draw_box(ax, right_x, top_y, box_w, box_h, COL_FN, BG_FN)
+    _draw_box(ax, left_x, bottom_y, box_w, box_h, COL_FP, BG_FP)
+    _draw_box(ax, right_x, bottom_y, box_w, box_h, COL_TN, BG_TN)
 
-    # Adjust vertical positions for taller aspect ratio
-    y_offset = 1.5  # Reduced from 2.5 to decrease white space between quadrants
-    quad_height = 5.5  # Increased slightly to fit text better
-    quad_width = 4.3
-
-    # Draw the four quadrants
-    # Top-left: GapMind+ / Experiment+ (True Positive - Concordant)
-    quad_tl = FancyBboxPatch(
-        (0.5, 6.2),
-        quad_width,
-        quad_height,
-        boxstyle="round,pad=0.05,rounding_size=0.2",
-        facecolor=concordant_color,
-        edgecolor="#388e3c",
-        linewidth=2.5,
+    # --- Headers -----------------------------------------------------------
+    _draw_header(ax, left_x, top_y, box_h, "a", "TRUE POSITIVE", "concordant", COL_TP)
+    _draw_header(ax, right_x, top_y, box_h, "b", "FALSE NEGATIVE", "discordant", COL_FN)
+    _draw_header(
+        ax, left_x, bottom_y, box_h, "c", "FALSE POSITIVE", "discordant", COL_FP
     )
-    ax.add_patch(quad_tl)
-
-    # Top-right: GapMind- / Experiment+ (False Negative - Discordant)
-    quad_tr = FancyBboxPatch(
-        (5.2, 6.2),
-        quad_width,
-        quad_height,
-        boxstyle="round,pad=0.05,rounding_size=0.2",
-        facecolor=discordant_fn_color,
-        edgecolor="#f57c00",
-        linewidth=2.5,
+    _draw_header(
+        ax, right_x, bottom_y, box_h, "d", "TRUE NEGATIVE", "concordant", COL_TN
     )
-    ax.add_patch(quad_tr)
 
-    # Bottom-left: GapMind+ / Experiment- (False Positive - Discordant)
-    quad_bl = FancyBboxPatch(
-        (0.5, 0.5),
-        quad_width,
-        quad_height,
-        boxstyle="round,pad=0.05,rounding_size=0.2",
-        facecolor=discordant_fp_color,
-        edgecolor="#d32f2f",
-        linewidth=2.5,
-    )
-    ax.add_patch(quad_bl)
+    # --- Box a content (TP - concordant) -----------------------------------
+    bx, by = left_x, top_y
+    cx = bx + 0.35
+    sec_y = by + box_h - 1.35
+    _draw_section_heading(ax, cx, sec_y, "BIOLOGICAL STATE")
+    _draw_body_line(ax, cx, sec_y - 0.35, "Genes present and functional")
+    _draw_body_line(ax, cx, sec_y - 0.62, "Pathway correctly annotated as present")
+    _draw_body_line(ax, cx, sec_y - 0.89, "Experiment accurately measures growth")
+    _draw_section_heading(ax, cx, sec_y - 1.35, "INTERPRETATION")
+    _draw_body_line(ax, cx, sec_y - 1.70, "Prediction and phenotype agree:")
+    _draw_body_line(ax, cx, sec_y - 1.97, "gene-to-function mapping is supported.")
+    _draw_corner_note(ax, bx, by, box_w, "High-quality training sample", COL_TP)
 
-    # Bottom-right: GapMind- / Experiment- (True Negative - Concordant)
-    quad_br = FancyBboxPatch(
-        (5.2, 0.5),
-        quad_width,
-        quad_height,
-        boxstyle="round,pad=0.05,rounding_size=0.2",
-        facecolor=concordant_tn_color,
-        edgecolor="#1976d2",
-        linewidth=2.5,
-    )
-    ax.add_patch(quad_br)
+    # --- Box b content (FN - discordant) -----------------------------------
+    bx, by = right_x, top_y
+    cx = bx + 0.35
+    sec_y = by + box_h - 1.35
+    _draw_section_heading(ax, cx, sec_y, "POSSIBLE CAUSES")
+    bullets_b = [
+        (CAT_ANNOTATION, "ANNOTATION", "homolog not detected"),
+        (CAT_BIOLOGY, "BIOLOGY", "alternative pathway present"),
+        (CAT_BIOLOGY, "BIOLOGY", "promiscuous enzyme activity"),
+        (CAT_MEASUREMENT, "MEASUREMENT", "false-positive growth call"),
+        (CAT_MEDIA, "MEDIA", "growth on base media (carryover)"),
+    ]
+    for i, (cc, cat, desc) in enumerate(bullets_b):
+        _draw_bullet_row(ax, cx, sec_y - 0.42 - i * 0.36, cc, cat, desc)
+    _draw_corner_note(ax, bx, by, box_w, "Growth via unknown mechanism", COL_FN)
 
-    # Add axis labels (adjusted for taller layout)
+    # --- Box c content (FP - discordant) -----------------------------------
+    bx, by = left_x, bottom_y
+    cx = bx + 0.35
+    sec_y = by + box_h - 1.35
+    _draw_section_heading(ax, cx, sec_y, "POSSIBLE CAUSES")
+    bullets_c = [
+        (CAT_REGULATION, "REGULATION", "pathway repressed under condition"),
+        (CAT_MEDIA, "MEDIA", "insufficient incubation time"),
+        (CAT_MEDIA, "MEDIA", "missing cofactors / inducers"),
+        (CAT_ANNOTATION, "ANNOTATION", "false-positive homology call"),
+        (CAT_BIOLOGY, "BIOLOGY", "incomplete pathway (missing step)"),
+    ]
+    for i, (cc, cat, desc) in enumerate(bullets_c):
+        _draw_bullet_row(ax, cx, sec_y - 0.42 - i * 0.36, cc, cat, desc)
+    _draw_corner_note(ax, bx, by, box_w, "Genes present but not functional", COL_FP)
+
+    # --- Box d content (TN - concordant) -----------------------------------
+    bx, by = right_x, bottom_y
+    cx = bx + 0.35
+    sec_y = by + box_h - 1.35
+    _draw_section_heading(ax, cx, sec_y, "BIOLOGICAL STATE")
+    _draw_body_line(ax, cx, sec_y - 0.35, "Genes absent from genome")
+    _draw_body_line(ax, cx, sec_y - 0.62, "Pathway correctly annotated as absent")
+    _draw_body_line(ax, cx, sec_y - 0.89, "No alternative pathway or leaky activity")
+    _draw_body_line(ax, cx, sec_y - 1.16, "Experiment accurately measures no-growth")
+    _draw_section_heading(ax, cx, sec_y - 1.62, "INTERPRETATION")
+    _draw_body_line(ax, cx, sec_y - 1.97, "Absence of capability confirmed by both")
+    _draw_body_line(ax, cx, sec_y - 2.24, "genome content and phenotype.")
+    _draw_corner_note(ax, bx, by, box_w, "High-quality training sample", COL_TN)
+
+    # --- Top axis: main title and column subtitles -------------------------
+    title_y = 10.22
+    subtitle_y = 9.78
+
+    title_center = (left_x + total_right) / 2.0
     ax.text(
-        5,
-        12.45,
-        "GapMind Prediction",
-        ha="center",
-        va="bottom",
-        fontsize=PANEL_A_TITLE_SIZE,
+        title_center - 0.06,
+        title_y,
+        "GapMind prediction",
+        fontsize=FS_TOP_TITLE,
         fontweight="bold",
+        color=TXT_DARK,
+        ha="right",
+        va="center",
     )
     ax.text(
-        2.65,
-        11.75,
-        "Pathway Present (+)",
-        ha="center",
-        va="bottom",
-        fontsize=PANEL_A_SUBTITLE_SIZE,
-        fontweight="bold",
-        color="#2e7d32",
-    )
-    ax.text(
-        7.35,
-        11.75,
-        "Pathway Absent (−)",
-        ha="center",
-        va="bottom",
-        fontsize=PANEL_A_SUBTITLE_SIZE,
-        fontweight="bold",
-        color="#c62828",
+        title_center + 0.06,
+        title_y,
+        "(in silico)",
+        fontsize=FS_TOP_TITLE_ITALIC,
+        fontstyle="italic",
+        color=TXT_ITALIC,
+        ha="left",
+        va="center",
     )
 
+    col1_cx = left_x + box_w / 2.0
+    col2_cx = right_x + box_w / 2.0
     ax.text(
-        -0.38,
-        6.1,
-        "Experimental Outcome",
+        col1_cx,
+        subtitle_y,
+        "Pathway predicted present (+)",
+        fontsize=FS_COL_SUB,
+        fontweight="bold",
+        color=COL_TP,
         ha="center",
         va="center",
-        fontsize=PANEL_A_AXIS_LABEL_SIZE,
+    )
+    ax.text(
+        col2_cx,
+        subtitle_y,
+        "Pathway predicted absent (−)",
+        fontsize=FS_COL_SUB,
         fontweight="bold",
+        color=COL_FP,
+        ha="center",
+        va="center",
+    )
+
+    # --- Left axis: brackets, row labels, outer label ----------------------
+    bracket_x = -0.18
+    row_label_x = -0.02
+    outer_label_x = -0.40
+
+    # _draw_bracket(ax, bracket_x, top_y, top_y + box_h)
+    # _draw_bracket(ax, bracket_x, bottom_y, bottom_y + box_h)
+
+    ax.text(
+        row_label_x,
+        top_y + box_h / 2.0,
+        "Growth observed (+)",
+        fontsize=FS_ROW_LABEL,
+        fontweight="bold",
+        color=COL_TP,
+        ha="center",
+        va="center",
         rotation=90,
     )
     ax.text(
-        0.08,
-        8.95,  # Center of top quadrants (6.2 + 5.5/2)
-        "Growth (+)",
+        row_label_x,
+        bottom_y + box_h / 2.0,
+        "No growth (−)",
+        fontsize=FS_ROW_LABEL,
+        fontweight="bold",
+        color=COL_FP,
         ha="center",
         va="center",
-        fontsize=PANEL_A_AXIS_LABEL_SIZE,
-        fontweight="bold",
-        color="#2e7d32",
-        rotation=90,
-    )
-    ax.text(
-        0.08,
-        3.25,  # Center of bottom quadrants (0.5 + 5.5/2)
-        "No Growth (−)",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_AXIS_LABEL_SIZE,
-        fontweight="bold",
-        color="#c62828",
         rotation=90,
     )
 
-    # Top-left quadrant content (True Positive - Concordant)
-    y_tl = 8.7  # Center of top quadrants (6.2 + 5.5/2 = 8.95, adjusted slightly)
+    overall_cy = (bottom_y + top_y + box_h) / 2.0
+    # Mirror the top-title trick: right-anchor the bold half and left-anchor
+    # the italic half around a small offset so the rotated label reads as one
+    # continuous block ("Experimental outcome (in vivo)").
     ax.text(
-        2.65,
-        y_tl + 1.9,
-        "CONCORDANT",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_HEADING_SIZE,
+        outer_label_x,
+        overall_cy - 0.06,
+        "Experimental outcome",
+        fontsize=FS_TOP_TITLE,
         fontweight="bold",
-        color="#1b5e20",
+        color=TXT_DARK,
+        ha="right",
+        va="center",
+        rotation=90,
     )
     ax.text(
-        2.65,
-        y_tl + 1.3,
-        "True Positive",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
+        outer_label_x,
+        overall_cy + 0.06,
+        "(in vivo)",
+        fontsize=FS_TOP_TITLE_ITALIC,
         fontstyle="italic",
-        color="#2e7d32",
-    )
-    ax.text(
-        2.65,
-        y_tl + 0.5,
-        "Genes present and functional",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#1b5e20",
-    )
-    ax.text(
-        2.65,
-        y_tl + 0.1,
-        "Pathway correctly annotated",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#1b5e20",
-    )
-    ax.text(
-        2.65,
-        y_tl - 0.3,
-        "Experiment accurately measured",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#1b5e20",
-    )
-    ax.text(
-        2.65,
-        y_tl - 1.1,
-        "High-quality training samples",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BADGE_SIZE,
-        fontweight="bold",
-        color="#1b5e20",
-        bbox=dict(boxstyle="round", facecolor="white", edgecolor="#388e3c", alpha=0.8),
-    )
-
-    # Top-right quadrant content (False Negative - Discordant: GapMind-, Experiment+)
-    y_tr = 8.7  # Center of top quadrants
-    ax.text(
-        7.35,
-        y_tr + 1.9,
-        "DISCORDANT",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_HEADING_SIZE,
-        fontweight="bold",
-        color="#e65100",
-    )
-    ax.text(
-        7.35,
-        y_tr + 1.3,
-        "False Negative",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
-        fontstyle="italic",
-        color="#f57c00",
-    )
-
-    # Causes for FN (genes absent but growth observed)
-    ax.text(
-        7.35,
-        y_tr + 0.7,
-        "Possible Causes:",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        fontweight="bold",
-        color="#e65100",
-    )
-    ax.text(
-        5.45,
-        y_tr + 0.3,
-        "• Annotation: homolog not detected",
+        color=TXT_ITALIC,
         ha="left",
         va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        5.45,
-        y_tr + 0.0,
-        "• Biology: alternative pathway",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        5.45,
-        y_tr - 0.3,
-        "• Biology: promiscuous enzymes",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        5.45,
-        y_tr - 0.6,
-        "• Measurement: false positive",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        5.45,
-        y_tr - 0.9,
-        "• Media: growth on base media",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-
-    ax.text(
-        7.35,
-        y_tr - 1.55,
-        "Growth via unknown\nmechanism",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BADGE_SIZE,
-        fontweight="bold",
-        color="#e65100",
-        bbox=dict(boxstyle="round", facecolor="white", edgecolor="#f57c00", alpha=0.8),
-    )
-
-    # Bottom-left quadrant content (False Positive - Discordant: GapMind+, Experiment-)
-    y_bl = 2.75
-    ax.text(
-        2.65,
-        y_bl + 2.1,
-        "DISCORDANT",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_HEADING_SIZE,
-        fontweight="bold",
-        color="#b71c1c",
-    )
-    ax.text(
-        2.65,
-        y_bl + 1.5,
-        "False Positive",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
-        fontstyle="italic",
-        color="#c62828",
-    )
-
-    # Causes for FP (genes present but no growth)
-    ax.text(
-        2.65,
-        y_bl + 0.9,
-        "Possible Causes:",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        fontweight="bold",
-        color="#b71c1c",
-    )
-    ax.text(
-        0.75,
-        y_bl + 0.5,
-        "• Regulation: pathway repressed",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        0.75,
-        y_bl + 0.2,
-        "• Measurement: insufficient time",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        0.75,
-        y_bl - 0.1,
-        "• Media: missing cofactors",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        0.75,
-        y_bl - 0.4,
-        "• Annotation: false positive call",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-    ax.text(
-        0.75,
-        y_bl - 0.7,
-        "• Biology: incomplete pathway",
-        ha="left",
-        va="center",
-        fontsize=PANEL_A_BULLET_SIZE,
-        color="#424242",
-    )
-
-    ax.text(
-        2.65,
-        y_bl - 1.35,
-        "Genes present but\nnot functional",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BADGE_SIZE,
-        fontweight="bold",
-        color="#b71c1c",
-        bbox=dict(boxstyle="round", facecolor="white", edgecolor="#d32f2f", alpha=0.8),
-    )
-
-    # Bottom-right quadrant content (True Negative - Concordant)
-    y_br = 2.75
-    ax.text(
-        7.35,
-        y_br + 2.1,
-        "CONCORDANT",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_HEADING_SIZE,
-        fontweight="bold",
-        color="#0d47a1",
-    )
-    ax.text(
-        7.35,
-        y_br + 1.5,
-        "True Negative",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_SECTION_SUBHEADING_SIZE,
-        fontstyle="italic",
-        color="#1976d2",
-    )
-    ax.text(
-        7.35,
-        y_br + 0.8,
-        "Genes absent",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#0d47a1",
-    )
-    ax.text(
-        7.35,
-        y_br + 0.4,
-        "No alternative pathway",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#0d47a1",
-    )
-    ax.text(
-        7.35,
-        y_br + 0.0,
-        "Experiment accurately measured",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BODY_SIZE,
-        color="#0d47a1",
-    )
-    ax.text(
-        7.35,
-        y_br - 0.75,
-        "High-quality training samples",
-        ha="center",
-        va="center",
-        fontsize=PANEL_A_BADGE_SIZE,
-        fontweight="bold",
-        color="#0d47a1",
-        bbox=dict(boxstyle="round", facecolor="white", edgecolor="#1976d2", alpha=0.8),
+        rotation=90,
     )
 
 
 if __name__ == "__main__":
-    fig, ax = plt.subplots(figsize=(8, 12))
+    # Match the per-panel size that the composite Figure 4 will render at,
+    # so the standalone preview reflects the same text density.
+    fig, ax = plt.subplots(figsize=(6.75, 6.0))
     create_quadrant_plot(ax)
     plt.tight_layout()
 
-    # Save output
     output_file = Path("figures/figure4a.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_file, dpi=300, bbox_inches="tight")

@@ -33,13 +33,19 @@ def create_figure4(output_file: Path) -> None:
     import matplotlib.gridspec as gridspec
 
     # Main grid: tighten the top row so panels A/B do not carry excess empty
-    # space relative to panel C.
+    # space relative to panel C. Explicit top/left/right/bottom remove the
+    # default matplotlib margins so panel A's content reaches close to the
+    # figure edges instead of leaving a wide whitespace band.
     main_gs = gridspec.GridSpec(
         2,
         1,
         figure=fig,
         height_ratios=[1.28, 0.82],
         hspace=0.18,
+        top=0.94,
+        bottom=0.06,
+        left=0.04,
+        right=0.99,
     )
 
     # Top row grid: allocate slightly more width to panel B to reduce empty
@@ -89,14 +95,14 @@ def create_figure4(output_file: Path) -> None:
 
     # Add panel labels. (A) and (B) share an explicit figure-level y so they
     # render at the same vertical position regardless of subplot heights.
-    panel_label_y = 0.985
+    panel_label_y = 0.98
     fig.text(
-        0.05, panel_label_y, "(A)",
+        0.005, panel_label_y, "(A)",
         fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
     b1_bbox = ax_b1.get_position()
     fig.text(
-        b1_bbox.x0, panel_label_y, "(B)",
+        b1_bbox.x0 - 0.025, panel_label_y, "(B)",
         fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
     c1_bbox = ax_c1.get_position()

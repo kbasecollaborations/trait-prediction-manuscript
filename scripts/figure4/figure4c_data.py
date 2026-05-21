@@ -573,15 +573,48 @@ def analyze_all_datasets_combined(
     return results
 
 
+def _kos_to_clusters(
+    kos: list[str], ko_to_cluster: dict[str, int] | None
+) -> set[int | str]:
+    """Map a list of KOs to the set of clusters they belong to.
+
+    Parameters
+    ----------
+    kos : list[str]
+        KO identifiers.
+    ko_to_cluster : dict[str, int] | None
+        Per-phenotype mapping from KO to cluster ID. If ``None``, return an
+        empty set.
+
+    Returns
+    -------
+    set[int | str]
+        Cluster identifiers represented in ``kos``. KOs absent from the
+        mapping fall back to a singleton string identifier so they remain
+        comparable across lists.
+    """
+    if ko_to_cluster is None:
+        return set()
+    out: set[int | str] = set()
+    for ko in kos:
+        if ko in ko_to_cluster:
+            out.add(int(ko_to_cluster[ko]))
+        else:
+            out.add(f"singleton:{ko}")
+    return out
+
+
 def compare_features(
     combined_results: dict[str, list[str]],
     individual_results: dict[str, dict[str, list[str]]],
+    ko_clusters_by_phenotype: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """
     Compare features between combined and individual dataset models.
 
     For each combination where the dataset was not used in training the combined model,
-    find the intersection and unique features.
+    find the intersection and unique features at both the KO level and (when a
+    cluster mapping is supplied) at the redundancy-cluster level.
 
     Parameters
     ----------
@@ -589,6 +622,10 @@ def compare_features(
         Results from combined splits: {key: [features]}
     individual_results : dict[str, dict[str, list[str]]]
         Results from individual datasets: {dataset: {phenotype: [features]}}
+    ko_clusters_by_phenotype : dict[str, dict[str, int]] | None, optional
+        Per-phenotype mapping from KO identifier to integer cluster ID, as
+        produced by ``scripts/feature_clustering.py``. When supplied, every
+        comparison gains cluster-level intersection/uniqueness counts.
 
     Returns
     -------
@@ -601,7 +638,9 @@ def compare_features(
             'individual_features': list,
             'intersection': list,
             'unique_to_individual': list,
-            'unique_to_combined': list
+            'unique_to_combined': list,
+            ... plus cluster-level keys when ``ko_clusters_by_phenotype`` is
+            supplied
         }}
     """
     comparisons = {}
@@ -634,7 +673,7 @@ def compare_features(
             unique_to_combined = sorted(list(combined_set - individual_set))
 
             comparison_key = f"{phenotype}_{test_dataset}"
-            comparisons[comparison_key] = {
+            entry: dict[str, Any] = {
                 "phenotype": phenotype,
                 "test_dataset": test_dataset,
                 "combined_features": combined_features,
@@ -646,6 +685,29 @@ def compare_features(
                 "n_unique_to_individual": len(unique_to_individual),
                 "n_unique_to_combined": len(unique_to_combined),
             }
+
+            if ko_clusters_by_phenotype is not None:
+                ko_to_cluster = ko_clusters_by_phenotype.get(phenotype)
+                combined_clusters = _kos_to_clusters(combined_features, ko_to_cluster)
+                individual_clusters = _kos_to_clusters(
+                    individual_features, ko_to_cluster
+                )
+                cluster_intersection = combined_clusters & individual_clusters
+                cluster_unique_individual = individual_clusters - combined_clusters
+                cluster_unique_combined = combined_clusters - individual_clusters
+                entry.update(
+                    {
+                        "n_intersection_clusters": len(cluster_intersection),
+                        "n_unique_to_individual_clusters": len(
+                            cluster_unique_individual
+                        ),
+                        "n_unique_to_combined_clusters": len(cluster_unique_combined),
+                        "n_combined_clusters": len(combined_clusters),
+                        "n_individual_clusters": len(individual_clusters),
+                    }
+                )
+
+            comparisons[comparison_key] = entry
 
     return comparisons
 
@@ -785,49 +847,65 @@ def main() -> None:
         print(f"Saved all combined results to: {all_combined_file}")
 
     # Step 5: Compare features
+    # Always re-run the comparison step (cheap), so that updates to the
+    # cluster mapping or the SHAP JSONs propagate without manual cache busts.
     comparison_file = OUTPUT_DIR / "feature_comparison.json"
     summary_file = OUTPUT_DIR / "feature_comparison_summary.csv"
 
-    if comparison_file.exists() and summary_file.exists():
-        print("\nStep 5: Loading existing comparison results...")
-        with open(comparison_file, "r") as f:
-            comparisons = json.load(f)
-        summary_df = pd.read_csv(summary_file)
-        print(f"Loaded {len(comparisons)} comparisons from: {comparison_file}")
-        print(f"Loaded summary from: {summary_file}")
+    # Load redundancy-cluster mapping if available.
+    cluster_file = Path("data/outputs/clustering/ko_clusters_shap_hclust.json")
+    if cluster_file.exists():
+        with open(cluster_file, "r") as f:
+            ko_clusters_by_phenotype = json.load(f)
+        print(f"\nStep 5: Loaded cluster mapping for {len(ko_clusters_by_phenotype)} phenotypes")
     else:
-        print("\nStep 5: Comparing features between combined and individual models...")
-        comparisons = compare_features(combined_results_filtered, individual_results)
+        ko_clusters_by_phenotype = None
+        print(f"\nStep 5: cluster mapping not found at {cluster_file}; skipping cluster columns")
 
-        print(f"\nFound {len(comparisons)} valid comparisons")
+    print("\nStep 5: Comparing features between combined and individual models...")
+    comparisons = compare_features(
+        combined_results_filtered,
+        individual_results,
+        ko_clusters_by_phenotype=ko_clusters_by_phenotype,
+    )
 
-        # Save comparison results
-        with open(comparison_file, "w") as f:
-            json.dump(comparisons, f, indent=2)
-        print(f"Saved comparison results to: {comparison_file}")
+    print(f"\nFound {len(comparisons)} valid comparisons")
 
-        # Create summary DataFrame
-        summary_data = []
-        for comp_key, comp_data in comparisons.items():
-            summary_data.append(
-                {
-                    "comparison": comp_key,
-                    "phenotype": comp_data["phenotype"],
-                    "test_dataset": comp_data["test_dataset"],
-                    "n_combined_features": len(comp_data["combined_features"]),
-                    "n_individual_features": len(comp_data["individual_features"]),
-                    "n_intersection": comp_data["n_intersection"],
-                    "n_unique_to_individual": comp_data["n_unique_to_individual"],
-                    "n_unique_to_combined": comp_data["n_unique_to_combined"],
-                    "intersection": ";".join(comp_data["intersection"]),
-                    "unique_to_individual": ";".join(comp_data["unique_to_individual"]),
-                    "unique_to_combined": ";".join(comp_data["unique_to_combined"]),
-                }
-            )
+    # Save comparison results
+    with open(comparison_file, "w") as f:
+        json.dump(comparisons, f, indent=2)
+    print(f"Saved comparison results to: {comparison_file}")
 
-        summary_df = pd.DataFrame(summary_data)
-        summary_df.to_csv(summary_file, index=False)
-        print(f"Saved summary to: {summary_file}")
+    # Create summary DataFrame
+    summary_data = []
+    for comp_key, comp_data in comparisons.items():
+        row = {
+            "comparison": comp_key,
+            "phenotype": comp_data["phenotype"],
+            "test_dataset": comp_data["test_dataset"],
+            "n_combined_features": len(comp_data["combined_features"]),
+            "n_individual_features": len(comp_data["individual_features"]),
+            "n_intersection": comp_data["n_intersection"],
+            "n_unique_to_individual": comp_data["n_unique_to_individual"],
+            "n_unique_to_combined": comp_data["n_unique_to_combined"],
+            "intersection": ";".join(comp_data["intersection"]),
+            "unique_to_individual": ";".join(comp_data["unique_to_individual"]),
+            "unique_to_combined": ";".join(comp_data["unique_to_combined"]),
+        }
+        for cluster_key in (
+            "n_intersection_clusters",
+            "n_unique_to_individual_clusters",
+            "n_unique_to_combined_clusters",
+            "n_combined_clusters",
+            "n_individual_clusters",
+        ):
+            if cluster_key in comp_data:
+                row[cluster_key] = comp_data[cluster_key]
+        summary_data.append(row)
+
+    summary_df = pd.DataFrame(summary_data)
+    summary_df.to_csv(summary_file, index=False)
+    print(f"Saved summary to: {summary_file}")
 
     # Print summary statistics
     print("\n" + "=" * 80)

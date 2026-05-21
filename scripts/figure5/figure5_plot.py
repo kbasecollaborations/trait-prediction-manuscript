@@ -298,6 +298,19 @@ def create_feature_comparison_plot(
     data_file = data_dir / "figure5b_feature_comparison_summary.csv"
     df = pd.read_csv(data_file)
 
+    # Prefer cluster-level counts (target-aware redundancy clusters from
+    # shap.utils.hclust); fall back to raw KO counts if those columns are absent.
+    common_col = (
+        "n_intersection_clusters"
+        if "n_intersection_clusters" in df.columns
+        else "n_intersection"
+    )
+    unique_col = (
+        "n_unique_to_individual_clusters"
+        if "n_unique_to_individual_clusters" in df.columns
+        else "n_unique_to_individual"
+    )
+
     # Datasets and their colors (using consistent color scheme)
     datasets = ["atleaf", "lit", "marine"]
     dataset_color_map = get_dataset_colors()
@@ -327,8 +340,8 @@ def create_feature_comparison_plot(
         for phenotype in phenotypes:
             if phenotype in dataset_df.index:
                 row = dataset_df.loc[phenotype]
-                common.append(row["n_intersection"])
-                unique_individual.append(row["n_unique_to_individual"])
+                common.append(row[common_col])
+                unique_individual.append(row[unique_col])
             else:
                 common.append(0)
                 unique_individual.append(0)
@@ -394,7 +407,7 @@ def create_feature_comparison_plot(
 
     ax.legend(
         handles=feature_handles,
-        title="Stable features",
+        title="Stable feature clusters",
         loc="upper right",
         bbox_to_anchor=(1.0, 1.13),
         ncol=2,
@@ -403,7 +416,7 @@ def create_feature_comparison_plot(
     )
 
     # Customize plot
-    ax.set_ylabel("Stable features (n)", fontsize=10)
+    ax.set_ylabel("Stable feature clusters (n)", fontsize=10)
     ax.set_xlabel("")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y")

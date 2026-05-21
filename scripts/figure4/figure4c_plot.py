@@ -38,8 +38,31 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     with open(data_file) as f:
         feature_data = json.load(f)
 
-    # Calculate feature counts (stability) in the order of phenotypes
-    feature_counts = [len(feature_data.get(p, [])) for p in phenotypes]
+    # Load redundancy-cluster mapping (target-aware via shap.utils.hclust) so the
+    # combined-model count is reported as the number of distinct cluster
+    # identities rather than raw KOs. Falls back to KO counts when the cluster
+    # JSON is absent.
+    cluster_file = Path("data/outputs/clustering/ko_clusters_shap_hclust.json")
+    cluster_mapping: dict[str, dict[str, int]] = {}
+    if cluster_file.exists():
+        with open(cluster_file) as f:
+            cluster_mapping = json.load(f)
+
+    def _cluster_count(phenotype: str) -> int:
+        kos = feature_data.get(phenotype, [])
+        ko_to_cluster = cluster_mapping.get(phenotype)
+        if not kos:
+            return 0
+        if ko_to_cluster is None:
+            return len(kos)
+        identities: set[str] = set()
+        for ko in kos:
+            identities.add(
+                f"c:{ko_to_cluster[ko]}" if ko in ko_to_cluster else f"singleton:{ko}"
+            )
+        return len(identities)
+
+    feature_counts = [_cluster_count(p) for p in phenotypes]
 
     # Create bar plot aligned with bottom subplot
     # Need to match the bottom subplot's bar grouping
@@ -67,7 +90,11 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
     # Customize plot
-    ax.set_ylabel("Stable Features\n(Combined)", fontsize=AXIS_LABEL_SIZE, labelpad=1)
+    ax.set_ylabel(
+        "Stable feature\nclusters (Combined)",
+        fontsize=AXIS_LABEL_SIZE,
+        labelpad=1,
+    )
     # Set ticks to match bottom subplot
     ax.set_xticks(x_pos + bar_center_offset)
     ax.set_xticklabels([])  # No labels on top plot
@@ -125,6 +152,19 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         "unique_combined": "xx",  # Cross-hatching for distinction
     }
 
+    # Prefer cluster-level counts (target-aware redundancy clusters from
+    # shap.utils.hclust); fall back to raw KO counts for backwards compatibility.
+    common_col = (
+        "n_intersection_clusters"
+        if "n_intersection_clusters" in df.columns
+        else "n_intersection"
+    )
+    unique_col = (
+        "n_unique_to_individual_clusters"
+        if "n_unique_to_individual_clusters" in df.columns
+        else "n_unique_to_individual"
+    )
+
     # Prepare data for plotting (matching Figure 1C style)
     x_pos = np.arange(len(phenotypes))
     bar_width = 0.8 / len(datasets)  # Match Figure 1C bar width calculation
@@ -140,8 +180,8 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         for phenotype in phenotypes:
             if phenotype in dataset_df.index:
                 row = dataset_df.loc[phenotype]
-                common.append(row["n_intersection"])
-                unique_individual.append(row["n_unique_to_individual"])
+                common.append(row[common_col])
+                unique_individual.append(row[unique_col])
             else:
                 common.append(0)
                 unique_individual.append(0)
@@ -217,7 +257,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     # Add feature type legend (positioned right side of top)
     ax.legend(
         handles=feature_handles,
-        title="Stable features",
+        title="Stable feature clusters",
         loc="upper right",
         bbox_to_anchor=(1.0, 1.37),
         ncol=2,
@@ -241,7 +281,9 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
 
     # Customize plot (matching Figure 1C)
     ax.set_ylabel(
-        "Stable Features\n(Per Dataset)", fontsize=AXIS_LABEL_SIZE, labelpad=1
+        "Stable feature\nclusters (Per Dataset)",
+        fontsize=AXIS_LABEL_SIZE,
+        labelpad=1,
     )
     ax.set_xlabel("Phenotype", fontsize=AXIS_LABEL_SIZE)
     # Center x-tick labels in the middle of the group of bars (matching Figure 1C)
