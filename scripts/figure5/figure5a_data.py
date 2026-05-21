@@ -312,23 +312,48 @@ def run_ml_on_concordant_splits(
     return pd.DataFrame(results)
 
 
+FEATURE_FILES: dict[str, Path] = {
+    "kofam": Path("data/processed/features_reduced/combined_datasets/kofam.tsv"),
+    "gapmind": Path("data/processed/features_reduced/combined_datasets/gapmind.tsv"),
+}
+
+
 def main() -> None:
+    """Generate Figure 5A data from concordant samples.
+
+    Accepts a ``--features`` CLI argument selecting which feature matrix to
+    use. The default ``kofam`` reproduces the published Fig 5A; ``gapmind``
+    produces the pipeline-ceiling reference line that is overlaid on Fig 5A.
+    Output filename is suffixed by the feature choice to keep both result
+    sets on disk simultaneously.
     """
-    Main function to generate Figure 5A data from concordant samples.
-    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument(
+        "--features",
+        choices=sorted(FEATURE_FILES),
+        default="kofam",
+        help=(
+            "Feature matrix to train on. 'kofam' is the published main analysis;"
+            " 'gapmind' produces the GapMind-feature ceiling reference shown on Fig 5A."
+        ),
+    )
+    args = parser.parse_args()
+
     # Define paths
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure5")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     GAPMIND_FILE = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
-    KOFAM_FEATURE_FILE = Path(
-        "data/processed/features_reduced/combined_datasets/kofam.tsv"
-    )
+    FEATURE_FILE = FEATURE_FILES[args.features]
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
     # Define which split types to process (exclude phylo_ic)
     SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
+
+    print(f"Using feature matrix: {args.features} ({FEATURE_FILE})")
 
     # Load GapMind predictions and experimental phenotypes
     print("Loading GapMind predictions (loose)...")
@@ -344,7 +369,7 @@ def main() -> None:
     split_data = load_split_data(
         base_dir=SPLITS_DIR,
         split_types=SPLIT_TYPES,
-        feature_file=KOFAM_FEATURE_FILE,
+        feature_file=FEATURE_FILE,
     )
 
     # Print summary of loaded data
@@ -364,7 +389,8 @@ def main() -> None:
     )
 
     # Save results
-    results_file = OUTPUT_DIR / "figure5a_concordant_ml_results.csv"
+    suffix = "" if args.features == "kofam" else f"_{args.features}"
+    results_file = OUTPUT_DIR / f"figure5a_concordant_ml_results{suffix}.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 

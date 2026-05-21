@@ -70,13 +70,13 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \centering
 \includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
-\textbf{Concordant-trained models learn mechanistic features and partially predict discordant samples.}
+\textbf{Concordant-trained models learn mechanistic features and retain bounded predictive value on discordant samples.}
 All models used the same architecture and KOFAM feature representation as in Figure~3; only the training set was restricted to GapMind-concordant samples.
 (A) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes) across 15 phenotypes.
 (B) Cross-dataset stability analysis for concordant-trained models, comparing stable feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (KOFAM candidate-feature screening, stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; see Methods).
 Solid bars: clusters shared between the two models; patterned bars: clusters present only in the held-out-alone model.
 (C) Balanced accuracy of concordant-trained models applied to discordant samples.
-Performance varied substantially across phenotypes; values near random indicate cases in which genome-derived features were insufficient to resolve the phenotype.
+Performance varied substantially across phenotypes; above-random values indicate cases in which ML captured signal beyond the curated GapMind rules, whereas values near random indicate cases in which genome-derived features were insufficient to resolve the phenotype.
 }\label{fig:concordant_analysis}
 \end{figure}
 
@@ -99,11 +99,11 @@ Inset: precision-recall distribution for combined (blue) and phenotype-filtered 
 \centering
 \includegraphics[width=0.95\textwidth]{figure7.pdf}
 \caption{
-\textbf{Sample size requirements for training generalisable models.}
+\textbf{Sample size requirements for training bounded specialist models.}
 Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
 Columns represent evaluation scenarios: (left) random holdout, (middle) cross-dataset, and (right) out-of-clade evaluations.
 Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
-Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects cases in which genome-derived features are insufficient to fully encode the phenotype; lack of saturation with additional training data indicates representational, not statistical, limits.
+Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects the bounded value of concordant-trained models: some discordant cases retain genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
 }\label{fig:model_sample_size_requirements}
 \end{figure}
 

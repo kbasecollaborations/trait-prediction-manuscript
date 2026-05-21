@@ -186,7 +186,7 @@ def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
             color=CURVE_COLOR,
         )
 
-    ax.set_xlabel("Coverage (fraction of genomes the model commits to)")
+    ax.set_xlabel("Coverage (top fraction of genomes selected)")
     ax.set_ylabel("Balanced accuracy\n(retained subset)")
     ax.set_xlim(0.0, 1.05)
     ax.set_ylim(0.45, 1.0)
@@ -331,9 +331,7 @@ def compute_phenotype_diagnostic(
         ml.groupby(["phenotype", "split_type"])["balanced_accuracy"]
         .mean()
         .unstack("split_type")
-        .rename(
-            columns={"random_split": "random_ba", "dataset_split": "cross_ba_full"}
-        )
+        .rename(columns={"random_split": "random_ba", "dataset_split": "cross_ba_full"})
     )
 
     full_test = pd.read_csv(full_test_file, sep="\t")
@@ -344,9 +342,7 @@ def compute_phenotype_diagnostic(
     )
 
     diagnostic = pivot.join(concordant_cross, how="inner").reset_index()
-    diagnostic["shortcut_gap"] = (
-        diagnostic["random_ba"] - diagnostic["cross_ba_full"]
-    )
+    diagnostic["shortcut_gap"] = diagnostic["random_ba"] - diagnostic["cross_ba_full"]
     diagnostic["concordance_benefit"] = (
         diagnostic["cross_ba_concordant"] - diagnostic["cross_ba_full"]
     )
@@ -425,11 +421,7 @@ def plot_diagnostic(ax: Axes, diagnostic: pd.DataFrame) -> None:
     ax.text(
         0.98,
         0.05,
-        (
-            f"Spearman $\\rho$ = {rho:.2f}\n"
-            f"$p$ = {p_value:.2g}\n"
-            f"$n$ = {len(diagnostic)}"
-        ),
+        (f"Spearman $\\rho$ = {rho:.2f}\n$p$ = {p_value:.2g}\n$n$ = {len(diagnostic)}"),
         transform=ax.transAxes,
         va="bottom",
         ha="right",
@@ -442,12 +434,8 @@ def plot_diagnostic(ax: Axes, diagnostic: pd.DataFrame) -> None:
         ),
     )
 
-    ax.set_xlabel(
-        "Full-data shortcut gap (random $-$ cross-dataset BA)"
-    )
-    ax.set_ylabel(
-        "Concordance benefit\n(concordant $-$ full-data cross-dataset BA)"
-    )
+    ax.set_xlabel("Full-data shortcut gap (random $-$ cross-dataset BA)")
+    ax.set_ylabel("Concordance benefit\n(concordant $-$ full-data cross-dataset BA)")
     # Pad axes so labels don't run off the panel.
     ax.set_xlim(x.min() - 0.03, x.max() + 0.04)
     ax.set_ylim(y.min() - 0.03, y.max() + 0.04)
@@ -477,8 +465,8 @@ def plot_active_learning(ax: Axes, active_learning: pd.DataFrame) -> None:
     colors = {"random": RANDOM_COLOR, "disagreement": GUIDED_COLOR}
     phenotype_order = ["m-Inositol", "Glucose"]
     phenotype_labels = {
-        "m-Inositol": "m-Inositol\n(best transfer)",
-        "Glucose": "Glucose\n(worst transfer)",
+        "m-Inositol": "m-Inositol\n(best generaliser)",
+        "Glucose": "Glucose\n(worst generaliser)",
     }
     offsets = {"random": -0.18, "disagreement": 0.18}
     bar_width = 0.32
@@ -522,7 +510,11 @@ def plot_active_learning(ax: Axes, active_learning: pd.DataFrame) -> None:
             ].to_numpy()
             x = x_base + offsets[strategy]
             mean = float(np.mean(values))
-            sem = float(np.std(values, ddof=1) / np.sqrt(len(values))) if len(values) > 1 else 0.0
+            sem = (
+                float(np.std(values, ddof=1) / np.sqrt(len(values)))
+                if len(values) > 1
+                else 0.0
+            )
             ax.bar(
                 x,
                 mean,

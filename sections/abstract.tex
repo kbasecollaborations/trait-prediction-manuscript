@@ -3,13 +3,14 @@
 \begin{abstract}
 {
 \noindent
+% TODO: Cut abstract from 288 words to the ISME Journal limit of 250 words before submission.
 Microbial carbon utilisation is a foundational phenotype for ecology and biotechnology, yet predicting it from genomic data remains challenging despite well-characterised metabolic pathways.
 Machine learning models often achieve high within-dataset accuracy yet fail to generalise across datasets, and whether this reflects algorithmic limits or the training data itself has remained unresolved.
-Using microbial carbon utilisation as a model system, we compiled binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets and found that generalisation failures arose primarily from data coherence: training data with internally inconsistent genotype--phenotype relationships drove models to learn dataset- or phylogeny-correlated shortcuts.
-Stratifying samples by concordance between a mechanistic predictor and experimental outcomes, and training exclusively on concordant samples, restored cross-dataset generalisation and consistently surfaced known pathway genes as top predictors.
-On held-out data of natural composition, these specialist models retained intermediate accuracy, capturing signal beyond the curated rules used to define concordance.
+Using microbial carbon utilisation as a model system, we integrated published binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four independent experimental datasets and found that generalisation failures arose primarily from data coherence: training data with internally inconsistent genotype--phenotype relationships drove models to learn dataset- or phylogeny-correlated shortcuts.
+Stratifying samples by concordance between a mechanistic predictor and experimental outcomes, and training exclusively on concordant samples, restored cross-dataset generalisation within the known-mechanism domain and consistently surfaced known pathway genes as top predictors.
+On held-out data of natural composition, these specialist models retained intermediate accuracy and correctly classified some samples misclassified by the mechanistic predictor, showing that machine learning captured transferable signal beyond the curated rules used to define concordance.
 Model confidence and agreement between the model and the mechanistic predictor identified, from genome content alone, which predictions could be trusted and which genomes merited follow-up, while the gap between within- and cross-dataset accuracy provided a heuristic for which phenotypes were most likely to benefit from concordance filtering.
-Together these results reframe generalisation in biological machine learning as a problem of data coherence rather than data volume or algorithm choice: when genotype--phenotype mappings are internally consistent and represented in the available features, models learn transferable mechanistic signals; otherwise they default to spurious correlations that fail to generalise.
+Together these results reframe generalisation in biological machine learning as a problem of data coherence and applicability-domain definition rather than data volume or algorithm choice: when genotype--phenotype mappings are internally consistent and represented in the available features, models learn transferable signals that can extend beyond curated mechanistic rules; otherwise they default to spurious correlations that fail to generalise.
 }
 \end{abstract}
 
