@@ -14,7 +14,7 @@ For any given carbon source, however, a proportion of organisms employ alternati
 Data quality also extends beyond mechanistic concordance to genome completeness and annotation consistency~\cite{Bowers2017MIMAG,Parks2015CheckM}, measurement reproducibility, and standardised phenotype calling, so discordance spans both recoverable cases such as annotation gaps and cases in which the relevant mechanism is not represented.
 
 % Interpreting discordances
-Concordant-trained models reached only 0.18--0.60 balanced accuracy on discordant samples, which argues against a single explanation for discordance~\cite{Galperin1998Sources,Snitkin2008Model}.
+Concordant-trained models reached low cross-dataset balanced accuracy on discordant samples (median 0.34; range 0.00--0.70), which argues against a single explanation for discordance~\cite{Galperin1998Sources,Snitkin2008Model}.
 Although these interpretations remain speculative without experimental validation, false negatives (GapMind--/Experiment+) may reflect annotation gaps or unknown alternative pathways, whereas false positives (GapMind+/Experiment--) may reflect regulatory repression or experimental artefacts that static genomic features cannot capture.
 Dataset-specific discordance patterns may further reflect differences in experimental protocols, measurement sensitivity, or community composition; disentangling these contributions would require controlled cross-laboratory comparisons, but the variation already motivates protocol comparisons, phenotype-calling checks, and clade-specific error analysis.
 
@@ -30,7 +30,7 @@ The practical choice is therefore between a model that is honestly bounded and o
 % Practical implications
 Changing the training set and feature representation mattered more than changing the classifier~\cite{Zha2025DataCentric,Whang2023DataQuality,Sambasivan2021DataCascades}.
 When mechanistic predictors such as GapMind are available, concordant samples provide the highest-quality training data; otherwise, measurement-confidence filtering and removal of systematically problematic samples offer practical alternatives~\cite{Bernhardt2022LabelCleaning}, and feature stability across independent training sets helps distinguish mechanistic from spurious learning.
-Cross-dataset and out-of-clade evaluation provide realistic performance estimates~\cite{Roberts2017CrossValidation}, whereas within-dataset cross-validation substantially overestimates generalisation.
+Cross-dataset and out-of-clade evaluation provide realistic performance estimates~\cite{Roberts2017CrossValidation}, whereas random holdout evaluation within the aggregated dataset substantially overestimates generalisation.
 For deployment on genomes whose concordance cannot be established in advance, prediction confidence and agreement with the mechanistic predictor provide label-free reliability signals: abstaining on the least-confident genomes raised pooled balanced accuracy from 0.71 to 0.79 at half coverage, and predictions on which GapMind and the model disagreed were close to random (0.49; Figure~\ref{fig:selective_prediction}).
 These signals define a practical applicability domain for genome-based phenotype prediction~\cite{Weaver2008AppDomain,Papangelou2025Conformal,Hendrickx2024Reject}.
 They also provide experimental-design guidance: high-confidence, GapMind--ML-agreeing predictions can be used conservatively, whereas low-confidence or disagreeing cases are the most informative candidates for targeted phenotyping or mechanistic follow-up.

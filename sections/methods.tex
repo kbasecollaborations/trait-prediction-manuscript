@@ -11,6 +11,7 @@ Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed
 Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carbon sources.
 
 Annotation and phenotype completeness reduced the final analysis sets (Supplementary Table~\ref{tab:dataset_overview}).
+Genome quality control combined assembly-fragmentation, CheckM2, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 We standardised carbon source names and restricted analyses to the 15 phenotypes shared across the four datasets, used jointly for aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
 
 \subsection*{Genome Annotation}
@@ -31,7 +32,9 @@ Genomes lacking species-level assignments were placed at the genus or family lev
 
 \subsubsection*{GapMind Mechanistic Predictions}
 
-We evaluated GapMind as a mechanistic baseline using two thresholds on the pathway completeness scores: strict (complete pathways) and permissive (likely complete pathways).
+We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls.
+The strict threshold treated only \texttt{complete} pathways as positive predictions; the permissive threshold treated \texttt{complete} and \texttt{likely\_complete} pathways as positive predictions.
+All other GapMind calls (\texttt{steps\_missing\_low}, \texttt{steps\_missing\_medium}, \texttt{steps\_missing\_high}, \texttt{incomplete}, and \texttt{not\_present}) were treated as negative predictions.
 
 \subsubsection*{Phylogeny-Based Nearest Neighbor}
 
@@ -55,7 +58,7 @@ After filtering, KOFAM yielded approximately 4000--5000 features per dataset and
 
 We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}).
 CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
-Random splits used a 70:15:15 train:validation:test partition; cross-dataset and phylogenetic splits used 85:15 train:validation on the non-test data.
+Repeated random holdout evaluations used five phenotype-cluster-based 70:15:15 train:validation:test partitions generated with random states 42--46; cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
 Early stopping was based on validation Logloss, and balanced accuracy was the primary reporting metric to account for class imbalance.
 Hyperparameters were not tuned per phenotype; reported performance reflects the above settings with \texttt{random\_state=42}, except for SHAP stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B), which used 20 seeds (see below).
 
@@ -63,7 +66,7 @@ Hyperparameters were not tuned per phenotype; reported performance reflects the 
 
 \subsubsection*{Cross-Validation and Cross-Dataset Testing}
 
-Performance was evaluated under four scenarios: (i) random cross-validation within the aggregated dataset; (ii) cross-dataset evaluation (training on three datasets, testing on the held-out fourth); (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples; and (iv) out-of-clade evaluation on phylogenetically distant samples.
+Performance was evaluated under four scenarios: (i) repeated random holdout evaluation within the aggregated dataset; (ii) cross-dataset evaluation (training on three datasets, testing on the held-out fourth); (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples; and (iv) out-of-clade evaluation on phylogenetically distant samples.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded.
 For cross-dataset testing, features were mapped from training to test data with missing features imputed as zero; this conflates true gene absence with annotation mismatch and may underestimate cross-dataset performance.
 
@@ -74,7 +77,7 @@ We applied the out-of-clade partitioning algorithm of \cite{Li2023-up}, which se
 \subsection*{Concordant and Discordant Sample Analysis}
 
 Samples were stratified by agreement between GapMind predictions and experimental outcomes: concordant (GapMind matches the experiment) and discordant (GapMind contradicts it).
-Concordance was defined using GapMind's permissive (loose) pathway-completeness threshold throughout.
+Concordance was defined throughout using the permissive GapMind threshold described above.
 Models were trained on concordant samples only and evaluated on both concordant and discordant test sets.
 Per-phenotype, per-dataset counts of concordant and discordant samples (and exclusions) are reported in Supplementary Figure~\ref{fig:concordance_counts}.
 
@@ -115,14 +118,15 @@ Samples with composite scores between 0.4 and 0.6 were considered ambiguous and 
 
 Minimum training data requirements were assessed using learning curves.
 For each phenotype, models were trained on stratified subsets of 50, 100, 200, 500, and full training samples with three repeats per configuration.
-Performance was evaluated across random, cross-dataset, and out-of-clade splits, and on full, concordant, and discordant test subsets.
+Performance was evaluated across random holdout, cross-dataset, and out-of-clade evaluations, and on full, concordant, and discordant test subsets.
 
 \subsection*{Applicability-Domain and Shortcut-Gap Analyses}
 
 For concordant-trained models evaluated on the full held-out cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ from the predicted class probabilities.
+These CatBoost probabilities were not post hoc calibrated, so confidence was used only as a ranking score for selective prediction rather than as an absolute probability of correctness.
 Risk--coverage curves were generated by ranking predictions by confidence, removing the least-confident fraction, and recalculating balanced accuracy on the retained predictions.
 GapMind--ML agreement was evaluated by stratifying held-out predictions according to whether the permissive GapMind call matched the machine learning prediction.
-For each phenotype, the shortcut gap was defined as mean random-split balanced accuracy minus mean cross-dataset balanced accuracy for the full-data model, and the concordance benefit was defined as mean concordant-trained cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy.
+For each phenotype, the shortcut gap was defined as mean random-holdout balanced accuracy minus mean cross-dataset balanced accuracy for the full-data model, and the concordance benefit was defined as mean concordant-trained cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy.
 The association between shortcut gap and concordance benefit was summarised with Spearman correlation across phenotypes.
 For the retrospective active-learning pilot, we selected the phenotypes with the smallest and largest shortcut gaps, split each held-out dataset into candidate and evaluation pools, and simulated adding 25 candidate labels to the concordant training set before retraining.
 Candidate labels were selected either at random or by prioritising GapMind--ML disagreement, and improvement was measured as the change in balanced accuracy on the remaining held-out evaluation pool across three random seeds.

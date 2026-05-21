@@ -141,7 +141,7 @@ See Methods for classifier hyperparameters and training details.}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{figure_s1.pdf}
+\includegraphics[width=\textwidth]{figure_s1.png}
 \caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
 Phylogenetic tree displaying the 819 input genomes from four datasets: ATLeaf (green), Biolog (blue), Marine (orange), and Populus (red).
 The tree was constructed using the Genome Taxonomy Database (GTDB)~\cite{Parks2018GTDB} as a reference framework, with phylogenetic distances calculated using the ETE 3 toolkit~\cite{HuertaCepas2016ETE3}.
@@ -156,7 +156,7 @@ Populus dataset has a narrower phylogenetic range in comparison.}
 \includegraphics[width=\textwidth]{figure_s2.png}
 \caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
 Distribution of cophenetic phylogenetic distances between training and test samples under different evaluation scenarios.
-Random splits (left) draw training and test samples from the same phylogenetic distribution, resulting in small distances.
+Random holdout evaluations (left) draw training and test samples from the same phylogenetic distribution, resulting in small distances.
 Cross-dataset splits (middle) increase distances by separating samples from different experimental contexts.
 Out-of-clade splits (right) produce the largest distances by ensuring test samples come from phylogenetically distant clades relative to training data.
 This progressive increase in phylogenetic distance between training and test sets mirrors the increasingly stringent generalisation tests applied in the main text (Figure~\ref{fig:ml_performance}).}
@@ -172,7 +172,7 @@ Top: in-clade splits (test samples drawn from clades represented in the training
 Bottom: out-of-clade splits (test samples drawn from clades not represented in training).
 Clade definitions were derived by Agglomerative clustering of the held-out test set on the phylogenetic distance matrix using the same parameters as Figure~\ref{fig:ml_performance}C; in-clade samples cluster with at least two training samples, out-of-clade samples form clusters lacking training representation.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded; 45 of 120 combinations were excluded under this rule, including all 15 Populus-held-out out-of-clade combinations because Populus tips lie within clades represented in the other three training datasets.
-Out-of-clade balanced accuracies were consistently lower than in-clade (mean 0.629 vs 0.696), confirming that random cross-validation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
+Out-of-clade balanced accuracies were consistently lower than in-clade (mean 0.629 vs 0.696), confirming that random holdout evaluation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
 
@@ -240,7 +240,7 @@ Most phenotypes approach their maximum cross-dataset performance by 50--100 samp
 \subsection*{Supplementary Text S7: Feature-Direction SHAP for Concordant Models}
 
 While Figure~\ref{fig:concordant_analysis}B reports SHAP-based feature \emph{stability} across random seeds for concordant-trained models, it does not show the direction in which feature value influences prediction.
-Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with KOFAM features under the random-split evaluation.
+Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with KOFAM features under random holdout evaluation.
 For histidine, the top-ranked KOFAM features include canonical histidine-utilisation enzymes (K01468 imidazolonepropionase, K01712 urocanate hydratase, and K01745 histidine ammonia-lyase) together with the histidine-utilisation regulator K05836.
 For galactose, the leading features include beta-galactosidase K01190 and additional KOFAM annotations associated with carbohydrate metabolism or transport.
 For both phenotypes, feature presence consistently shifts predictions toward growth, supporting the interpretation that the concordant-trained models recover mechanistically meaningful signals rather than dataset-correlated shortcuts.
