@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate per-sample SHAP value arrays for the Figure S11 beeswarm plot.
+Generate per-sample SHAP value arrays for the Figure S7 beeswarm plot.
 
 For each target phenotype the script:
 1. Loads the canonical random-split fold (fold 0) for the phenotype.
@@ -45,7 +45,7 @@ FEATURE_FILE: Path = (
 )
 GAPMIND_FILE: Path = REPO_ROOT / "data/outputs/figure2/gapmind_phenotypes_loose.tsv"
 PHENOTYPE_DIR: Path = REPO_ROOT / "data/processed/phenotypes"
-OUTPUT_DIR: Path = REPO_ROOT / "data/outputs/figureS11"
+OUTPUT_DIR: Path = REPO_ROOT / "data/outputs/figureS7"
 
 
 def load_concordant_train_test(

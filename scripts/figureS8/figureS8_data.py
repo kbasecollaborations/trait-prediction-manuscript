@@ -7,7 +7,7 @@ phenotype directory, tally the number of genomes that are concordant with
 GapMind, discordant as a false positive, discordant as a false negative,
 excluded because GapMind has no prediction, and excluded because the
 experimental phenotype value is missing. The resulting long-form table
-underpins Supplementary Figure S12.
+underpins Supplementary Figure S8.
 
 The per-dataset genome universe is the union of ``genomeID`` rows across all
 phenotype TSVs in ``data/processed/phenotypes/<dataset>/``. This is the
@@ -28,7 +28,7 @@ from scripts.figure5.figure5a_data import load_gapmind_predictions
 
 GAPMIND_FILE: Final[Path] = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR: Final[Path] = Path("data/processed/phenotypes")
-OUTPUT_DIR: Final[Path] = Path("data/outputs/figureS12")
+OUTPUT_DIR: Final[Path] = Path("data/outputs/figureS8")
 OUTPUT_FILE: Final[Path] = OUTPUT_DIR / "concordance_counts.tsv"
 
 DATASETS: Final[tuple[str, ...]] = ("atleaf", "lit", "marine", "pmi")

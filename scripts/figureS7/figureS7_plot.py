@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Render Figure S11: SHAP beeswarm summaries for histidine and galactose.
+Render Figure S7: SHAP beeswarm summaries for histidine and galactose.
 
 The figure stacks one beeswarm panel per phenotype. Each panel uses the
 canonical ``shap.summary_plot(plot_type="dot")`` representation, restricted
@@ -29,13 +29,13 @@ TOP_N: int = 15
 PANEL_LABELS: tuple[str, ...] = ("A", "B")
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
-DATA_DIR: Path = REPO_ROOT / "data/outputs/figureS11"
-OUTPUT_PDF: Path = REPO_ROOT / "figures/figure_s11.pdf"
+DATA_DIR: Path = REPO_ROOT / "data/outputs/figureS7"
+OUTPUT_PDF: Path = REPO_ROOT / "figures/figure_s7.pdf"
 
 
 def load_shap_arrays(npz_path: Path) -> dict[str, np.ndarray]:
     """
-    Load SHAP arrays produced by ``figureS11_data.py``.
+    Load SHAP arrays produced by ``figureS7_data.py``.
 
     Parameters
     ----------

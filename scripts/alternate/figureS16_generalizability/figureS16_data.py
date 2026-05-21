@@ -24,7 +24,7 @@ from pathlib import Path
 import pandas as pd
 from scipy.stats import spearmanr
 
-CONCORDANCE_FILE: Path = Path("data/outputs/figureS12/concordance_counts.tsv")
+CONCORDANCE_FILE: Path = Path("data/outputs/figureS8/concordance_counts.tsv")
 ML_RESULTS_FILE: Path = Path("data/outputs/figure3/ml_results.csv")
 OUTPUT_DIR: Path = Path("data/outputs/figureS16")
 

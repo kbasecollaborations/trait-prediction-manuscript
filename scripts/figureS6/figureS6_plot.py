@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """
-Deprecated compatibility entrypoint for the old Supplementary Figure S6 script.
+Generate Supplementary Figure S6: cross-dataset performance heatmap by training
+sample size across all 15 shared phenotypes.
+
+Reads the consolidated learning-curve results produced by
+``scripts.figureS6.figureS6_data`` and renders the heatmap defined in the
+shared ``supplementary_figure_learning_curves`` module.
 """
 
-from scripts.alternate.figureS10.figureS10_plot import main as figure_s10_main
-from scripts.alternate.figureS9.figureS9_plot import main as figure_s9_main
-from scripts.figureS8.figureS8_plot import main as figure_s8_main
+from scripts.supplementary_figure_learning_curves import (
+    ensure_output_dir,
+    load_plot_data,
+    plot_heatmap,
+)
 
 
 def main() -> None:
-    """Generate manuscript-numbered supplementary figures S8--S10."""
-    print(
-        "scripts.figureS6.figureS6_plot is deprecated; "
-        "generating figure_s8.pdf, figure_s9.pdf, and figure_s10.pdf instead."
-    )
-    figure_s8_main()
-    figure_s9_main()
-    figure_s10_main()
-    print("\nDone!")
+    """Generate Supplementary Figure S6."""
+    output_dir = ensure_output_dir()
+    plot_data = load_plot_data()
+    plot_heatmap(plot_data, output_dir / "figure_s6.pdf")
 
 
 if __name__ == "__main__":

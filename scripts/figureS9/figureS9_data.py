@@ -16,7 +16,7 @@ subset:
     concordant-only training. The test set composition is held fixed (full
     test set in both cases) so the metric isolates training-set coverage.
 
-Output is written to ``data/outputs/figureS13/taxonomic_bias.tsv`` in long
+Output is written to ``data/outputs/figureS9/taxonomic_bias.tsv`` in long
 form. One row per phenotype x measure (and per split for the overlap
 measure).
 """
@@ -46,7 +46,7 @@ TREE_FILE: Path = Path("data/processed/phylogeny/gtdb-pruned.nwk")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 SPLITS_DIR: Path = Path("data/processed/train_test_splits/dataset_split")
-OUTPUT_FILE: Path = Path("data/outputs/figureS13/taxonomic_bias.tsv")
+OUTPUT_FILE: Path = Path("data/outputs/figureS9/taxonomic_bias.tsv")
 
 UNASSIGNED_LABEL: str = "Unassigned"
 

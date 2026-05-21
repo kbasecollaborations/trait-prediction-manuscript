@@ -48,7 +48,7 @@ KOFAM_FEATURE_FILE: Path = Path(
 )
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 EXISTING_5C_FILE: Path = OUTPUT_DIR / "figure5c_concordant_train_different_test.csv"
-S12_COUNTS_FILE: Path = Path("data/outputs/figureS12/concordance_counts.tsv")
+S8_COUNTS_FILE: Path = Path("data/outputs/figureS8/concordance_counts.tsv")
 
 RANDOM_STATE: int = 42
 MIN_TRAIN_SAMPLES: int = 5
@@ -359,14 +359,14 @@ def main() -> None:
     print(f"Reading existing 5C/D output from {EXISTING_5C_FILE}")
     existing_5c = pd.read_csv(EXISTING_5C_FILE)
 
-    if S12_COUNTS_FILE.exists():
+    if S8_COUNTS_FILE.exists():
         print(
-            f"Note: {S12_COUNTS_FILE} exists but Figure 5D recomputes "
+            f"Note: {S8_COUNTS_FILE} exists but Figure 5D recomputes "
             "discordance categories on the fly for self-consistency."
         )
     else:
         print(
-            f"Wave-1C counts file not found at {S12_COUNTS_FILE}; "
+            f"Wave-1C counts file not found at {S8_COUNTS_FILE}; "
             "recomputing discordance categories from raw loaders."
         )
 

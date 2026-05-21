@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render Figure S13: taxonomic bias from GapMind concordance filtering.
+"""Render Figure S9: taxonomic bias from GapMind concordance filtering.
 
 Three panels:
 
@@ -30,8 +30,8 @@ sns.set_context("paper")
 configure_plot_style()
 
 
-DATA_FILE: Path = Path("data/outputs/figureS13/taxonomic_bias.tsv")
-OUTPUT_FILE: Path = Path("figures/figure_s13.pdf")
+DATA_FILE: Path = Path("data/outputs/figureS9/taxonomic_bias.tsv")
+OUTPUT_FILE: Path = Path("figures/figure_s9.pdf")
 
 
 def _phenotype_order(df: pd.DataFrame) -> list[str]:
