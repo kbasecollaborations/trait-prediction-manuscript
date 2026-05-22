@@ -111,17 +111,12 @@ Each point indicates performance at training sizes of 50, 100, 200, 500, or the 
 \centering
 \includegraphics[width=0.95\textwidth]{figure8.pdf}
 \caption{
-\textbf{Diagnostic and applicability-domain signals for genome-based phenotype prediction.}
-(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, and Glucose).
-Each curve shows balanced accuracy on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to.
-Within each phenotype, retention is stratified by predicted class: at every coverage level, the top fraction of most-confident class-1 predictions (highest $p$) and the top fraction of most-confident class-0 predictions (highest $1-p$) are kept in parallel, ensuring that both predicted classes are represented at every coverage level.
-(\textbf{B}) Balanced accuracy on the held-out cross-dataset test set split by agreement between the GapMind call and the machine learning prediction (agree, blue; disagree, vermillion).
-Reference lines mark each predictor used on its own across the same genomes (ML alone, blue dotted; GapMind alone, grey dash-dotted); the grey dashed line marks random performance (balanced accuracy~$=0.5$).
-(\textbf{C}) Per-phenotype diagnostic, one point per phenotype.
-The shortcut gap of the full-data model (x) is its mean random-holdout balanced accuracy minus its mean leave-one-dataset-out balanced accuracy.
-The concordance benefit (y) is the concordant-trained model's mean balanced accuracy minus the full-data model's, both evaluated on the same leave-one-dataset-out held-out set (full natural composition, concordant and discordant samples, as in Supplementary Figure~\ref{fig:full_held_out_test}).
-The annotation gives the Spearman correlation across phenotypes.
-(\textbf{D}) Retrospective active-learning pilot for the lowest- and highest-shortcut-gap phenotypes from panel C.
-Bars show the mean change in balanced accuracy after adding 25 simulated held-out labels selected either at random or by GapMind--ML disagreement; points and connecting lines show paired held-out dataset and seed runs.
+\textbf{Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
+(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, Glucose), comparing the full-data model (vermillion) and the concordant-trained model (blue).
+Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
+The grey dashed line marks random performance (balanced accuracy~$=0.5$).
+(\textbf{B}) Reliability diagram for both models, pooled across phenotypes: mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration and the expected calibration error (ECE) is given in the legend.
+(\textbf{C}) Change in cross-dataset balanced accuracy after adding 25 held-out genome labels to the concordant training set, by label-free selection strategy (low confidence, diversity, random, high feature-novelty); bars show the mean, error bars the standard error of the mean, and points individual runs.
+(\textbf{D}) Per-phenotype gain from 25 randomly versus low-confidence-selected added labels, for the three Panel-A phenotypes; error bars show the standard error of the mean across runs.
 }\label{fig:selective_prediction}
 \end{figure}

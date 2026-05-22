@@ -26,7 +26,6 @@ Outputs (all under ``data/outputs/figure8/``):
     - ``figure8_per_sample.tsv``                  one row per held-out test genome
     - ``figure8_risk_coverage.tsv``               pooled balanced accuracy vs. coverage
     - ``figure8_risk_coverage_by_phenotype.tsv``  per-phenotype risk-coverage curves
-    - ``figure8_agreement.tsv``                   balanced accuracy split by GapMind-ML agreement
 """
 
 from __future__ import annotations
@@ -44,6 +43,10 @@ from scripts.figure5.figure5cd_data import (
     get_concordant_and_discordant_samples,
     load_experimental_phenotypes,
     load_gapmind_predictions,
+)
+from scripts.figure8.applicability import (
+    calibration_table,
+    expected_calibration_error,
 )
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_split_data
@@ -149,6 +152,51 @@ def fit_concordant_model_and_predict_proba(
     )
 
 
+def fit_full_data_model_and_predict_proba(
+    split: Mapping[str, pd.DataFrame | pd.Series],
+) -> pd.DataFrame | None:
+    """
+    Fit a full-data CatBoost model (all training samples) and predict the held-out test.
+
+    Mirrors :func:`fit_concordant_model_and_predict_proba` but trains on every training
+    genome with a valid label rather than the GapMind-concordant subset.
+
+    Parameters
+    ----------
+    split : Mapping[str, pd.DataFrame | pd.Series]
+        Output of ``load_split_data`` for one ``dataset_split`` key.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        Frame indexed by held-out genome ID with columns ``proba`` and ``y_pred``,
+        or ``None`` when the training data is too small or single-class.
+    """
+    y_train = split["y_train"].dropna()
+    y_val = split["y_val"].dropna()
+    if len(y_train) < MIN_TRAIN_SAMPLES or len(y_val) < MIN_TRAIN_SAMPLES:
+        return None
+    if y_train.nunique() != 2 or y_val.nunique() != 2:
+        return None
+    X_test = split["X_test"]
+    if len(X_test) == 0:
+        return None
+
+    X_train = split["X_train"].loc[y_train.index]
+    X_val = split["X_val"].loc[y_val.index]
+    model = make_classifier("cb", random_state=RANDOM_STATE)
+    X_val_aligned = align_columns(X_train, X_val)
+    X_test_aligned = align_columns(X_train, X_test)
+    model.fit(
+        X_train, y_train, eval_set=(X_val_aligned, y_val),
+        use_best_model=True, verbose=False,
+    )
+    proba = np.asarray(model.predict_proba(X_test_aligned))[:, 1]
+    return pd.DataFrame(
+        {"proba": proba, "y_pred": (proba >= 0.5).astype(int)}, index=X_test.index
+    )
+
+
 def collect_per_sample_predictions(
     split_data: Mapping[str, Mapping[str, Mapping[str, pd.DataFrame | pd.Series]]],
     gapmind_predictions: pd.DataFrame,
@@ -227,6 +275,42 @@ def collect_per_sample_predictions(
                 }
             )
 
+    return pd.DataFrame.from_records(records)
+
+
+def collect_full_data_per_sample(
+    split_data: Mapping[str, Mapping[str, Mapping[str, pd.DataFrame | pd.Series]]],
+    gapmind_predictions: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build the pooled full-data-model per-sample table across all dataset splits."""
+    records: list[dict[str, object]] = []
+    splits = split_data["dataset_split"]
+    for key, split in tqdm(splits.items(), total=len(splits), desc="full-data splits"):
+        held_out = parse_held_out_dataset(key)
+        if held_out is None:
+            continue
+        phenotype = key.split("_", 1)[0]
+        predictions = fit_full_data_model_and_predict_proba(split)
+        if predictions is None:
+            continue
+        y_test = split["y_test"]
+        gm_col = (
+            gapmind_predictions[phenotype]
+            if phenotype in gapmind_predictions.columns else None
+        )
+        for genome in predictions.index:
+            y_true = y_test.loc[genome]
+            if pd.isna(y_true):
+                continue
+            proba = float(predictions.loc[genome, "proba"])
+            gm_pred: float | int = np.nan
+            if gm_col is not None and genome in gm_col.index and not pd.isna(gm_col.loc[genome]):
+                gm_pred = int(gm_col.loc[genome])
+            records.append({
+                "phenotype": phenotype, "held_out_dataset": held_out, "genome": genome,
+                "y_true": int(y_true), "y_pred": int(predictions.loc[genome, "y_pred"]),
+                "proba": proba, "confidence": max(proba, 1.0 - proba), "gapmind_pred": gm_pred,
+            })
     return pd.DataFrame.from_records(records)
 
 
@@ -362,95 +446,6 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build_agreement_table(per_sample: pd.DataFrame) -> pd.DataFrame:
-    """
-    Split balanced accuracy by GapMind-ML agreement.
-
-    Parameters
-    ----------
-    per_sample : pd.DataFrame
-        Output of :func:`collect_per_sample_predictions`.
-
-    Returns
-    -------
-    pd.DataFrame
-        Rows for the full set, the standalone GapMind and ML baselines, and the
-        GapMind-ML agree / disagree subsets, each with sample count, coverage,
-        and balanced accuracy. The ``balanced_accuracy`` column uses the ML
-        prediction (``y_pred``) for every subset except ``gapmind_baseline``,
-        which uses the standalone GapMind call so the agreement-filtered subsets
-        can be read against both predictors used on their own.
-    """
-    with_gm = per_sample.dropna(subset=["gapmind_pred"]).copy()
-    with_gm["gapmind_pred"] = with_gm["gapmind_pred"].astype(int)
-    agree_mask = with_gm["gapmind_pred"] == with_gm["y_pred"]
-    n_with_gm = len(with_gm)
-
-    rows: list[dict[str, object]] = [
-        {
-            "subset": "all",
-            "n_samples": len(per_sample),
-            "coverage": 1.0,
-            "balanced_accuracy": safe_balanced_accuracy(
-                per_sample["y_true"].to_numpy(), per_sample["y_pred"].to_numpy()
-            ),
-            "accuracy": float(
-                (
-                    per_sample["y_true"].to_numpy()
-                    == per_sample["y_pred"].to_numpy()
-                ).mean()
-            ),
-        },
-        # Standalone predictors on the GapMind-callable set, same denominator,
-        # so panel B's agree / disagree bars are comparable to using either
-        # predictor on its own.
-        {
-            "subset": "ml_baseline",
-            "n_samples": n_with_gm,
-            "coverage": 1.0,
-            "balanced_accuracy": safe_balanced_accuracy(
-                with_gm["y_true"].to_numpy(), with_gm["y_pred"].to_numpy()
-            ),
-            "accuracy": float(
-                (with_gm["y_true"].to_numpy() == with_gm["y_pred"].to_numpy()).mean()
-            ),
-        },
-        {
-            "subset": "gapmind_baseline",
-            "n_samples": n_with_gm,
-            "coverage": 1.0,
-            "balanced_accuracy": safe_balanced_accuracy(
-                with_gm["y_true"].to_numpy(), with_gm["gapmind_pred"].to_numpy()
-            ),
-            "accuracy": float(
-                (
-                    with_gm["y_true"].to_numpy() == with_gm["gapmind_pred"].to_numpy()
-                ).mean()
-            ),
-        },
-    ]
-    for name, frame in {
-        "gapmind_ml_agree": with_gm[agree_mask],
-        "gapmind_ml_disagree": with_gm[~agree_mask],
-    }.items():
-        rows.append(
-            {
-                "subset": name,
-                "n_samples": len(frame),
-                "coverage": len(frame) / n_with_gm if n_with_gm else float("nan"),
-                "balanced_accuracy": safe_balanced_accuracy(
-                    frame["y_true"].to_numpy(), frame["y_pred"].to_numpy()
-                ),
-                "accuracy": float(
-                    (frame["y_true"].to_numpy() == frame["y_pred"].to_numpy()).mean()
-                )
-                if len(frame)
-                else float("nan"),
-            }
-        )
-    return pd.DataFrame(rows)
-
-
 def main() -> None:
     """Build and persist the Supplementary Figure S15 data tables."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -487,19 +482,41 @@ def main() -> None:
     ).reset_index(drop=True)
 
     risk_coverage = build_risk_coverage(per_sample)
-    risk_coverage_by_phenotype = build_risk_coverage_by_phenotype(per_sample)
-    agreement = build_agreement_table(per_sample)
 
     per_sample.to_csv(OUTPUT_DIR / "figure8_per_sample.tsv", sep="\t", index=False)
     risk_coverage.to_csv(
         OUTPUT_DIR / "figure8_risk_coverage.tsv", sep="\t", index=False
     )
-    risk_coverage_by_phenotype.to_csv(
-        OUTPUT_DIR / "figure8_risk_coverage_by_phenotype.tsv",
-        sep="\t",
-        index=False,
+
+    full_per_sample = collect_full_data_per_sample(split_data, gapmind_predictions)
+    full_per_sample = full_per_sample.sort_values(
+        ["phenotype", "held_out_dataset", "genome"]
+    ).reset_index(drop=True)
+    full_per_sample.to_csv(
+        OUTPUT_DIR / "figure8_per_sample_fulldata.tsv", sep="\t", index=False
     )
-    agreement.to_csv(OUTPUT_DIR / "figure8_agreement.tsv", sep="\t", index=False)
+    print(f"  full-data per-sample genomes: {len(full_per_sample)}")
+
+    calib_rows = []
+    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+        ct = calibration_table(frame, n_bins=10)
+        ct.insert(0, "model", model_name)
+        ct["ece"] = expected_calibration_error(
+            frame["y_true"].to_numpy(), frame["proba"].to_numpy(), n_bins=10
+        )
+        calib_rows.append(ct)
+    pd.concat(calib_rows, ignore_index=True).to_csv(
+        OUTPUT_DIR / "figure8_calibration.tsv", sep="\t", index=False
+    )
+
+    rc_rows = []
+    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+        rc = build_risk_coverage_by_phenotype(frame)
+        rc.insert(0, "model", model_name)
+        rc_rows.append(rc)
+    pd.concat(rc_rows, ignore_index=True).to_csv(
+        OUTPUT_DIR / "figure8_risk_coverage_by_phenotype.tsv", sep="\t", index=False
+    )
 
     print(f"\nSaved Supplementary Figure S15 data to {OUTPUT_DIR}")
     print(f"  pooled held-out test genomes: {len(per_sample)}")
@@ -512,12 +529,6 @@ def main() -> None:
         f"  balanced accuracy @ coverage {half['coverage']:.2f}: "
         f"{half['balanced_accuracy']:.3f}"
     )
-    print("\nGapMind-ML agreement split:")
-    for row in agreement.itertuples(index=False):
-        print(
-            f"  {row.subset:<22} n={row.n_samples:<5} "
-            f"coverage={row.coverage:.2f} BA={row.balanced_accuracy:.3f}"
-        )
 
 
 if __name__ == "__main__":
