@@ -268,24 +268,39 @@ def plot_agreement(ax: Axes, agreement: pd.DataFrame) -> None:
         zorder=1,
     )
 
-    if "all" in indexed.index:
-        full_ba = float(indexed.loc["all", "balanced_accuracy"])
+    # Standalone-predictor baselines: ML alone and GapMind alone on the full
+    # GapMind-callable test set. Both sit near 0.71, so the agree bar rising to
+    # 0.75 shows the value of agreement filtering over either predictor alone.
+    baselines = [
+        ("ml_baseline", PRIMARY_COLOR, ":", "ML alone"),
+        ("gapmind_baseline", "0.35", "-.", "GapMind alone"),
+    ]
+    baseline_text: list[tuple[str, str]] = []
+    for subset, color, style, label in baselines:
+        if subset not in indexed.index:
+            continue
+        ba = float(indexed.loc[subset, "balanced_accuracy"])
         ax.axhline(
-            full_ba,
-            linestyle=":",
-            color=PRIMARY_COLOR,
+            ba,
+            linestyle=style,
+            color=color,
             linewidth=1.0,
             alpha=0.95,
             zorder=1,
         )
+        baseline_text.append((f"{label} = {ba:.2f}", color))
+    # Both baselines are nearly coincident near 0.71, so stack their labels
+    # just below the lines in the empty region right of the disagree bar
+    # rather than placing each on its (overlapping) line.
+    for i, (text, color) in enumerate(baseline_text):
         ax.text(
             1.45,
-            full_ba + 0.015,
-            f"overall BA = {full_ba:.2f}",
+            0.655 - i * 0.05,
+            text,
             ha="right",
             va="bottom",
             fontsize=8,
-            color=PRIMARY_COLOR,
+            color=color,
         )
 
     for bar, subset in zip(bars, order, strict=True):

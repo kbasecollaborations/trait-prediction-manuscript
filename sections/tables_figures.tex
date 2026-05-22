@@ -72,12 +72,11 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \caption{
 \textbf{Concordant-trained models learn mechanistic features and retain bounded predictive value on discordant samples.}
 All models used the same architecture and KOFAM feature representation as in Figure~3; only the training set was restricted to GapMind-concordant samples.
-(A) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes) across 15 phenotypes, with KOFAM features.
-Red dashed lines mark the per-phenotype cross-dataset mean balanced accuracy when the same pipeline is trained on GapMind step features instead of KOFAM features, providing a pipeline-ceiling reference: the gap to the KOFAM boxes quantifies pathway-annotation information that is present in GapMind but absent or fragmented in KOFAM (Methods).
-(B) Cross-dataset stability analysis for concordant-trained models, comparing stable feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (KOFAM candidate-feature screening, stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; see Methods).
-Solid bars: clusters shared between the two models; patterned bars: clusters present only in the held-out-alone model.
-(C) Balanced accuracy of concordant-trained models applied to discordant samples.
-Performance varied substantially across phenotypes; above-random values indicate cases in which ML captured signal beyond the curated GapMind rules, whereas values near random indicate cases in which genome-derived features were insufficient to resolve the phenotype.
+(A) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes) across 15 phenotypes, using KOFAM features.
+Red dashed lines mark the per-phenotype cross-dataset mean balanced accuracy when the same pipeline is trained on GapMind step features instead (pipeline-ceiling reference; Methods).
+(B) Cross-dataset stability analysis comparing stable feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; Methods).
+Solid bars: clusters shared between the two models; patterned bars: clusters unique to the held-out-alone model.
+(C) Balanced accuracy of concordant-trained models applied to discordant samples across phenotypes.
 }\label{fig:concordant_analysis}
 \end{figure}
 
@@ -113,13 +112,15 @@ Each point indicates performance at training sizes of 50, 100, 200, 500, or the 
 \includegraphics[width=0.95\textwidth]{figure8.pdf}
 \caption{
 \textbf{Diagnostic and applicability-domain signals for genome-based phenotype prediction.}
-(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, and Glucose), selected from the shortcut-gap ranking in panel C.
+(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, and Glucose).
 Each curve shows balanced accuracy on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to.
 Within each phenotype, retention is stratified by predicted class: at every coverage level, the top fraction of most-confident class-1 predictions (highest $p$) and the top fraction of most-confident class-0 predictions (highest $1-p$) are kept in parallel, ensuring that both predicted classes are represented at every coverage level.
-(\textbf{B}) Balanced accuracy split by agreement between the GapMind call and the machine learning prediction; the disagreement subset prioritises candidates for follow-up, including cases that may reflect alternative mechanisms, annotation gaps, regulation, or experimental artefacts.
-The blue dotted line marks overall balanced accuracy on the full test set and the grey dashed line marks random performance (balanced accuracy~$=0.5$).
-(\textbf{C}) Per-phenotype diagnostic: the shortcut gap of the full-data model (mean random-holdout balanced accuracy minus mean cross-dataset balanced accuracy) versus the concordance benefit (mean concordant cross-dataset balanced accuracy on the full held-out test set minus mean full-data cross-dataset balanced accuracy).
-The observed pattern is consistent with phenotypes whose full-data models rely most on dataset- or phylogeny-specific shortcuts also gaining most from concordance filtering, providing a heuristic for when filtering is likely to pay off.
+(\textbf{B}) Balanced accuracy on the held-out cross-dataset test set split by agreement between the GapMind call and the machine learning prediction (agree, blue; disagree, vermillion).
+Reference lines mark each predictor used on its own across the same genomes (ML alone, blue dotted; GapMind alone, grey dash-dotted); the grey dashed line marks random performance (balanced accuracy~$=0.5$).
+(\textbf{C}) Per-phenotype diagnostic, one point per phenotype.
+The shortcut gap of the full-data model (x) is its mean random-holdout balanced accuracy minus its mean leave-one-dataset-out balanced accuracy.
+The concordance benefit (y) is the concordant-trained model's mean balanced accuracy minus the full-data model's, both evaluated on the same leave-one-dataset-out held-out set (full natural composition, concordant and discordant samples, as in Supplementary Figure~\ref{fig:full_held_out_test}).
+The annotation gives the Spearman correlation across phenotypes.
 (\textbf{D}) Retrospective active-learning pilot for the lowest- and highest-shortcut-gap phenotypes from panel C.
 Bars show the mean change in balanced accuracy after adding 25 simulated held-out labels selected either at random or by GapMind--ML disagreement; points and connecting lines show paired held-out dataset and seed runs.
 }\label{fig:selective_prediction}

@@ -489,6 +489,7 @@ CLAUDE.md
 AGENTS.md
 prompts/
 docs/plans/
+docs/superpowers/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
@@ -525,3 +526,4 @@ build/
 notebooks/
 revisions/
 /plans
+/docs/superpowers/specs

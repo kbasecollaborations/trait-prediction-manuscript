@@ -374,28 +374,70 @@ def build_agreement_table(per_sample: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Rows for the full set and for the GapMind-ML agree / disagree subsets,
-        each with sample count, coverage, balanced accuracy, and accuracy.
+        Rows for the full set, the standalone GapMind and ML baselines, and the
+        GapMind-ML agree / disagree subsets, each with sample count, coverage,
+        and balanced accuracy. The ``balanced_accuracy`` column uses the ML
+        prediction (``y_pred``) for every subset except ``gapmind_baseline``,
+        which uses the standalone GapMind call so the agreement-filtered subsets
+        can be read against both predictors used on their own.
     """
     with_gm = per_sample.dropna(subset=["gapmind_pred"]).copy()
     with_gm["gapmind_pred"] = with_gm["gapmind_pred"].astype(int)
     agree_mask = with_gm["gapmind_pred"] == with_gm["y_pred"]
     n_with_gm = len(with_gm)
 
-    subsets = {
-        "all": per_sample,
+    rows: list[dict[str, object]] = [
+        {
+            "subset": "all",
+            "n_samples": len(per_sample),
+            "coverage": 1.0,
+            "balanced_accuracy": safe_balanced_accuracy(
+                per_sample["y_true"].to_numpy(), per_sample["y_pred"].to_numpy()
+            ),
+            "accuracy": float(
+                (
+                    per_sample["y_true"].to_numpy()
+                    == per_sample["y_pred"].to_numpy()
+                ).mean()
+            ),
+        },
+        # Standalone predictors on the GapMind-callable set, same denominator,
+        # so panel B's agree / disagree bars are comparable to using either
+        # predictor on its own.
+        {
+            "subset": "ml_baseline",
+            "n_samples": n_with_gm,
+            "coverage": 1.0,
+            "balanced_accuracy": safe_balanced_accuracy(
+                with_gm["y_true"].to_numpy(), with_gm["y_pred"].to_numpy()
+            ),
+            "accuracy": float(
+                (with_gm["y_true"].to_numpy() == with_gm["y_pred"].to_numpy()).mean()
+            ),
+        },
+        {
+            "subset": "gapmind_baseline",
+            "n_samples": n_with_gm,
+            "coverage": 1.0,
+            "balanced_accuracy": safe_balanced_accuracy(
+                with_gm["y_true"].to_numpy(), with_gm["gapmind_pred"].to_numpy()
+            ),
+            "accuracy": float(
+                (
+                    with_gm["y_true"].to_numpy() == with_gm["gapmind_pred"].to_numpy()
+                ).mean()
+            ),
+        },
+    ]
+    for name, frame in {
         "gapmind_ml_agree": with_gm[agree_mask],
         "gapmind_ml_disagree": with_gm[~agree_mask],
-    }
-
-    rows: list[dict[str, object]] = []
-    for name, frame in subsets.items():
-        denom = len(per_sample) if name == "all" else n_with_gm
+    }.items():
         rows.append(
             {
                 "subset": name,
                 "n_samples": len(frame),
-                "coverage": len(frame) / denom if denom else float("nan"),
+                "coverage": len(frame) / n_with_gm if n_with_gm else float("nan"),
                 "balanced_accuracy": safe_balanced_accuracy(
                     frame["y_true"].to_numpy(), frame["y_pred"].to_numpy()
                 ),
