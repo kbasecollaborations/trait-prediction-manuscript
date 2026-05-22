@@ -152,6 +152,14 @@ def main() -> None:
         split_data, model_type="cb", random_state=42, min_test_samples=10
     )
 
+    # Annotate each row with its full-test minority-class count (Methods).
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        full_test_minority_counts,
+    )
+
+    results = annotate_minority_test(results, full_test_minority_counts())
+
     # Save results
     results_file = OUTPUT_DIR / "ml_results.csv"
     results.to_csv(results_file, index=False)

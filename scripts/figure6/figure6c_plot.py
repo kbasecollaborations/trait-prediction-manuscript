@@ -39,20 +39,32 @@ def plot_precision_recall_scatter(
     phenotypes : list[str]
         List of phenotypes in order.
     """
+    from scripts.minority_filter import (
+        concordant_minority_counts,
+        filter_by_minority,
+        full_test_minority_counts,
+    )
+
+    concordant_minority = concordant_minority_counts()
+    full_minority = full_test_minority_counts()
+
     # Load data from three sources
-    # 1. Concordant samples (Figure 5A)
+    # 1. Concordant samples (Figure 5A) — concordant test
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
     )
     concordant_df = concordant_df[concordant_df["split_type"] == "dataset_split"].copy()
+    concordant_df = filter_by_minority(concordant_df, concordant_minority)
 
-    # 2. Y_soft filtered samples (current Figure 6B)
+    # 2. Y_soft filtered samples (current Figure 6B) — full test
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
+    ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
-    # 3. Misclassified samples removed (Figure 6C filtered condition)
+    # 3. Misclassified samples removed (Figure 6C filtered condition) — full test
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
+    misclass_df = filter_by_minority(misclass_df, full_minority)
 
     # Calculate mean precision and recall for each phenotype (for scatter points)
     concordant_summary = (
@@ -73,6 +85,11 @@ def plot_precision_recall_scatter(
     gapmind_df = pd.read_csv(
         Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv"), sep="\t"
     )
+    if "key" in gapmind_df.columns or "test_dataset" in gapmind_df.columns:
+        gm_test_col = "test_dataset" if "test_dataset" in gapmind_df.columns else None
+        gapmind_df = filter_by_minority(
+            gapmind_df, full_minority, test_dataset_column=gm_test_col
+        )
     gapmind_summary = (
         gapmind_df.groupby("phenotype")[["precision", "recall"]]
         .mean()

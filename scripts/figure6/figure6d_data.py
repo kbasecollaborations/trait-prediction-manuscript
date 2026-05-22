@@ -392,6 +392,14 @@ def main() -> None:
         [results_combined, results_filtered], ignore_index=True
     )
 
+    # Annotate each row with its full-test minority-class count (Methods).
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        full_test_minority_counts,
+    )
+
+    all_results = annotate_minority_test(all_results, full_test_minority_counts())
+
     # Save combined results
     results_file_all = OUTPUT_DIR / "figure6d_all_results.csv"
     all_results.to_csv(results_file_all, index=False)

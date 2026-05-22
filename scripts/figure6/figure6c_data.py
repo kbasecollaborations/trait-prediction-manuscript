@@ -452,6 +452,19 @@ def run_figure6c_analysis(
 
     # Save results
     results_df = pd.DataFrame(results)
+
+    # Annotate each row with its full-test minority-class count (Methods). The
+    # held-out dataset is encoded in the train(...),test(...) "split" column.
+    if split_type == "dataset_split":
+        from scripts.minority_filter import (
+            annotate_minority_test,
+            full_test_minority_counts,
+        )
+
+        results_df = annotate_minority_test(
+            results_df, full_test_minority_counts(), key_column="split"
+        )
+
     output_file = output_dir / f"figure6c_{split_type}_results.csv"
     results_df.to_csv(output_file, index=False)
     print(f"\nSaved results to {output_file}")

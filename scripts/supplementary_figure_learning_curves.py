@@ -166,6 +166,13 @@ def load_plot_data() -> pd.DataFrame:
     """
     Load and normalize the shared learning-curve results used by S8--S10.
 
+    Applies the manuscript's minority-class-in-test filter (Methods): rows
+    whose held-out test set has fewer than 10 minority-class samples are
+    dropped. The relevant test-set definition is the full held-out dataset
+    when ``test_subset == "full"``, the concordant subset when
+    ``test_subset == "concordant"``, and the discordant subset when
+    ``test_subset == "discordant"``.
+
     Returns
     -------
     pd.DataFrame
@@ -173,6 +180,31 @@ def load_plot_data() -> pd.DataFrame:
     """
     df = pd.read_csv(DATA_FILE)
     print(f"Loaded {len(df)} rows from {DATA_FILE}")
+
+    from scripts.minority_filter import (
+        concordant_minority_counts,
+        discordant_minority_counts,
+        filter_by_minority,
+        full_test_minority_counts,
+    )
+
+    if "test_subset" in df.columns:
+        full_counts = full_test_minority_counts()
+        conc_counts = concordant_minority_counts()
+        disc_counts = discordant_minority_counts()
+        subset_counts = {
+            "full": full_counts,
+            "concordant": conc_counts,
+            "discordant": disc_counts,
+        }
+        filtered_parts: list[pd.DataFrame] = []
+        for subset, sub_df in df.groupby("test_subset"):
+            counts = subset_counts.get(subset, full_counts)
+            filtered_parts.append(filter_by_minority(sub_df, counts))
+        df = pd.concat(filtered_parts, ignore_index=True)
+    else:
+        df = filter_by_minority(df, full_test_minority_counts())
+    print(f"After minority-class filter: {len(df)} rows")
     return normalize_sample_size_labels(prepare_results(df))
 
 

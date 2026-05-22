@@ -6,9 +6,14 @@ phenotype prediction.
 Four panels span two levels of reliability assessment --- per genome and
 per phenotype:
 
-    (A) Risk-coverage curve -- balanced accuracy on the retained subset as a
-        function of coverage, where the least-confident genomes are abstained
-        on first. Confidence is the model's own ``max(p, 1 - p)``.
+    (A) Risk-coverage curves for three phenotypes spanning strong, medium,
+        and weak cross-dataset generalization (m-Inositol, Histidine, Glucose;
+        selected by panel C's shortcut gap). Within each phenotype the model's
+        most-confident growth predictions and most-confident non-growth
+        predictions are retained in parallel as coverage rises, so both
+        predicted classes are represented at every coverage level. This
+        class-stratified retention avoids the degenerate single-class subsets
+        produced by abstaining on raw ``max(p, 1 - p)`` for skewed classifiers.
     (B) Balanced accuracy split by GapMind-ML agreement -- when the curated
         mechanistic call and the ML prediction coincide versus disagree. The
         disagreement subset prioritises experimental follow-up. Both
@@ -46,7 +51,7 @@ sns.set_context("paper")
 configure_plot_style()
 
 DATA_DIR: Path = Path("data/outputs/figure8")
-RISK_FILE: Path = DATA_DIR / "figure8_risk_coverage.tsv"
+RISK_FILE: Path = DATA_DIR / "figure8_risk_coverage_by_phenotype.tsv"
 AGREEMENT_FILE: Path = DATA_DIR / "figure8_agreement.tsv"
 ML_RESULTS_FILE: Path = Path("data/outputs/figure3/ml_results.csv")
 FULL_TEST_FILE: Path = Path("data/outputs/figure5/figure5d_full_test.tsv")
@@ -63,13 +68,29 @@ OUTPUT_FILE: Path = Path("figures/figure8.pdf")
 _PALETTE = sns.color_palette("colorblind", n_colors=6)
 PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
 ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
+TERTIARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[2])
 
-CURVE_COLOR: str = PRIMARY_COLOR
 AGREE_COLOR: str = PRIMARY_COLOR
 DISAGREE_COLOR: str = ACCENT_COLOR
 DIAGNOSTIC_COLOR: str = PRIMARY_COLOR
 RANDOM_COLOR: str = "0.72"
 GUIDED_COLOR: str = ACCENT_COLOR
+
+# Panel A: three phenotypes spanning strong/medium/weak cross-dataset
+# generalization, picked from panel C's shortcut_gap ranking. m-Inositol has
+# the smallest gap (best generaliser), Glucose the largest, Histidine sits
+# near the middle of the ranking.
+PANEL_A_PHENOTYPES: list[str] = ["m-Inositol", "Histidine", "Glucose"]
+PANEL_A_LABELS: dict[str, str] = {
+    "m-Inositol": "m-Inositol (strong)",
+    "Histidine": "Histidine (medium)",
+    "Glucose": "Glucose (weak)",
+}
+PANEL_A_COLORS: dict[str, str] = {
+    "m-Inositol": PRIMARY_COLOR,
+    "Histidine": TERTIARY_COLOR,
+    "Glucose": ACCENT_COLOR,
+}
 
 AGREEMENT_LABELS: dict[str, str] = {
     "gapmind_ml_agree": "GapMind-ML\nagree",
@@ -127,69 +148,66 @@ def _panel_label(ax: Axes, label: str, x: float = -0.08) -> None:
 
 def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
     """
-    Plot the balanced-accuracy risk-coverage curve.
+    Plot risk-coverage curves for three phenotypes spanning generalization quality.
 
-    A shaded band between the curve and the random-baseline line conveys the
-    "value above chance" of every coverage level at a glance.
+    Three curves are drawn, one per phenotype in :data:`PANEL_A_PHENOTYPES`,
+    selected from panel C's shortcut_gap ranking to span strong, medium, and
+    weak cross-dataset generalization. Each curve shows balanced accuracy on
+    the retained subset as the least-confident genomes are abstained on first.
 
     Parameters
     ----------
     ax : Axes
         Matplotlib axes to draw on.
     risk : pd.DataFrame
-        Contents of ``figure8_risk_coverage.tsv``.
+        Contents of ``figure8_risk_coverage_by_phenotype.tsv`` (columns
+        ``phenotype``, ``coverage``, ``balanced_accuracy``, ...).
     """
-    risk = risk.sort_values("coverage")
-    coverage = risk["coverage"].to_numpy()
-    ba = risk["balanced_accuracy"].to_numpy()
-
-    # Shaded band: curve vs. random baseline (0.5).
-    ax.fill_between(
-        coverage,
-        0.5,
-        ba,
-        where=ba >= 0.5,
-        color=CURVE_COLOR,
-        alpha=0.12,
-        linewidth=0,
-        zorder=1,
-    )
-
-    # Random-chance reference.
     ax.axhline(0.5, linestyle="--", color="gray", linewidth=0.8, alpha=0.7, zorder=2)
 
-    ax.plot(
-        coverage,
-        ba,
-        marker="o",
-        markersize=5,
-        linewidth=1.8,
-        color=CURVE_COLOR,
-        markeredgecolor="black",
-        markeredgewidth=0.4,
-        zorder=3,
-    )
+    for phenotype in PANEL_A_PHENOTYPES:
+        sub = (
+            risk[risk["phenotype"] == phenotype]
+            .sort_values("coverage")
+            .reset_index(drop=True)
+        )
+        if sub.empty:
+            continue
+        coverage = sub["coverage"].to_numpy()
+        ba = sub["balanced_accuracy"].to_numpy()
+        color = PANEL_A_COLORS[phenotype]
 
-    full = risk[np.isclose(risk["coverage"], 1.0)].iloc[0]
-    half = risk.iloc[(risk["coverage"] - 0.5).abs().argmin()]
-    # Push annotations away from the curve so labels never sit on the marker.
-    for point, va, dy in [(full, "top", -14), (half, "bottom", 12)]:
+        ax.plot(
+            coverage,
+            ba,
+            marker="o",
+            markersize=4.5,
+            linewidth=1.6,
+            color=color,
+            markeredgecolor="black",
+            markeredgewidth=0.4,
+            label=PANEL_A_LABELS[phenotype],
+            zorder=3,
+        )
+
+        # Annotate balanced accuracy at full coverage on the right edge.
+        full = sub[np.isclose(sub["coverage"], 1.0)].iloc[0]
         ax.annotate(
-            f"BA = {point['balanced_accuracy']:.2f}",
-            xy=(point["coverage"], point["balanced_accuracy"]),
-            xytext=(0, dy),
+            f"BA = {full['balanced_accuracy']:.2f}",
+            xy=(full["coverage"], full["balanced_accuracy"]),
+            xytext=(6, 0),
             textcoords="offset points",
-            ha="center",
-            va=va,
-            fontsize=9,
+            ha="left",
+            va="center",
+            fontsize=8,
             fontweight="bold",
-            color=CURVE_COLOR,
+            color=color,
         )
 
     ax.set_xlabel("Coverage (top fraction of genomes selected)")
     ax.set_ylabel("Balanced accuracy\n(retained subset)")
-    ax.set_xlim(0.0, 1.05)
-    ax.set_ylim(0.45, 1.0)
+    ax.set_xlim(0.0, 1.18)
+    ax.set_ylim(0.40, 1.0)
     ax.minorticks_on()
     ax.tick_params(axis="both", which="minor", length=2)
     ax.text(
@@ -200,6 +218,14 @@ def plot_risk_coverage(ax: Axes, risk: pd.DataFrame) -> None:
         va="bottom",
         fontsize=8,
         color="gray",
+    )
+    ax.legend(
+        loc="lower left",
+        frameon=False,
+        fontsize=8,
+        handlelength=1.8,
+        borderpad=0.2,
+        labelspacing=0.3,
     )
     _panel_label(ax, "(A)", x=-0.14)
 

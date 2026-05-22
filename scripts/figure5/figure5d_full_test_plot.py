@@ -40,7 +40,7 @@ np.random.seed(42)
 
 
 DATA_FILE: Path = Path("data/outputs/figure5/figure5d_full_test.tsv")
-OUTPUT_FILE: Path = Path("figures/alternate/figure5d.pdf")
+OUTPUT_FILE: Path = Path("figures/figure_s10.pdf")
 
 DATASET_ORDER: list[str] = ["atleaf", "lit", "marine", "pmi"]
 
@@ -268,6 +268,9 @@ def plot_test_composition(
     )
 
 
+from scripts.minority_filter import full_test_minority_counts as _full_test_minority_counts
+
+
 def create_figure(data_file: Path, output_file: Path) -> None:
     """
     Build and persist Figure 5D.
@@ -280,6 +283,17 @@ def create_figure(data_file: Path, output_file: Path) -> None:
         Destination PDF path.
     """
     df = pd.read_csv(data_file, sep="\t")
+
+    # Apply the manuscript's minority-class-test-samples filter
+    # (Methods): exclude (phenotype, held-out dataset) cells whose full
+    # held-out test set has fewer than 10 minority-class samples.
+    full_minority = _full_test_minority_counts()
+    keep = df.apply(
+        lambda r: full_minority.get((r["phenotype"], r["held_out_dataset"]), 0) >= 10,
+        axis=1,
+    )
+    df = df.loc[keep].copy()
+
     phenotypes = sorted(df["phenotype"].unique())
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 12))
@@ -304,6 +318,12 @@ def report_summary(data_file: Path) -> None:
         Path to the Figure 5D data TSV.
     """
     df = pd.read_csv(data_file, sep="\t")
+    full_minority = _full_test_minority_counts()
+    keep = df.apply(
+        lambda r: full_minority.get((r["phenotype"], r["held_out_dataset"]), 0) >= 10,
+        axis=1,
+    )
+    df = df.loc[keep].copy()
     print("\nMedian balanced accuracy across (phenotype, held-out dataset) pairs:")
     print(
         f"  full held-out test set:   "

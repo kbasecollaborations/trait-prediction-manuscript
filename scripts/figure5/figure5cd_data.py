@@ -448,6 +448,15 @@ def main() -> None:
         min_test_samples=5,
     )
 
+    # Annotate each row with its discordant minority-class test count
+    # (Figure 5C tests on the discordant subset; Methods).
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        discordant_minority_counts,
+    )
+
+    results = annotate_minority_test(results, discordant_minority_counts())
+
     # Save results
     results_file = OUTPUT_DIR / "figure5c_concordant_train_different_test.csv"
     results.to_csv(results_file, index=False)

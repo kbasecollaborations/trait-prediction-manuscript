@@ -231,6 +231,17 @@ def main() -> None:
 
     df = pd.read_csv(data_file)
     print(f"Loaded {len(df)} rows from {data_file}")
+
+    # Apply the manuscript's minority-class-in-test filter (Methods). Fig S5
+    # evaluates cross-dataset performance on the concordant subset of the
+    # held-out dataset, so the concordant minority counts are used.
+    from scripts.minority_filter import (
+        concordant_minority_counts,
+        filter_by_minority,
+    )
+
+    df = filter_by_minority(df, concordant_minority_counts())
+    print(f"After minority-class filter: {len(df)} rows")
     plot_data = _prepare(df)
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), gridspec_kw={"width_ratios": [1, 2]})

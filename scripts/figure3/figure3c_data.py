@@ -296,6 +296,17 @@ def main() -> None:
         min_test_samples=10,
     )
 
+    # Annotate each row with its full-test minority-class count (Methods).
+    # The held-out dataset is encoded in the train_test_config column.
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        full_test_minority_counts,
+    )
+
+    results = annotate_minority_test(
+        results, full_test_minority_counts(), key_column="train_test_config"
+    )
+
     # Save results
     results_file = OUTPUT_DIR / "figure3c_results.csv"
     results.to_csv(results_file, index=False)

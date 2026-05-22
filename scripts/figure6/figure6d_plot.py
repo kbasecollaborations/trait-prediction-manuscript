@@ -514,6 +514,16 @@ def create_figure(
     # Load data
     df = pd.read_csv(data_file)
 
+    # Apply the manuscript's minority-class-in-test filter (Methods). Fig 6D
+    # evaluates on the full held-out test set; dataset_split rows whose
+    # held-out test minority count falls below the threshold are dropped.
+    from scripts.minority_filter import (
+        filter_by_minority,
+        full_test_minority_counts,
+    )
+
+    df = filter_by_minority(df, full_test_minority_counts())
+
     # Get unique phenotypes
     if phenotype_order is None:
         phenotypes = sorted(df["phenotype"].unique())

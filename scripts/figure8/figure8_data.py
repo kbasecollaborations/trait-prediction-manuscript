@@ -23,9 +23,10 @@ From these it produces risk-coverage curves (balanced accuracy on the retained
 subset versus the fraction of genomes the model commits to).
 
 Outputs (all under ``data/outputs/figure8/``):
-    - ``figure8_per_sample.tsv``      one row per held-out test genome
-    - ``figure8_risk_coverage.tsv``   pooled balanced accuracy vs. coverage
-    - ``figure8_agreement.tsv``       balanced accuracy split by GapMind-ML agreement
+    - ``figure8_per_sample.tsv``                  one row per held-out test genome
+    - ``figure8_risk_coverage.tsv``               pooled balanced accuracy vs. coverage
+    - ``figure8_risk_coverage_by_phenotype.tsv``  per-phenotype risk-coverage curves
+    - ``figure8_agreement.tsv``                   balanced accuracy split by GapMind-ML agreement
 """
 
 from __future__ import annotations
@@ -296,6 +297,71 @@ def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute per-phenotype risk-coverage curves using class-stratified confidence.
+
+    Single-class abstention by raw ``max(p, 1 - p)`` is degenerate on
+    per-phenotype subsets when the model is class-skewed: the top-confidence
+    subset can be entirely one predicted class, collapsing balanced accuracy
+    to 0.5 regardless of how accurate the model actually is. To avoid that,
+    at each coverage level we retain the top fraction of predictions
+    *within each predicted class*: the most-confident ``y_pred = 1`` calls
+    (highest ``proba``) and the most-confident ``y_pred = 0`` calls (lowest
+    ``proba``) are kept in parallel. This guarantees both predicted classes
+    are represented at every coverage level, so balanced accuracy is
+    well-defined throughout.
+
+    Parameters
+    ----------
+    per_sample : pd.DataFrame
+        Output of :func:`collect_per_sample_predictions`.
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per (phenotype, coverage) with retained-subset balanced
+        accuracy, accuracy, sample count, and per-class retained counts.
+    """
+    rows: list[dict[str, object]] = []
+    for phenotype, group in per_sample.groupby("phenotype", sort=True):
+        pos = (
+            group[group["y_pred"] == 1]
+            .sort_values("proba", ascending=False, kind="mergesort")
+            .reset_index(drop=True)
+        )
+        neg = (
+            group[group["y_pred"] == 0]
+            .sort_values("proba", ascending=True, kind="mergesort")
+            .reset_index(drop=True)
+        )
+        n_pos, n_neg = len(pos), len(neg)
+        if n_pos == 0 and n_neg == 0:
+            continue
+        for coverage in COVERAGE_GRID:
+            k_pos = max(1, int(round(coverage * n_pos))) if n_pos else 0
+            k_neg = max(1, int(round(coverage * n_neg))) if n_neg else 0
+            retained = pd.concat(
+                [pos.iloc[:k_pos], neg.iloc[:k_neg]], ignore_index=True
+            )
+            y_true = retained["y_true"].to_numpy()
+            y_pred = retained["y_pred"].to_numpy()
+            rows.append(
+                {
+                    "phenotype": phenotype,
+                    "coverage": float(coverage),
+                    "n_retained": len(retained),
+                    "n_retained_pos": k_pos,
+                    "n_retained_neg": k_neg,
+                    "balanced_accuracy": safe_balanced_accuracy(y_true, y_pred),
+                    "accuracy": float((y_true == y_pred).mean())
+                    if len(retained)
+                    else float("nan"),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
 def build_agreement_table(per_sample: pd.DataFrame) -> pd.DataFrame:
     """
     Split balanced accuracy by GapMind-ML agreement.
@@ -379,11 +445,17 @@ def main() -> None:
     ).reset_index(drop=True)
 
     risk_coverage = build_risk_coverage(per_sample)
+    risk_coverage_by_phenotype = build_risk_coverage_by_phenotype(per_sample)
     agreement = build_agreement_table(per_sample)
 
     per_sample.to_csv(OUTPUT_DIR / "figure8_per_sample.tsv", sep="\t", index=False)
     risk_coverage.to_csv(
         OUTPUT_DIR / "figure8_risk_coverage.tsv", sep="\t", index=False
+    )
+    risk_coverage_by_phenotype.to_csv(
+        OUTPUT_DIR / "figure8_risk_coverage_by_phenotype.tsv",
+        sep="\t",
+        index=False,
     )
     agreement.to_csv(OUTPUT_DIR / "figure8_agreement.tsv", sep="\t", index=False)
 

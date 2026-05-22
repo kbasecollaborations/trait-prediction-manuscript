@@ -314,7 +314,15 @@ def run_ml_on_concordant_splits(
 
 FEATURE_FILES: dict[str, Path] = {
     "kofam": Path("data/processed/features_reduced/combined_datasets/kofam.tsv"),
+    # Filtered (correlation- and variance-reduced) GapMind features. Note that
+    # the 0.95 correlation filter consolidates the same transporter / pathway
+    # gene across multiple phenotype prefixes, which depletes per-phenotype
+    # feature spaces for amino-acid pathways. Kept here for reproducibility.
     "gapmind": Path("data/processed/features_reduced/combined_datasets/gapmind.tsv"),
+    # Raw (unfiltered) GapMind features. Preserves every per-phenotype
+    # pathway-step column so the ceiling line is a fair pipeline-ceiling per
+    # phenotype. Used for the Fig 5A red reference lines.
+    "gapmind_raw": Path("data/interim/features/combined_datasets/gapmind.tsv"),
 }
 
 
@@ -387,6 +395,15 @@ def main() -> None:
         random_state=42,
         min_test_samples=10,
     )
+
+    # Annotate each row with its concordant minority-class test count so the
+    # minority-class filter (Methods) is a column lookup downstream.
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        concordant_minority_counts,
+    )
+
+    results = annotate_minority_test(results, concordant_minority_counts())
 
     # Save results
     suffix = "" if args.features == "kofam" else f"_{args.features}"

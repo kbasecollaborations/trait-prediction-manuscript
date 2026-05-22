@@ -188,6 +188,14 @@ def main() -> None:
     # Create results DataFrame
     results_df = pd.DataFrame(results)
 
+    # Annotate each row with its full-test minority-class count (Methods).
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        full_test_minority_counts,
+    )
+
+    results_df = annotate_minority_test(results_df, full_test_minority_counts())
+
     # Save results
     output_file = OUTPUT_DIR / "gapmind_dataset_split_metrics.tsv"
     results_df.to_csv(output_file, sep="\t", index=False)

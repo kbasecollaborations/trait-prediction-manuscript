@@ -402,6 +402,18 @@ def main() -> None:
         drop=True
     )
 
+    # Annotate each row with its full-test minority-class count (Methods).
+    from scripts.minority_filter import (
+        annotate_minority_test,
+        full_test_minority_counts,
+    )
+
+    table = annotate_minority_test(
+        table,
+        full_test_minority_counts(),
+        test_dataset_column="held_out_dataset",
+    )
+
     output_file = OUTPUT_DIR / "figure5d_full_test.tsv"
     table.to_csv(output_file, sep="\t", index=False)
     print(f"\nSaved Figure 5D data to {output_file}")

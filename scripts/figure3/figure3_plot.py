@@ -186,6 +186,29 @@ def plot_dataset_split_performance(
     # Extract test dataset from key
     dataset_df["test_dataset"] = dataset_df["key"].apply(extract_test_dataset)
 
+    # Apply manuscript's minority-class-in-test filter (Methods). For the
+    # full-data cross-dataset analysis the held-out test set is the entire
+    # labelled set of the held-out dataset (concordant + discordant).
+    from scripts.minority_filter import (
+        filter_by_minority,
+        full_test_minority_counts,
+    )
+
+    full_minority = full_test_minority_counts()
+    dataset_df = filter_by_minority(
+        dataset_df, full_minority, test_dataset_column="test_dataset"
+    )
+    if "phenotype" in gapmind_df.columns:
+        gapmind_df["test_dataset"] = (
+            gapmind_df["key"].apply(extract_test_dataset)
+            if "key" in gapmind_df.columns
+            else gapmind_df.get("test_dataset")
+        )
+        if "test_dataset" in gapmind_df.columns:
+            gapmind_df = filter_by_minority(
+                gapmind_df, full_minority, test_dataset_column="test_dataset"
+            )
+
     # Get dataset colors
     dataset_colors = get_dataset_colors()
 

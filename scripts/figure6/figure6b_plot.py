@@ -44,24 +44,38 @@ def plot_confident_samples_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
+    from scripts.minority_filter import (
+        concordant_minority_counts,
+        filter_by_minority,
+        full_test_minority_counts,
+    )
+
+    concordant_minority = concordant_minority_counts()
+    full_minority = full_test_minority_counts()
+
     # Load data from three sources
-    # 1. Concordant samples (Figure 5A)
+    # 1. Concordant samples (Figure 5A) — test set is the concordant subset
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
     )
     concordant_df = concordant_df[concordant_df["split_type"] == "dataset_split"].copy()
+    concordant_df = filter_by_minority(concordant_df, concordant_minority)
 
-    # 2. Y_soft filtered samples (current Figure 6B)
+    # 2. Y_soft filtered samples (current Figure 6B) — test set is the full
+    # held-out dataset
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
+    ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
-    # 3. Misclassified samples removed (Figure 6C filtered condition)
+    # 3. Misclassified samples removed (Figure 6C filtered condition) — full test
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
+    misclass_df = filter_by_minority(misclass_df, full_minority)
 
     # Load full dataset results from Figure 6C for comparison (to calculate samples removed)
     full_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     full_df = full_df[full_df["condition"] == "full"].copy()
+    full_df = filter_by_minority(full_df, full_minority)
 
     # Get unique phenotypes
     if phenotypes is None:

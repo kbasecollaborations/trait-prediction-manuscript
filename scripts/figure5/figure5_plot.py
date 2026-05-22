@@ -23,6 +23,13 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from scipy.stats import wilcoxon
 
+from scripts.minority_filter import (
+    MIN_MINORITY_TEST_SAMPLES,
+    concordant_minority_counts as _concordant_minority_counts,
+    discordant_minority_counts as _discordant_minority_counts,
+    filter_by_minority as _filter_by_minority,
+    full_test_minority_counts as _full_test_minority_counts,
+)
 from scripts.visualization import (
     configure_plot_style,
     format_dataset_names,
@@ -170,10 +177,43 @@ def plot_dataset_split_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load data
+    # Load KOFAM-feature data (the main analysis)
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
+
+    # Apply the manuscript's minority-class-test-samples filter. Dataset-split
+    # cells whose held-out concordant test set has fewer than
+    # MIN_MINORITY_TEST_SAMPLES samples of the minority class are dropped, as
+    # described in Methods. Random-split rows are passed through unchanged.
+    minority_counts = _concordant_minority_counts()
+    ml_df = _filter_by_minority(ml_df, minority_counts)
+
     dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
     random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
+
+    # Optional GapMind-feature ceiling: a sanity-check reference showing
+    # cross-dataset BA when concordant models are trained on the GapMind step
+    # features directly. Drawn as a per-phenotype red line if available.
+    # Prefer the raw GapMind features over the correlation-filtered ones
+    # because the 0.95 correlation filter consolidates duplicated step
+    # features across phenotype prefixes and unfairly depletes some
+    # per-phenotype feature spaces (e.g., amino-acid pathways).
+    gapmind_raw_file = data_dir / "figure5a_concordant_ml_results_gapmind_raw.csv"
+    gapmind_file = data_dir / "figure5a_concordant_ml_results_gapmind.csv"
+    if gapmind_raw_file.exists():
+        chosen = gapmind_raw_file
+    elif gapmind_file.exists():
+        chosen = gapmind_file
+    else:
+        chosen = None
+    if chosen is not None:
+        gapmind_df = pd.read_csv(chosen)
+        gapmind_df = _filter_by_minority(gapmind_df, minority_counts)
+        gapmind_dataset_df = gapmind_df[gapmind_df["split_type"] == "dataset_split"].copy()
+        gapmind_means = (
+            gapmind_dataset_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
+        )
+    else:
+        gapmind_means = {}
 
     # Get unique phenotypes
     if phenotypes is None:
@@ -225,20 +265,50 @@ def plot_dataset_split_performance(
                 zorder=1,
             )
 
+    # Plot GapMind-feature ceiling as reference lines (one short red line per
+    # phenotype). This is the BA reached when the same pipeline is trained on
+    # GapMind step features under concordant training and cross-dataset
+    # evaluation; the gap to the KOFAM boxes quantifies pathway-annotation
+    # information present in GapMind but absent or fragmented in KOFAM.
+    for phenotype in phenotypes:
+        if phenotype in gapmind_means:
+            x_pos = x[phenotypes.index(phenotype)]
+            ax.plot(
+                [x_pos - 0.45, x_pos + 0.45],
+                [gapmind_means[phenotype], gapmind_means[phenotype]],
+                color="#D7263D",
+                linestyle="--",
+                linewidth=1.8,
+                alpha=0.85,
+                zorder=2,
+            )
+
     # Create legend handles
     from matplotlib.patches import Patch
 
     legend_handles = [
-        Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split"),
+        Patch(facecolor="#2E86AB", alpha=0.7, label="Dataset Split (KOFAM)"),
         Line2D(
             [0],
             [0],
             color="#06A77D",
             linewidth=2,
             alpha=0.7,
-            label="Random Split (mean)",
+            label="Random Split mean (KOFAM)",
         ),
     ]
+    if gapmind_means:
+        legend_handles.append(
+            Line2D(
+                [0],
+                [0],
+                color="#D7263D",
+                linewidth=2,
+                linestyle="--",
+                alpha=0.9,
+                label="Dataset Split mean (GapMind)",
+            )
+        )
 
     # Formatting
     ax.set_xlabel("")
@@ -247,10 +317,17 @@ def plot_dataset_split_performance(
     ax.set_ylim(0, 1.05)
 
     dataset_means = dataset_df.groupby("phenotype")["balanced_accuracy"].mean()
-    random_mean_series = pd.Series(random_means)
+    # If the GapMind ceiling is available, the more interesting paired
+    # comparison is KOFAM cross-dataset vs GapMind cross-dataset (the gap that
+    # the new condition is meant to highlight). Otherwise fall back to the
+    # original KOFAM-dataset-vs-KOFAM-random comparison.
+    if gapmind_means:
+        reference_series = pd.Series(gapmind_means)
+    else:
+        reference_series = pd.Series(random_means)
     p_value, n_pairs = _paired_panel_pvalue(
         dataset_means,
-        random_mean_series,
+        reference_series,
         phenotypes,
     )
     _add_panel_pvalue_annotation(ax, p_value, n_pairs, position="bottom_right")
@@ -274,6 +351,7 @@ def plot_dataset_split_performance(
         bbox_to_anchor=(0.5, 1.10),
         ncol=len(legend_handles),
         frameon=False,
+        fontsize=9,
     )
 
 
@@ -463,6 +541,13 @@ def plot_concordant_train_performance(
 
     # Filter to only discordant test type
     ml_df = ml_df[ml_df["test_type"] == "discordant"].copy()
+
+    # Apply the manuscript's minority-class-test-samples filter. For Fig 5C
+    # the test set is the discordant subset, so we use discordant minority
+    # counts. Cells whose discordant held-out test set has fewer than
+    # MIN_MINORITY_TEST_SAMPLES samples of the minority class are dropped.
+    discordant_minority = _discordant_minority_counts()
+    ml_df = _filter_by_minority(ml_df, discordant_minority)
 
     # Get unique phenotypes
     if phenotypes is None:
