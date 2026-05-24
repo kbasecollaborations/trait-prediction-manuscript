@@ -4,7 +4,8 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We obtained four published binary growth datasets describing bacterial growth on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus} (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
+We obtained four binary growth datasets describing bacterial growth on defined carbon sources from published sources and compiled phenotype matrices: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus} (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
+% TODO(CITATION): Ask Chris for the correct source citation for the Biolog phenotype matrix; Phenotype MicroArray technology papers are not the dataset source.
 Genome quality control combined assembly-fragmentation, CheckM2, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 Carbon source names were standardised, source records were converted into binary phenotype matrices, and analyses were restricted to the 15 phenotypes shared across all four datasets.
 
@@ -13,13 +14,13 @@ Carbon source names were standardised, source records were converted into binary
 Each genome was annotated with three tools.
 RAST \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
 KofamScan \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}, run per genome in parallel.
-GapMind~\cite{Price2020GapMind} predicted carbon-utilisation pathway completeness, with scores ranging from 0 (incomplete) to 2 (high confidence).
-%% TODO: Ask Chris Neely about specific version and parameters used for each annotation tool, and add details here if relevant.
+GapMind for carbon sources~\cite{Price2022GapMindCarbon}, which extends the GapMind approach developed for amino acid biosynthesis~\cite{Price2020GapMind}, predicted carbon-utilisation pathway completeness, with scores ranging from 0 (incomplete) to 2 (high confidence).
+%% TODO(VERSION): Ask Chris Neely for the exact versions and database snapshots used in the executed analyses. Suggested current versions to verify against analysis provenance before submission: GTDB-Tk 2.7.2 with GTDB release 232; KofamScan 1.3.0 with KOfam 2026-04-01 / KEGG 118.x; CheckM2 1.1.0; CatBoost 1.2.10; scikit-learn 1.8; and the exact GapMind/PaperBLAST carbon-source rules snapshot.
 
 \subsection*{Phylogenetic Tree Construction}
 
 We assigned taxonomy with GTDB-Tk \cite{Chaumeil2022GTDBTk}
-\ (v2.x, GTDB R214 reference) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using the \texttt{classify\_wf} workflow.
+\ (version and GTDB reference release to be verified) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using the \texttt{classify\_wf} workflow.
 For analyses requiring a single tree across all genomes, we extracted the corresponding subtree and computed cophenetic distances between tips with the ETE 3 toolkit \cite{HuertaCepas2016ETE3}.
 Genomes lacking species-level assignments were placed at the genus or family level and flagged in the supplementary metadata.
 
@@ -79,7 +80,8 @@ As a pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dash
 Stable predictive features were identified using SHAP (SHapley Additive exPlanations) analysis~\cite{Lundberg2017SHAP} with a fixed 500-iteration CatBoost variant trained without early stopping.
 For each phenotype--dataset configuration, models were trained across 20 random seeds; the top 10 features by mean absolute SHAP value were extracted per run, and features appearing in $\geq$70\% of runs were designated ``stable features''.
 The high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B used a prior screen to the top 300 KOFAM features by CatBoost PredictionValuesChange importance.
-To prevent biologically redundant KOs (paralogues, operon-mates, alternative enzymes) from being counted as separate stable features, the union of stable KOs per phenotype was further grouped into SHAP-supervised redundancy clusters using \texttt{shap.utils.hclust}~\cite{Lundberg2020TreeSHAP} on the pooled concordant feature matrix, and the resulting per-phenotype KO-to-cluster mapping replaced raw KO identity for all intersection and uniqueness counts (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}; Supplementary Text~S8).
+To prevent biologically redundant KOs (paralogues, operon-mates, alternative enzymes) from being counted as separate stable features, the union of stable KOs per phenotype was further grouped into SHAP-supervised redundancy clusters using the SHAP package's \texttt{shap.utils.hclust} function~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} on the pooled concordant feature matrix, and the resulting per-phenotype KO-to-cluster mapping replaced raw KO identity for all intersection and uniqueness counts (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}; Supplementary Text~S8).
+This pooled clustering was used only for post hoc interpretive grouping of already identified stable features and did not affect model training, test-set predictions, or reported performance metrics.
 
 \subsection*{Data Quality Filtering Strategies}
 

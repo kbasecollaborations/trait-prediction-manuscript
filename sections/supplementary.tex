@@ -24,7 +24,8 @@ After genome annotation and quality filtering, 206 genomes were retained.
 This dataset provided the broadest ecological coverage of phyllosphere-associated bacteria and served as one of three training/testing datasets.
 
 \paragraph*{Biolog.}
-The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies.
+The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies~\cite{BiologDatasetCitation}.
+% TODO(CITATION): Ask Chris for the correct citation for this compiled Biolog phenotype matrix.
 Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilisation via colorimetric tetrazolium-based readout in 96-well plates.
 All 362 genomes passed quality control and were retained for downstream analysis.
 The standardised, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
@@ -35,7 +36,8 @@ All 172 genomes that passed annotation quality control were retained for analysi
 This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
 
 \paragraph*{Populus.}
-The Populus dataset~\cite{Timm2015Populus} included 58 \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere, tested on 191 carbon sources.
+The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on Biolog PM plates~\cite{Timm2015Populus}; the compiled matrix used here included 58 isolates tested on 191 carbon sources.
+% TODO(CITATION/PROVENANCE): Verify the source for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
 After filtering, 55 genomes were retained.
 Due to its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
 
@@ -84,6 +86,7 @@ Implementation is consolidated in \texttt{scripts/minority\_filter.py}.
 Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant} present stable predictive features identified through SHAP (SHapley Additive exPlanations) analysis.
 Stable features were defined as those ranked among the top 10 by mean absolute SHAP value and appearing in at least 70\% of 20 random-seed training runs.
 To avoid counting biologically redundant KOs (paralogues, alternative enzymes in one pathway) as distinct features, the union of stable KOs per phenotype was further grouped into target-aware redundancy clusters using \texttt{shap.utils.hclust} on the pooled concordant feature matrix at a default cut-off of 0.5 (Methods); the ``Shared stable features'' column annotates KOs with a cluster label (\verb|[Cluster A]|, etc.) when they belong to the same cluster.
+This pooled clustering step was used only for post hoc feature grouping and did not affect model training or prediction.
 Table~\ref{tab:feature_comparison} reports stable features from models trained on all samples using KOFAM annotations as features.
 Table~\ref{tab:feature_comparison_concordant} reports stable KOFAM features from models trained on GapMind-concordant samples only, after a broad CatBoost-importance screen to make SHAP analysis tractable in the larger KOFAM feature space.
 The contrast between these tables illustrates that concordant training produces more consistent, mechanistically interpretable feature clusters across datasets.
@@ -265,8 +268,9 @@ The dashed horizontal line indicates random performance (balanced accuracy~$=0.5
 \subsection*{Supplementary Text S8: SHAP-Supervised Redundancy Clustering Procedure}
 
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B report cluster-level rather than raw-KO intersections so that paralogues, operon-mates, and alternative enzymes representing the same biological signal are counted as one entity.
-The grouping uses the \texttt{shap.utils.hclust} routine of the SHAP package~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions, and the resulting distance matrix is single-linkage clustered with the default cutoff of 0.5 --- so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
+The grouping uses the SHAP package's \texttt{shap.utils.hclust} routine~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions, and the resulting distance matrix is single-linkage clustered with the default cutoff of 0.5 --- so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
 Clustering was performed on the pooled concordant feature matrix across all four datasets so that cluster identities are common to the full-data and concordant-data analyses.
+This procedure was applied only after stable features had been identified; it did not influence model fitting, held-out predictions, or balanced-accuracy estimates.
 For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; this matches the default-classifier performance to within the per-seed variance reported in the main text.
 
 For three phenotypes (alanine, mannose, serine) the stable features picked by different concordant-trained models did not reach this target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
@@ -311,4 +315,3 @@ The $\beta$-ketoadipate pathway is widely distributed in soil and rhizosphere li
 Both the full-data and concordant-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
 Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed toward a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
-
