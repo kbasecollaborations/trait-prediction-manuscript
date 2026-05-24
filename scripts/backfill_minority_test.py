@@ -124,9 +124,9 @@ def main() -> None:
         (Path("data/outputs/figure3/gapmind_random_split_metrics.tsv"), "\t", "key"),
         (Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv"), "\t", "key"),
         (Path("data/outputs/figure3/figure3c_results.csv"), ",", "train_test_config"),
-        (Path("data/outputs/figure6/figure6b_confident_ml_results.csv"), ",", "key"),
-        (Path("data/outputs/figure6/figure6c_dataset_split_results.csv"), ",", "split"),
-        (Path("data/outputs/figure6/figure6d_all_results.csv"), ",", "key"),
+        (Path("data/outputs/figure7/figure7b_confident_ml_results.csv"), ",", "key"),
+        (Path("data/outputs/figure7/figure7c_dataset_split_results.csv"), ",", "split"),
+        (Path("data/outputs/figure7/figure7d_all_results.csv"), ",", "key"),
     ]
     print("== Backfilling figures evaluated on the full held-out test ==")
     for path, sep, key_col in full_test_csvs:
@@ -148,8 +148,8 @@ def main() -> None:
         disc,
     )
 
-    # Fig 5D / S10: full test (TSV with a dedicated held_out_dataset column).
-    print("\n== Backfilling Fig 5D / S10 (full test, TSV) ==")
+    # Fig 5D / S7: full test (TSV with a dedicated held_out_dataset column).
+    print("\n== Backfilling Fig 5D / S7 (full test, TSV) ==")
     backfill_csv(
         Path("data/outputs/figure5/figure5d_full_test.tsv"),
         full,
@@ -158,11 +158,11 @@ def main() -> None:
     )
 
     # Figures with per-row test_subset (full / concordant / discordant).
-    print("\n== Backfilling per-test_subset CSVs (S5, S6, Fig 7) ==")
+    print("\n== Backfilling per-test_subset CSVs (S5, S6, Fig 8) ==")
     for path in [
         Path("data/outputs/figureS5/figureS5_kofam_concordant_results.csv"),
         Path("data/outputs/figureS6/figureS6_learning_curves_kofam.csv"),
-        Path("data/outputs/figure7/figure7_data_requirements_kofam.csv"),
+        Path("data/outputs/figure8/figure8_data_requirements_kofam.csv"),
     ]:
         backfill_csv(
             path,

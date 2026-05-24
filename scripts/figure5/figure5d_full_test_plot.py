@@ -40,7 +40,7 @@ np.random.seed(42)
 
 
 DATA_FILE: Path = Path("data/outputs/figure5/figure5d_full_test.tsv")
-OUTPUT_FILE: Path = Path("figures/figure_s10.pdf")
+OUTPUT_FILE: Path = Path("figures/figure_s7.pdf")
 
 DATASET_ORDER: list[str] = ["atleaf", "lit", "marine", "pmi"]
 

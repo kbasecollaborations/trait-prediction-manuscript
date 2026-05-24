@@ -505,7 +505,7 @@ def create_figure(
     Parameters
     ----------
     data_file : Path
-        Path to CSV file with results from figure6d_data.py.
+        Path to CSV file with results from figure7d_data.py.
     output_file : Path
         Path to save the output figure.
     phenotype_order : list[str] | None
@@ -612,9 +612,9 @@ def create_figure(
 
 
 if __name__ == "__main__":
-    data_dir = Path("data/outputs/figure6")
-    data_file = data_dir / "figure6d_all_results.csv"
-    output_file = Path("figures/figure6d.pdf")
+    data_dir = Path("data/outputs/figure7")
+    data_file = data_dir / "figure7d_all_results.csv"
+    output_file = Path("figures/figure7d.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Define phenotype order (matching common phenotypes from figure3)

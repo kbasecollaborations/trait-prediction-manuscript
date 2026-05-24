@@ -2,11 +2,11 @@
 """
 Generate data for Supplementary Figure S6: Learning curves for all 15 phenotypes.
 
-Extends the Figure 7 analysis (Histidine and Galactose only) to all 15 shared
+Extends the Figure 8 analysis (Histidine and Galactose only) to all 15 shared
 phenotypes, providing the evidence needed to characterise the distribution of
 saturation points rather than relying on a single best-case example.
 
-Design mirrors figure7_data.py exactly, differing only in:
+Design mirrors figure8_data.py exactly, differing only in:
   - PHENOTYPES_TO_ANALYZE: all 15 instead of 2
   - Output directory: data/outputs/figureS6/
 """

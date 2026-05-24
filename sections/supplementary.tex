@@ -252,7 +252,7 @@ The full-test balanced accuracy (median 0.68 across phenotype--held-out-dataset 
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.95\textwidth]{figure_s10.pdf}
+\includegraphics[width=0.95\textwidth]{figure_s7.pdf}
 \caption{
 \textbf{Concordant-trained model performance on the full held-out cross-dataset test set.}
 (\textbf{A}) Per-phenotype balanced accuracy on the full held-out cross-dataset test set (concordant and discordant pooled), evaluated for each of the four leave-one-dataset-out combinations.
@@ -267,6 +267,7 @@ The dashed horizontal line indicates random performance (balanced accuracy~$=0.5
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B report cluster-level rather than raw-KO intersections so that paralogues, operon-mates, and alternative enzymes representing the same biological signal are counted as one entity.
 The grouping uses the \texttt{shap.utils.hclust} routine of the SHAP package~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions, and the resulting distance matrix is single-linkage clustered with the default cutoff of 0.5 --- so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
 Clustering was performed on the pooled concordant feature matrix across all four datasets so that cluster identities are common to the full-data and concordant-data analyses.
+For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; this matches the default-classifier performance to within the per-seed variance reported in the main text.
 
 For three phenotypes (alanine, mannose, serine) the stable features picked by different concordant-trained models did not reach this target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
 Inspection of the underlying KOFAM annotations showed these features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for these three phenotypes the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing these broader genomic repertoires.

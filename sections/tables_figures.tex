@@ -88,6 +88,20 @@ GapMind balanced accuracy is 1 on the concordant subset and 0 on the discordant 
 \centering
 \includegraphics[width=0.93\textwidth]{figure6.pdf}
 \caption{
+\textbf{Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
+(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, Glucose), comparing the full-data model (vermillion) and the concordant-trained model (blue).
+Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
+The grey dashed line marks random performance (balanced accuracy~$=0.5$).
+(\textbf{B}) Reliability diagram for both models, pooled across phenotypes: mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration and the expected calibration error (ECE) is given in the legend.
+(\textbf{C}) Change in cross-dataset balanced accuracy after adding 25 held-out genome labels to the concordant training set, by label-free selection strategy (low confidence, diversity, random, high feature-novelty); bars show the mean, error bars the standard error of the mean, and points individual runs.
+(\textbf{D}) Per-phenotype gain from 25 randomly versus low-confidence-selected added labels, for the three Panel-A phenotypes; error bars show the standard error of the mean across runs.
+}\label{fig:selective_prediction}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.93\textwidth]{figure7.pdf}
+\caption{
 \textbf{Effects of data filtering and feature selection on model performance.}
 (A) Left: counts of problematic genomes per dataset in two discordant categories: no observed growth despite at least one GapMind growth prediction, and universal observed growth despite incomplete GapMind pathways.
 Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those discordant categories or neither.
@@ -101,7 +115,7 @@ Inset: precision-recall distribution for combined (blue) and phenotype-filtered 
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.95\textwidth]{figure7.pdf}
+\includegraphics[width=0.95\textwidth]{figure8.pdf}
 \caption{
 \textbf{Sample size requirements for training bounded specialist models.}
 Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
@@ -109,18 +123,4 @@ Columns represent evaluation scenarios: (left) random holdout, (middle) cross-da
 Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
 Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects the bounded value of concordant-trained models: some discordant cases retain genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
 }\label{fig:model_sample_size_requirements}
-\end{figure}
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.95\textwidth]{figure8.pdf}
-\caption{
-\textbf{Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
-(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, Glucose), comparing the full-data model (vermillion) and the concordant-trained model (blue).
-Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
-The grey dashed line marks random performance (balanced accuracy~$=0.5$).
-(\textbf{B}) Reliability diagram for both models, pooled across phenotypes: mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration and the expected calibration error (ECE) is given in the legend.
-(\textbf{C}) Change in cross-dataset balanced accuracy after adding 25 held-out genome labels to the concordant training set, by label-free selection strategy (low confidence, diversity, random, high feature-novelty); bars show the mean, error bars the standard error of the mean, and points individual runs.
-(\textbf{D}) Per-phenotype gain from 25 randomly versus low-confidence-selected added labels, for the three Panel-A phenotypes; error bars show the standard error of the mean across runs.
-}\label{fig:selective_prediction}
 \end{figure}

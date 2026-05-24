@@ -63,17 +63,17 @@ def plot_confident_samples_performance(
 
     # 2. Y_soft filtered samples (current Figure 6B) — test set is the full
     # held-out dataset
-    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
+    ysoft_df = pd.read_csv(data_dir / "figure7b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
     ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
     # 3. Misclassified samples removed (Figure 6C filtered condition) — full test
-    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    misclass_df = pd.read_csv(data_dir / "figure7c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
     misclass_df = filter_by_minority(misclass_df, full_minority)
 
     # Load full dataset results from Figure 6C for comparison (to calculate samples removed)
-    full_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    full_df = pd.read_csv(data_dir / "figure7c_dataset_split_results.csv")
     full_df = full_df[full_df["condition"] == "full"].copy()
     full_df = filter_by_minority(full_df, full_minority)
 
@@ -270,8 +270,8 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
     )
-    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
-    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    ysoft_df = pd.read_csv(data_dir / "figure7b_confident_ml_results.csv")
+    misclass_df = pd.read_csv(data_dir / "figure7c_dataset_split_results.csv")
 
     # Get phenotypes from each dataset (dataset split only)
     concordant_phenotypes = set(
@@ -308,7 +308,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
 
 
 if __name__ == "__main__":
-    data_dir = Path("data/outputs/figure6")
-    output_file = Path("figures/figure6b.pdf")
+    data_dir = Path("data/outputs/figure7")
+    output_file = Path("figures/figure7b.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     create_figure(data_dir, output_file)

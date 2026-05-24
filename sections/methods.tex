@@ -53,7 +53,7 @@ After filtering, KOFAM yielded approximately 4000--5000 features per dataset and
 
 We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}; Supplementary Text~S3).
 CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping on validation Logloss with patience 50.
-Random holdout evaluations used five phenotype-cluster-based 70:15:15 partitions (random states 42--46); cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
+Random holdout evaluations used five 70:15:15 partitions (random states 42--46) stratified by phenotype cluster, where a phenotype cluster groups genomes that share the same binary growth pattern across the 15 shared phenotypes so that each split preserves the joint phenotype distribution; cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
 Hyperparameters were not tuned per phenotype; reported performance reflects these settings with \texttt{random\_state=42}, except for SHAP stability analyses (20 seeds).
 
 \subsection*{Evaluation Strategies}

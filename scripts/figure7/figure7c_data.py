@@ -319,8 +319,8 @@ def evaluate_with_predictions(
     }
 
 
-def run_figure6c_analysis(
-    output_dir: Path = Path("data/outputs/figure6"),
+def run_figure7c_analysis(
+    output_dir: Path = Path("data/outputs/figure7"),
     split_type: str = "dataset_split",
 ) -> None:
     """
@@ -465,7 +465,7 @@ def run_figure6c_analysis(
             results_df, full_test_minority_counts(), key_column="split"
         )
 
-    output_file = output_dir / f"figure6c_{split_type}_results.csv"
+    output_file = output_dir / f"figure7c_{split_type}_results.csv"
     results_df.to_csv(output_file, index=False)
     print(f"\nSaved results to {output_file}")
 
@@ -493,4 +493,4 @@ def run_figure6c_analysis(
 
 
 if __name__ == "__main__":
-    run_figure6c_analysis()
+    run_figure7c_analysis()
