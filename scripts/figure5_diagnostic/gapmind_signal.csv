@@ -1,0 +1,7 @@
+phenotype,n_concordant,positive_fraction,n_features_pre,n_after_var,n_after_corr,max_single_feature_auroc,top5_features
+Glucose,573,0.8394415357766143,36,36,36,0.9037444635270722,Glucose-glk(0.904); Glucose-mglC(0.839); Glucose-gtsC(0.829); Glucose-aglG'(0.829); Glucose-mglA(0.826)
+Serine,409,0.7506112469437652,18,18,18,0.8002490898639585,Serine-snatA(0.800); Serine-Ac3H11_1695(0.772); Serine-Ac3H11_2396(0.753); Serine-Ac3H11_1694(0.722); Serine-sdhA(0.721)
+Galacturonic-Acid,570,0.1736842105263158,15,15,15,0.923663385446825,Galacturonic-Acid-exuT(0.924); Galacturonic-Acid-uxaA(0.862); Galacturonic-Acid-uxuL(0.853); Galacturonic-Acid-garD(0.845); Galacturonic-Acid-PS417_04205(0.832)
+Histidine,548,0.4397810218978102,44,44,44,0.8664495114006514,Histidine-hutU(0.866); Histidine-hutI(0.851); Histidine-hutH(0.849); Histidine-hutF(0.790); Histidine-permease(0.779)
+m-Inositol,562,0.2775800711743772,29,29,29,0.9923740053050398,m-Inositol-iolB(0.992); m-Inositol-iolE(0.989); m-Inositol-iolG(0.986); m-Inositol-iolJ(0.986); m-Inositol-iolD(0.983)
+Mannitol,580,0.6017241379310345,17,17,17,0.9507064091591312,Mannitol-mtlF(0.951); Mannitol-mtlG(0.935); Mannitol-mt2d(0.843); Mannitol-mtlE(0.832); Mannitol-mtlK(0.762)
