@@ -70,13 +70,17 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \centering
 \includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
-\textbf{Concordant-trained models learn mechanistic features and retain bounded predictive value on discordant samples.}
+\textbf{Concordant-trained models learn mechanistic features, beat GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All models used the same architecture and KOFAM feature representation as in Figure~3; only the training set was restricted to GapMind-concordant samples.
-(A) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes) across 15 phenotypes, using KOFAM features.
-Red dashed lines mark the per-phenotype cross-dataset mean balanced accuracy when the same pipeline is trained on GapMind step features instead (pipeline-ceiling reference; Methods).
-(B) Cross-dataset stability analysis comparing stable feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; Methods).
+(\textbf{A}) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes), with red dashed lines marking the per-phenotype cross-dataset mean when the same pipeline is trained on GapMind step features (pipeline-ceiling reference; Methods).
+(\textbf{B}) Cross-dataset stability of feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; Methods).
 Solid bars: clusters shared between the two models; patterned bars: clusters unique to the held-out-alone model.
-(C) Balanced accuracy of concordant-trained models applied to discordant samples across phenotypes.
+(\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full natural-composition held-out test set, one phenotype-mean per point.
+Circles: random holdout; squares: cross-dataset (leave-one-dataset-out).
+The dashed diagonal marks ML BA equal to GapMind BA; points above indicate ML outperforming GapMind.
+Inset: paired Wilcoxon $p$-values across phenotypes.
+(\textbf{D}) Same axes as panel C, with the cross-dataset test set decomposed into the GapMind-concordant subset (purple circles) and the discordant subset (orange squares).
+GapMind balanced accuracy is 1 on the concordant subset and 0 on the discordant subset by construction, so each series forms a vertical strip; the discordant strip's height above $y = 0$ reflects ML rescue of GapMind misclassifications, and the concordant strip's gap below $y = 1$ reflects residual ML loss inside the applicability domain.
 }\label{fig:concordant_analysis}
 \end{figure}
 

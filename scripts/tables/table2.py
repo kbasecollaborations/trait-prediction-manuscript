@@ -16,6 +16,8 @@ from typing import Any
 
 import pandas as pd
 
+from scripts.tables.kegg_module_coverage import pathway_coverage_line
+
 
 def get_ko_description(ko_id: str, ko_dict: dict[str, Any]) -> str:
     """Look up the canonical description of a KO identifier.
@@ -139,6 +141,8 @@ def create_feature_table(
     for phenotype in phenotypes:
         first_row = True
         ko_to_cluster = cluster_mapping.get(phenotype)
+        shared_pool: list[str] = []
+        unique_pool: list[str] = []
 
         for dataset in datasets:
             matching = comparison_df[
@@ -155,6 +159,7 @@ def create_feature_table(
                 if pd.notna(intersection_raw) and intersection_raw
                 else []
             )
+            shared_pool.extend(intersection_kos)
             common_cell = _format_clustered_kos(intersection_kos, ko_to_cluster, ko_dict)
 
             unique_raw = row["unique_to_individual"]
@@ -163,6 +168,7 @@ def create_feature_table(
                 if pd.notna(unique_raw) and unique_raw
                 else []
             )
+            unique_pool.extend(unique_kos)
             unique_cell = _format_clustered_kos(unique_kos, ko_to_cluster, ko_dict)
 
             display = dataset_display[dataset]
@@ -176,6 +182,14 @@ def create_feature_table(
                 latex_lines.append(
                     f" & {display} & {common_cell} & {unique_cell} \\\\"
                 )
+
+        coverage = pathway_coverage_line(
+            phenotype, shared_pool, unique_pool, ko_to_cluster
+        )
+        if coverage is not None:
+            latex_lines.append(
+                f"\\multicolumn{{4}}{{|l|}}{{\\footnotesize {coverage}}} \\\\"
+            )
 
         latex_lines.append("\\hline")
 
@@ -192,8 +206,12 @@ def create_feature_table(
         "cluster label (``[Cluster A]'', etc.) when they belong to the same "
         "SHAP-supervised redundancy cluster (Methods); features within a "
         "cluster represent the same biological signal even when their KO "
-        "identifiers differ. Features shown are consistent across multiple "
-        "random seeds (appearing in $\\geq$70\\% of 20 training runs).}"
+        "identifiers differ. The \\textbf{Pathway coverage} row reports the "
+        "fraction of cluster representatives (one KO per cluster, pooled "
+        "across the three held-out-dataset comparisons) that are members of "
+        "the indicated canonical KEGG catabolism module. Features shown are "
+        "consistent across multiple random seeds (appearing in $\\geq$70\\% "
+        "of 20 training runs).}"
     )
     latex_lines.append("\\label{tab:feature_comparison_concordant}")
     latex_lines.append("\\end{table}")
