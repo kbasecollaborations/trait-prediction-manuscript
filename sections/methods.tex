@@ -4,15 +4,9 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We obtained four published binary growth datasets describing bacterial growth on defined carbon sources.
-ATLeaf \cite{Schafer2023-nk} comprised 224 strains tested on 45 carbon substrates using minimal media on agar plates.
-Biolog encompassed 362 strains across 64 substrates, compiled from published studies using Biolog Phenotype MicroArray technology \cite{Bochner2001PM,Bochner2009PM}.
-Marine \cite{Gralka2023-ft} contained 175 marine heterotrophic bacteria assessed across 100 carbon substrates.
-Populus~\cite{Timm2015Populus} included 58 bacterial isolates tested on 191 carbon sources.
-
-Annotation and phenotype completeness reduced the final analysis sets (Supplementary Table~\ref{tab:dataset_overview}).
+We obtained four published binary growth datasets describing bacterial growth on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{Bochner2001PM,Bochner2009PM}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus} (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 Genome quality control combined assembly-fragmentation, CheckM2, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
-We standardised carbon source names, converted the source records into binary phenotype matrices suitable for machine-learning analyses, and restricted analyses to the 15 phenotypes shared across the four datasets, used jointly for aggregated analyses and leave-one-dataset-out cross-dataset evaluations.
+Carbon source names were standardised, source records were converted into binary phenotype matrices, and analyses were restricted to the 15 phenotypes shared across all four datasets.
 
 \subsection*{Genome Annotation}
 
@@ -35,7 +29,7 @@ Genomes lacking species-level assignments were placed at the genus or family lev
 
 We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls.
 The strict threshold treated only \texttt{complete} pathways as positive predictions; the permissive threshold treated \texttt{complete} and \texttt{likely\_complete} pathways as positive predictions.
-All other GapMind calls (\texttt{steps\_missing\_low}, \texttt{steps\_missing\_medium}, \texttt{steps\_missing\_high}, \texttt{incomplete}, and \texttt{not\_present}) were treated as negative predictions.
+All other GapMind calls were treated as negative predictions (Supplementary Text~S3).
 
 \subsubsection*{Phylogeny-Based Nearest Neighbour}
 
@@ -57,69 +51,42 @@ After filtering, KOFAM yielded approximately 4000--5000 features per dataset and
 
 \subsection*{Machine Learning Classifiers}
 
-We trained gradient-boosted tree classifiers using CatBoost \cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}).
-CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping with a patience of 50 iterations.
-Repeated random holdout evaluations used five phenotype-cluster-based 70:15:15 train:validation:test partitions generated with random states 42--46; cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
-Early stopping was based on validation Logloss, and balanced accuracy was the primary reporting metric to account for class imbalance.
-Hyperparameters were not tuned per phenotype; reported performance reflects the above settings with \texttt{random\_state=42}, except for SHAP stability analyses (Fig.~\ref{fig:misclassification_diagnosis}C, Fig.~\ref{fig:concordant_analysis}B), which used 20 seeds (see below).
+We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}; Supplementary Text~S3).
+CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping on validation Logloss with patience 50.
+Random holdout evaluations used five phenotype-cluster-based 70:15:15 partitions (random states 42--46); cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
+Hyperparameters were not tuned per phenotype; reported performance reflects these settings with \texttt{random\_state=42}, except for SHAP stability analyses (20 seeds).
 
 \subsection*{Evaluation Strategies}
 
 \subsubsection*{Random Holdout and Cross-Dataset Testing}
 
-Performance was evaluated under four scenarios: (i) repeated random holdout evaluation within the aggregated dataset; (ii) cross-dataset evaluation (training on three datasets, testing on the held-out fourth); (iii) in-clade cross-dataset evaluation restricted to phylogenetically similar samples; and (iv) out-of-clade evaluation on phylogenetically distant samples.
-For all cross-dataset and phylogenetic evaluations, phenotype--dataset combinations with fewer than 10 samples in the minority class of the held-out test set were excluded at aggregation time; this rule prevents the balanced-accuracy metric from collapsing on test cells with extreme class imbalance (e.g., 36--37 growers and one non-grower in the Populus concordant test set for some amino acids).
-The minority count was computed against the appropriate test-set definition for each figure---the concordant subset for Figure~\ref{fig:concordant_analysis}A and the concordant-test points of Figure~\ref{fig:concordant_analysis}D, the discordant subset for the discordant-test points of Figure~\ref{fig:concordant_analysis}D, and the full labelled subset for Figures~\ref{fig:ml_performance}B, \ref{fig:concordant_analysis}C, \ref{fig:improvement_strategies}B--D, and~\ref{fig:full_held_out_test}.
-Implementation is consolidated in \texttt{scripts/minority\_filter.py}.
-For cross-dataset testing, features were mapped from training to test data with missing features imputed as zero; this conflates true gene absence with annotation mismatch and may underestimate cross-dataset performance.
+Performance was evaluated under four scenarios: random holdout within the aggregated dataset; leave-one-dataset-out cross-dataset; and in-clade and out-of-clade phylogenetic splits.
+Phenotype--dataset combinations with fewer than 10 minority-class samples in the held-out test set were excluded to prevent balanced-accuracy collapse (Supplementary Text~S3).
+For cross-dataset testing, missing features in the test set were imputed as zero (Supplementary Text~S3).
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We applied the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades within a target size range (12--18\% of samples), supplemented by manual class-level partitioning using Gammaproteobacteria and Alphaproteobacteria as out-of-clade test cases.
+We applied the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades (12--18\% of samples), with manual Gammaproteobacteria/Alphaproteobacteria splits as additional out-of-clade cases.
 
 \subsection*{Concordant and Discordant Sample Analysis}
 
-Samples were stratified by agreement between GapMind predictions and experimental outcomes: concordant (GapMind matches the experiment) and discordant (GapMind contradicts it).
-Concordance was defined throughout using the permissive GapMind threshold described above.
-Models were trained on concordant samples only and evaluated on both concordant and discordant test sets.
-Per-phenotype, per-dataset counts of concordant and discordant samples (and exclusions) are reported in Supplementary Figure~\ref{fig:concordance_counts}.
-As a pipeline-ceiling reference for the KOFAM concordant analysis (Figure~\ref{fig:concordant_analysis}A, red dashed lines), the same concordant-training, cross-dataset-evaluation procedure was repeated with the raw (unfiltered) GapMind step features in place of KOFAM features.
-Raw rather than correlation-filtered GapMind features were used here because GapMind represents the same underlying gene under multiple per-phenotype prefixes (for example, the same amino-acid transporter appears as \texttt{Alanine-braC}, \texttt{Serine-braC}, etc.), so the standard 0.95 correlation filter consolidates these duplicates and unfairly depletes the per-phenotype feature space for some pathways.
-Because concordant labels are by construction consistent with GapMind's pathway-completeness rule, the GapMind-feature setting establishes the balanced accuracy reachable by the pipeline when feature resolution matches the mechanism; the per-phenotype gap between this reference and the KOFAM result quantifies pathway-annotation information that is present in GapMind but absent or fragmented in KOFAM.
+Samples were stratified by agreement between GapMind predictions (permissive threshold) and experimental outcomes: concordant (GapMind matches the experiment) and discordant (GapMind contradicts it).
+Models were trained on concordant samples only and evaluated on both concordant and discordant test sets; per-phenotype, per-dataset counts are reported in Supplementary Figure~\ref{fig:concordance_counts}.
+As a pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed lines), the same procedure was repeated with raw GapMind step features (Supplementary Text~S5).
 
 \subsection*{Feature Importance Analysis}
 
-Stable predictive features were identified using SHAP (SHapley Additive exPlanations) analysis \cite{Lundberg2017SHAP}.
-SHAP analyses used a fixed 500-iteration CatBoost variant without early stopping (to avoid validation-set dependence).
-For each phenotype--dataset configuration, models were trained across 20 random seeds, extracting the top 10 features by mean absolute SHAP value per run.
-Features appearing in at least 70\% of runs were designated ``stable features'' and compared across datasets.
-For the high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B, each configuration was first screened to the top 300 KOFAM features by CatBoost PredictionValuesChange importance, with SHAP stability analysis then performed on the screened matrix.
-
-To prevent biologically redundant KOs (paralogues, operon-mates, alternative enzymes in the same pathway) from being counted as separate stable features, the union of stable KOs identified for each phenotype was further grouped into target-aware redundancy clusters using the \texttt{shap.utils.hclust} routine of the SHAP package \cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}.
-This procedure fits a univariate gradient-boosted model from each candidate KO to the phenotype and computes a pairwise distance of $1-R^{2}$ between the resulting predictions; two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype (single linkage, default cut-off of 0.5).
-Clustering was performed on the pooled concordant feature matrix across all four datasets so that cluster identities are common to the full-data and concordant-data analyses, and the resulting per-phenotype KO-to-cluster mapping replaces raw KO identity for all intersection and uniqueness counts (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}).
-For three phenotypes (alanine, mannose, serine) the stable features picked by different concordant-trained models did not reach this target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
-Inspection of the underlying KOFAM annotations showed these features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for these three phenotypes the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing these broader genomic repertoires.
+Stable predictive features were identified using SHAP (SHapley Additive exPlanations) analysis~\cite{Lundberg2017SHAP} with a fixed 500-iteration CatBoost variant trained without early stopping.
+For each phenotype--dataset configuration, models were trained across 20 random seeds; the top 10 features by mean absolute SHAP value were extracted per run, and features appearing in $\geq$70\% of runs were designated ``stable features''.
+The high-dimensional KOFAM concordant analysis in Figure~\ref{fig:concordant_analysis}B used a prior screen to the top 300 KOFAM features by CatBoost PredictionValuesChange importance.
+To prevent biologically redundant KOs (paralogues, operon-mates, alternative enzymes) from being counted as separate stable features, the union of stable KOs per phenotype was further grouped into SHAP-supervised redundancy clusters using \texttt{shap.utils.hclust}~\cite{Lundberg2020TreeSHAP} on the pooled concordant feature matrix, and the resulting per-phenotype KO-to-cluster mapping replaced raw KO identity for all intersection and uniqueness counts (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}; Supplementary Text~S11).
 
 \subsection*{Data Quality Filtering Strategies}
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering.
+\emph{Problematic-sample removal} excluded microbes with zero growth on all substrates despite at least one GapMind growth prediction and microbes with growth on all substrates despite incomplete GapMind pathways; most of the 20 genomes contributing the highest GapMind misclassification count fell into one of these categories.
+\emph{Confidence-based filtering} excluded ambiguous samples by a composite confidence score combining phylogenetic neighbour agreement, GapMind pathway completeness, and the experimental outcome (used only for training-set quality assessment, never at inference); per-component weights, the six-level GapMind scale, and the ambiguous-range threshold are detailed in Supplementary Text~S13.
 
-\subsubsection*{Problematic Sample Identification}
-
-Problematic samples were identified in two categories: microbes with zero growth on all substrates despite at least one GapMind growth prediction, and microbes with growth on all substrates despite incomplete GapMind pathways.
-Inspection of the 20 genomes with the highest GapMind misclassification count across the 15 phenotypes showed most belonged to one of these categories.
-\subsubsection*{Confidence-Based Filtering}
-
-A composite confidence score was defined from three inputs:
-\begin{itemize}
-    \item Phylogenetic confidence ($w=0.2$): agreement among $k=3$ nearest phylogenetic neighbours.
-    \item GapMind confidence ($w=0.3$): pathway completeness score from GapMind.
-    \item Experimental data ($w=0.5$): binary experimental outcome.
-\end{itemize}
-The experimental-outcome component is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, since feature matrices supplied to the classifier do not include the phenotype label.
-GapMind confidence was mapped to a six-level scale (0.0--1.0) based on pathway completeness categories.
-Samples with composite scores between 0.4 and 0.6 were considered ambiguous and excluded from filtered training sets.
 \subsection*{Sample Size Requirements}
 
 Minimum training data requirements were assessed using learning curves.
@@ -128,16 +95,9 @@ Performance was evaluated across random holdout, cross-dataset, and out-of-clade
 
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
-For both the full-data and concordant-trained models evaluated on the held-out cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ from the predicted class probabilities.
-These CatBoost probabilities were not post hoc calibrated, so confidence was used only as a ranking score for selective prediction rather than as an absolute probability of correctness.
-Calibration was assessed with reliability diagrams and the expected calibration error over ten equal-width probability bins, pooled across phenotypes for each model.
-Per-phenotype risk--coverage curves were generated by stratifying abstention by predicted class: within each phenotype and model, predictions were partitioned by the predicted label and at each coverage level the top fraction of most-confident class-1 predictions (highest $p$) and the top fraction of most-confident class-0 predictions (highest $1-p$) were retained in parallel before balanced accuracy was recomputed on the retained subset.
-This class-stratified construction avoids the degenerate single-predicted-class subsets that arise on individual phenotypes when ranking by raw $\max(p,\,1-p)$ for class-skewed classifiers, which would collapse balanced accuracy on the retained subset to 0.5 regardless of accuracy on the discarded fraction.
-Feature-space novelty of a held-out genome was defined as its mean Jaccard distance to the five nearest training genomes in KOFAM feature space, computed against the appropriate per-split training set.
-To test whether reliability could be anticipated per phenotype, label-free aggregates (mean confidence, fraction of high-confidence predictions, and mean feature-space novelty) were correlated with each phenotype's cross-dataset balanced accuracy across the 15 phenotypes using Spearman correlation.
-For the retrospective experiment-prioritisation simulation, each held-out dataset was split into candidate and evaluation pools; 25 candidate genome labels were added to the concordant training set and the model retrained, measuring the change in cross-dataset balanced accuracy on the evaluation pool across three random seeds and the four held-out datasets.
-Candidate genomes were selected by four label-free strategies---lowest model confidence, highest feature-space novelty, feature-space diversity, and random---and strategies were compared with the two-sided Wilcoxon signed-rank test on paired runs.
-Models in this simulation were trained with a reduced number of boosting iterations for computational efficiency.
+For both the full-data and concordant-trained models evaluated on the held-out cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ from the predicted class probabilities and used as a ranking score (not a calibrated probability), with calibration reported separately via reliability diagrams and expected calibration error.
+Per-phenotype risk--coverage curves were generated by class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S12), and label-free aggregates (mean confidence, fraction of high-confidence predictions, feature-space novelty) were correlated with each phenotype's cross-dataset balanced accuracy using Spearman correlation.
+A retrospective experiment-prioritisation simulation added 25 candidate genome labels to the concordant training set per held-out dataset and measured the change in cross-dataset balanced accuracy on the remaining evaluation pool across three random seeds and four held-out datasets, comparing four label-free selection strategies (lowest model confidence, highest feature-space novelty, feature-space diversity, random) by two-sided Wilcoxon signed-rank test on paired runs (Supplementary Text~S12).
 
 \subsection*{Statistical Analysis}
 
