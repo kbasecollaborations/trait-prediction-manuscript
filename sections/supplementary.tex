@@ -244,65 +244,7 @@ Most phenotypes approach their maximum cross-dataset performance by 50--100 samp
 \label{fig:all_phenotype_heatmap}
 \end{figure}
 
-\subsection*{Supplementary Text S7: Feature-Direction SHAP for Concordant Models}
-
-While Figure~\ref{fig:concordant_analysis}B reports SHAP-based feature \emph{stability} across random seeds for concordant-trained models, it does not show the direction in which feature value influences prediction.
-Figure~\ref{fig:shap_beeswarm} shows SHAP summary (beeswarm) plots for histidine and galactose, generated from concordant-trained CatBoost models with KOFAM features under random holdout evaluation.
-For histidine, the top-ranked KOFAM features include canonical histidine-utilisation enzymes (K01468 imidazolonepropionase, K01712 urocanate hydratase, and K01745 histidine ammonia-lyase) together with the histidine-utilisation regulator K05836.
-For galactose, the leading features include beta-galactosidase K01190 and additional KOFAM annotations associated with carbohydrate metabolism or transport.
-For both phenotypes, feature presence consistently shifts predictions toward growth, supporting the interpretation that the concordant-trained models recover mechanistically meaningful signals rather than dataset-correlated shortcuts.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.85\textwidth]{figure_s7.pdf}
-\caption{
-\textbf{SHAP beeswarm plots for histidine and galactose under concordant training.}
-Top: histidine. Bottom: galactose.
-Each row within a panel is one of the top 15 features (by mean absolute SHAP value); each point is one held-out concordant test sample, coloured by feature value (presence/absence of the corresponding KOFAM annotation).
-Positive SHAP values shift the model toward predicting growth.
-}
-\label{fig:shap_beeswarm}
-\end{figure}
-
-\subsection*{Supplementary Text S8: Per-Phenotype, Per-Dataset Concordant and Discordant Sample Counts}
-
-To make the post-filtering training set sizes transparent, Figure~\ref{fig:concordance_counts} reports the number of concordant, false-positive-discordant (GapMind predicts growth, experiment shows none), and false-negative-discordant (GapMind predicts no growth, experiment shows growth) samples for each (phenotype, dataset) combination, together with the number of samples excluded for missing GapMind predictions or missing experimental phenotypes.
-Concordance is defined throughout using GapMind's permissive (loose) pathway-completeness threshold (see Methods).
-Across the 15 shared phenotypes and four datasets, 71.5\% of labelled samples are concordant.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{figure_s8.pdf}
-\caption{
-\textbf{Concordant and discordant sample counts per phenotype and dataset.}
-Each cell of the heatmap reports the number of genomes per (phenotype, dataset) combination in four categories: concordant (green), false-positive discordant (red), false-negative discordant (yellow), and excluded for missing data (grey).
-Per-dataset row sums per phenotype equal the post-QC retained genome counts: ATLeaf 206, Biolog 362, Marine 172, Populus 55.
-Counts use the permissive (loose) GapMind threshold for concordance.
-}
-\label{fig:concordance_counts}
-\end{figure}
-
-\subsection*{Supplementary Text S9: Taxonomic Composition Before and After Concordance Filtering}
-
-Concordance filtering may preferentially retain genomes whose canonical pathways are well represented in annotation databases, which could bias the resulting training sets toward better-studied taxa.
-We quantified this bias along three axes for each of the 15 shared phenotypes: (i) class-level composition before vs after filtering (Panel~A), (ii) phylogenetic-diversity retention computed as the total branch length spanning the retained tips divided by the corresponding length for the unfiltered set (Panel~B), and (iii) train/test taxonomic overlap before vs after filtering across the four leave-one-dataset-out combinations (Panel~C).
-Filtering modestly reduced phylogenetic diversity (median Faith-PD retention $= 0.87$ across phenotypes; range $0.74$--$0.93$) and produced a small enrichment of Gammaproteobacteria ($+3.2$ percentage points on average) at the expense of unclassified genomes; class-rank train/test overlap was essentially unchanged because the small number of major bacterial classes is present across all four datasets.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{figure_s9.pdf}
-\caption{
-\textbf{Taxonomic bias introduced by concordance filtering.}
-(\textbf{A}) Class-level composition of retained genomes before vs after concordance filtering, per phenotype.
-Composition is computed for the subset of genomes with GTDB-Tk class-level assignments (approximately 63\% of the retained set); genomes lacking such assignments are shown as a separate \textit{Unassigned} category in grey.
-(\textbf{B}) Phylogenetic-diversity retention: total branch length spanning concordant tips vs the unfiltered set; the dashed line marks $y=x$.
-(\textbf{C}) Train/test class-level overlap before vs after filtering, averaged across the four leave-one-dataset-out combinations.
-Concordance is defined using the permissive (loose) GapMind threshold.
-}
-\label{fig:taxonomic_bias}
-\end{figure}
-
-\subsection*{Supplementary Text S10: Concordant-Trained Model Performance on the Full Held-Out Test Set}
+\subsection*{Supplementary Text S7: Concordant-Trained Model Performance on the Full Held-Out Test Set}
 
 Figure~\ref{fig:concordant_analysis}A reports concordant-trained model performance on held-out concordant samples; Figure~\ref{fig:concordant_analysis}D decomposes cross-dataset performance into concordant and discordant test-subset balanced accuracy.
 The natural-composition full held-out test set (with concordant and discordant samples pooled) is shown in Figure~\ref{fig:full_held_out_test} for completeness, together with per-phenotype test-set composition.
@@ -320,7 +262,7 @@ The dashed horizontal line indicates random performance (balanced accuracy~$=0.5
 \label{fig:full_held_out_test}
 \end{figure}
 
-\subsection*{Supplementary Text S11: SHAP-Supervised Redundancy Clustering Procedure}
+\subsection*{Supplementary Text S8: SHAP-Supervised Redundancy Clustering Procedure}
 
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B report cluster-level rather than raw-KO intersections so that paralogues, operon-mates, and alternative enzymes representing the same biological signal are counted as one entity.
 The grouping uses the \texttt{shap.utils.hclust} routine of the SHAP package~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions, and the resulting distance matrix is single-linkage clustered with the default cutoff of 0.5 --- so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
@@ -329,7 +271,7 @@ Clustering was performed on the pooled concordant feature matrix across all four
 For three phenotypes (alanine, mannose, serine) the stable features picked by different concordant-trained models did not reach this target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
 Inspection of the underlying KOFAM annotations showed these features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for these three phenotypes the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing these broader genomic repertoires.
 
-\subsection*{Supplementary Text S12: Reliability and Experiment-Prioritisation Details}
+\subsection*{Supplementary Text S9: Reliability and Experiment-Prioritisation Details}
 
 CatBoost probabilities were not post hoc calibrated, so prediction confidence ($\max(p,\,1-p)$) was used only as a ranking score for selective prediction rather than as an absolute probability of correctness; calibration was assessed with reliability diagrams and the expected calibration error over ten equal-width probability bins, pooled across phenotypes for each model.
 Per-phenotype risk--coverage curves were generated by stratifying abstention by predicted class: within each phenotype and model, predictions were partitioned by the predicted label and at each coverage level the top fraction of most-confident class-1 predictions (highest $p$) and the top fraction of most-confident class-0 predictions (highest $1-p$) were retained in parallel before balanced accuracy was recomputed on the retained subset.
@@ -339,7 +281,7 @@ Feature-space novelty of a held-out genome was defined as its mean Jaccard dista
 For the retrospective experiment-prioritisation simulation, each held-out dataset was split into candidate and evaluation pools; 25 candidate genome labels were added to the concordant training set, the model was retrained, and the change in cross-dataset balanced accuracy was measured on the evaluation pool across three random seeds and the four held-out datasets.
 Models in this simulation were trained with a reduced number of boosting iterations for computational efficiency.
 
-\subsection*{Supplementary Text S13: Composite Confidence Score for Data Quality Filtering}
+\subsection*{Supplementary Text S10: Composite Confidence Score for Data Quality Filtering}
 
 The composite confidence score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) combined three inputs:
 \begin{itemize}
@@ -350,12 +292,7 @@ The composite confidence score used to identify ambiguous training samples (Figu
 The experimental-outcome component is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, since feature matrices supplied to the classifier do not include the phenotype label.
 Samples with composite scores between 0.4 and 0.6 were considered ambiguous and excluded from the filtered training set.
 
-\subsection*{Supplementary Text S14: Concordant-Training Design and Per-Phenotype Detail}
-
-\paragraph{Decoupling concordance from feature space.}
-GapMind concordance was used only to stratify training samples; the feature space (KOFAM), classifier architecture (CatBoost), training procedure, and evaluation scheme were unchanged from Figure~\ref{fig:ml_performance}.
-Using KOFAM annotations as inputs decoupled the concordance criterion from the feature space and avoided a tautological comparison in which GapMind-derived features are used to recover GapMind-defined concordance; a direct KOFAM-only comparison of full-trained and concordant-trained models confirmed that the gain followed sample stratification rather than feature reuse (Supplementary Figure~\ref{fig:kofam_concordant}).
-Because organisms using alternative pathways or context-dependent regulation are underrepresented, improved transfer should be read as better learning on a mechanistically homogeneous subset rather than recovery of all valid utilisation strategies.
+\subsection*{Supplementary Text S11: Per-Phenotype Detail for Concordant-Training Analysis}
 
 \paragraph{GapMind-feature ceiling failures.}
 Even GapMind-feature models did not reach the random-holdout ceiling on every cross-dataset cell.
@@ -368,15 +305,9 @@ The GapMind glucose pathway invokes organism-specific transporter and PTS-system
 \paragraph{Histidine off-pathway stable features.}
 For histidine on ATLeaf, the full-data unique stable features included $\beta$-ketoadipate-pathway components (K01032 \textit{pcaJ} 3-oxoadipate CoA-transferase $\beta$-subunit; K02623 \textit{pcaR}-type LysR regulator) and a methionine-cycle enzyme (K00547 homocysteine S-methyltransferase), all off-pathway with respect to M00045 (histidine degradation); the concordant-trained unique features were predominantly histidine-pathway paralogues or alternative steps (K01458 N-formylglutamate deformylase, K05603 formimidoylglutamate deiminase, K01745 histidine ammonia-lyase).
 The $\beta$-ketoadipate pathway is widely distributed in soil and rhizosphere lineages with broad catabolic repertoires, so the full-data off-pathway features likely reflect phylogenetic co-occurrence with metabolically versatile clades rather than a histidine-specific route.
-Feature-direction analysis (Supplementary Figure~\ref{fig:shap_beeswarm}) confirmed that the presence of top KOFAM pathway features --- such as histidine-utilisation genes and the galactose-associated $\beta$-galactosidase K01190 --- consistently shifted predictions toward growth, supporting a mechanistic reading.
 
 \paragraph{Calibration and per-phenotype model-confidence detail.}
 Both the full-data and concordant-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
 Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed toward a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
 
-\subsection*{Supplementary Text S15: Concordance--Feature Decoupling and Circularity Mitigation}
-
-Concordant-trained models used KOFAM annotations as inputs while retaining the GapMind criterion for sample selection alone, decoupling the feature space from the rule set used to define concordance.
-Although GapMind-defined concordance could in principle bias retained samples toward the canonical pathways encoded by the features, the concordant-trained models retained intermediate accuracy on the natural-composition held-out test set (Supplementary Figure~\ref{fig:full_held_out_test}), classifying samples that the mechanistic predictor itself misclassifies.
-The direct KOFAM-only comparison of full-trained and concordant-trained models (Supplementary Figure~\ref{fig:kofam_concordant}) further confirms that the gain follows sample stratification rather than feature--criterion alignment.

@@ -12,7 +12,7 @@ When mixed-quality samples dominate the training set, models fit correlations th
 % What constitutes high-quality data
 Concordance filtering favours pathways represented in the annotation space and organisms using broadly conserved enzymes, so retained features transfer across organisms rather than encoding clade-specific correlates.
 For any given carbon source, however, a proportion of organisms employ alternative enzymes, divergent pathway variants, or complex regulatory strategies~\cite{Soucy2015HGT,Glasner2020Promiscuity}; when these are in training, the model lacks mechanistic signal and relies on phylogenetic or dataset-specific correlates that do not generalise.
-Data quality also extends beyond mechanistic concordance to genome completeness, annotation consistency, and measurement reproducibility~\cite{Bowers2017MIMAG,Parks2015CheckM} (Supplementary Text~S14).
+Data quality also extends beyond mechanistic concordance to genome completeness, annotation consistency, and measurement reproducibility~\cite{Bowers2017MIMAG,Parks2015CheckM}.
 
 \subsection*{Discordance Defines the Applicability Domain}
 
@@ -52,8 +52,8 @@ Breaking this impasse requires external data: transcriptomic or regulatory profi
 % Limitations
 The filtering approach requires mechanistic tools such as GapMind, which exist only for well-characterised metabolic pathways; extending it to traits lacking comparable predictors (e.g., stress tolerance, virulence) will require alternative quality-assessment strategies, and our binary growth/no-growth setting may not transfer directly to quantitative traits.
 By selecting samples whose phenotypes match the known pathway, we may exclude organisms using alternative routes, and the partial predictability of discordant samples suggests this is a real limitation.
-Concordance filtering may further introduce taxonomic bias toward well-studied genera with more complete annotations, so part of the cross-dataset gain could reflect broader taxonomic representation rather than purely mechanistic transferability (Supplementary Figure~\ref{fig:taxonomic_bias}).
-The design mitigates a related circularity concern by decoupling the feature space from the rule used to define concordance (Supplementary Text~S15).
+Concordance filtering may further introduce taxonomic bias toward well-studied genera with more complete annotations (median Faith-PD retention 0.87 across phenotypes; small $+3.2$pp Gammaproteobacteria enrichment), so part of the cross-dataset gain could reflect broader taxonomic representation rather than purely mechanistic transferability.
+The design mitigates a related circularity concern by decoupling the feature space from the rule used to define concordance (Supplementary Text~S5).
 Finally, all analyses rely on computational annotations, which carry systematic biases across taxa~\cite{Karlsen2023Genotype,Schnoes2009Annotation}; poorly studied lineages may show lower concordance because of annotation gaps rather than different biology, and zero-imputation feature alignment conflates true gene absence with cross-pipeline annotation mismatch.
 
 % Conclusion
