@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Word count helper for this LaTeX manuscript.
 
-This script parses ``main.tex`` to find ``\\input{sections/...}`` lines and
-uses the external ``texcount`` tool to compute LaTeX-aware word counts for
-each section file. It then prints a simple table of per-section counts and
-an overall total.
+This script parses ``main.tex`` to find manuscript ``\\input{sections/...}``
+lines and uses the external ``texcount`` tool to compute LaTeX-aware word
+counts for each manuscript section. It then reports counts against the ISME
+Original Article limits documented in ``docs/isme_guidelines.md``.
 
 Run from the repository root as::
 
@@ -29,7 +29,18 @@ import pathlib
 import re
 import subprocess
 from dataclasses import dataclass
-from typing import List
+
+
+DEFAULT_GUIDELINES_PATH = pathlib.Path("docs/isme_guidelines.md")
+MAIN_BODY_SECTION_STEMS = ("introduction", "methods", "results", "discussion")
+REPORT_SECTION_STEMS = (
+    "abstract",
+    "introduction",
+    "methods",
+    "results",
+    "discussion",
+    "acknowledgements",
+)
 
 
 @dataclass
@@ -48,7 +59,42 @@ class SectionInfo:
     path: pathlib.Path
 
 
-def parse_main_for_sections(main_path: pathlib.Path) -> List[SectionInfo]:
+@dataclass(frozen=True)
+class IsmeGuidelines:
+    """Word-count limits for an ISME Original Article.
+
+    Parameters
+    ----------
+    main_body_limit : int
+        Maximum word count for the main body text.
+    abstract_limit : int
+        Maximum word count for the unstructured abstract.
+    source_path : pathlib.Path
+        Documentation file used to extract the limits.
+    """
+
+    main_body_limit: int
+    abstract_limit: int
+    source_path: pathlib.Path
+
+
+@dataclass(frozen=True)
+class SectionCount:
+    """Word count for one manuscript section.
+
+    Parameters
+    ----------
+    section : SectionInfo
+        Section metadata.
+    words : int
+        Primary text word count reported by ``texcount``.
+    """
+
+    section: SectionInfo
+    words: int
+
+
+def parse_main_for_sections(main_path: pathlib.Path) -> list[SectionInfo]:
     """Parse a LaTeX main file to locate section inputs.
 
     The function scans ``main_path`` line by line, tracking the most recent
@@ -64,7 +110,7 @@ def parse_main_for_sections(main_path: pathlib.Path) -> List[SectionInfo]:
 
     Returns
     -------
-    List[SectionInfo]
+    list[SectionInfo]
         Ordered list of section descriptors in the order they appear in the
         main file.
 
@@ -77,7 +123,7 @@ def parse_main_for_sections(main_path: pathlib.Path) -> List[SectionInfo]:
     if not main_path.is_file():
         raise FileNotFoundError(f"Main LaTeX file not found: {main_path}")
 
-    sections: List[SectionInfo] = []
+    sections: list[SectionInfo] = []
     current_label: str | None = None
     input_pattern = re.compile(r"\\input\{([^}]*)\}")
 
@@ -89,7 +135,7 @@ def parse_main_for_sections(main_path: pathlib.Path) -> List[SectionInfo]:
         # commented-out \input lines.
         if stripped.startswith("%"):
             comment_text = stripped.lstrip("%").strip()
-            if comment_text:
+            if comment_text and not _is_decorative_comment(comment_text):
                 current_label = comment_text
             continue
 
@@ -112,6 +158,87 @@ def parse_main_for_sections(main_path: pathlib.Path) -> List[SectionInfo]:
         current_label = None
 
     return sections
+
+
+def _is_decorative_comment(comment_text: str) -> bool:
+    """Return whether a LaTeX comment is a visual separator.
+
+    Parameters
+    ----------
+    comment_text : str
+        Comment text after removing the leading percent sign.
+
+    Returns
+    -------
+    bool
+        ``True`` when the comment is only punctuation used as a separator.
+    """
+
+    return bool(re.fullmatch(r"[-=~_* ]+", comment_text))
+
+
+def load_isme_guidelines(path: pathlib.Path) -> IsmeGuidelines:
+    """Load ISME Original Article word-count limits from local docs.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Local guidelines file.
+
+    Returns
+    -------
+    IsmeGuidelines
+        Extracted Original Article and abstract word-count limits.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the guidelines file does not exist.
+    RuntimeError
+        If the expected limits cannot be found.
+    """
+
+    if not path.is_file():
+        raise FileNotFoundError(f"ISME guidelines file not found: {path}")
+
+    text = path.read_text(encoding="utf8")
+    original_article_match = re.search(
+        r"Original Article[^\n]*maximum word count:\s*([\d,]+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+    abstract_match = re.search(
+        r"(?:Unstructured\s+)?Abstract[^\n]*maximum word count:\s*([\d,]+)",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    if original_article_match is None or abstract_match is None:
+        msg = f"Could not find ISME Original Article limits in {path}"
+        raise RuntimeError(msg)
+
+    return IsmeGuidelines(
+        main_body_limit=_parse_int(original_article_match.group(1)),
+        abstract_limit=_parse_int(abstract_match.group(1)),
+        source_path=path,
+    )
+
+
+def _parse_int(text: str) -> int:
+    """Parse an integer that may contain thousands separators.
+
+    Parameters
+    ----------
+    text : str
+        Integer text.
+
+    Returns
+    -------
+    int
+        Parsed integer value.
+    """
+
+    return int(text.replace(",", ""))
 
 
 def texcount_words(tex_file: pathlib.Path) -> int:
@@ -185,6 +312,115 @@ def format_section_label(label: str) -> str:
     return cleaned
 
 
+def section_stem(section: SectionInfo) -> str:
+    """Return the normalized stem for a section file.
+
+    Parameters
+    ----------
+    section : SectionInfo
+        Section descriptor.
+
+    Returns
+    -------
+    str
+        Lower-case file stem.
+    """
+
+    return section.path.stem.lower()
+
+
+def count_report_sections(sections: list[SectionInfo]) -> list[SectionCount]:
+    """Count sections that belong in the manuscript word-count report.
+
+    Parameters
+    ----------
+    sections : list[SectionInfo]
+        Sections parsed from ``main.tex``.
+
+    Returns
+    -------
+    list[SectionCount]
+        Counts for reportable sections.
+    """
+
+    report_stems = set(REPORT_SECTION_STEMS)
+    counts: list[SectionCount] = []
+
+    for section in sections:
+        if section_stem(section) not in report_stems:
+            continue
+        counts.append(SectionCount(section=section, words=texcount_words(section.path)))
+
+    return counts
+
+
+def format_overage(words: int, limit: int) -> str:
+    """Format how far a count is over or under a word-count limit.
+
+    Parameters
+    ----------
+    words : int
+        Observed word count.
+    limit : int
+        Maximum word-count limit.
+
+    Returns
+    -------
+    str
+        Human-readable overage status.
+    """
+
+    overage = words - limit
+    if overage > 0:
+        return f"{overage} over"
+    return f"0 over ({abs(overage)} under)"
+
+
+def print_isme_report(
+    main_path: pathlib.Path,
+    guidelines: IsmeGuidelines,
+    counts: list[SectionCount],
+) -> None:
+    """Print the ISME word-count report.
+
+    Parameters
+    ----------
+    main_path : pathlib.Path
+        Manuscript main file used for the report.
+    guidelines : IsmeGuidelines
+        ISME Original Article word-count limits.
+    counts : list[SectionCount]
+        Per-section word counts.
+    """
+
+    by_stem = {section_stem(count.section): count for count in counts}
+    abstract_count = by_stem.get("abstract")
+    abstract_words = abstract_count.words if abstract_count is not None else 0
+    main_body_words = sum(
+        by_stem[stem].words for stem in MAIN_BODY_SECTION_STEMS if stem in by_stem
+    )
+
+    print(f"Word count report for {main_path}\n")
+    print(f"ISME Original Article limits (from {guidelines.source_path}):")
+    print(
+        f"  Abstract:  {abstract_words:5d} / {guidelines.abstract_limit:<5d} "
+        f"({format_overage(abstract_words, guidelines.abstract_limit)})"
+    )
+    print(
+        f"  Main body: {main_body_words:5d} / {guidelines.main_body_limit:<5d} "
+        f"({format_overage(main_body_words, guidelines.main_body_limit)})"
+    )
+
+    print("\nSection word counts:")
+    label_width = max(
+        (len(format_section_label(count.section.label)) for count in counts),
+        default=len("Section"),
+    )
+    for count in counts:
+        label = format_section_label(count.section.label)
+        print(f"  {label:<{label_width}} {count.words:6d}")
+
+
 def main() -> None:
     """Entry point for the word count script.
 
@@ -200,6 +436,12 @@ def main() -> None:
         default=pathlib.Path("main.tex"),
         help="Path to the main LaTeX file (default: main.tex)",
     )
+    parser.add_argument(
+        "--guidelines",
+        type=pathlib.Path,
+        default=DEFAULT_GUIDELINES_PATH,
+        help="Path to the ISME guidelines file (default: docs/isme_guidelines.md)",
+    )
     args = parser.parse_args()
 
     main_path = args.main
@@ -209,41 +451,23 @@ def main() -> None:
         parser.error(str(exc))
         return
 
+    try:
+        guidelines = load_isme_guidelines(args.guidelines)
+    except (FileNotFoundError, RuntimeError) as exc:
+        parser.error(str(exc))
+        return
+
     if not sections:
         print(f"No sections found in {main_path} (no \\input{{sections/...}} lines).")
         return
 
-    print(f"Section word counts using texcount (main: {main_path}):\n")
+    try:
+        counts = count_report_sections(sections)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        return
 
-    # Compute counts and track maximum label width for pretty printing.
-    counts: list[tuple[str, pathlib.Path, int]] = []
-    max_label_len = 0
-    total_words = 0
-
-    for section in sections:
-        label = format_section_label(section.label)
-        max_label_len = max(max_label_len, len(label))
-
-        if not section.path.is_file():
-            print(f"WARNING: Skipping missing file: {section.path}")
-            continue
-
-        try:
-            count = texcount_words(section.path)
-        except RuntimeError as exc:
-            print(f"ERROR: {exc}")
-            continue
-
-        counts.append((label, section.path, count))
-        total_words += count
-
-    label_col_width = max_label_len + 2
-
-    for label, path, count in counts:
-        print(f"{label:<{label_col_width}} {count:7d}  ({path})")
-
-    print("\n" + "-" * (label_col_width + 12))
-    print(f"{'TOTAL':<{label_col_width}} {total_words:7d}")
+    print_isme_report(main_path=main_path, guidelines=guidelines, counts=counts)
 
 
 if __name__ == "__main__":  # pragma: no cover
