@@ -16,7 +16,7 @@
 \caption{
 \textbf{Microbial carbon utilisation prediction workflow.}
 (A) Overview of data collection, genome annotation, and machine learning workflow.
-We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 242 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus).
+We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 242 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus); analyses focused on the 15 carbon sources shared across all four datasets (panel B).
 Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used to train the classifiers.
 (B) Phenotypic distribution for the 15 shared carbon sources across the four datasets.
 The bar plot displays sample counts and class distributions for each phenotype.
@@ -42,10 +42,10 @@ Circles and boxes indicate null model performance (Identity and Bernoulli baseli
 \includegraphics[width=0.85\textwidth]{figure3.pdf}
 \caption{
 \textbf{ML models excel within datasets but struggle to generalise across datasets.}
-(A) Box plot showing balanced accuracy under repeated random holdout evaluation for gradient-boosted tree classifiers (using KOFAM features) across 15 phenotypes.
-The dotted line indicates the GapMind permissive baseline performance on the test set.
+(A) Box plot showing balanced accuracy under repeated random holdout evaluation for gradient-boosted tree classifiers (using KOFAM features) across 15 phenotypes; each phenotype contributes five values (one per data-split random state 42--46; Methods).
+The dotted line indicates the GapMind permissive-threshold baseline performance on the test set.
 (B) Dot plot showing cross-dataset balanced accuracy when training on three datasets and testing on the fourth held-out dataset.
-The dotted line indicates the GapMind baseline.
+The dotted line indicates the GapMind permissive-threshold baseline (same threshold as panel A).
 (C) Difference plot comparing model performance between regular cross-dataset splits and phylogenetically constrained in-clade cross-dataset splits.
 }\label{fig:ml_performance}
 \end{figure}
@@ -59,7 +59,7 @@ The dotted line indicates the GapMind baseline.
 (B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
 Each bar displays the proportions of true positives, true negatives, false positives (GapMind predicts complete pathway but no growth is observed), and false negatives (GapMind predicts incomplete pathway but growth is observed).
 (C) Feature importance stability analysis using SHAP.
-Stable KOs are those appearing in $\geq$70\% of model runs across 20 random seeds; KOs are then grouped into redundancy clusters using \texttt{shap.utils.hclust} so that paralogs and pathway-mates representing the same biological signal are counted as one entity (Methods).
+Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters using \texttt{shap.utils.hclust} so that paralogs and pathway-mates representing the same biological signal are counted as one cluster (Methods).
 Top panel: number of stable feature clusters when the model is trained on all four datasets combined.
 Bottom panel: cross-dataset cluster stability comparing the stable feature clusters from the model trained on the held-out dataset alone to those from the model trained on the three other datasets combined.
 Solid bars represent clusters shared between the held-out-alone and combined-of-three models; patterned bars represent clusters present only in the held-out-alone model.
@@ -71,8 +71,9 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
 \textbf{Concordant-trained models learn mechanistic features, beat GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
-All models used the same architecture and KOFAM feature representation as in Figure~3; only the training set was restricted to GapMind-concordant samples.
-(\textbf{A}) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes), with red dashed lines marking the per-phenotype cross-dataset mean when the same pipeline is trained on GapMind step features (pipeline-ceiling reference; Methods).
+The main-comparison series in all panels use the same gradient-boosted-tree architecture and KOFAM feature representation as Figure~3; only the training set was restricted to GapMind-concordant samples.
+The red dashed reference in panel A is the same pipeline retrained on GapMind step features rather than KOFAM and serves as a pipeline-ceiling reference (Methods).
+(\textbf{A}) Balanced accuracy on held-out GapMind-concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes), with red dashed lines marking the per-phenotype cross-dataset mean of the GapMind-step-feature pipeline.
 (\textbf{B}) Cross-dataset stability of feature clusters between the model trained on the three non-held-out datasets and the model trained on the held-out dataset alone (stable KOs at $\geq$70\% of 20 runs, redundancy clusters from \texttt{shap.utils.hclust}; Methods).
 Solid bars: clusters shared between the two models; patterned bars: clusters unique to the held-out-alone model.
 (\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full natural-composition held-out test set, one phenotype-mean per point.

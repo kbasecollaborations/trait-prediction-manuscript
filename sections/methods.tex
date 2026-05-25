@@ -54,8 +54,9 @@ After filtering, KOFAM yielded approximately 4000--5000 features per dataset and
 
 We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost}, which outperformed random forests in most train--test dataset and feature combinations (Supplementary Table~\ref{tab:best_models_counts}; Supplementary Text~S3).
 CatBoost was configured with 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap, and early stopping on validation Logloss with patience 50.
-Random holdout evaluations used five 70:15:15 partitions (random states 42--46) stratified by phenotype cluster, where a phenotype cluster groups genomes that share the same binary growth pattern across the 15 shared phenotypes so that each split preserves the joint phenotype distribution; cross-dataset and phylogenetic evaluations used 85:15 train:validation partitions on the non-test data.
-Hyperparameters were not tuned per phenotype; reported performance reflects these settings with \texttt{random\_state=42}, except for SHAP stability analyses (20 seeds).
+Random holdout evaluations used five 70:15:15 train/validation/test partitions stratified by phenotype cluster, where a phenotype cluster groups genomes that share the same binary growth pattern across the 15 shared phenotypes so that each split preserves the joint phenotype distribution; the five partitions used data-split random states 42--46 and supply the five values per phenotype shown in repeated random holdout box plots (e.g., Figure~\ref{fig:ml_performance}A).
+Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation partition on the non-test data.
+Hyperparameters were not tuned per phenotype; the CatBoost training \texttt{random\_state} was fixed to 42 for all evaluations, while SHAP stability analyses additionally sweep the training \texttt{random\_state} across 20 seeds (Methods, ``Feature Importance Analysis'').
 
 \subsection*{Evaluation Strategies}
 
@@ -103,6 +104,6 @@ A retrospective experiment-prioritisation simulation added 25 candidate genome l
 
 \subsection*{Statistical Analysis}
 
-Paired comparisons of balanced accuracy across phenotypes (model versus baseline; combined versus phenotype-filtered features; random versus cross-dataset splits) used the two-sided Wilcoxon signed-rank test on phenotype-level mean balanced accuracies, computed with \texttt{scipy.stats.wilcoxon}.
-P-values are uncorrected and are reported as descriptive summaries of paired differences rather than confirmatory inferences.
+Paired comparisons of balanced accuracy across phenotypes (model versus baseline; combined versus phenotype-filtered features; random versus cross-dataset splits) used the two-sided Wilcoxon signed-rank test on phenotype-level mean balanced accuracies, computed with \texttt{scipy.stats.wilcoxon}; Spearman rank correlations between per-phenotype label-free aggregates and per-phenotype cross-dataset balanced accuracy used \texttt{scipy.stats.spearmanr}.
+The ten paired tests reported in the manuscript (eight Wilcoxon paired comparisons and two Spearman rank correlations) were jointly Benjamini--Hochberg adjusted to control the false-discovery rate at $\leq 0.05$ (\texttt{scripts/stats/manuscript\_pvalues.py}); raw $p$-values are reported in the main text and adjusted $q$-values are reported inline for borderline tests. All currently-significant tests remain significant after BH adjustment.
 Summary statistics are reported as mean $\pm$ standard deviation across folds or repeats unless otherwise noted.

@@ -37,7 +37,7 @@ This dataset offered taxonomic diversity distinct from the terrestrial datasets,
 
 \paragraph*{Populus.}
 The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on Biolog PM plates~\cite{Timm2015Populus}; the compiled matrix used here included 58 isolates tested on 191 carbon sources.
-% TODO(CITATION/PROVENANCE): Verify the source for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
+% TODO(CITATION/PROVENANCE): Discuss with Ranjan and create a DOI for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
 After filtering, 55 genomes were retained.
 Due to its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
 
@@ -142,6 +142,7 @@ See Methods for classifier hyperparameters and training details.}
 \input{sections/table_feature_comparison}
 \input{sections/table_feature_comparison_concordant}
 
+
 % ============================================================
 %   FIGURES
 % ============================================================
@@ -179,7 +180,7 @@ Top: in-clade splits (test samples drawn from clades represented in the training
 Bottom: out-of-clade splits (test samples drawn from clades not represented in training).
 Clade definitions were derived by Agglomerative clustering of the held-out test set on the phylogenetic distance matrix using the same parameters as Figure~\ref{fig:ml_performance}C; in-clade samples cluster with at least two training samples, out-of-clade samples form clusters lacking training representation.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded; 45 of 120 combinations were excluded under this rule, including all 15 Populus-held-out out-of-clade combinations because Populus tips lie within clades represented in the other three training datasets.
-Out-of-clade balanced accuracies were consistently lower than in-clade (mean 0.629 vs 0.696), confirming that random holdout evaluation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
+Out-of-clade balanced accuracies were consistently lower than in-clade (per-cell mean 0.629 vs 0.696; per-phenotype out-of-clade range 0.50--0.80, matching the range reported in Results §36), confirming that random holdout evaluation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
 
