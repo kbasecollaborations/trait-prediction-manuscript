@@ -24,7 +24,7 @@ PHENOTYPE_TO_MODULES: dict[str, tuple[str, ...] | None] = {
     "Galactose": ("M00632",),
     "Galacturonic-Acid": ("M00631",),
     "Glucose": ("M00001",),
-    "Arginine": None,
+    "Arginine": ("M00879",),
     "Alanine": None,
     "Serine": None,
     "Cellobiose": None,
@@ -42,10 +42,50 @@ MODULE_NAMES: dict[str, str] = {
     "M00632": "Galactose degradation, Leloir pathway",
     "M00631": "D-Galacturonate degradation (bacteria)",
     "M00001": "Glycolysis (Embden-Meyerhof pathway)",
+    "M00879": "Arginine succinyltransferase pathway",
+}
+
+# Phenotype -> KEGG reference pathway map. Unlike modules, KEGG pathway maps
+# exist for every phenotype in this study; they are broader (typically
+# include both biosynthesis and degradation KOs for the same compound) but
+# enable a uniform per-phenotype coverage metric. The mappings are curated
+# to the most specific pathway map whose scope covers the phenotype's
+# catabolism.
+PHENOTYPE_TO_PATHWAY_MAPS: dict[str, tuple[str, ...]] = {
+    "Histidine": ("map00340",),
+    "Galactose": ("map00052",),
+    "Galacturonic-Acid": ("map00040",),
+    "Glucose": ("map00010",),
+    "Arginine": ("map00330",),
+    "Cellobiose": ("map00500",),
+    "Maltose": ("map00500",),
+    "Sucrose": ("map00500",),
+    "Mannose": ("map00051",),
+    "Fructose": ("map00051",),
+    "Mannitol": ("map00051",),
+    "m-Inositol": ("map00562",),
+    "Glycerol": ("map00561",),
+    "Alanine": ("map00250",),
+    "Serine": ("map00260",),
+}
+
+PATHWAY_NAMES: dict[str, str] = {
+    "map00010": "Glycolysis / Gluconeogenesis",
+    "map00040": "Pentose and glucuronate interconversions",
+    "map00051": "Fructose and mannose metabolism",
+    "map00052": "Galactose metabolism",
+    "map00250": "Alanine, aspartate and glutamate metabolism",
+    "map00260": "Glycine, serine and threonine metabolism",
+    "map00330": "Arginine and proline metabolism",
+    "map00340": "Histidine metabolism",
+    "map00500": "Starch and sucrose metabolism",
+    "map00561": "Glycerolipid metabolism",
+    "map00562": "Inositol phosphate metabolism",
 }
 
 
 _MODULE_KO_CACHE: dict[str, frozenset[str]] | None = None
+_PATHWAY_KO_CACHE: dict[str, frozenset[str]] | None = None
 
 
 def _load_module_kos(
@@ -92,6 +132,79 @@ def _load_module_kos(
 
     _MODULE_KO_CACHE = {mid: frozenset(kos) for mid, kos in membership.items()}
     return _MODULE_KO_CACHE
+
+
+def _load_pathway_kos(
+    pathway_membership_path: Path = Path(
+        "data/external/mapping/pathway-ko-membership.tsv"
+    ),
+) -> dict[str, frozenset[str]]:
+    """Parse the KEGG pathway-KO membership TSV into pathway-id -> KO members.
+
+    The file is written by :func:`scripts.refresh_kegg_data.write_pathway_tsv`
+    with header ``Pathway ID\\tName\\tKO IDs`` and one row per reference
+    pathway map (``mapXXXXX``); the ``KO IDs`` column is a comma-separated
+    list of KO identifiers.
+
+    Parameters
+    ----------
+    pathway_membership_path : Path
+        Path to the KEGG pathway-KO membership TSV.
+
+    Returns
+    -------
+    dict[str, frozenset[str]]
+        Mapping from pathway identifier (``"map00340"`` etc.) to the set of
+        member KOs.
+    """
+    global _PATHWAY_KO_CACHE
+    if _PATHWAY_KO_CACHE is not None:
+        return _PATHWAY_KO_CACHE
+
+    membership: dict[str, frozenset[str]] = {}
+    with open(pathway_membership_path) as handle:
+        header = handle.readline()
+        if not header.startswith("Pathway ID"):
+            raise ValueError(
+                f"Unexpected header in pathway membership file: {header!r}"
+            )
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3:
+                continue
+            pathway_id, _name, ko_list = parts[0], parts[1], parts[2]
+            kos = {ko for ko in ko_list.split(",") if ko.startswith("K")}
+            membership[pathway_id] = frozenset(kos)
+
+    _PATHWAY_KO_CACHE = membership
+    return _PATHWAY_KO_CACHE
+
+
+def pathway_kos_for_phenotype(phenotype: str) -> set[str]:
+    """Return the union of KEGG-pathway-map KOs assigned to a phenotype.
+
+    Looks up :data:`PHENOTYPE_TO_PATHWAY_MAPS` for the phenotype, then loads
+    each referenced pathway map's KO members from the local pathway TSV.
+    Empty set if the phenotype is unmapped or no KOs are found.
+
+    Parameters
+    ----------
+    phenotype : str
+        Phenotype name; must be a key of ``PHENOTYPE_TO_PATHWAY_MAPS``.
+
+    Returns
+    -------
+    set[str]
+        Union of member KOs across the phenotype's assigned pathway maps.
+    """
+    map_ids = PHENOTYPE_TO_PATHWAY_MAPS.get(phenotype, ())
+    if not map_ids:
+        return set()
+    pathway_lookup = _load_pathway_kos()
+    union: set[str] = set()
+    for mid in map_ids:
+        union.update(pathway_lookup.get(mid, frozenset()))
+    return union
 
 
 def pathway_coverage_line(

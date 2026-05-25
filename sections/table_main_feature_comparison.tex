@@ -1,50 +1,46 @@
 \begin{table}[h]
 \centering
 \footnotesize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.25}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{|l|l|c|c|c|p{4.2cm}|}
+\begin{tabular}{|l|l|c|c|p{4.6cm}|}
 \hline
-\multirow{2}{*}{\textbf{Phenotype}} & \multirow{2}{*}{\textbf{Canonical KEGG module}} & \multicolumn{2}{c|}{\textbf{Unique stable clusters}} & \textbf{\% unique in module} & \multirow{2}{*}{\textbf{Example concordant-stable KO}} \\
-\cline{3-5}
- & & \textbf{Full} & \textbf{Conc.} & \textbf{Full $\rightarrow$ Conc.} & \\
+\textbf{Phenotype} & \textbf{KEGG pathway map} & \makecell{\textbf{Shared stable clusters} \\ \textbf{Full $\rightarrow$ Conc.}} & \makecell{\textbf{\% unique in pathway} \\ \textbf{Full $\rightarrow$ Conc.}} & \makecell[l]{\textbf{Example shared} \\ \textbf{concordant-stable KO}} \\
 \hline
 \rowcolor{LightYellow1}
-Histidine & M00045 \textit{Histidine degradation} & 6 & 4 & \textbf{29\% $\rightarrow$ 75\%} & K01468 imidazolonepropionase; K01712 urocanate hydratase \\
+Histidine & map00340 \textit{Histidine metabolism} & \textbf{4 $\rightarrow$ 8} & \textbf{29\% $\rightarrow$ 75\%} & K01468 imidazolonepropionase; K01712 urocanate hydratase \\
 \hline
-Galacturonic-Acid & M00631 \textit{D-Galacturonate degradation} & 4 & 3 & 0\% $\rightarrow$ 25\% & K18981 uronate dehydrogenase \\
+Galactose & map00052 \textit{Galactose metabolism} & 0 $\rightarrow$ 1 & 50\% $\rightarrow$ 24\% & K01190 beta-galactosidase \\
 \hline
-Galactose & M00632 \textit{Galactose degradation, Leloir} & 11 & 18 & 20\% $\rightarrow$ 12\% & K01190 beta-galactosidase \\
+Galacturonic-Acid & map00040 \textit{Pentose \& glucuronate interconv.} & 0 $\rightarrow$ 2 & 0\% $\rightarrow$ 25\% & K18981 uronate dehydrogenase \\
 \hline
-Glucose & M00001 \textit{Glycolysis (Embden--Meyerhof)} & 8 & 8 & 0\% $\rightarrow$ 0\% & K01785 aldose 1-epimerase \\
+Glucose & map00010 \textit{Glycolysis/Gluconeogenesis} & 1 $\rightarrow$ 2 & 12\% $\rightarrow$ 0\% & K01785 aldose 1-epimerase \\
 \hline
-\multicolumn{6}{|l|}{\textit{Phenotypes without a dedicated KEGG catabolism module (pathway-coverage column not applicable):}} \\
+Cellobiose & map00500 \textit{Starch \& sucrose metab.} & 0 $\rightarrow$ 5 & 12\% $\rightarrow$ 22\% & K05349 beta-glucosidase; K01443 NAG-6-P deacetylase \\
 \hline
-Cellobiose & --- & 8 & 8 & --- & K05349 beta-glucosidase; K01443 NAG-6-P deacetylase \\
+Maltose & map00500 \textit{Starch \& sucrose metab.} & 3 $\rightarrow$ 4 & 14\% $\rightarrow$ 25\% & K01187 alpha-glucosidase \\
 \hline
-Maltose & --- & 7 & 8 & --- & K01187 alpha-glucosidase \\
+Sucrose & map00500 \textit{Starch \& sucrose metab.} & 3 $\rightarrow$ 6 & 17\% $\rightarrow$ 17\% & K01187 alpha-glucosidase; K01193 beta-fructofuranosidase \\
 \hline
-Sucrose & --- & 6 & 6 & --- & K01187 alpha-glucosidase; K01193 beta-fructofuranosidase \\
+Mannose & map00051 \textit{Fructose \& mannose metab.} & 0 $\rightarrow$ 0 & 0\% $\rightarrow$ 10\% & --- \\
 \hline
-Mannose & --- & 7 & 10 & --- & --- \\
+Fructose & map00051 \textit{Fructose \& mannose metab.} & 0 $\rightarrow$ 2 & 18\% $\rightarrow$ 8\% & K00882 1-phosphofructokinase; K02770 PTS fructose IIC \\
 \hline
-Fructose & --- & 11 & 13 & --- & K00882 1-phosphofructokinase; K02770 PTS fructose IIC \\
+Mannitol & map00051 \textit{Fructose \& mannose metab.} & 5 $\rightarrow$ 10 & 25\% $\rightarrow$ 50\% & K02027 sugar transport SBP; K10228 mannitol permease; K00009 mannitol-1-P 5-dehydrogenase \\
 \hline
-Mannitol & --- & 7 & 4 & --- & K02027 sugar transport SBP; K10228 mannitol permease; K00009 mannitol-1-P 5-dehydrogenase \\
+m-Inositol & map00562 \textit{Inositol phosphate metab.} & 6 $\rightarrow$ 5 & 0\% $\rightarrow$ 0\% & K00010 myo-inositol 2-dehydrogenase; K03335 inosose dehydratase \\
 \hline
-m-Inositol & --- & 3 & 7 & --- & K00010 myo-inositol 2-dehydrogenase; K03335 inosose dehydratase \\
+Glycerol & map00561 \textit{Glycerolipid metabolism} & 0 $\rightarrow$ 6 & 25\% $\rightarrow$ 0\% & K02440 glycerol uptake facilitator; K02444 DeoR regulator \\
 \hline
-Glycerol & --- & 4 & 4 & --- & K02440 glycerol uptake facilitator; K02444 DeoR regulator \\
+Alanine & map00250 \textit{Ala/Asp/Glu metabolism} & 0 $\rightarrow$ 0 & 0\% $\rightarrow$ 0\% & --- \\
 \hline
-Alanine & --- & 7 & 5 & --- & --- \\
+Serine & map00260 \textit{Gly/Ser/Thr metabolism} & 0 $\rightarrow$ 0 & 0\% $\rightarrow$ 14\% & --- \\
 \hline
-Serine & --- & 6 & 7 & --- & --- \\
-\hline
-Arginine & --- & 8 & 6 & --- & --- \\
+Arginine & map00330 \textit{Arg \& Pro metabolism} & 0 $\rightarrow$ 3 & 0\% $\rightarrow$ 0\% & K02167 betI \\
 \hline
 \end{tabular}%
 }
-\caption{\textbf{Concordance filtering recovers mechanism-linked features.} For each of the 15 phenotypes, we compare two training regimes: \textbf{Full} (the held-out-alone model is trained on all genomes from one source dataset) and \textbf{Conc.} (the same procedure restricted to GapMind-concordant genomes only). \textbf{Unique stable clusters} counts redundancy clusters of KOFAM features that are stable ($\geq$70\% of 20 random seeds) only in the held-out-alone model, pooled across the three held-out datasets; clusters group KOs carrying the same biological signal (SHAP-supervised hierarchical clustering, Methods). The \textbf{\% unique in module} column reports the fraction of those cluster representatives that map to the canonical KEGG catabolism module for the phenotype (parsed from \texttt{data/external/mapping/module-definitions.tsv}); 11 of 15 phenotypes have no dedicated KEGG catabolism module in this release and are excluded from that column. Histidine (highlighted) is the worked example: under full-data training, only 2 of 7 unique cluster representatives (29\%) lie in M00045; concordance filtering reduces noise so that 3 of 4 (75\%) do, with the same canonical urocanate-pathway enzymes (K01468, K01712) and the histidine-utilization repressor K05836 appearing as the shared stable signal. Full per-comparison KO lists are in Tables~\ref{tab:feature_comparison} (full-data) and \ref{tab:feature_comparison_concordant} (concordant).}
+\caption{\textbf{Concordance filtering recovers mechanism-linked features.} For each of the 15 phenotypes, we compare two training regimes: \textbf{Full} (held-out-alone model trained on all genomes from one source dataset) and \textbf{Conc.} (same procedure restricted to GapMind-concordant genomes only). \textbf{Shared stable clusters} counts SHAP-supervised redundancy clusters of KOFAM features stable ($\geq$70\% of 20 random seeds) in BOTH the three-dataset model and the held-out-alone model, summed across the three held-out comparisons (clusters group KOs carrying the same biological signal; Methods). The total rises under concordant training, recovering more of the canonical pathway as a stable cross-dataset signal (Fig.~\ref{fig:concordant_analysis}B). The \textbf{\% unique in pathway} column reports the fraction of held-out-only cluster representatives that map to the assigned KEGG reference pathway map for the phenotype (KO membership parsed from \texttt{data/external/mapping/pathway-ko-membership.tsv}). KEGG pathway maps are broader than the strict catabolism modules used in Supplementary Tables~\ref{tab:feature_comparison} and \ref{tab:feature_comparison_concordant} (they include both biosynthesis and degradation KOs for the same compound), but are available for every phenotype and therefore enable a uniform coverage metric. Histidine (highlighted) is the worked example: shared stable clusters rise from 4 to 8 under concordant training, and the fraction of held-out-only unique cluster representatives that lie in pathway map00340 (histidine metabolism) rises correspondingly. The shared stable signal under concordant training is dominated by canonical urocanate-pathway enzymes (K01468 imidazolonepropionase, K01712 urocanate hydratase) and the histidine-utilization repressor K05836. The narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appears in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and \ref{tab:feature_comparison_concordant} (concordant).}
 \label{tab:main_feature_comparison}
 \end{table}
