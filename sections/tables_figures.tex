@@ -59,7 +59,7 @@ The dotted line indicates the GapMind permissive-threshold baseline (same thresh
 (B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
 Each bar displays the proportions of true positives, true negatives, false positives (GapMind predicts complete pathway but no growth is observed), and false negatives (GapMind predicts incomplete pathway but growth is observed).
 (C) Feature importance stability analysis using SHAP.
-Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters using \texttt{shap.utils.hclust} so that paralogs and pathway-mates representing the same biological signal are counted as one cluster (Methods).
+Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters using \texttt{shap.utils.hclust} so that paralogues and pathway-mates representing the same biological signal are counted as one cluster (Methods).
 Top panel: number of stable feature clusters when the model is trained on all four datasets combined.
 Bottom panel: cross-dataset cluster stability comparing the stable feature clusters from the model trained on the held-out dataset alone to those from the model trained on the three other datasets combined.
 Solid bars represent clusters shared between the held-out-alone and combined-of-three models; patterned bars represent clusters present only in the held-out-alone model.
@@ -70,7 +70,7 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \centering
 \includegraphics[width=0.83\textwidth]{figure5.pdf}
 \caption{
-\textbf{Concordant-trained models learn mechanistic features, beat GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
+\textbf{Concordant-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
 (\textbf{A}) Balanced accuracy on held-out concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining on GapMind step features (Methods).
 (\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone (Methods).
@@ -107,7 +107,7 @@ Inset: precision-recall distribution for combined (blue) and phenotype-filtered 
 Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
 Columns represent evaluation scenarios: (left) random holdout, (middle) cross-dataset, and (right) out-of-clade evaluations.
 Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
-Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects the bounded value of concordant-trained models: some discordant cases retain genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
+Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects the bounded value of concordant-trained models: a subset of discordant cases retains genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
 }\label{fig:model_sample_size_requirements}
 \end{figure}
 
@@ -116,7 +116,7 @@ Each point indicates performance at training sizes of 50, 100, 200, 500, or the 
 \includegraphics[width=0.93\textwidth]{figure8.pdf}
 \caption{
 \textbf{Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
-(\textbf{A}) Risk--coverage curves for three phenotypes spanning strong, medium, and weak cross-dataset generalisation (m-Inositol, Histidine, Glucose), comparing the full-data model (vermillion) and the concordant-trained model (blue).
+(\textbf{A}) Risk--coverage curves for three phenotypes spanning high, intermediate, and low cross-dataset balanced accuracy (m-Inositol, Histidine, Glucose), comparing the full-data model (vermillion) and the concordant-trained model (blue).
 Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
 The grey dashed line marks random performance (balanced accuracy~$=0.5$).
 (\textbf{B}) Reliability diagram for both models, pooled across phenotypes: mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration and the expected calibration error (ECE) is given in the legend.

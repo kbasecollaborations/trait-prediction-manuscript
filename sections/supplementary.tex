@@ -16,7 +16,7 @@
 
 We obtained and harmonised four published binary carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacterial communities.
 Each dataset captures growth outcomes (growth vs.\ no-growth) of bacterial strains on various carbon substrates.
-Due to annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
+Because of annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
 
 \paragraph*{ATLeaf.}
 The ATLeaf dataset~\cite{Schafer2023-nk} comprised 224 strains isolated from \textit{Arabidopsis thaliana} leaf surfaces, tested on 45 carbon substrates using minimal media on agar plates.
@@ -39,7 +39,7 @@ This dataset offered taxonomic diversity distinct from the terrestrial datasets,
 The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on Biolog PM plates~\cite{Timm2015Populus}; the compiled matrix used here included 58 isolates tested on 191 carbon sources.
 % TODO(CITATION/PROVENANCE): Discuss with Ranjan and create a DOI for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
 After filtering, 55 genomes were retained.
-Due to its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
+Because of its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
 
 All analyses focused on the 15 shared phenotypes present across all four datasets.
 
@@ -73,7 +73,7 @@ ATLeaf showed the highest absolute attrition, attributable to assembly fragmenta
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
 
 We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types (Table~\ref{tab:best_models_counts}).
-In this table, ``cb'' denotes CatBoost and ``rf'' denotes Random Forest.
+In Table~\ref{tab:best_models_counts}, ``cb'' denotes CatBoost and ``rf'' denotes Random Forest.
 CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
 All models were evaluated using balanced accuracy as the primary reporting metric to account for class imbalance in phenotype data, where the proportion of positive (growth) and negative (no-growth) samples varied substantially across phenotypes and datasets.
 
@@ -153,9 +153,9 @@ See Methods for classifier hyperparameters and training details.}
 \caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
 Phylogenetic tree displaying the 819 input genomes from four datasets: ATLeaf (green), Biolog (blue), Marine (orange), and Populus (red).
 The tree was constructed using the Genome Taxonomy Database (GTDB)~\cite{Parks2018GTDB} as a reference framework, with phylogenetic distances calculated using the ETE 3 toolkit~\cite{HuertaCepas2016ETE3}.
-Branch colors indicate dataset membership.
+Branch colours indicate dataset membership.
 The tree reveals distinct taxonomic compositions across datasets: the Marine dataset is enriched in Gammaproteobacteria and Alphaproteobacteria marine lineages, ATLeaf spans diverse phyllosphere-associated taxa, and Biolog covers a broad phylogenetic range compiled from multiple studies.
-Populus dataset has a narrower phylogenetic range in comparison.}
+The Populus dataset has a narrower phylogenetic range in comparison.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
@@ -180,7 +180,7 @@ Top: in-clade splits (test samples drawn from clades represented in the training
 Bottom: out-of-clade splits (test samples drawn from clades not represented in training).
 Clade definitions were derived by Agglomerative clustering of the held-out test set on the phylogenetic distance matrix using the same parameters as Figure~\ref{fig:ml_performance}C; in-clade samples cluster with at least two training samples, out-of-clade samples form clusters lacking training representation.
 Phenotype--dataset combinations with fewer than 10 test samples or 10 minority-class samples were excluded; 45 of 120 combinations were excluded under this rule, including all 15 Populus-held-out out-of-clade combinations because Populus tips lie within clades represented in the other three training datasets.
-Out-of-clade balanced accuracies were consistently lower than in-clade (per-cell mean 0.629 vs 0.696; per-phenotype out-of-clade range 0.50--0.80, matching the range reported in Results §36), confirming that random holdout evaluation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
+Out-of-clade balanced accuracies were consistently lower than in-clade accuracies (per-cell mean 0.629 vs 0.696; per-phenotype out-of-clade range 0.50--0.80, matching the range reported in the Results), confirming that random holdout evaluation overestimates generalisation by allowing phylogenetically similar samples to appear in both training and test sets.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
 
@@ -205,7 +205,7 @@ To isolate the effect of concordant training, we compared KOFAM-based models tra
 
 Figure~\ref{fig:kofam_concordant} shows that concordant training improves cross-dataset balanced accuracy on concordant test samples under the same KOFAM feature space used in the main analysis.
 The parity plot (panel~A) indicates that the majority of phenotype--split combinations achieve higher balanced accuracy with concordant training when evaluation is restricted to concordant held-out samples.
-Per-phenotype box plots (panel~B) confirm that this improvement is consistent across most phenotypes, supporting the interpretation that data coherence, rather than feature--criterion alignment, drives the generalisation gains reported in the main text.
+Per-phenotype box plots (panel~B) confirm that the concordant-training improvement is consistent across most phenotypes, supporting the interpretation that data coherence, rather than feature--criterion alignment, drives the generalisation gains reported in the main text.
 
 For the GapMind-feature pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed lines), raw rather than correlation-filtered GapMind features were used because GapMind represents the same underlying gene under multiple per-phenotype prefixes (for example, the same amino-acid transporter appears as \texttt{Alanine-braC}, \texttt{Serine-braC}, etc.), so the standard 0.95 correlation filter consolidates these duplicates and unfairly depletes the per-phenotype feature space for some pathways.
 Because concordant labels are by construction consistent with GapMind's pathway-completeness rule, the GapMind-feature setting establishes the balanced accuracy reachable by the pipeline when feature resolution matches the mechanism.
@@ -233,7 +233,7 @@ Across phenotypes, performance typically approached its maximum by 50--100 train
 Only a small minority required 200 samples to reach the saturation threshold, and no phenotype showed a new saturation point beyond 200 samples.
 The estimated saturation point varied modestly across phenotypes, where saturation was defined as the smallest sample size at which mean balanced accuracy reached $\geq$90\% of the corresponding full-dataset value.
 
-These results show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
+The all-phenotype learning curves show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
 The distribution of saturation points suggests that many traits with coherent genotype--phenotype mappings can be learned efficiently, with only modest gains beyond 200 samples even for slower-saturating phenotypes.
 
 \begin{figure}[ht]
@@ -269,13 +269,14 @@ The dashed horizontal line indicates random performance (balanced accuracy~$=0.5
 \subsection*{Supplementary Text S8: SHAP-Supervised Redundancy Clustering Procedure}
 
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B report cluster-level rather than raw-KO intersections so that paralogues, operon-mates, and alternative enzymes representing the same biological signal are counted as one entity.
-The grouping uses the SHAP package's \texttt{shap.utils.hclust} routine~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions, and the resulting distance matrix is single-linkage clustered with the default cutoff of 0.5 --- so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
+The grouping uses the SHAP package's \texttt{shap.utils.hclust} routine~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}: a univariate gradient-boosted model is fit from each candidate KO to the phenotype, and a pairwise distance of $1-R^{2}$ is computed between the resulting per-sample predictions.
+The resulting distance matrix is single-linkage clustered with the default cutoff of 0.5, so two KOs are placed in the same cluster when they share more than 50\% of their univariate explanatory power with respect to the phenotype.
 Clustering was performed on the pooled concordant feature matrix across all four datasets so that cluster identities are common to the full-data and concordant-data analyses.
-This procedure was applied only after stable features had been identified; it did not influence model fitting, held-out predictions, or balanced-accuracy estimates.
-For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; this matches the default-classifier performance to within the per-seed variance reported in the main text.
+The pooled clustering procedure was applied only after stable features had been identified; it did not influence model fitting, held-out predictions, or balanced-accuracy estimates.
+For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; the fixed-iteration variant matched the default-classifier performance to within the per-seed variance reported in the main text.
 
-For three phenotypes (alanine, mannose, serine) the stable features picked by different concordant-trained models did not reach this target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
-Inspection of the underlying KOFAM annotations showed these features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for these three phenotypes the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing these broader genomic repertoires.
+For three phenotypes (alanine, mannose, serine), the stable features selected by different concordant-trained models did not reach the target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
+Inspection of the underlying KOFAM annotations showed that the stable features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for alanine, mannose, and serine the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing expanded carbohydrate-utilisation repertoires.
 
 \subsection*{Supplementary Text S9: Reliability and Experiment-Prioritisation Details}
 
@@ -285,7 +286,7 @@ This class-stratified construction avoids the degenerate single-predicted-class 
 
 Feature-space novelty of a held-out genome was defined as its mean Jaccard distance to the five nearest training genomes in KOFAM feature space, computed against the appropriate per-split training set.
 For the retrospective experiment-prioritisation simulation, each held-out dataset was split into candidate and evaluation pools; 25 candidate genome labels were added to the concordant training set, the model was retrained, and the change in cross-dataset balanced accuracy was measured on the evaluation pool across three random seeds and the four held-out datasets.
-Models in this simulation were trained with a reduced number of boosting iterations for computational efficiency.
+Models in the experiment-prioritisation simulation were trained with a reduced number of boosting iterations for computational efficiency.
 
 \subsection*{Supplementary Text S10: Composite Confidence Score for Data Quality Filtering}
 
