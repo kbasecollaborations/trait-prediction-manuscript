@@ -37,7 +37,7 @@ COMMON_PHENOTYPES = [
     "Sucrose",
     "m-Inositol",
 ]
-DATA_FILE = Path(f"data/outputs/figureS6/figureS6_learning_curves_{FEATURE_TYPE}.csv")
+DATA_FILE = Path(f"data/outputs/figureS7/figureS7_learning_curves_{FEATURE_TYPE}.csv")
 OUTPUT_DIR = Path("figures")
 
 

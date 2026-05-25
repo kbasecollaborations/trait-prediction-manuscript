@@ -1,299 +1,298 @@
 #!/usr/bin/env python3
 """
-Compute per-phenotype x per-dataset concordance/discordance counts.
+Generate per-sample SHAP value arrays for the Figure S8 beeswarm plot.
 
-For every (phenotype, dataset) combination represented in the experimental
-phenotype directory, tally the number of genomes that are concordant with
-GapMind, discordant as a false positive, discordant as a false negative,
-excluded because GapMind has no prediction, and excluded because the
-experimental phenotype value is missing. The resulting long-form table
-underpins Supplementary Figure S8.
-
-The per-dataset genome universe is the union of ``genomeID`` rows across all
-phenotype TSVs in ``data/processed/phenotypes/<dataset>/``. This is the
-"phenotype-file" universe: every genome with at least one experimental
-phenotype measurement in that dataset, regardless of whether it survived the
-feature-matrix QC pipeline. The counts here describe GapMind concordance with
-experimental phenotypes and therefore do not require feature data.
+For each target phenotype the script:
+1. Loads the canonical random-split fold (fold 0) for the phenotype.
+2. Restricts both training and held-out test samples to GapMind-concordant
+   genomes (as in Figure 5B).
+3. Uses KOFAM annotations as the feature space; GapMind is used only to define
+   concordance.
+4. Trains a single CatBoost classifier with ``make_classifier("cb_noeval")``.
+5. Computes SHAP values on the concordant held-out test set with
+   ``shap.TreeExplainer``.
+6. Persists ``shap_values``, ``feature_values``, ``feature_names``,
+   ``predictions``, and ``y_true`` to a compressed ``.npz`` file.
 """
 
-from __future__ import annotations
-
+import argparse
+import warnings
 from pathlib import Path
-from typing import Final
 
+import numpy as np
 import pandas as pd
+import shap
+from catboost import CatBoostClassifier
 
-from scripts.figure5.figure5a_data import load_gapmind_predictions
+from scripts.figure5.figure5b_data import (
+    get_concordant_samples,
+    load_experimental_phenotypes,
+    load_gapmind_predictions,
+)
+from scripts.ml import make_classifier
+from scripts.ml_splits import load_single_split_data
 
-GAPMIND_FILE: Final[Path] = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
-PHENOTYPE_DIR: Final[Path] = Path("data/processed/phenotypes")
-OUTPUT_DIR: Final[Path] = Path("data/outputs/figureS8")
-OUTPUT_FILE: Final[Path] = OUTPUT_DIR / "concordance_counts.tsv"
+warnings.filterwarnings("ignore")
 
-DATASETS: Final[tuple[str, ...]] = ("atleaf", "lit", "marine", "pmi")
+DEFAULT_PHENOTYPES: tuple[str, ...] = ("Histidine", "Galactose")
+SPLIT_FOLD: str = "0"
+RANDOM_STATE: int = 42
 
-
-def load_retained_genomes(phenotype_dir: Path, dataset: str) -> set[str]:
-    """Load the per-dataset phenotype-file genome universe.
-
-    The universe is the union of all ``genomeID`` values that appear as a row
-    in any phenotype TSV under ``phenotype_dir / dataset``. This corresponds
-    to every genome that has at least one experimental phenotype measurement
-    in this dataset.
-
-    Parameters
-    ----------
-    phenotype_dir : Path
-        Root directory containing per-dataset phenotype subdirectories.
-    dataset : str
-        Name of the dataset subdirectory (e.g. ``"atleaf"``).
-
-    Returns
-    -------
-    set[str]
-        Set of ``genomeID`` strings present in this dataset's phenotype files.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the dataset directory does not exist.
-    """
-    dataset_dir = phenotype_dir / dataset
-    if not dataset_dir.is_dir():
-        raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
-
-    genomes: set[str] = set()
-    for path in sorted(dataset_dir.glob("*.tsv")):
-        df = pd.read_csv(path, sep="\t", usecols=["genomeID"], dtype={"genomeID": str})
-        genomes.update(df["genomeID"].astype(str).unique())
-    return genomes
+REPO_ROOT: Path = Path(__file__).resolve().parents[2]
+SPLITS_DIR: Path = REPO_ROOT / "data/processed/train_test_splits/random_split"
+FEATURE_FILE: Path = (
+    REPO_ROOT / "data/processed/features_reduced/combined_datasets/kofam.tsv"
+)
+GAPMIND_FILE: Path = REPO_ROOT / "data/outputs/figure2/gapmind_phenotypes_loose.tsv"
+PHENOTYPE_DIR: Path = REPO_ROOT / "data/processed/phenotypes"
+OUTPUT_DIR: Path = REPO_ROOT / "data/outputs/figureS8"
 
 
-def load_dataset_phenotypes(
-    phenotype_dir: Path, dataset: str, retained_genomes: set[str]
-) -> dict[str, pd.Series]:
-    """Load all phenotype files for a single dataset, reindexed to the dataset universe.
-
-    Each returned Series is reindexed to ``retained_genomes`` so that genomes
-    in the dataset universe but missing from a particular phenotype TSV appear
-    as ``NaN`` and are counted as ``n_excluded_no_phenotype`` downstream. This
-    guarantees that, for any phenotype, the row sum across all five count
-    columns equals the size of the dataset universe.
-
-    Parameters
-    ----------
-    phenotype_dir : Path
-        Root directory containing per-dataset phenotype subdirectories.
-    dataset : str
-        Name of the dataset subdirectory (e.g. ``"atleaf"``).
-    retained_genomes : set[str]
-        Per-dataset phenotype-file genome universe.
-
-    Returns
-    -------
-    dict[str, pd.Series]
-        Mapping from phenotype name to a pandas Series indexed by every
-        genome in the dataset universe.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the dataset directory does not exist.
-    """
-    dataset_dir = phenotype_dir / dataset
-    if not dataset_dir.is_dir():
-        raise FileNotFoundError(f"Dataset directory not found: {dataset_dir}")
-
-    universe_index = pd.Index(sorted(retained_genomes), name="genomeID")
-    phenotypes: dict[str, pd.Series] = {}
-    for path in sorted(dataset_dir.glob("*.tsv")):
-        name = path.stem
-        df = pd.read_csv(path, sep="\t", dtype={"genomeID": str})
-        df = df.drop_duplicates(subset=["genomeID"], keep="first")
-        df = df.set_index("genomeID")
-        phenotypes[name] = df[name].reindex(universe_index)
-    return phenotypes
-
-
-def compute_counts_for_pair(
-    gapmind: pd.DataFrame,
-    phenotype_series: pd.Series,
+def load_concordant_train_test(
     phenotype: str,
-    dataset: str,
-) -> dict[str, int | str]:
-    """Compute concordance/discordance counts for a single (phenotype, dataset).
+    split_dir: Path,
+    feature_data: pd.DataFrame,
+    gapmind_predictions: pd.DataFrame,
+    experimental_phenotypes: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
+    """
+    Load random-split data and filter train+val and test sets to concordant samples.
 
     Parameters
     ----------
-    gapmind : pd.DataFrame
-        GapMind predictions indexed by ``genomeID``.
-    phenotype_series : pd.Series
-        Experimental phenotype values for the dataset, indexed by ``genomeID``.
     phenotype : str
-        Phenotype name.
-    dataset : str
-        Dataset name.
+        Phenotype name (e.g. ``"Histidine"``).
+    split_dir : Path
+        Path to a single random-split fold directory containing
+        ``y_train.tsv``, ``y_val.tsv``, ``y_test.tsv``.
+    feature_data : pd.DataFrame
+        KOFAM feature matrix indexed by genomeID.
+    gapmind_predictions : pd.DataFrame
+        GapMind prediction table with genomes as index, phenotypes as columns.
+    experimental_phenotypes : pd.DataFrame
+        Experimental phenotype table with genomes as index, phenotypes as columns.
 
     Returns
     -------
-    dict[str, int | str]
-        Long-form record with counts and identifying labels.
+    tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]
+        ``(X_train, y_train, X_test, y_test)`` restricted to concordant genomes.
+        ``X_train``/``y_train`` combine the original train and validation folds.
+
+    Raises
+    ------
+    ValueError
+        If filtering leaves fewer than two classes in train or test, or fewer
+        than 10 samples in either class of the training set.
     """
-    n_total = int(len(phenotype_series))
+    split_data = load_single_split_data(split_dir, feature_data)
 
-    if phenotype not in gapmind.columns:
-        n_no_phenotype = int(phenotype_series.isna().sum())
-        return {
-            "phenotype": phenotype,
-            "dataset": dataset,
-            "n_total_genomes": n_total,
-            "n_concordant": 0,
-            "n_discordant_FP": 0,
-            "n_discordant_FN": 0,
-            "n_excluded_no_gapmind": n_total - n_no_phenotype,
-            "n_excluded_no_phenotype": n_no_phenotype,
-            "n_for_training": 0,
-        }
+    X_trainval = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
+    y_trainval = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
+    X_test = split_data["X_test"]
+    y_test = split_data["y_test"]
 
-    gap = gapmind[phenotype].reindex(phenotype_series.index)
-    exp = phenotype_series
+    concordant_genomes = get_concordant_samples(
+        gapmind_predictions, experimental_phenotypes, phenotype
+    )
+    if len(concordant_genomes) == 0:
+        raise ValueError(f"No concordant genomes found for phenotype {phenotype}")
 
-    no_phenotype = exp.isna()
-    no_gapmind = gap.isna() & ~no_phenotype
+    train_keep = sorted(set(X_trainval.index) & concordant_genomes)
+    test_keep = sorted(set(X_test.index) & concordant_genomes)
 
-    valid = ~no_phenotype & ~no_gapmind
-    gap_v = gap[valid].astype(int)
-    exp_v = exp[valid].astype(int)
+    X_train = X_trainval.loc[train_keep]
+    y_train = y_trainval.loc[train_keep]
+    X_test = X_test.loc[test_keep]
+    y_test = y_test.loc[test_keep]
 
-    concordant = (gap_v == exp_v)
-    n_concordant = int(concordant.sum())
-    n_fp = int(((gap_v == 1) & (exp_v == 0)).sum())
-    n_fn = int(((gap_v == 0) & (exp_v == 1)).sum())
+    if y_train.nunique() != 2:
+        raise ValueError(
+            f"Concordant training set for {phenotype} has only "
+            f"{y_train.nunique()} class(es)."
+        )
+    if y_test.nunique() < 1:
+        raise ValueError(f"Concordant test set for {phenotype} is empty.")
+    class_counts = y_train.value_counts()
+    if class_counts.min() < 10:
+        raise ValueError(
+            f"Concordant training set for {phenotype} has minority class size "
+            f"{class_counts.min()} (< 10)."
+        )
 
-    return {
-        "phenotype": phenotype,
-        "dataset": dataset,
-        "n_total_genomes": n_total,
-        "n_concordant": n_concordant,
-        "n_discordant_FP": n_fp,
-        "n_discordant_FN": n_fn,
-        "n_excluded_no_gapmind": int(no_gapmind.sum()),
-        "n_excluded_no_phenotype": int(no_phenotype.sum()),
-        "n_for_training": n_concordant,
-    }
+    return X_train, y_train, X_test, y_test
 
 
-def build_counts_table(
-    gapmind: pd.DataFrame,
-    phenotype_dir: Path,
-    datasets: tuple[str, ...],
-    phenotypes: list[str],
-) -> pd.DataFrame:
-    """Iterate over every (phenotype, dataset) and build the long-form table.
+def compute_shap_values(
+    model: CatBoostClassifier, X: pd.DataFrame
+) -> np.ndarray:
+    """
+    Compute per-sample SHAP values for a fitted CatBoost classifier.
 
     Parameters
     ----------
-    gapmind : pd.DataFrame
-        GapMind predictions indexed by ``genomeID``.
-    phenotype_dir : Path
-        Root directory containing per-dataset phenotype subdirectories. The
-        per-dataset phenotype-file genome universe is derived from this
-        directory.
-    datasets : tuple[str, ...]
-        Dataset directory names to iterate over.
-    phenotypes : list[str]
-        Phenotype names to include (typically the columns of ``gapmind``).
+    model : CatBoostClassifier
+        A fitted CatBoost binary classifier.
+    X : pd.DataFrame
+        Feature matrix on which to compute SHAP values.
 
     Returns
     -------
-    pd.DataFrame
-        Long-form counts table, one row per (phenotype, dataset).
+    np.ndarray
+        Array of shape ``(n_samples, n_features)`` with SHAP contributions for
+        the positive class.
     """
-    rows: list[dict[str, int | str]] = []
-    for dataset in datasets:
-        retained = load_retained_genomes(phenotype_dir, dataset)
-        n_universe = len(retained)
-        print(f"  {dataset}: {n_universe} genomes in phenotype-file universe")
-        dataset_phenotypes = load_dataset_phenotypes(
-            phenotype_dir, dataset, retained
+    explainer = shap.TreeExplainer(model)
+    shap_explanation = explainer(X)
+    values = shap_explanation.values
+    if values.ndim == 3:
+        values = values[..., 1]
+    return np.asarray(values)
+
+
+def generate_phenotype_data(
+    phenotype: str,
+    feature_data: pd.DataFrame,
+    gapmind_predictions: pd.DataFrame,
+    experimental_phenotypes: pd.DataFrame,
+    output_dir: Path,
+) -> Path:
+    """
+    Train a CatBoost model and persist SHAP arrays for one phenotype.
+
+    Parameters
+    ----------
+    phenotype : str
+        Phenotype name to process.
+    feature_data : pd.DataFrame
+        KOFAM feature matrix (combined datasets).
+    gapmind_predictions : pd.DataFrame
+        GapMind predictions used for concordance filtering.
+    experimental_phenotypes : pd.DataFrame
+        Experimental phenotype table used for concordance filtering.
+    output_dir : Path
+        Directory in which to write ``<phenotype>_shap_values.npz``.
+
+    Returns
+    -------
+    Path
+        Path to the written ``.npz`` file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the random-split fold directory for the phenotype does not exist.
+    """
+    split_dir = SPLITS_DIR / phenotype / SPLIT_FOLD
+    if not split_dir.exists():
+        raise FileNotFoundError(f"Random-split fold not found: {split_dir}")
+
+    print(f"\n[{phenotype}] Loading concordant train/test splits...")
+    X_train, y_train, X_test, y_test = load_concordant_train_test(
+        phenotype,
+        split_dir,
+        feature_data,
+        gapmind_predictions,
+        experimental_phenotypes,
+    )
+    print(
+        f"[{phenotype}] Train: n={len(X_train)} (pos={int((y_train == 1).sum())}, "
+        f"neg={int((y_train == 0).sum())}); "
+        f"Test: n={len(X_test)} (pos={int((y_test == 1).sum())}, "
+        f"neg={int((y_test == 0).sum())}); "
+        f"features={X_train.shape[1]}"
+    )
+
+    print(f"[{phenotype}] Training CatBoost (cb_noeval, seed={RANDOM_STATE})...")
+    model = make_classifier("cb_noeval", random_state=RANDOM_STATE)
+    model.fit(X_train, y_train, verbose=False)
+
+    print(f"[{phenotype}] Predicting on held-out concordant test set...")
+    predictions = model.predict(X_test).astype(int).ravel()
+
+    print(f"[{phenotype}] Computing SHAP values via TreeExplainer...")
+    shap_values = compute_shap_values(model, X_test)
+
+    out_path = output_dir / f"{phenotype}_shap_values.npz"
+    np.savez_compressed(
+        out_path,
+        shap_values=shap_values.astype(np.float32),
+        feature_values=X_test.to_numpy().astype(np.int8),
+        feature_names=np.asarray(X_test.columns.tolist(), dtype=object),
+        predictions=predictions.astype(np.int8),
+        y_true=y_test.to_numpy().astype(np.int8),
+    )
+    print(f"[{phenotype}] Wrote {out_path}")
+
+    mean_abs = np.abs(shap_values).mean(axis=0)
+    top_idx = np.argsort(mean_abs)[::-1][:5]
+    print(f"[{phenotype}] Top-5 features by mean |SHAP|:")
+    for rank, idx in enumerate(top_idx, start=1):
+        print(f"  {rank}. {X_test.columns[idx]}  (mean |SHAP|={mean_abs[idx]:.4f})")
+
+    return out_path
+
+
+def parse_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments with attribute ``phenotype`` (str | None).
+    """
+    parser = argparse.ArgumentParser(
+        description=(
+            "Train a CatBoost model on GapMind-concordant samples and persist "
+            "per-sample SHAP arrays for the Figure S11 beeswarm plot."
         )
-        for phenotype in phenotypes:
-            if phenotype not in dataset_phenotypes:
-                # Phenotype is not measured in this dataset: every genome in
-                # the dataset universe is "excluded due to missing phenotype".
-                rows.append({
-                    "phenotype": phenotype,
-                    "dataset": dataset,
-                    "n_total_genomes": n_universe,
-                    "n_concordant": 0,
-                    "n_discordant_FP": 0,
-                    "n_discordant_FN": 0,
-                    "n_excluded_no_gapmind": 0,
-                    "n_excluded_no_phenotype": n_universe,
-                    "n_for_training": 0,
-                })
-                continue
-            rows.append(
-                compute_counts_for_pair(
-                    gapmind=gapmind,
-                    phenotype_series=dataset_phenotypes[phenotype],
-                    phenotype=phenotype,
-                    dataset=dataset,
-                )
-            )
-    return pd.DataFrame(rows)
+    )
+    parser.add_argument(
+        "--phenotype",
+        type=str,
+        default=None,
+        choices=list(DEFAULT_PHENOTYPES),
+        help=(
+            "Restrict generation to a single phenotype (default: process all "
+            f"of {list(DEFAULT_PHENOTYPES)})."
+        ),
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
-    """Build and write the concordance counts table."""
+    """Entry point for the Figure S11 SHAP data generation script."""
+    args = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"Loading GapMind predictions from {GAPMIND_FILE} ...")
-    gapmind = load_gapmind_predictions(GAPMIND_FILE)
-    phenotypes = sorted(gapmind.columns.tolist())
-    print(f"  {len(gapmind)} genomes, {len(phenotypes)} phenotypes")
-
-    print(
-        f"Loading experimental phenotypes from {PHENOTYPE_DIR}; "
-        "the per-dataset universe is the union of genomes in that dataset's "
-        "phenotype TSVs (no feature-matrix intersection)."
+    print("Loading KOFAM feature matrix (combined datasets)...")
+    feature_data = pd.read_csv(
+        FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
-    counts = build_counts_table(
-        gapmind=gapmind,
-        phenotype_dir=PHENOTYPE_DIR,
-        datasets=DATASETS,
-        phenotypes=phenotypes,
+    print(f"  Loaded {feature_data.shape[0]} genomes x {feature_data.shape[1]} features")
+
+    print("Loading GapMind predictions (loose)...")
+    gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
+    print(f"  Loaded {len(gapmind_predictions)} genomes")
+
+    print("Loading experimental phenotypes...")
+    experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
+    print(f"  Loaded {len(experimental_phenotypes)} genomes")
+
+    phenotypes: tuple[str, ...] = (
+        (args.phenotype,) if args.phenotype else DEFAULT_PHENOTYPES
     )
 
-    counts = counts.sort_values(["phenotype", "dataset"]).reset_index(drop=True)
-    counts.to_csv(OUTPUT_FILE, sep="\t", index=False)
-    print(f"Wrote {len(counts)} rows to {OUTPUT_FILE}")
+    for phenotype in phenotypes:
+        generate_phenotype_data(
+            phenotype,
+            feature_data,
+            gapmind_predictions,
+            experimental_phenotypes,
+            OUTPUT_DIR,
+        )
 
-    print("\nPer-dataset totals (across all phenotypes):")
-    by_dataset = counts.groupby("dataset")[
-        [
-            "n_concordant",
-            "n_discordant_FP",
-            "n_discordant_FN",
-            "n_excluded_no_gapmind",
-            "n_excluded_no_phenotype",
-        ]
-    ].sum()
-    print(by_dataset)
-
-    total_concordant = int(counts["n_concordant"].sum())
-    total_fp = int(counts["n_discordant_FP"].sum())
-    total_fn = int(counts["n_discordant_FN"].sum())
-    total_used = total_concordant + total_fp + total_fn
-    pct_concordant = 100.0 * total_concordant / total_used if total_used else float("nan")
-    print(
-        "\nAggregate (sum across all phenotype x dataset cells with both labels):"
-        f"\n  concordant = {total_concordant}"
-        f"\n  discordant FP = {total_fp}"
-        f"\n  discordant FN = {total_fn}"
-        f"\n  concordant fraction of labelled = {pct_concordant:.1f}%"
-    )
+    print("\nDone.")
 
 
 if __name__ == "__main__":
