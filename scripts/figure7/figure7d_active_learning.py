@@ -28,7 +28,7 @@ from scripts.figure5.figure5cd_data import (
     load_experimental_phenotypes,
     load_gapmind_predictions,
 )
-from scripts.figure8.applicability import mean_knn_jaccard_distance
+from scripts.figure7.applicability import mean_knn_jaccard_distance
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
 from trait_prediction.pipeline import align_columns
@@ -38,7 +38,7 @@ FEATURE_FILE: Path = Path("data/processed/features_reduced/combined_datasets/kof
 SPLITS_DIR: Path = Path("data/processed/train_test_splits/dataset_split")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
-OUTPUT_DIR: Path = Path("data/outputs/figure8")
+OUTPUT_DIR: Path = Path("data/outputs/figure7")
 HELD_OUT_RE: re.Pattern[str] = re.compile(r"test\(([^)]+)\)")
 
 # Label-free candidate-selection strategies compared in Figure 8 Panel C.
@@ -446,8 +446,8 @@ def main() -> None:
     config = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     detailed, _selected_detail, by_phenotype = run_pilot(config)
-    detailed_path = OUTPUT_DIR / "figure8_prioritization.tsv"
-    by_phenotype_path = OUTPUT_DIR / "figure8_prioritization_by_phenotype.tsv"
+    detailed_path = OUTPUT_DIR / "figure7_prioritization.tsv"
+    by_phenotype_path = OUTPUT_DIR / "figure7_prioritization_by_phenotype.tsv"
     detailed.to_csv(detailed_path, sep="\t", index=False)
     by_phenotype.to_csv(by_phenotype_path, sep="\t", index=False)
     print(f"Saved prioritization results to {detailed_path}")

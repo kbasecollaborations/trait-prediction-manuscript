@@ -158,11 +158,11 @@ def main() -> None:
     )
 
     # Figures with per-row test_subset (full / concordant / discordant).
-    print("\n== Backfilling per-test_subset CSVs (S5, S6, Fig 8) ==")
+    print("\n== Backfilling per-test_subset CSVs (S5, S6, Fig S sample-size) ==")
     for path in [
         Path("data/outputs/figureS5/figureS5_kofam_concordant_results.csv"),
         Path("data/outputs/figureS6/figureS6_learning_curves_kofam.csv"),
-        Path("data/outputs/figure8/figure8_data_requirements_kofam.csv"),
+        Path("data/outputs/figureS_sample_size/figure_s_sample_size_data_requirements_kofam.csv"),
     ]:
         backfill_csv(
             path,

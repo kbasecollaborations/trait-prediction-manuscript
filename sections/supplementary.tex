@@ -225,7 +225,7 @@ Each point represents one phenotype--split combination; points above the diagona
 
 \subsection*{Supplementary Text S6: Learning Curves for All 15 Shared Phenotypes}
 
-The main text presents learning curves for histidine (Figure~\ref{fig:model_sample_size_requirements}).
+Figure~\ref{fig:sample_size_histidine} shows learning curves for histidine.
 To assess whether the ``50--100 high-quality samples'' observation generalises beyond this well-characterised pathway, we extended the analysis to all 15 shared phenotypes using concordant training with KOFAM features.
 
 Figure~\ref{fig:all_phenotype_heatmap} summarises cross-dataset balanced accuracy as a function of training sample size for all 15 phenotypes.
@@ -235,6 +235,19 @@ The estimated saturation point varied modestly across phenotypes, where saturati
 
 The all-phenotype learning curves show that the 50--100 sample sufficiency reported for histidine is representative of most shared phenotypes in this concordant-training setting rather than an isolated best-case scenario.
 The distribution of saturation points suggests that many traits with coherent genotype--phenotype mappings can be learned efficiently, with only modest gains beyond 200 samples even for slower-saturating phenotypes.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figure_s_sample_size.pdf}
+\caption{
+\textbf{Sample size requirements for training bounded specialist models.}
+Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype using GapMind-concordant data.
+Columns represent evaluation scenarios: (left) random holdout, (middle) cross-dataset, and (right) out-of-clade evaluations.
+Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
+Each point indicates performance at training sizes of 50, 100, 200, 500, or the full dataset. Performance on discordant test samples reflects the bounded value of concordant-trained models: a subset of discordant cases retains genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
+}
+\label{fig:sample_size_histidine}
+\end{figure}
 
 \begin{figure}[ht]
 \centering

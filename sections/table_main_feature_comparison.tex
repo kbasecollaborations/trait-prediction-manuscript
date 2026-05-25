@@ -1,0 +1,50 @@
+\begin{table}[h]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{|l|l|c|c|c|p{4.2cm}|}
+\hline
+\multirow{2}{*}{\textbf{Phenotype}} & \multirow{2}{*}{\textbf{Canonical KEGG module}} & \multicolumn{2}{c|}{\textbf{Unique stable clusters}} & \textbf{\% unique in module} & \multirow{2}{*}{\textbf{Example concordant-stable KO}} \\
+\cline{3-5}
+ & & \textbf{Full} & \textbf{Conc.} & \textbf{Full $\rightarrow$ Conc.} & \\
+\hline
+\rowcolor{LightYellow1}
+Histidine & M00045 \textit{Histidine degradation} & 6 & 4 & \textbf{29\% $\rightarrow$ 75\%} & K01468 imidazolonepropionase; K01712 urocanate hydratase \\
+\hline
+Galacturonic-Acid & M00631 \textit{D-Galacturonate degradation} & 4 & 3 & 0\% $\rightarrow$ 25\% & K18981 uronate dehydrogenase \\
+\hline
+Galactose & M00632 \textit{Galactose degradation, Leloir} & 11 & 18 & 20\% $\rightarrow$ 12\% & K01190 beta-galactosidase \\
+\hline
+Glucose & M00001 \textit{Glycolysis (Embden--Meyerhof)} & 8 & 8 & 0\% $\rightarrow$ 0\% & K01785 aldose 1-epimerase \\
+\hline
+\multicolumn{6}{|l|}{\textit{Phenotypes without a dedicated KEGG catabolism module (pathway-coverage column not applicable):}} \\
+\hline
+Cellobiose & --- & 8 & 8 & --- & K05349 beta-glucosidase; K01443 NAG-6-P deacetylase \\
+\hline
+Maltose & --- & 7 & 8 & --- & K01187 alpha-glucosidase \\
+\hline
+Sucrose & --- & 6 & 6 & --- & K01187 alpha-glucosidase; K01193 beta-fructofuranosidase \\
+\hline
+Mannose & --- & 7 & 10 & --- & --- \\
+\hline
+Fructose & --- & 11 & 13 & --- & K00882 1-phosphofructokinase; K02770 PTS fructose IIC \\
+\hline
+Mannitol & --- & 7 & 4 & --- & K02027 sugar transport SBP; K10228 mannitol permease; K00009 mannitol-1-P 5-dehydrogenase \\
+\hline
+m-Inositol & --- & 3 & 7 & --- & K00010 myo-inositol 2-dehydrogenase; K03335 inosose dehydratase \\
+\hline
+Glycerol & --- & 4 & 4 & --- & K02440 glycerol uptake facilitator; K02444 DeoR regulator \\
+\hline
+Alanine & --- & 7 & 5 & --- & --- \\
+\hline
+Serine & --- & 6 & 7 & --- & --- \\
+\hline
+Arginine & --- & 8 & 6 & --- & --- \\
+\hline
+\end{tabular}%
+}
+\caption{\textbf{Concordance filtering recovers mechanism-linked features.} For each of the 15 phenotypes, we compare two training regimes: \textbf{Full} (the held-out-alone model is trained on all genomes from one source dataset) and \textbf{Conc.} (the same procedure restricted to GapMind-concordant genomes only). \textbf{Unique stable clusters} counts redundancy clusters of KOFAM features that are stable ($\geq$70\% of 20 random seeds) only in the held-out-alone model, pooled across the three held-out datasets; clusters group KOs carrying the same biological signal (SHAP-supervised hierarchical clustering, Methods). The \textbf{\% unique in module} column reports the fraction of those cluster representatives that map to the canonical KEGG catabolism module for the phenotype (parsed from \texttt{data/external/mapping/module-definitions.tsv}); 11 of 15 phenotypes have no dedicated KEGG catabolism module in this release and are excluded from that column. Histidine (highlighted) is the worked example: under full-data training, only 2 of 7 unique cluster representatives (29\%) lie in M00045; concordance filtering reduces noise so that 3 of 4 (75\%) do, with the same canonical urocanate-pathway enzymes (K01468, K01712) and the histidine-utilization repressor K05836 appearing as the shared stable signal. Full per-comparison KO lists are in Tables~\ref{tab:feature_comparison} (full-data) and \ref{tab:feature_comparison_concordant} (concordant).}
+\label{tab:main_feature_comparison}
+\end{table}
