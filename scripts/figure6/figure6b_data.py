@@ -552,7 +552,7 @@ def main() -> None:
     """
     # Define paths
     SPLITS_DIR = Path("data/processed/train_test_splits")
-    OUTPUT_DIR = Path("data/outputs/figure7")
+    OUTPUT_DIR = Path("data/outputs/figure6")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Only process random_split and dataset_split
@@ -652,7 +652,7 @@ def main() -> None:
     results = annotate_minority_test(results, full_test_minority_counts())
 
     # Save results
-    results_file = OUTPUT_DIR / "figure7b_confident_ml_results.csv"
+    results_file = OUTPUT_DIR / "figure6b_confident_ml_results.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 

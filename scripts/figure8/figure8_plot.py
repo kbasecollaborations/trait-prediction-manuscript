@@ -1,17 +1,38 @@
 #!/usr/bin/env python3
 """
-Generate plots for Figure 7: Data requirements for model performance.
+Plot Figure 8: diagnostic and applicability-domain toolkit for genome-based
+phenotype prediction.
 
-Creates visualizations showing how training data size affects model performance
-across different split types and training data quality (full vs concordant).
+Four panels span two levels of reliability assessment --- per genome and
+per phenotype:
+
+    (A) Risk-coverage curves for three phenotypes spanning strong, medium,
+        and weak cross-dataset generalization (m-Inositol, Histidine,
+        Glucose). Each mini-plot compares the concordant-trained model with
+        the full-data model: balanced accuracy on the retained subset as the
+        least-confident genomes are abstained on first.
+    (B) Reliability diagram: mean predicted probability of growth against the
+        empirically observed growth fraction within each confidence bin, per
+        model. The expected calibration error (ECE) is reported in the legend.
+    (C) Label-free prioritization: the gain in cross-dataset balanced accuracy
+        after adding selected held-out genome labels, one bar per selection
+        strategy (low confidence, diversity, random, high novelty) at the
+        labelling budget.
+    (D) Per-phenotype gain from randomly versus selectively (low-confidence)
+        added labels, for the three Panel-A archetypes, showing that selective
+        acquisition helps most on the weak generaliser.
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (matplotlib style registration)
 import seaborn as sns
+from matplotlib.axes import Axes
 
 from scripts.visualization import configure_plot_style
 
@@ -19,542 +40,276 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
+DATA_DIR = Path("data/outputs/figure8")
+RISK_FILE = DATA_DIR / "figure8_risk_coverage_by_phenotype.tsv"
+CALIB_FILE = DATA_DIR / "figure8_calibration.tsv"
+PRIOR_FILE = DATA_DIR / "figure8_prioritization.tsv"
+OUTPUT_FILE = Path("figures/figure8.pdf")
 
-# Feature type to use: "gapmind", "kofam", or "rast"
-# Change this line to match the feature type used in figure8_data.py
-FEATURE_TYPE = "kofam"
+# Colour palette: seaborn ``colorblind`` (matches ``visualization.get_dataset_colors``).
+# Index 0 (blue ``#0173b2``) is reused across panels as the primary accent so
+# Figure 8 sits visually next to Figures 3 and 5; index 3 (vermillion
+# ``#d55e00``) is the secondary accent.
+_PALETTE = sns.color_palette("colorblind", n_colors=6)
+PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
+ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
 
-# Sample sizes used in figure8_data.py
-SAMPLE_SIZES = [50, 100, 200, 500, "full"]
+PANEL_A_PHENOTYPES = ["m-Inositol", "Histidine", "Glucose"]
+MODEL_LABELS = {"concordant": "Concordant", "full_data": "Full-data"}
+MODEL_COLORS = {"concordant": PRIMARY_COLOR, "full_data": ACCENT_COLOR}
+STRATEGY_LABELS = {
+    "low_confidence": "Low confidence",
+    "high_ood": "High novelty",
+    "diversity": "Diversity",
+    "random": "Random",
+}
 
-# Manuscript figure routing: only the Histidine combined-test grid appears in
-# the manuscript (as figure8.pdf). All other variants — the Full/Concordant/
-# Discordant test-subset 2x3 grids and the Galactose combined-test grid — go to
-# figures/alternate/ to keep the manuscript figures directory uncluttered.
-MANUSCRIPT_PHENOTYPE = "Histidine"
-MANUSCRIPT_FIGURE_NAME = "figure8.pdf"
 
-
-def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
+def _panel_label(ax: Axes, label: str, x: float = -0.08) -> None:
     """
-    Prepare data for plotting by formatting labels and names.
+    Draw a bold panel label in the upper-left corner of an axes.
+
+    Position and size match the convention used in Figures 3 and 5
+    (``(-0.08, 1.05)`` in axes coordinates, ``fontsize=14``, bold).
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Raw results dataframe.
-
-    Returns
-    -------
-    pd.DataFrame
-        Formatted dataframe ready for plotting.
+    ax : Axes
+        Matplotlib axes to annotate.
+    label : str
+        Panel label text, e.g. ``"(A)"``.
+    x : float, optional
+        Horizontal position in axes coordinates.
     """
-    plot_data = df.copy()
-
-    # Map split types to readable names
-    plot_data["split_type"] = plot_data["split_type"].map(
-        {
-            "random_split": "Random Split",
-            "dataset_split": "Dataset Split",
-            "phylo_ooc": "Out-of-Clade",
-        }
+    ax.text(
+        x,
+        1.05,
+        label,
+        transform=ax.transAxes,
+        fontweight="bold",
+        va="top",
+        ha="right",
+        fontsize=14,
     )
 
-    # Map training types to readable names
-    plot_data["training_type"] = plot_data["training_type"].map(
-        {
-            "concordant": "Concordant",
-            "full": "Full",
-        }
-    )
 
-    # Map test subsets to readable names
-    plot_data["test_subset"] = plot_data["test_subset"].map(
-        {
-            "full": "Full Test",
-            "concordant": "Concordant Test",
-            "discordant": "Discordant Test",
-        }
-    )
-
-    return plot_data
-
-
-def plot_performance_vs_sample_size(
-    df: pd.DataFrame, output_file: Path, test_subset: str = "Full Test"
-) -> None:
+def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
     """
-    Plot model performance vs training sample size.
+    Plot three mini risk-coverage plots, one per Panel-A phenotype.
 
-    Creates a faceted plot showing performance (balanced accuracy) vs number
-    of training samples, faceted by phenotype (rows) and split type (columns).
-    Lines connect points with the same key and repeat across sample sizes.
+    Within each phenotype the concordant-trained and full-data models are
+    compared, showing balanced accuracy on the retained subset as coverage
+    rises (least-confident genomes abstained on first).
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Prepared plot data.
+    axes : list[Axes]
+        Three matplotlib axes, one per phenotype in
+        :data:`PANEL_A_PHENOTYPES`.
+    risk : pd.DataFrame
+        Contents of ``figure8_risk_coverage_by_phenotype.tsv``.
+    """
+    for ax, phen in zip(axes, PANEL_A_PHENOTYPES, strict=True):
+        ax.axhline(0.5, ls="--", color="gray", lw=0.8, alpha=0.7, zorder=1)
+        for model in ("concordant", "full_data"):
+            sub = risk[(risk.phenotype == phen) & (risk.model == model)].sort_values(
+                "coverage"
+            )
+            ax.plot(
+                sub.coverage,
+                sub.balanced_accuracy,
+                marker="o",
+                ms=3.5,
+                lw=1.5,
+                color=MODEL_COLORS[model],
+                markeredgecolor="black",
+                markeredgewidth=0.3,
+                label=MODEL_LABELS[model],
+                zorder=3,
+            )
+        ax.set_title(phen, fontsize=12)
+        ax.set_xlim(0, 1.02)
+        ax.set_ylim(0.40, 1.0)
+        ax.set_xlabel("Coverage")
+    axes[0].set_ylabel("Balanced accuracy\n(retained subset)")
+    axes[0].legend(frameon=False, fontsize=8, loc="lower left")
+
+
+def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
+    """
+    Plot a reliability diagram of predicted confidence vs empirical accuracy.
+
+    One curve per model is drawn, with the model's expected calibration error
+    (ECE) reported in the legend. The dashed diagonal marks perfect
+    calibration.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to draw on.
+    calib : pd.DataFrame
+        Contents of ``figure8_calibration.tsv``.
+    """
+    ax.plot([0, 1], [0, 1], ls="--", color="gray", lw=0.8, alpha=0.7, label="Perfect")
+    for model in ("concordant", "full_data"):
+        sub = calib[calib.model == model].sort_values("mean_pred")
+        ece = float(sub["ece"].iloc[0])
+        ax.plot(
+            sub.mean_pred,
+            sub.frac_pos,
+            marker="o",
+            ms=4,
+            lw=1.5,
+            color=MODEL_COLORS[model],
+            label=f"{MODEL_LABELS[model]} (ECE = {ece:.2f})",
+            zorder=3,
+        )
+    ax.set_xlabel("Mean predicted P(growth)")
+    ax.set_ylabel("Observed growth fraction")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    _panel_label(ax, "(B)", x=-0.22)
+
+
+def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
+    """
+    Plot balanced-accuracy gain per label-free selection strategy at the budget.
+
+    One bar per strategy shows the mean cross-dataset balanced-accuracy gain after
+    adding the selected held-out labels, with standard-error-of-the-mean error bars
+    and jittered per-run points. The strategies are ordered by mean gain.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to draw on.
+    prior : pd.DataFrame
+        Contents of ``figure8_prioritization.tsv``.
+    """
+    palette = sns.color_palette("colorblind", n_colors=6)
+
+    def _hex(i: int) -> str:
+        return "#%02x%02x%02x" % tuple(int(255 * v) for v in palette[i])
+
+    colors = {
+        "low_confidence": PRIMARY_COLOR,
+        "high_ood": _hex(2),
+        "diversity": _hex(4),
+        "random": "0.6",
+    }
+    budget = int(prior["n_added"].max())
+    final = prior[prior["n_added"] == budget]
+    order = ["low_confidence", "diversity", "random", "high_ood"]
+    rng = np.random.default_rng(42)
+
+    ax.axhline(0.0, color="gray", ls="--", lw=0.8, alpha=0.7, zorder=1)
+    for x, strat in enumerate(order):
+        vals = final.loc[final.strategy == strat, "delta_balanced_accuracy"].to_numpy()
+        mean = float(np.mean(vals))
+        sem = float(np.std(vals, ddof=1) / np.sqrt(len(vals))) if len(vals) > 1 else 0.0
+        ax.bar(
+            x, mean, width=0.62, color=colors[strat], edgecolor="black",
+            linewidth=0.7, alpha=0.9, zorder=2,
+        )
+        ax.errorbar(x, mean, yerr=sem, color="black", lw=0.8, capsize=3, zorder=4)
+        jitter = rng.uniform(-0.16, 0.16, size=len(vals))
+        ax.scatter(
+            np.full(len(vals), x) + jitter, vals, s=10, color="black",
+            alpha=0.35, linewidth=0, zorder=3,
+        )
+    ax.set_xticks(range(len(order)))
+    ax.set_xticklabels([STRATEGY_LABELS[s] for s in order], rotation=15, ha="right")
+    ax.set_ylabel("$\\Delta$ cross-dataset\nbalanced accuracy")
+    ax.set_xlabel(f"Selection strategy ({budget} labels added)")
+    _panel_label(ax, "(C)")
+
+
+def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
+    """
+    Plot per-phenotype gain from randomly vs selectively added labels.
+
+    Grouped bars compare the cross-dataset balanced-accuracy gain from adding 25
+    randomly chosen labels against 25 low-confidence-selected labels, for the
+    three Panel-A archetype phenotypes (strong to weak generaliser). Error bars
+    are the standard error of the mean across runs.
+
+    Parameters
+    ----------
+    ax : Axes
+        Matplotlib axes to draw on.
+    prior : pd.DataFrame
+        Contents of ``figure8_prioritization.tsv`` (per-run rows).
+    """
+    budget = int(prior["n_added"].max())
+    final = prior[prior["n_added"] == budget]
+    strategies = [("random", "Random", "0.6"),
+                  ("low_confidence", "Low-confidence", PRIMARY_COLOR)]
+    width = 0.38
+    x = np.arange(len(PANEL_A_PHENOTYPES))
+
+    ax.axhline(0.0, color="gray", ls="--", lw=0.8, alpha=0.7, zorder=1)
+    for i, (strat, label, color) in enumerate(strategies):
+        means, sems = [], []
+        for phen in PANEL_A_PHENOTYPES:
+            vals = final.loc[
+                (final.phenotype == phen) & (final.strategy == strat),
+                "delta_balanced_accuracy",
+            ].to_numpy()
+            means.append(float(np.mean(vals)))
+            sems.append(
+                float(np.std(vals, ddof=1) / np.sqrt(len(vals))) if len(vals) > 1 else 0.0
+            )
+        offset = (i - 0.5) * width
+        ax.bar(
+            x + offset, means, width=width, color=color, edgecolor="black",
+            linewidth=0.7, alpha=0.9, label=label, zorder=2,
+        )
+        ax.errorbar(
+            x + offset, means, yerr=sems, fmt="none", color="black",
+            lw=0.8, capsize=3, zorder=4,
+        )
+    ax.set_xticks(x)
+    ax.set_xticklabels(PANEL_A_PHENOTYPES)
+    ax.set_ylabel(f"$\\Delta$ balanced accuracy\nfrom {budget} added labels")
+    ax.set_xlabel("Phenotype (strong $\\rightarrow$ weak generaliser)")
+    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    _panel_label(ax, "(D)")
+
+
+def create_figure(output_file: Path) -> None:
+    """
+    Build and persist the redesigned Figure 8.
+
+    Parameters
+    ----------
     output_file : Path
-        Path to save the output figure.
-    test_subset : str, optional
-        Which test subset to plot (Full Test, Concordant Test, Discordant Test),
-        by default "Full Test".
+        Destination PDF path.
     """
-    # Filter to selected test subset
-    plot_data = df[df["test_subset"] == test_subset].copy()
+    risk = pd.read_csv(RISK_FILE, sep="\t")
+    calib = pd.read_csv(CALIB_FILE, sep="\t")
+    prior = pd.read_csv(PRIOR_FILE, sep="\t")
 
-    # Get unique phenotypes and split types
-    phenotypes = sorted(plot_data["phenotype"].unique())
-    split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
-
-    # Create figure
-    fig, axes = plt.subplots(
-        nrows=len(phenotypes),
-        ncols=len(split_types),
-        figsize=(12, 6),
-        sharex=True,
-        sharey=True,
-    )
-
-    # Get unique sample sizes for x-axis labeling
-    raw_sizes = plot_data["sample_size"].unique()
-    unique_sample_sizes = sorted(
-        raw_sizes,
-        key=lambda x: float("inf") if str(x) == "full" else float(x),
-    )
-
-    # Define colors and markers for training types
-    colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
-    markers = {"Full": "o", "Concordant": "s"}
-
-    for row_idx, phenotype in enumerate(phenotypes):
-        for col_idx, split_type in enumerate(split_types):
-            ax = axes[row_idx, col_idx]
-
-            # Filter data for this subplot
-            subset = plot_data[
-                (plot_data["phenotype"] == phenotype)
-                & (plot_data["split_type"] == split_type)
-            ].copy()
-
-            if len(subset) == 0:
-                ax.text(
-                    0.5,
-                    0.5,
-                    "No data",
-                    ha="center",
-                    va="center",
-                    transform=ax.transAxes,
-                )
-                continue
-
-            # Plot for each training type
-            for training_type in ["Full", "Concordant"]:
-                train_subset = subset[subset["training_type"] == training_type].copy()
-
-                if len(train_subset) == 0:
-                    continue
-
-                # Get unique (key, repeat) combinations for line connections
-                train_subset["key_repeat"] = (
-                    train_subset["key"] + "_" + train_subset["repeat"].astype(str)
-                )
-                unique_key_repeats = train_subset["key_repeat"].unique()
-
-                # Plot lines connecting points with the same key and repeat
-                for key_repeat in unique_key_repeats:
-                    line_data = train_subset[
-                        train_subset["key_repeat"] == key_repeat
-                    ].copy()
-
-                    # Sort by n_train_samples for proper line connection
-                    line_data = line_data.sort_values("n_train_samples")
-
-                    # Plot line
-                    ax.plot(
-                        line_data["n_train_samples"],
-                        line_data["balanced_accuracy"],
-                        color=colors[training_type],
-                        linestyle="-",
-                        linewidth=1,
-                        alpha=0.4,
-                    )
-
-                # Plot all points (only add label once for legend)
-                ax.scatter(
-                    train_subset["n_train_samples"],
-                    train_subset["balanced_accuracy"],
-                    color=colors[training_type],
-                    marker=markers[training_type],
-                    alpha=0.7,
-                    s=40,
-                    label=training_type
-                    if row_idx == 0 and col_idx == 0
-                    else None,
-                    edgecolors="black",
-                    linewidths=0.5,
-                )
-
-            # Set labels and title
-            if row_idx == len(phenotypes) - 1:
-                ax.set_xlabel("Number of Training Samples")
-            if col_idx == 0:
-                ax.set_ylabel("Balanced Accuracy")
-
-            # Add subplot title
-            if row_idx == 0:
-                ax.set_title(split_type, fontweight="bold")
-
-            # Add phenotype label on the left
-            if col_idx == 0:
-                ax.text(
-                    -0.3,
-                    0.5,
-                    phenotype,
-                    transform=ax.transAxes,
-                    rotation=90,
-                    va="center",
-                    ha="center",
-                    fontweight="bold",
-                )
-
-            # Set y-axis limits
-            ax.set_ylim(0, 1.05)
-
-            # Set x-axis ticks to match sample sizes
-            x_ticks = []
-            x_labels = []
-            for sample_size in unique_sample_sizes:
-                size_data = subset[subset["sample_size"] == sample_size]
-                if len(size_data) > 0:
-                    mean_n_samples = size_data["n_train_samples"].mean()
-                    x_ticks.append(mean_n_samples)
-                    x_labels.append(
-                        str(sample_size) if sample_size != "full" else "full"
-                    )
-
-            if x_ticks:
-                ax.set_xticks(x_ticks)
-                ax.set_xticklabels(x_labels, rotation=45, ha="right")
-
-            # Format x-axis
-            ax.tick_params(axis="both", which="both")
-
-    # Add figure-level legend at the top in one row
-    handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels,
-        loc="upper center",
-        ncol=len(labels),
-        frameon=False,
-        bbox_to_anchor=(0.5, 1.02),
-        title="Training Type",
-    )
-
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    fig = plt.figure(figsize=(12, 12))
+    gs = fig.add_gridspec(3, 3, height_ratios=[1, 1, 1], hspace=0.42, wspace=0.32)
+    ax_a = [fig.add_subplot(gs[0, i]) for i in range(3)]
+    ax_b = fig.add_subplot(gs[1, 0])
+    ax_c = fig.add_subplot(gs[1, 1:])
+    ax_d = fig.add_subplot(gs[2, :])
+    plot_risk_coverage(ax_a, risk)
+    _panel_label(ax_a[0], "(A)", x=-0.22)
+    plot_calibration(ax_b, calib)
+    plot_prioritization(ax_c, prior)
+    plot_phenotype_priority(ax_d, prior)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
-    print(f"Saved plot to {output_file}")
+    print(f"Saved figure to {output_file}")
     plt.close()
 
 
-def plot_all_test_subsets(df: pd.DataFrame, output_dir: Path) -> None:
-    """
-    Create separate plots for each test subset.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Prepared plot data.
-    output_dir : Path
-        Directory to save output figures.
-    """
-    test_subsets = ["Full Test", "Concordant Test", "Discordant Test"]
-
-    for test_subset in test_subsets:
-        subset_name = test_subset.lower().replace(" ", "_")
-        output_file = output_dir / f"figure8_{subset_name}.pdf"
-        plot_performance_vs_sample_size(df, output_file, test_subset=test_subset)
-
-
-def plot_combined_test_subsets(
-    df: pd.DataFrame,
-    manuscript_dir: Path,
-    alternate_dir: Path,
-) -> None:
-    """
-    Plot all test subsets together for comparison.
-
-    Creates one combined-test-subset grid per phenotype. The
-    ``MANUSCRIPT_PHENOTYPE`` grid is saved as ``manuscript_dir /
-    MANUSCRIPT_FIGURE_NAME`` (the manuscript Figure 7); the remaining
-    phenotypes are saved under ``alternate_dir`` to keep the manuscript
-    figures directory uncluttered.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Prepared plot data.
-    manuscript_dir : Path
-        Directory for the manuscript Figure 7 PDF.
-    alternate_dir : Path
-        Directory for non-manuscript phenotype grids.
-    """
-    phenotypes = sorted(df["phenotype"].unique())
-    split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
-    test_subsets = ["Full Test", "Concordant Test", "Discordant Test"]
-
-    # Get unique sample sizes for x-axis labeling
-    raw_sizes = df["sample_size"].unique()
-    unique_sample_sizes = sorted(
-        raw_sizes,
-        key=lambda x: float("inf") if str(x) == "full" else float(x),
-    )
-
-    # Define colors and markers for training types
-    colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
-    markers = {"Full": "o", "Concordant": "s"}
-
-    for phenotype in phenotypes:
-        fig, axes = plt.subplots(
-            nrows=len(test_subsets),
-            ncols=len(split_types),
-            figsize=(12, 12),
-            sharex=True,
-            sharey=True,
-        )
-
-        for row_idx, test_subset in enumerate(test_subsets):
-            for col_idx, split_type in enumerate(split_types):
-                ax = axes[row_idx, col_idx]
-
-                # Filter data
-                subset = df[
-                    (df["phenotype"] == phenotype)
-                    & (df["split_type"] == split_type)
-                    & (df["test_subset"] == test_subset)
-                ].copy()
-
-                if len(subset) == 0:
-                    ax.text(
-                        0.5,
-                        0.5,
-                        "No data",
-                        ha="center",
-                        va="center",
-                        transform=ax.transAxes,
-                    )
-                    continue
-
-                # Plot for each training type
-                for training_type in ["Full", "Concordant"]:
-                    train_subset = subset[
-                        subset["training_type"] == training_type
-                    ].copy()
-
-                    if len(train_subset) == 0:
-                        continue
-
-                    # Get unique (key, repeat) combinations for line connections
-                    train_subset["key_repeat"] = (
-                        train_subset["key"] + "_" + train_subset["repeat"].astype(str)
-                    )
-                    unique_key_repeats = train_subset["key_repeat"].unique()
-
-                    # Plot lines connecting points with the same key and repeat
-                    for key_repeat in unique_key_repeats:
-                        line_data = train_subset[
-                            train_subset["key_repeat"] == key_repeat
-                        ].copy()
-
-                        # Sort by n_train_samples for proper line connection
-                        line_data = line_data.sort_values("n_train_samples")
-
-                        # Plot line
-                        ax.plot(
-                            line_data["n_train_samples"],
-                            line_data["balanced_accuracy"],
-                            color=colors[training_type],
-                            linestyle="-",
-                            linewidth=1,
-                            alpha=0.4,
-                        )
-
-                    # Plot all points (only add label once for legend)
-                    ax.scatter(
-                        train_subset["n_train_samples"],
-                        train_subset["balanced_accuracy"],
-                        color=colors[training_type],
-                        marker=markers[training_type],
-                        alpha=0.7,
-                        s=40,
-                        label=training_type
-                        if row_idx == 0 and col_idx == 0
-                        else None,
-                        edgecolors="black",
-                        linewidths=0.5,
-                    )
-
-                # Set labels
-                if row_idx == len(test_subsets) - 1:
-                    ax.set_xlabel("Number of Training Samples")
-                if col_idx == 0:
-                    ax.set_ylabel("Balanced Accuracy")
-
-                # Add titles
-                if row_idx == 0:
-                    ax.set_title(split_type, fontweight="bold")
-
-                # Add test subset label on the left
-                if col_idx == 0:
-                    ax.text(
-                        -0.3,
-                        0.5,
-                        test_subset,
-                        transform=ax.transAxes,
-                        rotation=90,
-                        va="center",
-                        ha="center",
-                        fontweight="bold",
-                    )
-
-                # Set y-axis limits
-                ax.set_ylim(0, 1.05)
-
-                # Set x-axis ticks to match sample sizes
-                x_ticks = []
-                x_labels = []
-                for sample_size in unique_sample_sizes:
-                    size_data = subset[subset["sample_size"] == sample_size]
-                    if len(size_data) > 0:
-                        mean_n_samples = size_data["n_train_samples"].mean()
-                        x_ticks.append(mean_n_samples)
-                        x_labels.append(
-                            str(sample_size) if sample_size != "full" else "full"
-                        )
-
-                if x_ticks:
-                    ax.set_xticks(x_ticks)
-                    ax.set_xticklabels(x_labels, rotation=45, ha="right")
-
-                ax.tick_params(axis="both", which="both")
-
-        # Add figure-level legend at the top in one row
-        handles, labels = axes[0, 0].get_legend_handles_labels()
-        fig.legend(
-            handles,
-            labels,
-            loc="upper center",
-            ncol=len(labels),
-            frameon=False,
-            bbox_to_anchor=(0.5, 1.02),
-            title="Training Type",
-        )
-
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
-        if phenotype == MANUSCRIPT_PHENOTYPE:
-            phenotype_file = manuscript_dir / MANUSCRIPT_FIGURE_NAME
-        else:
-            phenotype_file = (
-                alternate_dir / f"figure8_{phenotype.lower()}_all_tests.pdf"
-            )
-        fig.savefig(phenotype_file, dpi=300, bbox_inches="tight")
-        print(f"Saved plot to {phenotype_file}")
-        plt.close()
-
-
-def print_summary_statistics(df: pd.DataFrame) -> None:
-    """
-    Print summary statistics about the data.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Prepared plot data.
-    """
-    print("\n" + "=" * 80)
-    print("SUMMARY STATISTICS")
-    print("=" * 80)
-
-    print("\nOverall statistics:")
-    print(f"  Total experiments: {len(df)}")
-    print(f"  Phenotypes: {sorted(df['phenotype'].unique())}")
-    print(f"  Split types: {sorted(df['split_type'].unique())}")
-    print(f"  Training types: {sorted(df['training_type'].unique())}")
-    print(f"  Test subsets: {sorted(df['test_subset'].unique())}")
-
-    print("\nMean balanced accuracy by configuration:")
-    summary = (
-        df[df["test_subset"] == "Full Test"]
-        .groupby(["phenotype", "split_type", "training_type", "sample_size"])[
-            "balanced_accuracy"
-        ]
-        .agg(["mean", "std", "count"])
-        .round(3)
-    )
-    print(summary)
-
-    print("\nPerformance at maximum sample size (full):")
-    full_data = df[
-        (df["test_subset"] == "Full Test") & (df["sample_size"] == "full")
-    ].copy()
-    full_summary = (
-        full_data.groupby(["phenotype", "split_type", "training_type"])[
-            "balanced_accuracy"
-        ]
-        .agg(["mean", "std"])
-        .round(3)
-    )
-    print(full_summary)
-
-
 def main() -> None:
-    """Main function to generate Figure 7 plots."""
-    # Load data
-    data_file = Path(
-        f"data/outputs/figure8/figure8_data_requirements_{FEATURE_TYPE}.csv"
-    )
-    df = pd.read_csv(data_file)
-
-    print(f"Loaded {len(df)} rows from {data_file}")
-    print(f"Feature type: {FEATURE_TYPE.upper()}")
-
-    # Prepare data
-    plot_data = prepare_plot_data(df)
-
-    # Create output directories. The manuscript figure (figure8.pdf) lives in
-    # figures/; all other variants are routed to figures/alternate/.
-    output_dir = Path("figures")
-    alternate_dir = output_dir / "alternate"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    alternate_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create plots
-    print("\nGenerating plots...")
-
-    # Auxiliary main plot (Full Test only, 2x3 grid for both phenotypes): alternate.
-    print("  Creating auxiliary Full Test plot (alternate)...")
-    plot_performance_vs_sample_size(
-        plot_data, alternate_dir / "figure8_full_test_2x3.pdf", test_subset="Full Test"
-    )
-
-    # Per-test-subset plots: alternate.
-    print("  Creating per-test-subset plots (alternate)...")
-    plot_all_test_subsets(plot_data, alternate_dir)
-
-    # Combined-test-subset plots per phenotype. The MANUSCRIPT_PHENOTYPE goes to
-    # figures/figure8.pdf; the rest land in figures/alternate/.
-    print("  Creating combined-test-subset plots per phenotype...")
-    plot_combined_test_subsets(
-        plot_data,
-        manuscript_dir=output_dir,
-        alternate_dir=alternate_dir,
-    )
-
-    # Print summary statistics
-    print_summary_statistics(plot_data)
-
-    print("\nDone!")
+    """Build Figure 8."""
+    create_figure(OUTPUT_FILE)
 
 
 if __name__ == "__main__":

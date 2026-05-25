@@ -88,28 +88,9 @@ The practical advantage of concordant-trained ML over GapMind is therefore real 
 
 \FloatBarrier{}
 
-\subsection*{Model confidence defines an applicability domain and prioritises follow-up experiments}
-
-Because the specialist's advantage averages out on arbitrary natural-composition mixtures, deployment on a new genome --- whose concordance cannot be established in advance --- requires a per-prediction signal of when the model is operating inside its applicability domain.
-We therefore asked whether a model can flag which of its own predictions to trust, using only information available without the experimental phenotype.
-The model's prediction confidence ($\max(p,\,1-p)$) ranked correct above incorrect predictions for both the concordant and full-data models, though only modestly when pooled across phenotypes (ROC AUC $0.65$ and $0.62$; per-phenotype AUC ranged from near-chance (Glycerol, $0.47$ concordant / $0.40$ full-data) to $0.73$--$0.78$ for the strongest (Galactose, Sucrose; Cellobiose, Mannose, Mannitol), so confidence is a per-genome ranking signal whose discriminative power varies markedly across phenotypes).
-Both models were overconfident under cross-dataset shift (Figure~\ref{fig:selective_prediction}B; Supplementary Text~S11), so confidence is useful for ranking and abstention but not as a calibrated probability.
-Abstaining on the least-confident predictions raised retained-subset balanced accuracy for phenotypes the models already predict well (Figure~\ref{fig:selective_prediction}A): for histidine, abstention lifted the concordant-model balanced accuracy from $0.76$ to $0.84$ at half coverage.
-These per-genome signals define a practical applicability domain for the deployed model~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject}.
-
-At the phenotype level, however, no label-free signal predicted which phenotypes a model would handle reliably: neither mean prediction confidence nor feature-space novelty correlated with cross-dataset balanced accuracy across the 15 phenotypes (Spearman $\rho$ between $-0.17$ and $0.05$, all $p > 0.3$).
-Because per-phenotype reliability cannot be certified in advance, we asked instead which additional measurements would most improve the deployed concordant model.
-In a retrospective simulation, 25 held-out genome labels were added to the concordant training set and the model retrained (Figure~\ref{fig:selective_prediction}C).
-Selecting the least-confident genomes improved transfer the most, exceeding random selection (mean $\Delta$ balanced accuracy $0.09$ vs $0.07$; paired Wilcoxon $p = 0.001$), whereas selecting the most novel or diverse genomes did not beat random.
-The advantage concentrated on the weak generaliser glucose, where low-confidence selection roughly doubled the gain from random labelling ($0.24$ vs $0.13$), while the already-reliable m-inositol and histidine gained little from either strategy (Figure~\ref{fig:selective_prediction}D).
-Model confidence therefore provides a deployment-oriented ranking signal, enriching for predictions more suitable for selective reporting and for experiments likely to improve the model.
-
-
-\FloatBarrier{}
-
 \subsection*{Quality-based filters and pathway-restricted features partially recover the concordance gain}
 
-The deployment workflow above relies on GapMind concordance to construct the specialist training set, but concordance has practical constraints: it removes approximately 30\% of samples and requires a mechanistic predictor that exists only for well-characterised phenotypes.
+The concordant-training workflow above relies on GapMind concordance to construct the specialist training set, but concordance has practical constraints: it removes approximately 30\% of samples and requires a mechanistic predictor that exists only for well-characterised phenotypes.
 As a robustness check on the concordance claim, we therefore tested alternative filters targeting data quality without external mechanistic predictions (Figure~\ref{fig:improvement_strategies}A), identifying two categories of problematic samples: microbes showing zero growth on all substrates despite at least one GapMind growth prediction, and microbes showing growth on all substrates despite incomplete GapMind pathways; a small number of genomes accounted for a disproportionate share of misclassifications, most belonging to one of these categories (Figure~\ref{fig:improvement_strategies}A).
 Removing these samples and filtering by measurement confidence (Methods) improved cross-dataset performance, though less than concordant training (Figure~\ref{fig:improvement_strategies}B); measurement-confidence filtering removed far fewer samples and produced smaller but consistent gains, a useful alternative when concordance filtering is not possible.
 Concordant-trained models showed the best precision--recall trade-off among the three filters (Figure~\ref{fig:improvement_strategies}C), while the GapMind baseline occupied a similar range to the two weaker filters, indicating that these recovered only part of the concordance advantage.
@@ -129,3 +110,22 @@ Each panel further breaks down performance on full test samples, concordant test
 
 Across all 15 shared phenotypes, performance plateaued at approximately 50--100 concordant training samples under random holdout and cross-dataset evaluations, with only glucose and galacturonic acid requiring 200 samples and no phenotype showing a new saturation point beyond 200 (Supplementary Figure~\ref{fig:all_phenotype_heatmap}).
 Strong generalisation is therefore achievable with modest data when genotype--phenotype mappings are internally consistent and represented in the feature space, but modest sample requirements do not guarantee high balanced accuracy: where performance remained low, the limitation lay in the strength of the underlying genotype--phenotype signal rather than in training-set size.
+
+
+\FloatBarrier{}
+
+\subsection*{Model confidence defines an applicability domain and prioritises follow-up experiments}
+
+Even with adequate concordant training data, deploying the specialist on a new genome --- whose concordance cannot be established in advance --- requires a per-prediction signal of when the model is operating inside its applicability domain.
+Because the specialist's advantage also averages out on arbitrary natural-composition mixtures (Figure~\ref{fig:concordant_analysis}C,D), we asked whether a model can flag which of its own predictions to trust, using only information available without the experimental phenotype.
+The model's prediction confidence ($\max(p,\,1-p)$) ranked correct above incorrect predictions for both the concordant and full-data models, though only modestly when pooled across phenotypes (ROC AUC $0.65$ and $0.62$; per-phenotype AUC ranged from near-chance (Glycerol, $0.47$ concordant / $0.40$ full-data) to $0.73$--$0.78$ for the strongest (Galactose, Sucrose; Cellobiose, Mannose, Mannitol), so confidence is a per-genome ranking signal whose discriminative power varies markedly across phenotypes).
+Both models were overconfident under cross-dataset shift (Figure~\ref{fig:selective_prediction}B; Supplementary Text~S11), so confidence is useful for ranking and abstention but not as a calibrated probability.
+Abstaining on the least-confident predictions raised retained-subset balanced accuracy for phenotypes the models already predict well (Figure~\ref{fig:selective_prediction}A): for histidine, abstention lifted the concordant-model balanced accuracy from $0.76$ to $0.84$ at half coverage.
+These per-genome signals define a practical applicability domain for the deployed model~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject}.
+
+At the phenotype level, however, no label-free signal predicted which phenotypes a model would handle reliably: neither mean prediction confidence nor feature-space novelty correlated with cross-dataset balanced accuracy across the 15 phenotypes (Spearman $\rho$ between $-0.17$ and $0.05$, all $p > 0.3$).
+Because per-phenotype reliability cannot be certified in advance, we asked instead which additional measurements would most improve the deployed concordant model --- a natural extension of the sample-size analysis above, which assumed labels were acquired at random.
+In a retrospective simulation, 25 held-out genome labels were added to the concordant training set and the model retrained (Figure~\ref{fig:selective_prediction}C).
+Selecting the least-confident genomes improved transfer the most, exceeding random selection (mean $\Delta$ balanced accuracy $0.09$ vs $0.07$; paired Wilcoxon $p = 0.001$), whereas selecting the most novel or diverse genomes did not beat random.
+The advantage concentrated on the weak generaliser glucose, where low-confidence selection roughly doubled the gain from random labelling ($0.24$ vs $0.13$), while the already-reliable m-inositol and histidine gained little from either strategy (Figure~\ref{fig:selective_prediction}D).
+Model confidence therefore provides a deployment-oriented ranking signal, enriching for predictions more suitable for selective reporting and for experiments likely to improve the model.

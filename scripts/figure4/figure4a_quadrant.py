@@ -307,7 +307,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         (CAT_MEDIA, "MEDIA", "insufficient incubation time"),
         (CAT_MEDIA, "MEDIA", "missing cofactors / inducers"),
         (CAT_ANNOTATION, "ANNOTATION", "false-positive homology call"),
-        (CAT_BIOLOGY, "BIOLOGY", "incomplete pathway (missing step)"),
+        (CAT_BIOLOGY, "BIOLOGY", "pseudogene or non-functional allele"),
     ]
     for i, (cc, cat, desc) in enumerate(bullets_c):
         _draw_bullet_row(ax, cx, sec_y - 0.42 - i * 0.36, cc, cat, desc)

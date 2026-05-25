@@ -1,640 +1,534 @@
 #!/usr/bin/env python3
 """
-Generate data for Figure 7: Data requirements for model performance.
+Generate Figure 8 data: selective prediction / applicability
+domain for concordant-trained models on the full held-out cross-dataset test set.
 
-This script investigates how much training data is needed to achieve certain
-performance levels, comparing:
-- Different training data sizes: [50, 100, 200, 500, full]
-- Different training data types: full vs concordant (GapMind-matching)
-- Different split types: random_split, dataset_split, out-of-clade
-- Different test subsets: full, concordant, discordant
+The manuscript shows that concordant-trained models retain only intermediate
+balanced accuracy on the full, natural-composition held-out test set
+(Figure 5D). This script asks a complementary, deployment-oriented question:
+*for a new genome whose concordance is unknown, can the model itself flag which
+predictions to trust?*
 
-For each configuration, we run 3 repeats with different random subsamples.
-Analysis is limited to Histidine and Galactose phenotypes.
+For every ``dataset_split`` (train on three datasets, test on the held-out
+fourth) the script re-fits the concordant-trained CatBoost model exactly as in
+``figure5d_full_test_data.py`` but records per-sample predicted probabilities.
+It then builds two label-free abstention signals --- both computable without
+knowing the experimental outcome of the test genome:
+
+    1. Model confidence: ``max(p, 1 - p)`` from ``predict_proba``.
+    2. GapMind-ML agreement: whether the GapMind call and the ML prediction
+       coincide.
+
+From these it produces risk-coverage curves (balanced accuracy on the retained
+subset versus the fraction of genomes the model commits to).
+
+Outputs (all under ``data/outputs/figure8/``):
+    - ``figure8_per_sample.tsv``                  one row per held-out test genome
+    - ``figure8_risk_coverage.tsv``               pooled balanced accuracy vs. coverage
+    - ``figure8_risk_coverage_by_phenotype.tsv``  per-phenotype risk-coverage curves
 """
 
-import json
+from __future__ import annotations
+
+import re
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import balanced_accuracy_score
 from tqdm import tqdm
 
-from scripts.ml import _get_scores, make_classifier
+from scripts.figure5.figure5cd_data import (
+    get_concordant_and_discordant_samples,
+    load_experimental_phenotypes,
+    load_gapmind_predictions,
+)
+from scripts.figure8.applicability import (
+    calibration_table,
+    expected_calibration_error,
+)
+from scripts.ml import make_classifier
+from scripts.ml_splits import load_split_data
+from trait_prediction.pipeline import align_columns
+
+SPLITS_DIR: Path = Path("data/processed/train_test_splits")
+OUTPUT_DIR: Path = Path("data/outputs/figure8")
+GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
+# KOFAM feature matrix, matching the concordant-trained models of Figure 5.
+KOFAM_FEATURE_FILE: Path = Path(
+    "data/processed/features_reduced/combined_datasets/kofam.tsv"
+)
+PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
+
+RANDOM_STATE: int = 42
+MIN_TRAIN_SAMPLES: int = 5
+
+HELD_OUT_RE: re.Pattern[str] = re.compile(r"test\(([^)]+)\)")
+
+# Coverage grid for the risk-coverage curve (fraction of genomes retained).
+COVERAGE_GRID: np.ndarray = np.round(np.arange(0.10, 1.0001, 0.05), 2)
 
 
-# Analysis parameters
-PHENOTYPES_TO_ANALYZE = ["Histidine", "Galactose"]
-SAMPLE_SIZES = [50, 100, 200, 500, "full"]
-N_REPEATS = 3
-SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
-RANDOM_STATE = 42
-
-# Feature type to use: "gapmind", "kofam", or "rast"
-# Change this line to switch between feature types
-FEATURE_TYPE = "kofam"
-
-# Scoring metrics
-SCORING = [
-    "accuracy",
-    "balanced_accuracy",
-    "matthews_corrcoef",
-    "precision",
-    "recall",
-    "f1",
-    "sensitivity",
-    "specificity",
-    "roc_auc",
-]
-
-
-def load_gapmind_predictions() -> pd.DataFrame:
+def parse_held_out_dataset(key: str) -> str | None:
     """
-    Load and process GapMind predictions.
+    Extract the held-out dataset name from a ``dataset_split`` key.
+
+    Parameters
+    ----------
+    key : str
+        Split key of the form ``"<phenotype>_train(...),test(<dataset>)"``.
 
     Returns
     -------
-    pd.DataFrame
-        GapMind predictions as binary (0/1) for each phenotype.
+    str | None
+        Held-out dataset name, or ``None`` if the key does not match.
     """
-    phenotype_dict = {
-        "alanine": "Alanine",
-        "arginine": "Arginine",
-        "histidine": "Histidine",
-        "serine": "Serine",
-        "fructose": "Fructose",
-        "galactose": "Galactose",
-        "glucose": "Glucose",
-        "maltose": "Maltose",
-        "mannose": "Mannose",
-        "sucrose": "Sucrose",
-        "myoinositol": "m-Inositol",
-        "mannitol": "Mannitol",
-        "glycerol": "Glycerol",
-        "galacturonate": "Galacturonic-Acid",
-        "cellobiose": "Cellobiose",
-    }
+    match = HELD_OUT_RE.search(key)
+    return match.group(1) if match else None
 
-    # Load marine ID mapping
-    marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
-    with open(marine_ids_file, "r") as f:
-        marine_ids_map = {v.rsplit("_", 2)[0]: k for k, v in json.load(f).items()}
 
-    # Load GapMind data
-    from scripts.io import index_format_func
+def fit_concordant_model_and_predict_proba(
+    split: Mapping[str, pd.DataFrame | pd.Series],
+    concordant_genomes: set[str],
+) -> pd.DataFrame | None:
+    """
+    Fit a concordant-trained CatBoost model and predict the full held-out test.
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
-    datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
-    gapmind_data_list = [
-        pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
-        for dataset in datasets
-    ]
-    gapmind_data = pd.concat(gapmind_data_list, axis=0)
-    gapmind_data["genomeId"] = (
-        gapmind_data["genome_id"]
-        .str.split(" ")
-        .str[-1]
-        .apply(index_format_func)
-        .astype(str)
+    Mirrors ``figure5d_full_test_data.fit_concordant_model_and_predict`` (sorted
+    index ordering and ``random_state=42`` for determinism) but returns the
+    predicted probability of growth in addition to the hard label.
+
+    Parameters
+    ----------
+    split : Mapping[str, pd.DataFrame | pd.Series]
+        Output of ``load_single_split_data`` for one split.
+    concordant_genomes : set[str]
+        Genome IDs that are GapMind-concordant for the phenotype.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        Frame indexed by held-out genome ID with columns ``proba`` (P(growth))
+        and ``y_pred`` (0/1), or ``None`` when the concordant training subset is
+        too small or single-class.
+    """
+    train_idx = sorted(set(split["X_train"].index) & concordant_genomes)
+    val_idx = sorted(set(split["X_val"].index) & concordant_genomes)
+
+    if len(train_idx) < MIN_TRAIN_SAMPLES or len(val_idx) < MIN_TRAIN_SAMPLES:
+        return None
+
+    X_train = split["X_train"].loc[train_idx]
+    y_train = split["y_train"].loc[train_idx]
+    X_val = split["X_val"].loc[val_idx]
+    y_val = split["y_val"].loc[val_idx]
+
+    if y_train.nunique() != 2 or y_val.nunique() != 2:
+        return None
+
+    X_test = split["X_test"]
+    if len(X_test) == 0:
+        return None
+
+    model = make_classifier("cb", random_state=RANDOM_STATE)
+    X_val_aligned = align_columns(X_train, X_val)
+    X_test_aligned = align_columns(X_train, X_test)
+
+    model.fit(
+        X_train,
+        y_train,
+        eval_set=(X_val_aligned, y_val),
+        use_best_model=True,
+        verbose=False,
     )
-    gapmind_data.index = gapmind_data["genomeId"]  # type: ignore
-    gapmind_data.index = [marine_ids_map.get(ind, ind) for ind in gapmind_data.index]
-    gapmind_data = gapmind_data.loc[:, gapmind_phenotype_subset]
-    gapmind_data.columns = gapmind_data.columns.str.replace("Carbon__", "")
-    gapmind_data.columns = gapmind_data.columns.map(phenotype_dict)  # type: ignore
 
-    # Convert to binary
-    replace_dict = {
-        "complete": 1,
-        "likely_complete": 1,
-        "steps_missing_low": 0,
-        "steps_missing_medium": 0,
-        "steps_missing_high": 0,
-        "incomplete": 0,
-        "not_present": 0,
-    }
-    gapmind_data_binary = gapmind_data.replace(replace_dict).astype(np.uint8)
-
-    return gapmind_data_binary
+    # CatBoost orders predict_proba columns by sorted class label, so column 1
+    # is P(class == 1) == P(growth).
+    proba = np.asarray(model.predict_proba(X_test_aligned))[:, 1]
+    return pd.DataFrame(
+        {"proba": proba, "y_pred": (proba >= 0.5).astype(int)},
+        index=X_test.index,
+    )
 
 
-def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]]]:
+def fit_full_data_model_and_predict_proba(
+    split: Mapping[str, pd.DataFrame | pd.Series],
+) -> pd.DataFrame | None:
     """
-    Load train/test/val split files (labels only, not features).
+    Fit a full-data CatBoost model (all training samples) and predict the held-out test.
+
+    Mirrors :func:`fit_concordant_model_and_predict_proba` but trains on every training
+    genome with a valid label rather than the GapMind-concordant subset.
 
     Parameters
     ----------
-    base_dir : Path
-        Base directory containing split folders.
+    split : Mapping[str, pd.DataFrame | pd.Series]
+        Output of ``load_split_data`` for one ``dataset_split`` key.
 
     Returns
     -------
-    dict[str, dict[str, dict[str, pd.Series]]]
-        Nested dictionary: {split_type: {key: {y_train, y_val, y_test}}}
+    pd.DataFrame | None
+        Frame indexed by held-out genome ID with columns ``proba`` and ``y_pred``,
+        or ``None`` when the training data is too small or single-class.
     """
-    result: dict[str, dict[str, dict[str, pd.Series]]] = {}
+    y_train = split["y_train"].dropna()
+    y_val = split["y_val"].dropna()
+    if len(y_train) < MIN_TRAIN_SAMPLES or len(y_val) < MIN_TRAIN_SAMPLES:
+        return None
+    if y_train.nunique() != 2 or y_val.nunique() != 2:
+        return None
+    X_test = split["X_test"]
+    if len(X_test) == 0:
+        return None
 
-    # Load random splits
-    if "random_split" in SPLIT_TYPES:
-        random_split_dir = base_dir / "random_split"
-        if random_split_dir.exists():
-            random_split_data = {}
-            for phenotype_dir in random_split_dir.iterdir():
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                if phenotype_name not in PHENOTYPES_TO_ANALYZE:
-                    continue
-                for repeat_dir in phenotype_dir.iterdir():
-                    if not repeat_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_{repeat_dir.name}"
-                    # Load y files only
-                    y_train = pd.read_csv(
-                        repeat_dir / "y_train.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_val = pd.read_csv(
-                        repeat_dir / "y_val.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_test = pd.read_csv(
-                        repeat_dir / "y_test.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    random_split_data[key] = {
-                        "y_train": y_train,
-                        "y_val": y_val,
-                        "y_test": y_test,
-                    }
-            result["random_split"] = random_split_data
-
-    # Load dataset splits
-    if "dataset_split" in SPLIT_TYPES:
-        dataset_split_dir = base_dir / "dataset_split"
-        if dataset_split_dir.exists():
-            dataset_split_data = {}
-            for phenotype_dir in dataset_split_dir.iterdir():
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                if phenotype_name not in PHENOTYPES_TO_ANALYZE:
-                    continue
-                for split_dir in phenotype_dir.iterdir():
-                    if not split_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_{split_dir.name}"
-                    y_train = pd.read_csv(
-                        split_dir / "y_train.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_val = pd.read_csv(
-                        split_dir / "y_val.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_test = pd.read_csv(
-                        split_dir / "y_test.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    dataset_split_data[key] = {
-                        "y_train": y_train,
-                        "y_val": y_val,
-                        "y_test": y_test,
-                    }
-            result["dataset_split"] = dataset_split_data
-
-    # Load phylogeny out-of-clade splits
-    if "phylo_ooc" in SPLIT_TYPES:
-        phylo_split_dir = base_dir / "phylogeny_split"
-        if phylo_split_dir.exists():
-            phylo_ooc_data = {}
-            for phenotype_dir in phylo_split_dir.iterdir():
-                if not phenotype_dir.is_dir():
-                    continue
-                phenotype_name = phenotype_dir.name
-                if phenotype_name not in PHENOTYPES_TO_ANALYZE:
-                    continue
-                ooc_dir = phenotype_dir / "out-of-clade"
-                if not ooc_dir.exists():
-                    continue
-                for split_dir in ooc_dir.iterdir():
-                    if not split_dir.is_dir():
-                        continue
-                    key = f"{phenotype_name}_ooc_{split_dir.name}"
-                    y_train = pd.read_csv(
-                        split_dir / "y_train.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_val = pd.read_csv(
-                        split_dir / "y_val.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    y_test = pd.read_csv(
-                        split_dir / "y_test.tsv",
-                        sep="\t",
-                        index_col=0,
-                        dtype={"genomeID": str},
-                    ).iloc[:, 0]
-                    phylo_ooc_data[key] = {
-                        "y_train": y_train,
-                        "y_val": y_val,
-                        "y_test": y_test,
-                    }
-            result["phylo_ooc"] = phylo_ooc_data
-
-    return result
+    X_train = split["X_train"].loc[y_train.index]
+    X_val = split["X_val"].loc[y_val.index]
+    model = make_classifier("cb", random_state=RANDOM_STATE)
+    X_val_aligned = align_columns(X_train, X_val)
+    X_test_aligned = align_columns(X_train, X_test)
+    model.fit(
+        X_train, y_train, eval_set=(X_val_aligned, y_val),
+        use_best_model=True, verbose=False,
+    )
+    proba = np.asarray(model.predict_proba(X_test_aligned))[:, 1]
+    return pd.DataFrame(
+        {"proba": proba, "y_pred": (proba >= 0.5).astype(int)}, index=X_test.index
+    )
 
 
-def subsample_indices(
-    indices: pd.Index, y: pd.Series, n_samples: int | str, random_state: int
-) -> pd.Index:
-    """
-    Subsample indices using stratified sampling.
-
-    Parameters
-    ----------
-    indices : pd.Index
-        Indices to subsample from.
-    y : pd.Series
-        Labels for stratification.
-    n_samples : int | str
-        Number of samples to select, or "full" for all samples.
-    random_state : int
-        Random state for reproducibility.
-
-    Returns
-    -------
-    pd.Index
-        Subsampled indices.
-    """
-    if n_samples == "full":
-        return indices
-
-    y_subset = y.loc[indices]
-
-    # Check if we have enough samples
-    if len(y_subset) <= n_samples:
-        return indices
-
-    # Check if we have both classes
-    if len(y_subset.unique()) == 1:
-        # Only one class, can't stratify - just random sample
-        sampled_indices = y_subset.sample(
-            n=n_samples, replace=False, random_state=random_state
-        ).index
-    else:
-        # Check if we can do stratified sampling
-        # For stratification to work, sklearn needs at least one sample per class
-        # in both train and test sets
-        n_classes = len(y_subset.unique())
-        test_size = len(y_subset) - n_samples
-
-        # Need at least n_classes samples in test set for stratification
-        if test_size >= n_classes:
-            # Stratified sampling - take the train portion
-            sampled_indices, _ = train_test_split(
-                y_subset.index,
-                train_size=n_samples,
-                stratify=y_subset,
-                random_state=random_state,
-            )
-        else:
-            # Not enough samples for stratified split, use random sampling
-            sampled_indices = y_subset.sample(
-                n=n_samples, replace=False, random_state=random_state
-            ).index
-
-        sampled_indices = pd.Index(sampled_indices)
-
-    return sampled_indices
-
-
-def run_data_requirements_analysis(
-    split_data: dict[str, dict[str, dict[str, pd.Series]]],
-    feature_data: pd.DataFrame,
-    gapmind_data: pd.DataFrame,
-    checkpoint_file: Path | None = None,
+def collect_per_sample_predictions(
+    split_data: Mapping[str, Mapping[str, Mapping[str, pd.DataFrame | pd.Series]]],
+    gapmind_predictions: pd.DataFrame,
+    experimental_phenotypes: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Run data requirements analysis across all splits and configurations.
+    Build the pooled per-sample prediction table across all dataset splits.
 
     Parameters
     ----------
-    split_data : dict
-        Nested dictionary of splits from load_split_files().
-    feature_data : pd.DataFrame
-        Feature matrix with samples as rows and features as columns.
-    gapmind_data : pd.DataFrame
-        GapMind predictions for identifying concordant samples.
-    checkpoint_file : Path, optional
-        Path to incremental checkpoint CSV. If it exists, already-completed
-        (split_type, key) combinations are skipped and the file is appended to.
+    split_data : Mapping
+        Nested split dictionary from ``load_split_data`` (``dataset_split`` only).
+    gapmind_predictions : pd.DataFrame
+        Loose-mode GapMind predictions (genomes x phenotypes, 0/1).
+    experimental_phenotypes : pd.DataFrame
+        Combined experimental phenotype table (genomes x phenotypes, 0/1).
 
     Returns
     -------
     pd.DataFrame
-        Results dataframe with performance metrics.
+        One row per held-out test genome with columns ``phenotype``,
+        ``held_out_dataset``, ``genome``, ``y_true``, ``y_pred``, ``proba``,
+        ``confidence``, ``gapmind_pred``.
     """
-    results = []
+    records: list[dict[str, object]] = []
+    splits = split_data["dataset_split"]
 
-    # Resume from checkpoint if available
-    done_keys: set[tuple[str, str]] = set()
-    if checkpoint_file is not None and checkpoint_file.exists():
-        existing = pd.read_csv(checkpoint_file)
-        done_keys = set(
-            (row["split_type"], row["key"])
-            for _, row in existing[["split_type", "key"]].drop_duplicates().iterrows()
+    for key, split in tqdm(splits.items(), total=len(splits), desc="S15 splits"):
+        held_out = parse_held_out_dataset(key)
+        if held_out is None:
+            continue
+        phenotype = key.split("_", 1)[0]
+
+        concordant_genomes, _ = get_concordant_and_discordant_samples(
+            gapmind_predictions, experimental_phenotypes, phenotype
         )
-        results.extend(existing.to_dict("records"))
-        print(f"  Resuming: {len(done_keys)} (split_type, key) combinations already done.")
+        if len(concordant_genomes) == 0:
+            continue
 
-    # Count total iterations for progress bar
-    total_iterations = 0
-    for split_type in split_data:
-        for key in split_data[split_type]:
-            for training_type in ["full", "concordant"]:
-                for sample_size in SAMPLE_SIZES:
-                    total_iterations += N_REPEATS
+        predictions = fit_concordant_model_and_predict_proba(
+            split, concordant_genomes
+        )
+        if predictions is None:
+            continue
 
-    with tqdm(total=total_iterations, desc="Running analysis") as pbar:
-        for split_type in split_data:
-            for key in split_data[split_type]:
-                phenotype_name = key.split("_")[0]
-                pbar.set_postfix_str(f"{split_type}/{key}")
+        y_test = split["y_test"]
+        gm_col = (
+            gapmind_predictions[phenotype]
+            if phenotype in gapmind_predictions.columns
+            else None
+        )
 
-                # Skip if already done in checkpoint
-                if (split_type, key) in done_keys:
-                    pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
-                    continue
+        for genome in predictions.index:
+            y_true = y_test.loc[genome]
+            if pd.isna(y_true):
+                continue
+            proba = float(predictions.loc[genome, "proba"])
+            y_pred = int(predictions.loc[genome, "y_pred"])
 
-                # Get split data
-                y_train = split_data[split_type][key]["y_train"]
-                y_val = split_data[split_type][key]["y_val"]
-                y_test = split_data[split_type][key]["y_test"]
+            gm_pred: float | int = np.nan
+            if gm_col is not None and genome in gm_col.index:
+                gm_val = gm_col.loc[genome]
+                if not pd.isna(gm_val):
+                    gm_pred = int(gm_val)
 
-                # Get feature indices
-                train_indices = y_train.index.intersection(feature_data.index)
-                val_indices = y_val.index.intersection(feature_data.index)
-                test_indices = y_test.index.intersection(feature_data.index)
+            records.append(
+                {
+                    "phenotype": phenotype,
+                    "held_out_dataset": held_out,
+                    "genome": genome,
+                    "y_true": int(y_true),
+                    "y_pred": y_pred,
+                    "proba": proba,
+                    "confidence": max(proba, 1.0 - proba),
+                    "gapmind_pred": gm_pred,
+                }
+            )
 
-                # Get features and labels
-                X_train_full = feature_data.loc[train_indices]
-                y_train_full = y_train.loc[train_indices]
-                X_val_full = feature_data.loc[val_indices]
-                y_val_full = y_val.loc[val_indices]
-                X_test = feature_data.loc[test_indices]
-                y_test_subset = y_test.loc[test_indices]
+    return pd.DataFrame.from_records(records)
 
-                # Skip if test set is too small
-                if len(X_test) < 10:
-                    pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
-                    continue
 
-                # Identify concordant samples in train/val/test
-                gapmind_train = gapmind_data.loc[
-                    train_indices.intersection(gapmind_data.index), phenotype_name
-                ]
-                concordant_train_mask = y_train_full.loc[gapmind_train.index] == gapmind_train
-                concordant_train_indices = gapmind_train[concordant_train_mask].index
+def collect_full_data_per_sample(
+    split_data: Mapping[str, Mapping[str, Mapping[str, pd.DataFrame | pd.Series]]],
+    gapmind_predictions: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build the pooled full-data-model per-sample table across all dataset splits."""
+    records: list[dict[str, object]] = []
+    splits = split_data["dataset_split"]
+    for key, split in tqdm(splits.items(), total=len(splits), desc="full-data splits"):
+        held_out = parse_held_out_dataset(key)
+        if held_out is None:
+            continue
+        phenotype = key.split("_", 1)[0]
+        predictions = fit_full_data_model_and_predict_proba(split)
+        if predictions is None:
+            continue
+        y_test = split["y_test"]
+        gm_col = (
+            gapmind_predictions[phenotype]
+            if phenotype in gapmind_predictions.columns else None
+        )
+        for genome in predictions.index:
+            y_true = y_test.loc[genome]
+            if pd.isna(y_true):
+                continue
+            proba = float(predictions.loc[genome, "proba"])
+            gm_pred: float | int = np.nan
+            if gm_col is not None and genome in gm_col.index and not pd.isna(gm_col.loc[genome]):
+                gm_pred = int(gm_col.loc[genome])
+            records.append({
+                "phenotype": phenotype, "held_out_dataset": held_out, "genome": genome,
+                "y_true": int(y_true), "y_pred": int(predictions.loc[genome, "y_pred"]),
+                "proba": proba, "confidence": max(proba, 1.0 - proba), "gapmind_pred": gm_pred,
+            })
+    return pd.DataFrame.from_records(records)
 
-                gapmind_val = gapmind_data.loc[
-                    val_indices.intersection(gapmind_data.index), phenotype_name
-                ]
-                concordant_val_mask = y_val_full.loc[gapmind_val.index] == gapmind_val
-                concordant_val_indices = gapmind_val[concordant_val_mask].index
 
-                gapmind_test = gapmind_data.loc[
-                    test_indices.intersection(gapmind_data.index), phenotype_name
-                ]
-                concordant_test_mask = y_test_subset.loc[gapmind_test.index] == gapmind_test
-                concordant_test_indices = gapmind_test[concordant_test_mask].index
-                discordant_test_indices = gapmind_test[~concordant_test_mask].index
+def safe_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Balanced accuracy that falls back to plain accuracy on a single-class set.
 
-                # Train models with different configurations
-                for training_type in ["full", "concordant"]:
-                    # Set base indices for sampling
-                    if training_type == "full":
-                        base_train_indices = train_indices
-                        base_val_indices = val_indices
-                    else:  # concordant
-                        base_train_indices = concordant_train_indices
-                        base_val_indices = concordant_val_indices
+    Parameters
+    ----------
+    y_true : np.ndarray
+        Ground-truth labels.
+    y_pred : np.ndarray
+        Predicted labels.
 
-                    for sample_size in SAMPLE_SIZES:
-                        for repeat_idx in range(N_REPEATS):
-                            pbar.update(1)
+    Returns
+    -------
+    float
+        Balanced accuracy when both classes are present, plain accuracy when a
+        single class is present, ``np.nan`` when the input is empty.
+    """
+    if len(y_true) == 0:
+        return float("nan")
+    if len(np.unique(y_true)) < 2:
+        return float((y_true == y_pred).mean())
+    return float(balanced_accuracy_score(y_true, y_pred))
 
-                            # Subsample training data
-                            repeat_random_state = RANDOM_STATE + repeat_idx
-                            sampled_train_indices = subsample_indices(
-                                base_train_indices,
-                                y_train_full,
-                                sample_size,
-                                repeat_random_state,
-                            )
 
-                            # Skip if we don't have enough samples
-                            if len(sampled_train_indices) < 5:
-                                continue
+def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute the pooled risk-coverage curve using model confidence.
 
-                            # Get subsampled data
-                            X_train = X_train_full.loc[sampled_train_indices]
-                            y_train = y_train_full.loc[sampled_train_indices]
+    Test genomes are ranked by ``confidence`` (descending); at each coverage
+    level the most-confident fraction is retained and balanced accuracy is
+    recomputed on that subset.
 
-                            # Skip if training doesn't have both classes
-                            if len(y_train.unique()) != 2:
-                                continue
+    Parameters
+    ----------
+    per_sample : pd.DataFrame
+        Output of :func:`collect_per_sample_predictions`.
 
-                            # Use full validation set (aligned with training indices)
-                            X_val = X_val_full.loc[base_val_indices]
-                            y_val = y_val_full.loc[base_val_indices]
+    Returns
+    -------
+    pd.DataFrame
+        One row per coverage level with retained-subset balanced accuracy,
+        accuracy, sample count, and confidence threshold.
+    """
+    ordered = per_sample.sort_values(
+        "confidence", ascending=False, kind="mergesort"
+    ).reset_index(drop=True)
+    y_true = ordered["y_true"].to_numpy()
+    y_pred = ordered["y_pred"].to_numpy()
+    n_total = len(ordered)
 
-                            # Skip if validation doesn't have both classes
-                            if len(y_val.unique()) != 2:
-                                continue
+    rows: list[dict[str, object]] = []
+    for coverage in COVERAGE_GRID:
+        k = max(1, int(round(coverage * n_total)))
+        rows.append(
+            {
+                "coverage": float(coverage),
+                "n_retained": k,
+                "confidence_threshold": float(ordered["confidence"].iloc[k - 1]),
+                "balanced_accuracy": safe_balanced_accuracy(
+                    y_true[:k], y_pred[:k]
+                ),
+                "accuracy": float((y_true[:k] == y_pred[:k]).mean()),
+            }
+        )
+    return pd.DataFrame(rows)
 
-                            # Train model
-                            model = make_classifier("cb", random_state=RANDOM_STATE)
 
-                            # Align validation features
-                            X_val_aligned = X_val.copy()
-                            missing_cols = X_train.columns.difference(X_val_aligned.columns)
-                            if len(missing_cols) > 0:
-                                missing_df = pd.DataFrame(
-                                    0, index=X_val_aligned.index, columns=missing_cols
-                                )
-                                X_val_aligned = pd.concat([X_val_aligned, missing_df], axis=1)
-                            X_val_aligned = X_val_aligned[X_train.columns]
+def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute per-phenotype risk-coverage curves using class-stratified confidence.
 
-                            model.fit(
-                                X_train,
-                                y_train,
-                                eval_set=(X_val_aligned, y_val),
-                                use_best_model=True,
-                                verbose=False,
-                            )
+    Single-class abstention by raw ``max(p, 1 - p)`` is degenerate on
+    per-phenotype subsets when the model is class-skewed: the top-confidence
+    subset can be entirely one predicted class, collapsing balanced accuracy
+    to 0.5 regardless of how accurate the model actually is. To avoid that,
+    at each coverage level we retain the top fraction of predictions
+    *within each predicted class*: the most-confident ``y_pred = 1`` calls
+    (highest ``proba``) and the most-confident ``y_pred = 0`` calls (lowest
+    ``proba``) are kept in parallel. This guarantees both predicted classes
+    are represented at every coverage level, so balanced accuracy is
+    well-defined throughout.
 
-                            # Align test features
-                            X_test_aligned = X_test.copy()
-                            missing_cols = X_train.columns.difference(X_test_aligned.columns)
-                            if len(missing_cols) > 0:
-                                missing_df = pd.DataFrame(
-                                    0, index=X_test_aligned.index, columns=missing_cols
-                                )
-                                X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
-                            X_test_aligned = X_test_aligned[X_train.columns]
+    Parameters
+    ----------
+    per_sample : pd.DataFrame
+        Output of :func:`collect_per_sample_predictions`.
 
-                            # Evaluate on full test set
-                            result_full = _get_scores(
-                                model, X_test_aligned, y_test_subset, SCORING
-                            )
-                            result_full["test_subset"] = "full"
-                            result_full["n_test_samples"] = len(y_test_subset)
-                            result_full["n_train_samples"] = len(y_train)
-                            result_full["sample_size"] = sample_size
-                            result_full["split_type"] = split_type
-                            result_full["key"] = key
-                            result_full["phenotype"] = phenotype_name
-                            result_full["training_type"] = training_type
-                            result_full["repeat"] = repeat_idx
-                            results.append(result_full)
-
-                            # Evaluate on concordant test samples
-                            if len(concordant_test_indices) >= 5:
-                                X_test_concordant = X_test_aligned.loc[concordant_test_indices]
-                                y_test_concordant = y_test_subset.loc[concordant_test_indices]
-                                result_concordant = _get_scores(
-                                    model, X_test_concordant, y_test_concordant, SCORING
-                                )
-                                result_concordant["test_subset"] = "concordant"
-                                result_concordant["n_test_samples"] = len(y_test_concordant)
-                                result_concordant["n_train_samples"] = len(y_train)
-                                result_concordant["sample_size"] = sample_size
-                                result_concordant["split_type"] = split_type
-                                result_concordant["key"] = key
-                                result_concordant["phenotype"] = phenotype_name
-                                result_concordant["training_type"] = training_type
-                                result_concordant["repeat"] = repeat_idx
-                                results.append(result_concordant)
-
-                            # Evaluate on discordant test samples
-                            if len(discordant_test_indices) >= 5:
-                                X_test_discordant = X_test_aligned.loc[discordant_test_indices]
-                                y_test_discordant = y_test_subset.loc[discordant_test_indices]
-                                result_discordant = _get_scores(
-                                    model, X_test_discordant, y_test_discordant, SCORING
-                                )
-                                result_discordant["test_subset"] = "discordant"
-                                result_discordant["n_test_samples"] = len(y_test_discordant)
-                                result_discordant["n_train_samples"] = len(y_train)
-                                result_discordant["sample_size"] = sample_size
-                                result_discordant["split_type"] = split_type
-                                result_discordant["key"] = key
-                                result_discordant["phenotype"] = phenotype_name
-                                result_discordant["training_type"] = training_type
-                                result_discordant["repeat"] = repeat_idx
-                                results.append(result_discordant)
-
-                # Checkpoint after finishing this (split_type, key)
-                if checkpoint_file is not None and len(results) > 0:
-                    pd.DataFrame(results).to_csv(checkpoint_file, index=False)
-
-    return pd.DataFrame(results)
+    Returns
+    -------
+    pd.DataFrame
+        One row per (phenotype, coverage) with retained-subset balanced
+        accuracy, accuracy, sample count, and per-class retained counts.
+    """
+    rows: list[dict[str, object]] = []
+    for phenotype, group in per_sample.groupby("phenotype", sort=True):
+        pos = (
+            group[group["y_pred"] == 1]
+            .sort_values("proba", ascending=False, kind="mergesort")
+            .reset_index(drop=True)
+        )
+        neg = (
+            group[group["y_pred"] == 0]
+            .sort_values("proba", ascending=True, kind="mergesort")
+            .reset_index(drop=True)
+        )
+        n_pos, n_neg = len(pos), len(neg)
+        if n_pos == 0 and n_neg == 0:
+            continue
+        for coverage in COVERAGE_GRID:
+            k_pos = max(1, int(round(coverage * n_pos))) if n_pos else 0
+            k_neg = max(1, int(round(coverage * n_neg))) if n_neg else 0
+            retained = pd.concat(
+                [pos.iloc[:k_pos], neg.iloc[:k_neg]], ignore_index=True
+            )
+            y_true = retained["y_true"].to_numpy()
+            y_pred = retained["y_pred"].to_numpy()
+            rows.append(
+                {
+                    "phenotype": phenotype,
+                    "coverage": float(coverage),
+                    "n_retained": len(retained),
+                    "n_retained_pos": k_pos,
+                    "n_retained_neg": k_neg,
+                    "balanced_accuracy": safe_balanced_accuracy(y_true, y_pred),
+                    "accuracy": float((y_true == y_pred).mean())
+                    if len(retained)
+                    else float("nan"),
+                }
+            )
+    return pd.DataFrame(rows)
 
 
 def main() -> None:
-    """Main function to generate Figure 7 data."""
-    # Define paths
-    SPLITS_DIR = Path("data/processed/train_test_splits")
-    FEATURE_FILE = Path(
-        f"data/processed/features_reduced/combined_datasets/{FEATURE_TYPE}.tsv"
-    )
-    OUTPUT_DIR = Path("data/outputs/figure8")
+    """Build and persist the Supplementary Figure S15 data tables."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load features
-    print(f"Loading {FEATURE_TYPE.upper()} feature data...")
-    feature_data = pd.read_csv(
-        FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
-    print(f"  Feature data shape: {feature_data.shape}")
-
-    # Load GapMind predictions
-    print("\nLoading GapMind predictions...")
-    gapmind_data = load_gapmind_predictions()
-    print(f"  GapMind predictions shape: {gapmind_data.shape}")
-
-    # Load splits
-    print("\nLoading train-test splits...")
-    split_data = load_split_files(SPLITS_DIR)
-    print("\nLoaded splits summary:")
-    for split_type in split_data:
-        print(f"  {split_type}: {len(split_data[split_type])} splits")
-
-    # Run analysis
-    print("\nRunning data requirements analysis...")
-    print(f"  Feature type: {FEATURE_TYPE.upper()}")
-    print(f"  Phenotypes: {PHENOTYPES_TO_ANALYZE}")
-    print(f"  Sample sizes: {SAMPLE_SIZES}")
-    print(f"  Repeats per configuration: {N_REPEATS}")
-    print(f"  Training types: full, concordant")
-    print(f"  Test subsets: full, concordant, discordant")
-
-    checkpoint_file = (
-        OUTPUT_DIR / f"figure8_data_requirements_{FEATURE_TYPE}_checkpoint.csv"
-    )
-    results = run_data_requirements_analysis(
-        split_data, feature_data, gapmind_data, checkpoint_file=checkpoint_file
+    print("Loading GapMind predictions (loose)...")
+    gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
+    print(
+        f"  {len(gapmind_predictions)} genomes, "
+        f"{len(gapmind_predictions.columns)} phenotypes"
     )
 
-    # Add feature type to results
-    results["feature_type"] = FEATURE_TYPE
+    print("Loading experimental phenotypes...")
+    experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
+    print(
+        f"  {len(experimental_phenotypes)} genomes, "
+        f"{len(experimental_phenotypes.columns)} phenotypes"
+    )
 
-    # Save results
-    results_file = OUTPUT_DIR / f"figure8_data_requirements_{FEATURE_TYPE}.csv"
-    results.to_csv(results_file, index=False)
-    print(f"\nSaved results to: {results_file}")
+    print("Loading dataset_split train-test splits...")
+    split_data = load_split_data(
+        base_dir=SPLITS_DIR,
+        split_types=["dataset_split"],
+        feature_file=KOFAM_FEATURE_FILE,
+    )
 
-    # Print summary statistics
-    print("\nResults summary:")
-    print(f"  Total experiments: {len(results)}")
+    per_sample = collect_per_sample_predictions(
+        split_data, gapmind_predictions, experimental_phenotypes
+    )
+    if per_sample.empty:
+        raise RuntimeError("No per-sample predictions were produced.")
 
-    if len(results) > 0:
-        print("\nBy split type:")
-        summary = results.groupby("split_type")["balanced_accuracy"].describe().round(3)
-        print(summary)
+    per_sample = per_sample.sort_values(
+        ["phenotype", "held_out_dataset", "genome"]
+    ).reset_index(drop=True)
 
-        print("\nBy phenotype (mean balanced accuracy):")
-        phenotype_summary = (
-            results.groupby("phenotype")["balanced_accuracy"]
-            .agg(["mean", "std", "count"])
-            .round(3)
-            .sort_values("mean", ascending=False)
+    risk_coverage = build_risk_coverage(per_sample)
+
+    per_sample.to_csv(OUTPUT_DIR / "figure8_per_sample.tsv", sep="\t", index=False)
+    risk_coverage.to_csv(
+        OUTPUT_DIR / "figure8_risk_coverage.tsv", sep="\t", index=False
+    )
+
+    full_per_sample = collect_full_data_per_sample(split_data, gapmind_predictions)
+    full_per_sample = full_per_sample.sort_values(
+        ["phenotype", "held_out_dataset", "genome"]
+    ).reset_index(drop=True)
+    full_per_sample.to_csv(
+        OUTPUT_DIR / "figure8_per_sample_fulldata.tsv", sep="\t", index=False
+    )
+    print(f"  full-data per-sample genomes: {len(full_per_sample)}")
+
+    calib_rows = []
+    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+        ct = calibration_table(frame, n_bins=10)
+        ct.insert(0, "model", model_name)
+        ct["ece"] = expected_calibration_error(
+            frame["y_true"].to_numpy(), frame["proba"].to_numpy(), n_bins=10
         )
-        print(phenotype_summary)
-    else:
-        print("\nNo results generated. All experiments were skipped.")
-        print("Check if test sets are too small or don't have both classes.")
+        calib_rows.append(ct)
+    pd.concat(calib_rows, ignore_index=True).to_csv(
+        OUTPUT_DIR / "figure8_calibration.tsv", sep="\t", index=False
+    )
 
-    print("\nDone!")
+    rc_rows = []
+    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+        rc = build_risk_coverage_by_phenotype(frame)
+        rc.insert(0, "model", model_name)
+        rc_rows.append(rc)
+    pd.concat(rc_rows, ignore_index=True).to_csv(
+        OUTPUT_DIR / "figure8_risk_coverage_by_phenotype.tsv", sep="\t", index=False
+    )
+
+    print(f"\nSaved Supplementary Figure S15 data to {OUTPUT_DIR}")
+    print(f"  pooled held-out test genomes: {len(per_sample)}")
+    full = risk_coverage[risk_coverage["coverage"] == 1.0].iloc[0]
+    half = risk_coverage.iloc[(risk_coverage["coverage"] - 0.5).abs().argmin()]
+    print(
+        f"  balanced accuracy @ coverage 1.00: {full['balanced_accuracy']:.3f}"
+    )
+    print(
+        f"  balanced accuracy @ coverage {half['coverage']:.2f}: "
+        f"{half['balanced_accuracy']:.3f}"
+    )
 
 
 if __name__ == "__main__":

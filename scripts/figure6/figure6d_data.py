@@ -275,7 +275,7 @@ def main() -> None:
     """
     # Define paths
     SPLITS_DIR = Path("data/processed/train_test_splits")
-    OUTPUT_DIR = Path("data/outputs/figure7")
+    OUTPUT_DIR = Path("data/outputs/figure6")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     # Feature files
@@ -289,7 +289,7 @@ def main() -> None:
     # Define which split types to process
     SPLIT_TYPES = ["random_split", "dataset_split"]
 
-    # Common phenotypes (from figure3ab_data.py and figure7c_data.py)
+    # Common phenotypes (from figure3ab_data.py and figure6c_data.py)
     PHENOTYPES = [
         "Alanine",
         "Arginine",
@@ -347,7 +347,7 @@ def main() -> None:
     )
 
     # Save results
-    results_file_combined = OUTPUT_DIR / "figure7d_combined_features_results.csv"
+    results_file_combined = OUTPUT_DIR / "figure6d_combined_features_results.csv"
     results_combined.to_csv(results_file_combined, index=False)
     print(f"\nSaved combined features results to: {results_file_combined}")
 
@@ -374,7 +374,7 @@ def main() -> None:
 
     # Save results
     if not results_filtered.empty:
-        results_file_filtered = OUTPUT_DIR / "figure7d_phenotype_filtered_results.csv"
+        results_file_filtered = OUTPUT_DIR / "figure6d_phenotype_filtered_results.csv"
         results_filtered.to_csv(results_file_filtered, index=False)
         print(f"\nSaved phenotype-filtered results to: {results_file_filtered}")
     else:
@@ -401,7 +401,7 @@ def main() -> None:
     all_results = annotate_minority_test(all_results, full_test_minority_counts())
 
     # Save combined results
-    results_file_all = OUTPUT_DIR / "figure7d_all_results.csv"
+    results_file_all = OUTPUT_DIR / "figure6d_all_results.csv"
     all_results.to_csv(results_file_all, index=False)
     print(f"\nSaved all results to: {results_file_all}")
 

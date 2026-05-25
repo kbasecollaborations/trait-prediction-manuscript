@@ -753,7 +753,7 @@ def plot_problematic_sample_summary(
     )
 
 
-def create_figure7a(
+def create_figure6a(
     output_file: Path,
     gapmind_data_dir: Path | None = None,
 ) -> None:
@@ -797,6 +797,6 @@ def create_figure7a(
 
 
 if __name__ == "__main__":
-    output_file = Path("figures/figure7a.pdf")
+    output_file = Path("figures/figure6a.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    create_figure7a(output_file)
+    create_figure6a(output_file)

@@ -57,12 +57,12 @@ def plot_precision_recall_scatter(
     concordant_df = filter_by_minority(concordant_df, concordant_minority)
 
     # 2. Y_soft filtered samples (current Figure 6B) — full test
-    ysoft_df = pd.read_csv(data_dir / "figure7b_confident_ml_results.csv")
+    ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
     ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
     # 3. Misclassified samples removed (Figure 6C filtered condition) — full test
-    misclass_df = pd.read_csv(data_dir / "figure7c_dataset_split_results.csv")
+    misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
     misclass_df = filter_by_minority(misclass_df, full_minority)
 
@@ -226,7 +226,7 @@ def create_figure(
     Parameters
     ----------
     data_file : Path
-        Path to CSV file with results from figure7c_data.py.
+        Path to CSV file with results from figure6c_data.py.
     output_file : Path
         Path to save the output figure.
     phenotype_order : list[str] | None
@@ -299,9 +299,9 @@ def create_figure(
 
 
 if __name__ == "__main__":
-    data_dir = Path("data/outputs/figure7")
-    data_file = data_dir / "figure7c_dataset_split_results.csv"
-    output_file = Path("figures/figure7c.pdf")
+    data_dir = Path("data/outputs/figure6")
+    data_file = data_dir / "figure6c_dataset_split_results.csv"
+    output_file = Path("figures/figure6c.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     create_figure(data_file, output_file)
