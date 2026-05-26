@@ -1,51 +1,46 @@
 #!/usr/bin/env python3
-"""Aggregate paired-boxplot view for Figure 6 Panel B.
+"""Aggregate visualisations for Figure 6 Panels B and C.
 
-Replaces the original per-phenotype grouped-bar visualisation. Each box shows
-the distribution of per-phenotype mean cross-dataset balanced accuracy across
-the 15 common phenotypes, for six training conditions:
+Panel B (``plot_metric_sweep``) plots cross-dataset balanced accuracy,
+precision, and recall (mean across 15 phenotypes, with SEM error bars) as a
+function of the GapMind weight $w_{\\mathrm{gap}}$ in the soft-label
+confidence filter. The problematic-sample-removal and concordance filters are
+anchored as marker columns at the left and right ends of the sweep so the
+six conditions appear on a single axis.
 
-1. Concordant samples (Figure 5C data).
-2. Mechanism-free filter (``free_balanced``: ``y_soft`` with ``w_gapmind=0``).
-3. Low-mechanism filter (``current``: original ``y_soft`` weights).
-4. High-mechanism filter (``high_mech``).
-5. Very-high-mechanism filter (``very_high_mech``).
-6. Problematic samples removed (Figure 6C ``filtered`` condition).
+Panel C (``plot_gapmind_delta_forest``) plots the per-phenotype difference
+$\\Delta = \\mathrm{ML} - \\mathrm{GapMind}$ on a chosen metric (recall by
+default) on the same full cross-dataset held-out test set, comparing two
+representative ML filters (concordance-trained ML and the mechanism-free
+confidence filter). Phenotypes are sorted by the concordant-ML $\\Delta$, and
+the annotation reports the count of phenotypes with positive $\\Delta$ and
+the paired one-sided Wilcoxon signed-rank $p$-value against GapMind.
 
-All conditions are evaluated on the same full cross-dataset held-out test set.
+``best_panel_b_config`` is a small utility that returns the highest-performing
+confidence-sweep config for logging in ``figure6_plot.py``.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib.axes import Axes
 
 from scripts.minority_filter import filter_by_minority, full_test_minority_counts
 
-CONDITION_ORDER: list[str] = [
-    "Problematic removed",
-    "Confidence (no GapMind)",
-    "Confidence (w=0.3)",
-    "Confidence (w=0.4)",
-    "Confidence (w=0.5)",
-    "Concordant",
+CONFIDENCE_CONFIGS: list[str] = [
+    "free_balanced",
+    "current",
+    "high_mech",
+    "very_high_mech",
 ]
-
-# Distinct anchor colours for the two reference conditions (problematic-sample
-# removal and concordant training); a perceptual single-hue gradient for the
-# four confidence-filter variants, light-to-dark as GapMind weight increases.
-CONDITION_COLORS: dict[str, str] = {
-    "Problematic removed": "#8D6E63",
-    "Confidence (no GapMind)": "#A6DBA0",
-    "Confidence (w=0.3)": "#5AAE61",
-    "Confidence (w=0.4)": "#1B7837",
-    "Confidence (w=0.5)": "#00441B",
-    "Concordant": "#2E86AB",
+W_GAP_VALUES: dict[str, float] = {
+    "free_balanced": 0.0,
+    "current": 0.3,
+    "high_mech": 0.4,
+    "very_high_mech": 0.5,
 }
 
 CONFIG_TO_LABEL: dict[str, str] = {
@@ -53,181 +48,389 @@ CONFIG_TO_LABEL: dict[str, str] = {
     "current": "Confidence (w=0.3)",
     "high_mech": "Confidence (w=0.4)",
     "very_high_mech": "Confidence (w=0.5)",
+    "problematic_removed": "Problematic removed",
+    "concordant": "Concordant",
+}
+
+CONDITION_COLORS: dict[str, str] = {
+    "problematic_removed": "#8D6E63",
+    "free_balanced": "#A6DBA0",
+    "current": "#5AAE61",
+    "high_mech": "#1B7837",
+    "very_high_mech": "#00441B",
+    "concordant": "#2E86AB",
+    "gapmind": "#8B5CF6",
+}
+
+METRIC_COLORS: dict[str, str] = {
+    "balanced_accuracy": "#1f77b4",
+    "precision": "#9467bd",
+    "recall": "#d62728",
+}
+METRIC_LABELS: dict[str, str] = {
+    "balanced_accuracy": "Balanced accuracy",
+    "precision": "Precision",
+    "recall": "Recall",
+}
+METRIC_MARKERS: dict[str, str] = {
+    "balanced_accuracy": "o",
+    "precision": "s",
+    "recall": "^",
 }
 
 
-def load_panel_b_long(
-    data_dir: Path,
-    phenotypes: list[str],
-    metric: str = "balanced_accuracy",
-) -> pd.DataFrame:
-    """Assemble a long-form dataframe with one row per (condition, phenotype, repeat).
+def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
+    """Assemble long-form data for the six filter conditions.
 
     Parameters
     ----------
-    data_dir : Path
-        Directory containing the Figure 6 output CSVs.
-    phenotypes : list[str]
-        Phenotypes to include (in order).
-    metric : str
-        Metric column to extract, by default ``"balanced_accuracy"``.
-
-    Returns
-    -------
-    pd.DataFrame
-        Columns ``condition``, ``phenotype``, ``metric_value``.
-    """
-    full_minority = full_test_minority_counts()
-    phenotype_set = set(phenotypes)
-
-    frames: list[pd.DataFrame] = []
-
-    # 1. Concordant-trained on full cross-dataset test (Figure 5C data).
-    concordant = pd.read_csv(
-        Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
-    )
-    concordant = concordant[
-        (concordant["split_type"] == "dataset_split")
-        & (concordant["test_type"] == "full")
-    ].copy()
-    concordant = filter_by_minority(concordant, full_minority)
-    concordant = concordant[concordant["phenotype"].isin(phenotype_set)]
-    frames.append(
-        pd.DataFrame(
-            {
-                "condition": "Concordant",
-                "phenotype": concordant["phenotype"],
-                "metric_value": concordant[metric],
-            }
-        )
-    )
-
-    # 2-5. Weight-sweep configs (Phase 2 results).
-    sweep_file = data_dir / "figure6b_weight_sweep_combined.csv"
-    sweep_df = pd.read_csv(sweep_file)
-    sweep_df = sweep_df[sweep_df["split_type"] == "dataset_split"].copy()
-    sweep_df = filter_by_minority(sweep_df, full_minority)
-    sweep_df = sweep_df[sweep_df["phenotype"].isin(phenotype_set)]
-    for config_name, label in CONFIG_TO_LABEL.items():
-        sub = sweep_df[sweep_df["config"] == config_name]
-        frames.append(
-            pd.DataFrame(
-                {
-                    "condition": label,
-                    "phenotype": sub["phenotype"],
-                    "metric_value": sub[metric],
-                }
-            )
-        )
-
-    # 6. Problematic-sample removal (Figure 6C "filtered" condition).
-    misclass = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
-    misclass = misclass[misclass["condition"] == "filtered"].copy()
-    misclass = filter_by_minority(misclass, full_minority, key_column="split")
-    misclass = misclass[misclass["phenotype"].isin(phenotype_set)]
-    frames.append(
-        pd.DataFrame(
-            {
-                "condition": "Problematic removed",
-                "phenotype": misclass["phenotype"],
-                "metric_value": misclass[metric],
-            }
-        )
-    )
-
-    long_df = pd.concat(frames, ignore_index=True)
-    long_df = long_df.dropna(subset=["metric_value"])
-    return long_df
-
-
-def plot_aggregate_filter_comparison(
-    ax: Axes,
-    data_dir: Path,
-    phenotypes: list[str],
-    metric: str = "balanced_accuracy",
-    ylabel: str | None = None,
-) -> pd.DataFrame:
-    """Plot the new aggregate Panel B as paired boxplots across phenotypes.
-
-    Each box shows the distribution of per-phenotype mean ``metric`` across
-    the supplied phenotype set. Individual phenotype means are overlaid as
-    small jittered points to expose the underlying spread.
-
-    Parameters
-    ----------
-    ax : Axes
-        Axes to draw on.
     data_dir : Path
         Directory containing Figure 6 output CSVs.
     phenotypes : list[str]
         Phenotypes to include.
-    metric : str
-        Metric column to plot, by default ``"balanced_accuracy"``.
-    ylabel : str | None
-        Y-axis label. Defaults to a human-readable label for the metric.
 
     Returns
     -------
     pd.DataFrame
-        The per-condition per-phenotype mean used for the boxplot, useful for
-        downstream summary tables.
+        Columns ``config``, ``phenotype``, ``balanced_accuracy``, ``precision``,
+        ``recall``, ``n_train``, ``n_val``. The six configs are the four
+        confidence-filter weight settings plus ``concordant`` and
+        ``problematic_removed``.
     """
-    long_df = load_panel_b_long(data_dir, phenotypes, metric=metric)
+    full_minority = full_test_minority_counts()
+    phenotype_set = set(phenotypes)
+    metrics = ["balanced_accuracy", "precision", "recall"]
+    cols = ["phenotype", *metrics, "n_train", "n_val"]
+    rows: list[pd.DataFrame] = []
 
-    pheno_means = (
-        long_df.groupby(["condition", "phenotype"])["metric_value"]
+    sweep = pd.read_csv(data_dir / "figure6b_weight_sweep_combined.csv")
+    sweep = sweep[sweep["split_type"] == "dataset_split"].copy()
+    sweep = filter_by_minority(sweep, full_minority)
+    sweep = sweep[sweep["phenotype"].isin(phenotype_set)]
+    for cfg in CONFIDENCE_CONFIGS:
+        sub = sweep[sweep["config"] == cfg][cols].assign(config=cfg)
+        rows.append(sub)
+
+    conc = pd.read_csv(
+        Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
+    )
+    conc = conc[
+        (conc["split_type"] == "dataset_split") & (conc["test_type"] == "full")
+    ].copy()
+    conc = filter_by_minority(conc, full_minority)
+    conc = conc[conc["phenotype"].isin(phenotype_set)]
+    rows.append(
+        conc[cols].assign(config="concordant")
+    )
+
+    prob_all = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
+    prob_all = filter_by_minority(prob_all, full_minority, key_column="split")
+    prob_all = prob_all[prob_all["phenotype"].isin(phenotype_set)]
+    prob = prob_all[prob_all["condition"] == "filtered"]
+    rows.append(
+        prob[cols].assign(config="problematic_removed")
+    )
+
+    return pd.concat(rows, ignore_index=True)
+
+
+def _gapmind_baseline(phenotypes: list[str]) -> pd.DataFrame:
+    """Load GapMind cross-dataset metrics restricted to common phenotypes.
+
+    Parameters
+    ----------
+    phenotypes : list[str]
+        Phenotypes to retain.
+
+    Returns
+    -------
+    pd.DataFrame
+        Minority-filtered per-row metrics.
+    """
+    full_minority = full_test_minority_counts()
+    gm = pd.read_csv(
+        "data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t"
+    )
+    test_col = "test_dataset" if "test_dataset" in gm.columns else None
+    gm = filter_by_minority(gm, full_minority, test_dataset_column=test_col)
+    return gm[gm["phenotype"].isin(set(phenotypes))]
+
+
+def plot_metric_sweep(
+    ax: Axes,
+    data_dir: Path,
+    phenotypes: list[str],
+) -> pd.DataFrame:
+    """Panel B: BA / precision / recall vs GapMind weight with reference endpoints.
+
+    The confidence-filter sweep occupies the central x range. The
+    problematic-sample-removal filter and the concordance filter are plotted
+    as separated marker columns to the left and right of the sweep so the
+    full filter family appears on a single axis.
+
+    Parameters
+    ----------
+    ax : Axes
+        Target axes.
+    data_dir : Path
+        Directory containing Figure 6 output CSVs.
+    phenotypes : list[str]
+        Phenotypes to include.
+
+    Returns
+    -------
+    pd.DataFrame
+        Per-phenotype-per-config metric means used for the plot.
+    """
+    rng = np.random.default_rng(0)
+    long_df = _load_long_form(data_dir, phenotypes)
+    long_df = long_df.assign(trainval=long_df["n_train"] + long_df["n_val"])
+    ph_means = (
+        long_df.groupby(["phenotype", "config"])[
+            ["balanced_accuracy", "precision", "recall"]
+        ]
         .mean()
         .reset_index()
     )
-    conditions_present = [c for c in CONDITION_ORDER if c in pheno_means["condition"].unique()]
 
-    palette = {c: CONDITION_COLORS[c] for c in conditions_present}
+    xs_sweep = [W_GAP_VALUES[c] for c in CONFIDENCE_CONFIGS]
+    ref_x = {"problematic_removed": -0.10, "concordant": 0.60}
+    config_to_x: dict[str, float] = {c: x for c, x in zip(CONFIDENCE_CONFIGS, xs_sweep)}
+    config_to_x.update(ref_x)
+    jitter_width = 0.018
 
-    sns.boxplot(
-        data=pheno_means,
-        x="condition",
-        y="metric_value",
-        order=conditions_present,
-        ax=ax,
-        palette=palette,
-        width=0.6,
-        fliersize=0,
-        linewidth=1.0,
-        boxprops={"alpha": 0.6, "edgecolor": "black"},
-        medianprops={"color": "black", "linewidth": 1.2},
-        whiskerprops={"color": "black", "linewidth": 0.9},
-        capprops={"color": "black", "linewidth": 0.9},
+    # Per-phenotype scatter underlay for each metric, lightly jittered around
+    # the corresponding x-position so the spread across phenotypes is visible
+    # behind the mean +/- SEM markers.
+    for metric, color in METRIC_COLORS.items():
+        for cfg, x_centre in config_to_x.items():
+            vals = ph_means[ph_means["config"] == cfg][metric].to_numpy()
+            jitter = rng.uniform(-jitter_width, jitter_width, size=len(vals))
+            ax.scatter(
+                np.full_like(vals, x_centre, dtype=float) + jitter,
+                vals,
+                s=10,
+                color=color,
+                alpha=0.22,
+                edgecolors="none",
+                zorder=2,
+            )
+
+    for metric, color in METRIC_COLORS.items():
+        sweep_means = []
+        sweep_sems = []
+        for cfg in CONFIDENCE_CONFIGS:
+            sub = ph_means[ph_means["config"] == cfg][metric]
+            sweep_means.append(float(sub.mean()))
+            sweep_sems.append(float(sub.sem()))
+        ax.errorbar(
+            xs_sweep,
+            sweep_means,
+            yerr=sweep_sems,
+            color=color,
+            linewidth=1.6,
+            marker=METRIC_MARKERS[metric],
+            markersize=7,
+            markeredgecolor="black",
+            markeredgewidth=0.5,
+            elinewidth=0.9,
+            capsize=2.5,
+            label=METRIC_LABELS[metric],
+            zorder=4,
+        )
+        for ref_cfg, ref_x_val in ref_x.items():
+            sub = ph_means[ph_means["config"] == ref_cfg][metric]
+            ax.errorbar(
+                ref_x_val,
+                float(sub.mean()),
+                yerr=float(sub.sem()),
+                color=color,
+                marker=METRIC_MARKERS[metric],
+                markersize=9,
+                markerfacecolor=color,
+                markeredgecolor="black",
+                markeredgewidth=0.5,
+                elinewidth=0.9,
+                capsize=2.5,
+                zorder=5,
+            )
+
+    ax.axvline(-0.05, color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
+    ax.axvline(0.55, color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
+
+    # Mean train+val sample count per condition for the x-tick annotations.
+    config_n: dict[str, int] = {
+        cfg: int(round(float(long_df[long_df["config"] == cfg]["trainval"].mean())))
+        for cfg in list(CONFIDENCE_CONFIGS) + list(ref_x)
+    }
+    x_order = ["problematic_removed"] + list(CONFIDENCE_CONFIGS) + ["concordant"]
+    xticks = [-0.10] + xs_sweep + [0.60]
+    base_labels = [
+        "Problematic\nremoved",
+        "$w_{\\mathrm{gap}}\\!=\\!0$",
+        "0.3",
+        "0.4",
+        "0.5",
+        "Concordant",
+    ]
+    xticklabels = [
+        f"{label}\n$n$={config_n[cfg]}"
+        for label, cfg in zip(base_labels, x_order)
+    ]
+    ax.set_xlabel("Confidence-filter GapMind weight $w_{\\mathrm{gap}}$")
+    ax.set_ylabel("Metric value across 15 phenotypes")
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticklabels, fontsize=8)
+    ax.set_xlim(-0.18, 0.68)
+    ax.set_ylim(0.45, 1.0)
+    ax.grid(axis="y", alpha=0.18, linewidth=0.5)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.12),
+        ncol=3,
+        frameon=False,
+        fontsize=9,
     )
-    sns.stripplot(
-        data=pheno_means,
-        x="condition",
-        y="metric_value",
-        order=conditions_present,
-        ax=ax,
-        palette=palette,
-        size=3.2,
-        alpha=0.85,
-        jitter=0.18,
+
+    return ph_means
+
+
+def plot_gapmind_delta_forest(
+    ax: Axes,
+    data_dir: Path,
+    phenotypes: list[str],
+    metric: str = "recall",
+) -> pd.DataFrame:
+    """Panel C: per-phenotype $\\Delta$ metric vs the GapMind baseline.
+
+    For each of the 15 phenotypes, two horizontal bars report
+    $\\Delta = \\mathrm{ML} - \\mathrm{GapMind}$ on the same full cross-dataset
+    held-out test set: one bar for concordance-trained ML and one bar for the
+    mechanism-free confidence-filtered ML. Positive bars indicate phenotypes
+    on which the ML filter exceeded GapMind; negative bars indicate phenotypes
+    on which GapMind achieved a higher value of the metric. Phenotypes are
+    sorted by the concordant-ML $\\Delta$.
+
+    The annotation reports the count of phenotypes on which each ML filter
+    exceeded GapMind and the paired one-sided Wilcoxon signed-rank $p$-value
+    against the GapMind baseline.
+
+    Parameters
+    ----------
+    ax : Axes
+        Target axes.
+    data_dir : Path
+        Directory containing Figure 6 output CSVs.
+    phenotypes : list[str]
+        Phenotypes to include (intersection with available data).
+    metric : str
+        Column name to compare; defaults to ``"recall"``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Per-phenotype delta values for both filters.
+    """
+    from scipy.stats import wilcoxon
+
+    long_df = _load_long_form(data_dir, phenotypes)
+    long_df = long_df.assign(trainval=long_df["n_train"] + long_df["n_val"])
+    gm = _gapmind_baseline(phenotypes)
+    gm_means = gm.groupby("phenotype")[metric].mean()
+
+    ml_means = (
+        long_df.groupby(["phenotype", "config"])[metric]
+        .mean()
+        .unstack("config")
+    )
+
+    delta_concordant = (ml_means["concordant"] - gm_means).dropna()
+    delta_mechfree = (ml_means["free_balanced"] - gm_means).dropna()
+    common = delta_concordant.index.intersection(delta_mechfree.index)
+    delta_df = pd.DataFrame(
+        {
+            "concordant": delta_concordant.loc[common],
+            "mech_free": delta_mechfree.loc[common],
+        }
+    ).sort_values("concordant")
+
+    n_conc = int(round(float(long_df[long_df["config"] == "concordant"]["trainval"].mean())))
+    n_mech = int(round(float(long_df[long_df["config"] == "free_balanced"]["trainval"].mean())))
+
+    y_positions = np.arange(len(delta_df))
+    bar_height = 0.38
+
+    ax.barh(
+        y_positions - bar_height / 2,
+        delta_df["concordant"].to_numpy(),
+        height=bar_height,
+        color=CONDITION_COLORS["concordant"],
         edgecolor="black",
-        linewidth=0.3,
+        linewidth=0.5,
+        label=f"Concordant ML ($n$={n_conc})",
+        zorder=3,
+    )
+    ax.barh(
+        y_positions + bar_height / 2,
+        delta_df["mech_free"].to_numpy(),
+        height=bar_height,
+        color=CONDITION_COLORS["free_balanced"],
+        edgecolor="black",
+        linewidth=0.5,
+        label=f"Confidence (no GapMind, $n$={n_mech})",
+        zorder=3,
     )
 
-    if ylabel is None:
-        ylabel = {
-            "balanced_accuracy": "Cross-dataset balanced accuracy",
-            "precision": "Precision",
-            "recall": "Recall",
-        }.get(metric, metric.replace("_", " ").title())
-    ax.set_ylabel(ylabel)
-    ax.set_xlabel("")
-    ax.set_ylim(0.35, 0.95)
-    ax.tick_params(axis="x", which="major", labelsize=8, rotation=25)
-    for label in ax.get_xticklabels():
-        label.set_horizontalalignment("right")
-    ax.axhline(0.5, color="gray", linestyle="--", linewidth=0.6, alpha=0.5, zorder=0)
-    ax.grid(axis="y", alpha=0.15, linewidth=0.6)
+    ax.axvline(0, color="black", linewidth=0.9, zorder=2)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(delta_df.index, fontsize=9)
+    ax.set_ylabel("Phenotype")
+    metric_label = {
+        "recall": "recall",
+        "precision": "precision",
+        "balanced_accuracy": "balanced accuracy",
+        "f1": "F1",
+        "f1_calc": "F1",
+    }.get(metric, metric.replace("_", " "))
+    ax.set_xlabel(f"$\\Delta$ {metric_label} (ML $-$ GapMind)")
+    ax.set_xlim(-0.5, 0.5)
+    ax.grid(axis="x", alpha=0.18, linewidth=0.5)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.10),
+        ncol=2,
+        frameon=False,
+        fontsize=8,
+    )
 
-    return pheno_means
+    n_pos_conc = int((delta_df["concordant"] > 0).sum())
+    n_pos_mech = int((delta_df["mech_free"] > 0).sum())
+    n_total = len(delta_df)
+    _, p_conc = wilcoxon(
+        ml_means.loc[common, "concordant"],
+        gm_means.loc[common],
+        alternative="greater",
+    )
+    _, p_mech = wilcoxon(
+        ml_means.loc[common, "free_balanced"],
+        gm_means.loc[common],
+        alternative="greater",
+    )
+    ax.text(
+        0.98,
+        0.04,
+        (
+            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
+            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
+        ),
+        transform=ax.transAxes,
+        va="bottom",
+        ha="right",
+        fontsize=8,
+        bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=2.0),
+    )
+
+    return delta_df
 
 
 def best_panel_b_config(
@@ -236,6 +439,9 @@ def best_panel_b_config(
     metric: str = "balanced_accuracy",
 ) -> tuple[str, str, pd.Series]:
     """Identify the highest-performing weight-sweep config on the test set.
+
+    Used by ``figure6_plot.py`` to log the top-BA confidence-sweep config
+    alongside whichever config is actually rendered in Panel C.
 
     Parameters
     ----------
@@ -249,14 +455,13 @@ def best_panel_b_config(
     Returns
     -------
     tuple[str, str, pd.Series]
-        ``(config_name, condition_label, per_phenotype_means)``.
+        ``(config_name, condition_label, per_config_means)``.
     """
     full_minority = full_test_minority_counts()
     sweep = pd.read_csv(data_dir / "figure6b_weight_sweep_combined.csv")
     sweep = sweep[sweep["split_type"] == "dataset_split"].copy()
     sweep = filter_by_minority(sweep, full_minority)
     sweep = sweep[sweep["phenotype"].isin(set(phenotypes))]
-
     summary = (
         sweep.groupby(["config", "phenotype"])[metric]
         .mean()
@@ -266,134 +471,3 @@ def best_panel_b_config(
     )
     best_config = str(summary.idxmax())
     return best_config, CONFIG_TO_LABEL[best_config], summary
-
-
-def plot_precision_recall_best_config(
-    ax: Axes,
-    data_dir: Path,
-    phenotypes: list[str],
-    best_config_name: str | None = None,
-) -> str:
-    """Per-phenotype precision-recall scatter for the simplified Panel C.
-
-    Shows GapMind, concordant-trained, and the best-performing weight-sweep
-    config from Panel B. One point per phenotype per condition.
-
-    Parameters
-    ----------
-    ax : Axes
-        Axes to draw on.
-    data_dir : Path
-        Directory containing the Figure 6 output CSVs.
-    phenotypes : list[str]
-        Phenotypes to include (one scatter point per phenotype per condition).
-    best_config_name : str | None
-        Weight-sweep config name to plot. If ``None``, picked automatically by
-        ``best_panel_b_config``.
-
-    Returns
-    -------
-    str
-        The weight-sweep config name actually used.
-    """
-    full_minority = full_test_minority_counts()
-    phenotype_set = set(phenotypes)
-
-    if best_config_name is None:
-        best_config_name, _, _ = best_panel_b_config(data_dir, phenotypes)
-    best_label = CONFIG_TO_LABEL.get(best_config_name, best_config_name)
-
-    # Concordant.
-    concordant = pd.read_csv(
-        Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
-    )
-    concordant = concordant[
-        (concordant["split_type"] == "dataset_split")
-        & (concordant["test_type"] == "full")
-    ].copy()
-    concordant = filter_by_minority(concordant, full_minority)
-    concordant = concordant[concordant["phenotype"].isin(phenotype_set)]
-    concordant_pr = (
-        concordant.groupby("phenotype")[["precision", "recall"]]
-        .mean()
-        .reindex(phenotypes)
-    )
-
-    # Best weight-sweep config.
-    sweep = pd.read_csv(data_dir / "figure6b_weight_sweep_combined.csv")
-    sweep = sweep[
-        (sweep["split_type"] == "dataset_split")
-        & (sweep["config"] == best_config_name)
-    ].copy()
-    sweep = filter_by_minority(sweep, full_minority)
-    sweep = sweep[sweep["phenotype"].isin(phenotype_set)]
-    sweep_pr = (
-        sweep.groupby("phenotype")[["precision", "recall"]]
-        .mean()
-        .reindex(phenotypes)
-    )
-
-    # GapMind baseline.
-    gapmind = pd.read_csv(
-        "data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t"
-    )
-    if "key" in gapmind.columns or "test_dataset" in gapmind.columns:
-        gm_test_col = "test_dataset" if "test_dataset" in gapmind.columns else None
-        gapmind = filter_by_minority(
-            gapmind, full_minority, test_dataset_column=gm_test_col
-        )
-    gapmind = gapmind[gapmind["phenotype"].isin(phenotype_set)]
-    gapmind_pr = (
-        gapmind.groupby("phenotype")[["precision", "recall"]]
-        .mean()
-        .reindex(phenotypes)
-    )
-
-    ax.scatter(
-        gapmind_pr["recall"],
-        gapmind_pr["precision"],
-        s=42,
-        alpha=0.85,
-        facecolors="none",
-        edgecolors="#8B5CF6",
-        linewidths=1.2,
-        label="GapMind",
-        zorder=3,
-    )
-    ax.scatter(
-        concordant_pr["recall"],
-        concordant_pr["precision"],
-        s=42,
-        alpha=0.75,
-        color=CONDITION_COLORS["Concordant"],
-        edgecolors="black",
-        linewidths=0.8,
-        label="Concordant",
-        zorder=3,
-    )
-    ax.scatter(
-        sweep_pr["recall"],
-        sweep_pr["precision"],
-        s=42,
-        alpha=0.75,
-        color=CONDITION_COLORS[best_label],
-        edgecolors="black",
-        linewidths=0.8,
-        label=best_label,
-        zorder=3,
-    )
-    ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
-    ax.set_xlabel("Recall")
-    ax.set_ylabel("Precision")
-    ax.set_xlim(0, 1.05)
-    ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=True, fontsize=8, labelspacing=0.6)
-    ax.set_aspect("equal")
-    return best_config_name
-
-
-if __name__ == "__main__":
-    data_dir = Path("data/outputs/figure6")
-    # Quick smoke test: just load and print summary.
-    df = pd.read_csv("data/outputs/figure6/figure6b_weight_sweep_combined.csv")
-    print(df["config"].value_counts())

@@ -306,25 +306,19 @@ Models in the experiment-prioritisation simulation were trained with a reduced n
 
 \subsection*{Supplementary Text S10: Composite Confidence Score for Data Quality Filtering}
 
-The composite confidence score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) takes the general form
+The composite confidence score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) takes the form
 \begin{equation*}
     y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gapmind}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp},
 \end{equation*}
-where the three components are unchanged from the original definition:
+combining three components:
 \begin{itemize}
-    \item Phylogenetic component (phylo): agreement among $k = 3$ nearest phylogenetic neighbours.
-    \item GapMind component (GapMind): pathway completeness score mapped to a six-level scale (0.0--1.0) based on the GapMind completeness category.
-    \item Experimental component (exp): binary experimental phenotype.
+    \item Phylogenetic (phylo): agreement among $k = 3$ nearest phylogenetic neighbours.
+    \item GapMind: pathway completeness score mapped to a six-level scale (0.0--1.0) based on the GapMind completeness category.
+    \item Experimental (exp): binary experimental phenotype, used only for training-set quality assessment and never available to the model at inference.
 \end{itemize}
-The experimental-outcome component is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, since feature matrices supplied to the classifier do not include the phenotype label.
-
-To assess the sensitivity of the filter to the GapMind contribution, we evaluated four weight configurations spanning $w_{\mathrm{gapmind}} \in \{0, 0.3, 0.4, 0.5\}$ with $w_{\mathrm{phylo}}$ and $w_{\mathrm{exp}}$ rebalanced (Table~\ref{tab:confidence_weight_configs}).
-The filter threshold was held fixed across all configurations: samples with $y_{\mathrm{soft}} \in [0.4, 0.6]$ were considered ambiguous and excluded from the filtered training set, whereas samples with $y_{\mathrm{soft}} < 0.4$ or $y_{\mathrm{soft}} > 0.6$ were retained.
-The filter was applied to training and validation samples only; the held-out test set was left untouched in every configuration so that cross-dataset balanced accuracies remain directly comparable.
-
-Across the four configurations, cross-dataset balanced accuracy on the full held-out test set was within 0.015 of each other (per-phenotype mean across the 15 shared phenotypes; range 0.638 to 0.653), indicating that filter performance does not meaningfully depend on the GapMind contribution.
-The mechanism-free configuration ($w_{\mathrm{gapmind}} = 0$) reached cross-dataset balanced accuracy of 0.638, only 0.015 below the highest-scoring configuration ($w_{\mathrm{gapmind}} = 0.3$ at 0.653), and therefore provides a quality filter usable when GapMind or comparable mechanistic predictors are not available.
-The Phase 1 retention diagnostic (sample-retention statistics without retraining) is implemented in \texttt{scripts/figure6/figure6b\_parameter\_exploration.py}, and the Phase 2 machine-learning evaluation that produced the balanced-accuracy estimates is implemented in \texttt{scripts/figure6/figure6b\_weight\_sweep.py}.
+Samples with $y_{\mathrm{soft}} \in [0.4, 0.6]$ were excluded from the filtered training set; samples with $y_{\mathrm{soft}} < 0.4$ or $y_{\mathrm{soft}} > 0.6$ were retained.
+Four weight configurations were evaluated (Table~\ref{tab:confidence_weight_configs}), spanning a mechanism-free filter ($w_{\mathrm{gapmind}} = 0$) and three GapMind-weighted variants; the filter and threshold were identical across configurations and applied only to training and validation samples.
+The Phase 1 retention diagnostic is implemented in \texttt{scripts/figure6/figure6b\_parameter\_exploration.py}, and the Phase 2 machine-learning evaluation in \texttt{scripts/figure6/figure6b\_weight\_sweep.py}.
 
 \begin{table}[h]
 \centering

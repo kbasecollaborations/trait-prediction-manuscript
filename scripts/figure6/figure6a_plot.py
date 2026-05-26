@@ -618,7 +618,7 @@ def plot_microbe_misclassification_ranking(
     ax.legend(
         handles=category_handles,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.14),
+        bbox_to_anchor=(0.5, 1.20),
         ncol=3,
         frameon=False,
         fontsize=8,
@@ -679,8 +679,8 @@ def get_problematic_sample_summary(
         return counts
 
     category_counts = {
-        "No growth,\nGapMind predicts growth": count_by_dataset(cat1_microbes),
-        "Universal growth,\nGapMind incomplete": count_by_dataset(cat2_microbes),
+        "No growth,\nGM predicts": count_by_dataset(cat1_microbes),
+        "Universal growth,\nGM incomplete": count_by_dataset(cat2_microbes),
     }
     summary_df = pd.DataFrame(category_counts).T.reindex(columns=datasets, fill_value=0)
     summary_df["total"] = summary_df.sum(axis=1)
@@ -746,7 +746,7 @@ def plot_problematic_sample_summary(
     ax.grid(axis="x", alpha=0.15, linewidth=0.6)
     ax.legend(
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.14),
+        bbox_to_anchor=(0.5, 1.20),
         frameon=False,
         ncol=4,
         fontsize=8,

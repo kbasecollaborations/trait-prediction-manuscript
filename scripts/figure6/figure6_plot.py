@@ -26,8 +26,8 @@ from scripts.figure6.figure6a_plot import (
 )
 from scripts.figure6.figure6b_aggregate_plot import (
     best_panel_b_config,
-    plot_aggregate_filter_comparison,
-    plot_precision_recall_best_config,
+    plot_gapmind_delta_forest,
+    plot_metric_sweep,
 )
 from scripts.figure6.figure6d_plot import plot_balanced_accuracy_scatter
 from scripts.visualization import configure_plot_style
@@ -82,30 +82,27 @@ def create_figure6(output_file: Path) -> None:
     plot_problematic_sample_summary(ax_a_left)
     plot_microbe_misclassification_ranking(ax_a_right)
 
-    # --- Panel B: aggregate paired-boxplot filter comparison ---
+    # --- Panel B: metric sweep across GapMind weight with reference endpoints ---
     print("Creating Panel B...")
     ax_b = fig.add_subplot(gs[1, 0])
-    plot_aggregate_filter_comparison(ax_b, data_dir, common_phenotypes)
+    plot_metric_sweep(ax_b, data_dir, common_phenotypes)
 
     # --- Panel C (left) and Panel D (right): compact lower diagnostic block ---
-    # Panel C uses the mechanism-free filter as the representative ML model:
-    # cross-dataset BA is within 0.015 of the highest-mech config, and showing
-    # the mech-free variant keeps the panel aligned with the section narrative.
+    # Panel C: per-phenotype delta-BA against the GapMind baseline for two
+    # representative filters (concordant ML and mech-free confidence). All
+    # comparisons are on the same full cross-dataset held-out test set.
     print("Creating Panels C and D...")
     best_config_name, best_label, summary = best_panel_b_config(
         data_dir, common_phenotypes
     )
     print(
-        f" - Top-BA Panel B config: {best_config_name} ({best_label}); "
-        f"Panel C shows the mechanism-free filter instead "
-        f"(gap: {summary['free_balanced'] - summary.max():+.3f} BA)"
+        f" - Top-BA confidence config: {best_config_name} ({best_label}); "
+        f"mech-free gap: {summary['free_balanced'] - summary.max():+.3f} BA"
     )
-    gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.14)
+    gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.32)
     ax_c = fig.add_subplot(gs_cd[0, 0])
     ax_d = fig.add_subplot(gs_cd[0, 1])
-    plot_precision_recall_best_config(
-        ax_c, data_dir, common_phenotypes, best_config_name="free_balanced"
-    )
+    plot_gapmind_delta_forest(ax_c, data_dir, common_phenotypes)
     plot_balanced_accuracy_scatter(ax_d, df_7d, common_phenotypes)
 
     panel_label_axes: dict[str, plt.Axes] = {
