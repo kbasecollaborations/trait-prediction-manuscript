@@ -348,7 +348,7 @@ def plot_dataset_split_performance(
     ax.text(
         -0.08,
         1.05,
-        "(A)",
+        "A",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -521,7 +521,7 @@ def create_feature_comparison_plot(
     ax.text(
         -0.08,
         1.05,
-        "(B)",
+        "B",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -563,7 +563,7 @@ def plot_ml_vs_gapmind_full_test(
     ax: Axes,
     data_dir: Path,
     phenotypes: list[str],
-    panel_label: str = "(C)",
+    panel_label: str = "C",
 ) -> None:
     """Plot panel C: ML vs GapMind balanced accuracy on the FULL natural-composition test set.
 
@@ -585,7 +585,7 @@ def plot_ml_vs_gapmind_full_test(
     phenotypes : list[str]
         Phenotypes to include in the comparison.
     panel_label : str
-        Subplot annotation label (default ``"(C)"``).
+        Subplot annotation label (default ``"C"``).
     """
     ml_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
     ml_df = ml_df[ml_df["test_type"] == "full"].copy()
@@ -692,7 +692,7 @@ def plot_ml_vs_gapmind_test_subsets(
     ax: Axes,
     data_dir: Path,
     phenotypes: list[str],
-    panel_label: str = "(D)",
+    panel_label: str = "D",
 ) -> None:
     """Plot panel D: ML vs GapMind balanced accuracy decomposed by test subset (cross-dataset).
 
@@ -715,7 +715,7 @@ def plot_ml_vs_gapmind_test_subsets(
     phenotypes : list[str]
         Phenotypes to include in the comparison.
     panel_label : str
-        Subplot annotation label (default ``"(D)"``).
+        Subplot annotation label (default ``"D"``).
     """
     concordant_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
     concordant_df = _filter_by_minority(concordant_df, _concordant_minority_counts())
@@ -880,10 +880,10 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     plot_dataset_split_performance(ax_a, data_dir, common_phenotypes)
     create_feature_comparison_plot(ax_b, data_dir, common_phenotypes)
     plot_ml_vs_gapmind_full_test(
-        ax_c, data_dir, full_test_phenotypes, panel_label="(C)"
+        ax_c, data_dir, full_test_phenotypes, panel_label="C"
     )
     plot_ml_vs_gapmind_test_subsets(
-        ax_d, data_dir, full_test_phenotypes, panel_label="(D)"
+        ax_d, data_dir, full_test_phenotypes, panel_label="D"
     )
 
     # Align per-phenotype x-axes on panels A and B

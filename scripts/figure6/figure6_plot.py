@@ -99,10 +99,10 @@ def create_figure6(output_file: Path) -> None:
     plot_balanced_accuracy_scatter(ax_d, df_7d, common_phenotypes)
 
     panel_label_axes: dict[str, plt.Axes] = {
-        "(A)": ax_a_left,
-        "(B)": ax_b,
-        "(C)": ax_c,
-        "(D)": ax_d,
+        "A": ax_a_left,
+        "B": ax_b,
+        "C": ax_c,
+        "D": ax_d,
     }
     for label, ax in panel_label_axes.items():
         if ax is ax_a_left:

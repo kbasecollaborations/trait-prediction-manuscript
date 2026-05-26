@@ -162,7 +162,7 @@ def plot_full_test_balanced_accuracy(
     ax.text(
         -0.08,
         1.05,
-        "(A)",
+        "A",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -259,7 +259,7 @@ def plot_test_composition(
     ax.text(
         -0.08,
         1.05,
-        "(B)",
+        "B",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",

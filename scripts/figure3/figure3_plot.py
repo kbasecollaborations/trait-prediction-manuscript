@@ -142,7 +142,7 @@ def plot_random_split_vs_gapmind(
     ax.text(
         -0.08,
         1.05,
-        "(A)",
+        "A",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -315,7 +315,7 @@ def plot_dataset_split_performance(
     ax.text(
         -0.08,
         1.05,
-        "(B)",
+        "B",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -471,7 +471,7 @@ def plot_phylogeny_independent_difference(
     ax.text(
         -0.08,
         1.05,
-        "(C)",
+        "C",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",

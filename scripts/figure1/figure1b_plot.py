@@ -35,7 +35,7 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     ax.text(
         -0.05,
         1.05,
-        "(B)",
+        "B",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",

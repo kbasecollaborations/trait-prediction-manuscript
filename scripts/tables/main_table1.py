@@ -472,33 +472,17 @@ def build_table(
 
     lines.append("\\end{tabular}%")
     lines.append("}")
-    lines.append(
-        "\\caption{\\textbf{Per-phenotype feature recovery under "
-        "concordance filtering.} Comparison of two training regimes for each "
-        "of the 15 phenotypes: \\textbf{Full} (held-out-alone model trained "
-        "on all genomes from one source dataset) and \\textbf{Conc.} (same "
-        "procedure restricted to GapMind-concordant samples). "
-        "\\textbf{Shared stable clusters} counts SHAP-supervised redundancy "
-        "clusters stable in BOTH the three-dataset and held-out-alone "
-        "models, summed across the three held-out comparisons (Methods). "
-        "\\textbf{\\% unique in pathway} is the fraction of held-out-only "
-        "cluster representatives that are members of the assigned KEGG "
-        "reference pathway map (Methods). Histidine is the worked example "
-        "(numeric cells in bold); full per-comparison KO lists and the narrower "
-        "module-level statistic (M00045 \\textit{histidine degradation}: "
-        "29\\% $\\rightarrow$ 75\\%) appear in Supplementary "
-        "Tables~\\ref{tab:feature_comparison} (full-data) and "
-        "\\ref{tab:feature_comparison_concordant} (concordant)."
-        "}"
-    )
-    lines.append("\\label{tab:main_feature_comparison}")
+    # Asterisked caption: prints "Table N" label without re-incrementing the
+    # counter (counter was already advanced in the Legends section of
+    # tables_figures.tex, where the full legend text and alt text live).
+    lines.append("\\caption*{\\textbf{Table \\arabic{table}}}")
     lines.append("\\end{table}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as handle:
         handle.write("\n".join(lines) + "\n")
 
-    print(f"LaTeX table written to {output_path}")
+    print(f"LaTeX table body written to {output_path}")
 
 
 if __name__ == "__main__":

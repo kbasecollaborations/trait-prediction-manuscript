@@ -18,7 +18,7 @@ configure_plot_style()
 
 
 def create_figure4(output_file: Path) -> None:
-    """Create Figure 4 with quadrant plot (A), confusion matrix plots (B), and feature plots (C).
+    """Create Figure 4 with quadrant plot A, confusion matrix plots B, and feature plots C.
 
     Parameters
     ----------
@@ -93,23 +93,23 @@ def create_figure4(output_file: Path) -> None:
     print("\nCreating Figure 4C (feature stability and comparison)...")
     create_panel_c_plots(ax_c1, ax_c2)
 
-    # Add panel labels. (A) and (B) share an explicit figure-level y so they
+    # Add panel labels. A and B share an explicit figure-level y so they
     # render at the same vertical position regardless of subplot heights.
     panel_label_y = 0.98
     fig.text(
-        0.005, panel_label_y, "(A)",
+        0.005, panel_label_y, "A",
         fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
     b1_bbox = ax_b1.get_position()
     fig.text(
-        b1_bbox.x0 - 0.025, panel_label_y, "(B)",
+        b1_bbox.x0 - 0.025, panel_label_y, "B",
         fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
     )
     c1_bbox = ax_c1.get_position()
     fig.text(
         c1_bbox.x0 - 0.085,
         c1_bbox.y1 + 0.01,
-        "(C)",
+        "C",
         fontsize=PANEL_LABEL_SIZE,
         fontweight="bold",
         va="top",

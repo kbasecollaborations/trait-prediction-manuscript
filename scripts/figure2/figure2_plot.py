@@ -108,7 +108,7 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
     ax.text(
         -0.05,
         1.05,
-        "(A)",
+        "A",
         transform=ax.transAxes,
         fontweight="bold",
         va="top",
@@ -277,7 +277,7 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
     axes[0].text(
         -0.08,
         1.05,
-        "(B)",
+        "B",
         transform=axes[0].transAxes,
         fontweight="bold",
         va="top",

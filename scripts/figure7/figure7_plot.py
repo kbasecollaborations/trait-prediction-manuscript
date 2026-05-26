@@ -6,19 +6,19 @@ phenotype prediction.
 Four panels span two levels of reliability assessment --- per genome and
 per phenotype:
 
-    (A) Risk-coverage curves for three phenotypes spanning strong, medium,
+    A. Risk-coverage curves for three phenotypes spanning strong, medium,
         and weak cross-dataset generalization (m-Inositol, Histidine,
         Glucose). Each mini-plot compares the concordant-trained model with
         the full-data model: balanced accuracy on the retained subset as the
         least-confident genomes are abstained on first.
-    (B) Reliability diagram: mean predicted probability of growth against the
+    B. Reliability diagram: mean predicted probability of growth against the
         empirically observed growth fraction within each confidence bin, per
         model. The expected calibration error (ECE) is reported in the legend.
-    (C) Label-free prioritization: the gain in cross-dataset balanced accuracy
+    C. Label-free prioritization: the gain in cross-dataset balanced accuracy
         after adding selected held-out genome labels, one bar per selection
         strategy (low confidence, diversity, random, high novelty) at the
         labelling budget.
-    (D) Per-phenotype gain from randomly versus selectively (low-confidence)
+    D. Per-phenotype gain from randomly versus selectively (low-confidence)
         added labels, for the three Panel-A archetypes, showing that selective
         acquisition helps most on the weak generaliser.
 """
@@ -77,7 +77,7 @@ def _panel_label(ax: Axes, label: str, x: float = -0.08) -> None:
     ax : Axes
         Matplotlib axes to annotate.
     label : str
-        Panel label text, e.g. ``"(A)"``.
+        Panel label text, e.g. ``"A"``.
     x : float, optional
         Horizontal position in axes coordinates.
     """
@@ -169,7 +169,7 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.legend(frameon=False, fontsize=8, loc="upper left")
-    _panel_label(ax, "(B)", x=-0.22)
+    _panel_label(ax, "B", x=-0.22)
 
 
 def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
@@ -222,7 +222,7 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     ax.set_xticklabels([STRATEGY_LABELS[s] for s in order], rotation=15, ha="right")
     ax.set_ylabel("$\\Delta$ cross-dataset\nbalanced accuracy")
     ax.set_xlabel(f"Selection strategy ({budget} labels added)")
-    _panel_label(ax, "(C)")
+    _panel_label(ax, "C")
 
 
 def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
@@ -274,7 +274,7 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     ax.set_ylabel(f"$\\Delta$ balanced accuracy\nfrom {budget} added labels")
     ax.set_xlabel("Phenotype (strong $\\rightarrow$ weak generaliser)")
     ax.legend(frameon=False, fontsize=8, loc="upper left")
-    _panel_label(ax, "(D)")
+    _panel_label(ax, "D")
 
 
 def create_figure(output_file: Path) -> None:
@@ -297,7 +297,7 @@ def create_figure(output_file: Path) -> None:
     ax_c = fig.add_subplot(gs[1, 1:])
     ax_d = fig.add_subplot(gs[2, :])
     plot_risk_coverage(ax_a, risk)
-    _panel_label(ax_a[0], "(A)", x=-0.22)
+    _panel_label(ax_a[0], "A", x=-0.22)
     plot_calibration(ax_b, calib)
     plot_prioritization(ax_c, prior)
     plot_phenotype_priority(ax_d, prior)
