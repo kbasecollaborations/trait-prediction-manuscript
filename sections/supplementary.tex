@@ -98,7 +98,8 @@ In Table~\ref{tab:best_models_counts}, ``cb'' denotes CatBoost and ``rf'' denote
 CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
 All models were evaluated using balanced accuracy as the primary reporting metric to account for class imbalance in phenotype data, where the proportion of positive (growth) and negative (no-growth) samples varied substantially across phenotypes and datasets.
 
-The minority-class filter (Methods) prevents balanced-accuracy collapse on test cells with extreme class imbalance --- for example, the Populus concordant test set contained 36--37 growers and a single non-grower for some amino-acid phenotypes.
+The minority-class filter (Methods) prevents balanced-accuracy collapse on test cells with extreme class imbalance.
+For example, the Populus concordant test set contained 36--37 growers and a single non-grower for some amino-acid phenotypes.
 The minority count was computed against the appropriate test-set definition for each figure: the concordant subset for Figure~\ref{fig:concordant_analysis}A and the concordant-test points of Figure~\ref{fig:concordant_analysis}D, the discordant subset for the discordant-test points of Figure~\ref{fig:concordant_analysis}D, and the full labelled subset for Figures~\ref{fig:ml_performance}B, \ref{fig:concordant_analysis}C, \ref{fig:improvement_strategies}B--D, and~\ref{fig:full_held_out_test}.
 Implementation is consolidated in \texttt{scripts/minority\_filter.py}.
 
@@ -289,7 +290,9 @@ The pooled clustering procedure was applied only after stable features had been 
 For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; the fixed-iteration variant matched the default-classifier performance to within the per-seed variance reported in the main text.
 
 For three phenotypes (alanine, mannose, serine), the stable features selected by different concordant-trained models did not reach the target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
-Inspection of the underlying KOFAM annotations showed that the stable features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway, indicating that for alanine, mannose, and serine the concordant-trained model generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features --- a less specific mode of transfer that remains within the applicability domain of organisms sharing expanded carbohydrate-utilisation repertoires.
+Inspection of the underlying KOFAM annotations showed that the stable features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway.
+For alanine, mannose, and serine, the concordant-trained model therefore generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features.
+This pattern represents a less specific mode of transfer that remains within the applicability domain of organisms sharing expanded carbohydrate-utilisation repertoires.
 
 \subsection*{Supplementary Text S9: Reliability and Experiment-Prioritisation Details}
 
@@ -303,14 +306,43 @@ Models in the experiment-prioritisation simulation were trained with a reduced n
 
 \subsection*{Supplementary Text S10: Composite Confidence Score for Data Quality Filtering}
 
-The composite confidence score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) combined three inputs:
+The composite confidence score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) takes the general form
+\begin{equation*}
+    y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gapmind}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp},
+\end{equation*}
+where the three components are unchanged from the original definition:
 \begin{itemize}
-    \item Phylogenetic confidence ($w = 0.2$): agreement among $k = 3$ nearest phylogenetic neighbours.
-    \item GapMind confidence ($w = 0.3$): pathway completeness score mapped to a six-level scale (0.0--1.0) based on the GapMind completeness category.
-    \item Experimental outcome ($w = 0.5$): binary experimental phenotype.
+    \item Phylogenetic component (phylo): agreement among $k = 3$ nearest phylogenetic neighbours.
+    \item GapMind component (GapMind): pathway completeness score mapped to a six-level scale (0.0--1.0) based on the GapMind completeness category.
+    \item Experimental component (exp): binary experimental phenotype.
 \end{itemize}
 The experimental-outcome component is used solely for training-set quality assessment and sample exclusion; it is never available to the model at inference, since feature matrices supplied to the classifier do not include the phenotype label.
-Samples with composite scores between 0.4 and 0.6 were considered ambiguous and excluded from the filtered training set.
+
+To assess the sensitivity of the filter to the GapMind contribution, we evaluated four weight configurations spanning $w_{\mathrm{gapmind}} \in \{0, 0.3, 0.4, 0.5\}$ with $w_{\mathrm{phylo}}$ and $w_{\mathrm{exp}}$ rebalanced (Table~\ref{tab:confidence_weight_configs}).
+The filter threshold was held fixed across all configurations: samples with $y_{\mathrm{soft}} \in [0.4, 0.6]$ were considered ambiguous and excluded from the filtered training set, whereas samples with $y_{\mathrm{soft}} < 0.4$ or $y_{\mathrm{soft}} > 0.6$ were retained.
+The filter was applied to training and validation samples only; the held-out test set was left untouched in every configuration so that cross-dataset balanced accuracies remain directly comparable.
+
+Across the four configurations, cross-dataset balanced accuracy on the full held-out test set was within 0.015 of each other (per-phenotype mean across the 15 shared phenotypes; range 0.638 to 0.653), indicating that filter performance does not meaningfully depend on the GapMind contribution.
+The mechanism-free configuration ($w_{\mathrm{gapmind}} = 0$) reached cross-dataset balanced accuracy of 0.638, only 0.015 below the highest-scoring configuration ($w_{\mathrm{gapmind}} = 0.3$ at 0.653), and therefore provides a quality filter usable when GapMind or comparable mechanistic predictors are not available.
+The Phase 1 retention diagnostic (sample-retention statistics without retraining) is implemented in \texttt{scripts/figure6/figure6b\_parameter\_exploration.py}, and the Phase 2 machine-learning evaluation that produced the balanced-accuracy estimates is implemented in \texttt{scripts/figure6/figure6b\_weight\_sweep.py}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\hline
+\textbf{Configuration} & $w_{\mathrm{phylo}}$ & $w_{\mathrm{gapmind}}$ & $w_{\mathrm{exp}}$ \\
+\hline
+Confidence (no GapMind, mechanism-free) & 0.40 & 0.00 & 0.60 \\
+Confidence ($w = 0.3$, original)        & 0.20 & 0.30 & 0.50 \\
+Confidence ($w = 0.4$)                     & 0.15 & 0.40 & 0.45 \\
+Confidence ($w = 0.5$)                     & 0.10 & 0.50 & 0.40 \\
+\hline
+\end{tabular}
+\caption{\textbf{Composite confidence-score weight configurations evaluated for Figure~\ref{fig:improvement_strategies}B.}
+Four weight settings of the soft label $y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gapmind}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp}$ were compared, spanning a mechanism-free filter ($w_{\mathrm{gapmind}} = 0$) and three GapMind-weighted variants.
+The ambiguity threshold ($y_{\mathrm{soft}} \in [0.4, 0.6]$ excluded) was unchanged across configurations.}
+\label{tab:confidence_weight_configs}
+\end{table}
 
 \subsection*{Supplementary Text S11: Per-Phenotype Detail for Concordant-Training Analysis}
 

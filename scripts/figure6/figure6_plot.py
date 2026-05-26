@@ -24,8 +24,11 @@ from scripts.figure6.figure6a_plot import (
     plot_microbe_misclassification_ranking,
     plot_problematic_sample_summary,
 )
-from scripts.figure6.figure6b_plot import plot_confident_samples_performance
-from scripts.figure6.figure6c_plot import plot_precision_recall_scatter
+from scripts.figure6.figure6b_aggregate_plot import (
+    best_panel_b_config,
+    plot_aggregate_filter_comparison,
+    plot_precision_recall_best_config,
+)
 from scripts.figure6.figure6d_plot import plot_balanced_accuracy_scatter
 from scripts.visualization import configure_plot_style
 
@@ -45,33 +48,28 @@ def create_figure6(output_file: Path) -> None:
     data_dir = Path("data/outputs/figure6")
 
     print("Loading data files...")
-    ml_df_7b = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
+    sweep_df = pd.read_csv(data_dir / "figure6b_weight_sweep_combined.csv")
     df_7c = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     df_7d = pd.read_csv(data_dir / "figure6d_all_results.csv")
 
-    phenotypes_7b_dataset = set(
-        ml_df_7b[ml_df_7b["split_type"] == "dataset_split"]["phenotype"].unique()
-    )
-    phenotypes_7b_random = set(
-        ml_df_7b[ml_df_7b["split_type"] == "random_split"]["phenotype"].unique()
+    phenotypes_sweep = set(
+        sweep_df[sweep_df["split_type"] == "dataset_split"]["phenotype"].unique()
     )
     phenotypes_7c = set(df_7c["phenotype"].unique())
     phenotypes_7d = set(df_7d["phenotype"].unique())
 
     common_phenotypes = sorted(
-        phenotypes_7b_dataset.intersection(phenotypes_7b_random)
-        .intersection(phenotypes_7c)
-        .intersection(phenotypes_7d)
+        phenotypes_sweep.intersection(phenotypes_7c).intersection(phenotypes_7d)
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    fig = plt.figure(figsize=(9, 9.5))
+    fig = plt.figure(figsize=(9, 11.5))
     gs = GridSpec(
         3,
         1,
         figure=fig,
-        height_ratios=[1.05, 0.9, 2.25],
-        hspace=0.5,
+        height_ratios=[1.05, 1.55, 2.25],
+        hspace=0.55,
     )
 
     # --- Panel A: condensed summary (left) + ranked microbe diagnostic (right) ---
@@ -84,18 +82,30 @@ def create_figure6(output_file: Path) -> None:
     plot_problematic_sample_summary(ax_a_left)
     plot_microbe_misclassification_ranking(ax_a_right)
 
-    # --- Panel B: per-phenotype grouped filtering comparison ---
+    # --- Panel B: aggregate paired-boxplot filter comparison ---
     print("Creating Panel B...")
     ax_b = fig.add_subplot(gs[1, 0])
-    plot_confident_samples_performance(ax_b, data_dir, common_phenotypes)
-    ax_b.set_xlabel("")
+    plot_aggregate_filter_comparison(ax_b, data_dir, common_phenotypes)
 
     # --- Panel C (left) and Panel D (right): compact lower diagnostic block ---
+    # Panel C uses the mechanism-free filter as the representative ML model:
+    # cross-dataset BA is within 0.015 of the highest-mech config, and showing
+    # the mech-free variant keeps the panel aligned with the section narrative.
     print("Creating Panels C and D...")
+    best_config_name, best_label, summary = best_panel_b_config(
+        data_dir, common_phenotypes
+    )
+    print(
+        f" - Top-BA Panel B config: {best_config_name} ({best_label}); "
+        f"Panel C shows the mechanism-free filter instead "
+        f"(gap: {summary['free_balanced'] - summary.max():+.3f} BA)"
+    )
     gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.14)
     ax_c = fig.add_subplot(gs_cd[0, 0])
     ax_d = fig.add_subplot(gs_cd[0, 1])
-    plot_precision_recall_scatter(ax_c, data_dir, common_phenotypes)
+    plot_precision_recall_best_config(
+        ax_c, data_dir, common_phenotypes, best_config_name="free_balanced"
+    )
     plot_balanced_accuracy_scatter(ax_d, df_7d, common_phenotypes)
 
     panel_label_axes: dict[str, plt.Axes] = {

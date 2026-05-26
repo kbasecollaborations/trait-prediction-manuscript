@@ -69,7 +69,8 @@ For Table~\ref{tab:main_feature_comparison}, cluster representatives were mapped
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering.
 \emph{Problematic-sample removal} excluded microbes with zero growth on all substrates despite a GapMind growth prediction, and microbes with growth on all substrates despite incomplete GapMind pathways, applied only during training-set assessment, never at inference.
-\emph{Confidence-based filtering} excluded ambiguous training samples by a composite score (phylogenetic neighbour agreement, GapMind pathway completeness, experimental outcome), applied only during training-set assessment, never at inference; weights and thresholds are in Supplementary Text~S10.
+\emph{Confidence-based filtering} excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome under non-negative weights summing to one, with samples scoring within $[0.4, 0.6]$ removed; the filter was applied to the training and validation partitions only, never to the held-out test set.
+Four weight configurations spanning the mechanism-signal axis were evaluated in Figure~\ref{fig:improvement_strategies}B, including a \emph{mechanism-free} setting in which the GapMind weight was fixed to zero so that only phylogenetic and experimental signals contributed; full weights and thresholds for all configurations are in Supplementary Text~S10.
 Under both strategies, the same full cross-dataset held-out test set was used for evaluation, so the bars in Figure~\ref{fig:improvement_strategies}B are directly comparable across conditions.
 
 \subsection*{Sample Size Requirements}
