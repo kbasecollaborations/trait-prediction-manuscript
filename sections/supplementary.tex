@@ -43,6 +43,27 @@ Because of its small sample size and narrow phylogenetic breadth, Populus contri
 
 All analyses focused on the 15 shared phenotypes present across all four datasets.
 
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{lrrrrX}
+\hline
+\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Genomes} \\ \textbf{Used}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
+\hline
+ATLeaf  & 224 & 45  & 206 & 15 & Agar plate \\
+Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
+Marine  & 175 & 100 & 172 & 15 & Liquid culture OD \\
+Populus & 58  & 191 & 55  & 15 & Liquid culture OD \\
+\hline
+\end{tabularx}
+\caption{\textbf{Overview of carbon source utilisation datasets.}
+``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
+``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
+The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
+All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.}
+\label{tab:dataset_overview}
+\end{table}
+
 \subsection*{Supplementary Text S2: Genome Quality Control}
 
 We applied a multi-stage quality control pipeline to ensure that only high-quality, non-redundant genomes were used in downstream analyses.
@@ -94,27 +115,6 @@ The contrast between these tables illustrates that concordant training produces 
 % ============================================================
 %   TABLES
 % ============================================================
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabularx}{\textwidth}{lrrrrX}
-\hline
-\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Genomes} \\ \textbf{Used}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
-\hline
-ATLeaf  & 224 & 45  & 206 & 15 & Agar plate (minimal media) \\
-Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
-Marine  & 175 & 100 & 172 & 15 & Carbon source assay \\
-Populus & 58  & 191 & 55  & 15 & Carbon source assay \\
-\hline
-\end{tabularx}
-\caption{\textbf{Overview of carbon source utilisation datasets.}
-``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
-``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
-The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
-All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.}
-\label{tab:dataset_overview}
-\end{table}
 
 \begin{table}[h]
 \centering

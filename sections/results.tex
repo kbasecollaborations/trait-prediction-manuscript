@@ -4,12 +4,12 @@
 
 \subsection*{Dataset overview and baseline predictions}
 
-To investigate factors governing genotype--phenotype prediction accuracy and generalisation, we harmonised four published binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) covering phylogenetically and ecologically diverse strains on various carbon sources (819 input genomes, 795 retained after filtering; Methods).
+To investigate factors governing genotype--phenotype prediction accuracy and generalisation, we harmonised four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{Timm2015Populus}) covering phylogenetically and ecologically diverse strains (Figure~\ref{fig:phylogenetic_distribution}) on various carbon sources (819 input genomes, 795 retained after filtering; Methods).
 Genomes were annotated with RAST, KOFAM, and GapMind, and classifiers were trained on the resulting feature matrices (Figure~\ref{fig:dataset_characteristics}A).
-Analyses focused on the 15 shared phenotypes (Figure~\ref{fig:dataset_characteristics}B); Populus was excluded from selected feature-stability comparisons because of small sample size, and datasets differed in taxonomic coverage (Figure~\ref{fig:phylogenetic_distribution}).
+Analyses focused on the 15 shared phenotypes (Figure~\ref{fig:dataset_characteristics}B); Populus was excluded from selected feature-stability comparisons because of small sample size.
 
 
-To establish baseline performance, we evaluated two approaches: GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest neighbour classifier (k=3) using the three closest strains (Methods).
+To establish baseline performance, we evaluated two approaches: GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest neighbour classifier (k=3) that used the phenotypic information of the three closest strains for prediction (Methods).
 GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $0.65 \pm 0.04$; permissive: $0.70 \pm 0.08$; Figure~\ref{fig:baseline_predictions}A).
 The phylogeny-based approach, leveraging the documented link between metabolic phenotypes and phylogeny \cite{Langille2013-fh,Martiny2013-ob}, performed well in random holdout evaluations (0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B), approaching null model levels and indicating that phylogenetic relatedness alone is insufficient across diverse lineages~\cite{Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
 % Cellobiose and glycerol showed unexpectedly high out-of-clade accuracy ($>$0.80), potentially reflecting highly conserved pathways.
@@ -20,7 +20,7 @@ The limited mechanistic and phylogenetic baseline performance motivated testing 
 
 \subsection*{Machine learning models generalise within but not across datasets}
 
-To test whether genome-derived features could overcome the limitations of the mechanistic and phylogenetic baselines, we trained gradient-boosted tree (GBT) classifiers on KOFAM annotations ($\sim$4000--5000 features per genome after correlation filtering; Methods), evaluating all models with balanced accuracy to account for class imbalance.
+To test whether genome-derived features could overcome the limitations of the mechanistic and phylogenetic baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$4000--5000 features per genome after correlation filtering; Methods), evaluating all models with balanced accuracy to account for class imbalance.
 
 Data were aggregated across all four datasets and assessed under four evaluation scenarios that progressively test generalisation: repeated random holdout (training and test drawn from the same phenotype-cluster distribution); cross-dataset (training on three datasets and testing on the held-out one); in-clade cross-dataset splits (restricting evaluation to phylogenetically similar samples to isolate dataset from phylogenetic effects); and out-of-clade splits (phylogenetically distant training and test samples).
 Random holdout test samples were drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).

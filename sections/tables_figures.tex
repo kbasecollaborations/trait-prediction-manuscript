@@ -9,13 +9,13 @@
 %--------------------------------------------------------%
 
 \clearpage
-\section*{Figure and Table Legends}
+\section*{Figures and Tables}
 
 \refstepcounter{figure}\label{fig:dataset_characteristics}%
 \noindent\textbf{Figure \arabic{figure}: Microbial carbon utilisation prediction workflow.}
 (A) Overview of data collection, genome annotation, and machine learning workflow.
 We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 242 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus); analyses focused on the 15 carbon sources shared across all four datasets (panel B).
-Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used to train the classifiers.
+Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used in training the classifiers.
 (B) Phenotypic distribution for the 15 shared carbon sources across the four datasets.
 The bar plot displays sample counts and class distributions for each phenotype.
 Solid bars indicate growth (positive) samples, and patterned bars indicate no-growth (negative) samples.
@@ -25,11 +25,12 @@ Class distributions varied across phenotypes and datasets.
 \par\medskip
 
 \refstepcounter{figure}\label{fig:baseline_predictions}%
-\noindent\textbf{Figure \arabic{figure}: Baseline mechanistic and phylogenetic predictions show limited accuracy.}
-(A) Bar plot showing GapMind balanced accuracy across 15 phenotypes.
-GapMind predictions were compared with experimental outcomes using both strict and permissive pathway completeness thresholds.
-(B) Dot plot showing phylogeny-based nearest neighbour (k=3) balanced accuracy across 15 phenotypes under two evaluation scenarios: random holdout (top panel) and out-of-clade split (bottom panel).
-Circles and boxes indicate null model performance (Identity and Bernoulli baselines) and triangles indicate nearest neighbour performance.
+\noindent\textbf{Figure \arabic{figure}: Baseline mechanism- and phylogeny-based predictions show limited accuracy.}
+(A) Bar plot showing balanced accuracy for GapMind predictions across 15 phenotypes.
+GapMind predictions were compared with experimental outcomes using both strict (blue) and permissive (pink) pathway completeness thresholds.
+Dashed lines show the respective mean values.
+(B) Dot plot showing balanced accuracy across for phylogeny-based nearest neighbour (k=3) predictions across 15 phenotypes under two evaluation scenarios: random holdout (top panel) and out-of-clade split (bottom panel).
+Circles and boxes indicate null model performance (Identity and Bernoulli baselines) and triangles indicate nearest-neighbour performance.
 
 \noindent\textbf{Alt text:} Panel A displays a grouped bar plot of GapMind balanced accuracy for 15 phenotypes under strict and permissive thresholds, with dashed mean lines near 0.65 and 0.70. Panel B shows two dot plots of nearest neighbour, Identity, and Bernoulli balanced accuracy under random and out-of-clade splits, with values clustering near 0.5 in the lower panel.
 \par\medskip
@@ -39,6 +40,7 @@ Circles and boxes indicate null model performance (Identity and Bernoulli baseli
 (A) Box plot showing balanced accuracy under repeated random holdout evaluation for gradient-boosted tree classifiers (using KOFAM features) across 15 phenotypes; each phenotype contributes five values (one per data-split random state 42--46; Methods).
 The dotted line indicates the GapMind permissive-threshold baseline performance on the test set.
 (B) Dot plot showing cross-dataset balanced accuracy when training on three datasets and testing on the fourth held-out dataset.
+Colors represent different test datasets.
 The dotted line indicates the GapMind permissive-threshold baseline (same threshold as panel A).
 (C) Difference plot comparing model performance between regular cross-dataset splits and phylogenetically constrained in-clade cross-dataset splits.
 
@@ -47,12 +49,12 @@ The dotted line indicates the GapMind permissive-threshold baseline (same thresh
 
 \refstepcounter{figure}\label{fig:misclassification_diagnosis}%
 \noindent\textbf{Figure \arabic{figure}: Diagnosing GapMind misclassifications and ML generalisation failures.}
-(A) Conceptual framework outlining causes of concordant samples (where GapMind matches experiment) and discordant samples (where GapMind contradicts experiment).
+(A) Conceptual framework outlining potential causes of concordant samples (where GapMind matches experiment) and discordant samples (where GapMind contradicts experiment).
 (B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
-Each bar displays the proportions of true positives, true negatives, false positives (GapMind predicts complete pathway but no growth is observed), and false negatives (GapMind predicts incomplete pathway but growth is observed).
+Each bar displays the proportions of true positives, true negatives, false positives (GapMind predicts "complete pathway" but no growth is observed), and false negatives (GapMind predicts "incomplete pathway" but growth is observed).
 (C) Feature importance stability analysis using SHAP.
-Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters using \texttt{shap.utils.hclust} so that paralogues and pathway-mates representing the same biological signal are counted as one cluster (Methods).
-Top panel: number of stable feature clusters when the model is trained on all four datasets combined.
+Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters so that paralogues and pathway-mates representing the same biological signal are counted as one cluster (Methods).
+Top panel: number of stable feature clusters across cross validation runs when the model is trained on all four datasets combined.
 Bottom panel: cross-dataset cluster stability comparing the stable feature clusters from the model trained on the held-out dataset alone to those from the model trained on the three other datasets combined.
 Solid bars represent clusters shared between the held-out-alone and combined-of-three models; patterned bars represent clusters present only in the held-out-alone model.
 
@@ -62,11 +64,11 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \refstepcounter{figure}\label{fig:concordant_analysis}%
 \noindent\textbf{Figure \arabic{figure}: Concordant-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
-(\textbf{A}) Balanced accuracy on held-out concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining on GapMind step features (Methods).
-(\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone (Methods).
+(\textbf{A}) Balanced accuracy on held-out concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
+(\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone.
 Solid bars: shared clusters; patterned bars: held-out-only clusters.
-(\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full natural-composition held-out test set, one point per phenotype mean.
-Circles: random holdout; squares: cross-dataset.
+(\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
+Green circles: random holdout; blue squares: cross-dataset.
 Dashed diagonal marks parity; points above indicate ML outperforming GapMind.
 Inset: paired Wilcoxon $p$-values across phenotypes.
 (\textbf{D}) As panel C, with the cross-dataset test set decomposed into GapMind-concordant (purple circles) and discordant (orange squares) subsets.
@@ -78,7 +80,7 @@ GapMind balanced accuracy is fixed at 1 on the concordant subset and 0 on the di
 \refstepcounter{figure}\label{fig:improvement_strategies}%
 \noindent\textbf{Figure \arabic{figure}: Effects of data filtering and feature selection on model performance.}
 (A) Left: counts of problematic genomes per dataset in two discordant categories: no observed growth despite at least one GapMind growth prediction, and universal observed growth despite incomplete GapMind pathways.
-Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those discordant categories or neither.
+Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those categories from panel A.
 (B) Per-phenotype balanced accuracy on the cross-dataset split for three filtering strategies (concordant samples, blue; $Y_{\mathrm{soft}}$ confidence-filtered, green; problematic samples removed, red).
 Numbers above each bar give the training samples removed by that filter relative to the full dataset; error bars show standard deviation across replicate runs.
 (C) Precision-recall scatter for the three filtering strategies and the GapMind baseline across phenotypes; the dashed line marks equal precision and recall.
@@ -118,24 +120,23 @@ Histidine is the worked example (numeric cells in bold); full per-comparison KO 
 %--------------------------------------------------------%
 
 \clearpage
-\section*{Figures and Tables}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure1a.pdf}\\[0.5cm]
-\includegraphics[width=0.95\textwidth]{figure1b.pdf}
+\includegraphics[width=\textwidth]{figure1a.pdf}\\[0.5cm]
+\includegraphics[width=\textwidth]{figure1b.pdf}
 \caption*{\textbf{Figure 1}}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure2.pdf}
+\includegraphics[width=\textwidth]{figure2.pdf}
 \caption*{\textbf{Figure 2}}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure3.pdf}
+\includegraphics[width=\textwidth]{figure3.pdf}
 \caption*{\textbf{Figure 3}}
 \end{figure}
 
@@ -147,19 +148,19 @@ Histidine is the worked example (numeric cells in bold); full per-comparison KO 
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure5.pdf}
+\includegraphics[width=\textwidth]{figure5.pdf}
 \caption*{\textbf{Figure 5}}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure6.pdf}
+\includegraphics[width=\textwidth]{figure6.pdf}
 \caption*{\textbf{Figure 6}}
 \end{figure}
 
 \begin{figure}[p]
 \centering
-\includegraphics[width=0.95\textwidth]{figure7.pdf}
+\includegraphics[width=\textwidth]{figure7.pdf}
 \caption*{\textbf{Figure 7}}
 \end{figure}
 
