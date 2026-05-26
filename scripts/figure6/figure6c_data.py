@@ -4,9 +4,11 @@ Generate data for Figure 6C: Impact of filtering problematic samples on P/R/AUPR
 
 This script:
 1. Identifies problematic samples from Figure 6A analysis
-2. Trains ML models on dataset splits
-3. Evaluates on full test set and filtered test set (excluding problematic samples)
-4. Calculates precision, recall, and AUPRC for both conditions
+2. Trains two models per split:
+   - "full": trained on the full train/val sets
+   - "filtered": trained on train/val with problematic samples removed
+3. Evaluates both models on the same full (unfiltered) cross-dataset test set
+4. Calculates precision, recall, AUPRC, and balanced accuracy for both conditions
 5. Saves results for comparison plotting
 """
 
@@ -380,6 +382,8 @@ def run_figure6c_analysis(
     results = []
     split_dict = splits_data[split_type]
 
+    from scripts.ml import make_classifier
+
     for split_key, data in tqdm(split_dict.items(), desc=f"Processing {split_type}"):
         # Extract phenotype name and split number
         parts = split_key.split("_")
@@ -393,12 +397,7 @@ def run_figure6c_analysis(
         X_test = data["X_test"]
         y_test = data["y_test"]
 
-        # Train model
-        from scripts.ml import make_classifier
-
-        model = make_classifier("cb", random_state=42)
-
-        # Align validation data
+        # Align validation features to train feature columns.
         X_val_aligned = X_val.copy()
         missing_cols_val = X_train.columns.difference(X_val_aligned.columns)
         if len(missing_cols_val) > 0:
@@ -406,7 +405,7 @@ def run_figure6c_analysis(
             X_val_aligned = pd.concat([X_val_aligned, missing_df], axis=1)
         X_val_aligned = X_val_aligned[X_train.columns]
 
-        # Align test data
+        # Align test features to train feature columns.
         X_test_aligned = X_test.copy()
         missing_cols_test = X_train.columns.difference(X_test_aligned.columns)
         if len(missing_cols_test) > 0:
@@ -414,24 +413,74 @@ def run_figure6c_analysis(
             X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
         X_test_aligned = X_test_aligned[X_train.columns]
 
-        # Train
-        model.fit(
+        # ---------------- full condition: train on full train/val ---------------
+        model_full = make_classifier("cb", random_state=42)
+        model_full.fit(
             X_train,
             y_train,
             eval_set=(X_val_aligned, y_val),
             use_best_model=True,
             verbose=False,
         )
-
-        # Evaluate on full test set
         metrics_full = evaluate_with_predictions(
-            model, X_test_aligned, y_test, X_train, y_train, X_val_aligned, y_val, exclude_samples=None
+            model_full,
+            X_test_aligned,
+            y_test,
+            X_train,
+            y_train,
+            X_val_aligned,
+            y_val,
+            exclude_samples=None,
         )
 
-        # Evaluate on filtered test set (excluding problematic samples)
-        metrics_filtered = evaluate_with_predictions(
-            model, X_test_aligned, y_test, X_train, y_train, X_val_aligned, y_val, exclude_samples=problematic_samples
-        )
+        # ---- filtered condition: drop problematic samples from train/val, ----
+        # ---- then evaluate on the same full cross-dataset held-out test. ----
+        keep_train = ~y_train.index.isin(problematic_samples)
+        X_train_f = X_train[keep_train]
+        y_train_f = y_train[keep_train]
+
+        keep_val = ~y_val.index.isin(problematic_samples)
+        X_val_f = X_val_aligned[keep_val]
+        y_val_f = y_val[keep_val]
+
+        if (
+            len(y_train_f) == 0
+            or len(np.unique(y_train_f)) < 2
+            or len(y_val_f) == 0
+            or len(np.unique(y_val_f)) < 2
+        ):
+            print(
+                f"\nSkipping filtered training for {split_key}: "
+                f"train or val lacks both classes after problematic-sample removal"
+            )
+            metrics_filtered = {
+                "precision": np.nan,
+                "recall": np.nan,
+                "auprc": np.nan,
+                "balanced_accuracy": np.nan,
+                "n_test": len(y_test),
+                "n_train": len(y_train_f),
+                "n_val": len(y_val_f),
+            }
+        else:
+            model_filt = make_classifier("cb", random_state=42)
+            model_filt.fit(
+                X_train_f,
+                y_train_f,
+                eval_set=(X_val_f, y_val_f),
+                use_best_model=True,
+                verbose=False,
+            )
+            metrics_filtered = evaluate_with_predictions(
+                model_filt,
+                X_test_aligned,
+                y_test,
+                X_train_f,
+                y_train_f,
+                X_val_f,
+                y_val_f,
+                exclude_samples=None,
+            )
 
         # Store results
         for condition, metrics in [("full", metrics_full), ("filtered", metrics_filtered)]:

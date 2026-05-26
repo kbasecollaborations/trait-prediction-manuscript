@@ -386,7 +386,11 @@ def filter_confident_samples(
     threshold_high: float = 0.6,
 ) -> dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]]:
     """
-    Filter split data to keep only confident samples.
+    Filter training and validation splits to keep only confident samples.
+
+    Confidence-based filtering is applied to train and val only; the test set
+    is left untouched so that all filtering strategies are evaluated on the
+    same full cross-dataset held-out test (see Methods).
 
     Keeps samples where y_soft < threshold_low OR y_soft > threshold_high.
 
@@ -404,7 +408,9 @@ def filter_confident_samples(
     Returns
     -------
     dict
-        Filtered split data with same structure as input.
+        Filtered split data with the same structure as the input. Train and
+        val are filtered to confident samples; test is copied through
+        unchanged.
     """
     filtered_data = {}
 
@@ -420,29 +426,30 @@ def filter_confident_samples(
             split = split_data[split_type][key]
             y_soft_phenotype = y_soft[phenotype_name]
 
-            # Filter each set (train, val, test)
-            filtered_split = {}
+            filtered_split: dict[str, pd.DataFrame | pd.Series] = {}
 
-            for set_name in ["train", "val", "test"]:
+            # Filter only train and val; preserve full test set.
+            for set_name in ["train", "val"]:
                 X_key = f"X_{set_name}"
                 y_key = f"y_{set_name}"
 
                 X = split[X_key]
                 y = split[y_key]
 
-                # Get y_soft for this set
                 common_inds = y.index.intersection(y_soft_phenotype.index)
                 y_soft_set = y_soft_phenotype.loc[common_inds]
 
-                # Filter to confident samples
                 confident_mask = (y_soft_set < threshold_low) | (
                     y_soft_set > threshold_high
                 )
                 confident_inds = y_soft_set[confident_mask].index
 
-                # Filter X and y
                 filtered_split[X_key] = X.loc[confident_inds]
                 filtered_split[y_key] = y.loc[confident_inds]
+
+            # Pass the test set through unchanged.
+            filtered_split["X_test"] = split["X_test"]
+            filtered_split["y_test"] = split["y_test"]
 
             filtered_data[split_type][key] = filtered_split
 
@@ -567,43 +574,47 @@ def main() -> None:
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Load phylogenetic data
-    print("\nLoading phylogenetic data...")
-    tree, distance_df = load_phylogenetic_data()
-    print(f"  Tree has {len(tree.get_leaves())} leaves")
-    print(f"  Distance matrix shape: {distance_df.shape}")
-
-    # Load GapMind confidence
-    print("\nLoading GapMind confidence scores...")
-    conf_mech = load_gapmind_confidence()
-    print(f"  GapMind confidence for {len(conf_mech)} phenotypes")
-
-    # Load phenotype data
-    print("\nLoading phenotype data...")
-    phenotype_data = load_phenotype_data()
-    print(f"  Loaded {len(phenotype_data)} phenotypes")
-
-    # Calculate y_soft for all phenotypes
-    print("\nCalculating y_soft for all phenotypes...")
-    y_soft = calculate_y_soft_all_phenotypes(
-        phenotype_data,
-        tree,
-        distance_df,
-        conf_mech,
-        k=K_NEIGHBORS,
-        w_phylo=W_PHYLO,
-        w_gapmind=W_GAPMIND,
-        w_exp=W_EXP,
-    )
-    print(f"  Calculated y_soft for {len(y_soft)} phenotypes")
-
-    # Save y_soft for reference
-    y_soft_file = OUTPUT_DIR / "y_soft.pkl"
+    # Compute y_soft, or reuse a cached copy if one is available. Recomputing
+    # y_soft does not depend on the filter change in this PR, so the cached
+    # values are equivalent to a fresh recomputation.
     import pickle
 
-    with open(y_soft_file, "wb") as f:
-        pickle.dump(y_soft, f)
-    print(f"  Saved y_soft to {y_soft_file}")
+    y_soft_file = OUTPUT_DIR / "y_soft.pkl"
+    if y_soft_file.exists():
+        print(f"\nLoading cached y_soft from {y_soft_file} ...")
+        with open(y_soft_file, "rb") as f:
+            y_soft = pickle.load(f)
+        print(f"  Loaded y_soft for {len(y_soft)} phenotypes")
+    else:
+        print("\nLoading phylogenetic data...")
+        tree, distance_df = load_phylogenetic_data()
+        print(f"  Tree has {len(tree.get_leaves())} leaves")
+        print(f"  Distance matrix shape: {distance_df.shape}")
+
+        print("\nLoading GapMind confidence scores...")
+        conf_mech = load_gapmind_confidence()
+        print(f"  GapMind confidence for {len(conf_mech)} phenotypes")
+
+        print("\nLoading phenotype data...")
+        phenotype_data = load_phenotype_data()
+        print(f"  Loaded {len(phenotype_data)} phenotypes")
+
+        print("\nCalculating y_soft for all phenotypes...")
+        y_soft = calculate_y_soft_all_phenotypes(
+            phenotype_data,
+            tree,
+            distance_df,
+            conf_mech,
+            k=K_NEIGHBORS,
+            w_phylo=W_PHYLO,
+            w_gapmind=W_GAPMIND,
+            w_exp=W_EXP,
+        )
+        print(f"  Calculated y_soft for {len(y_soft)} phenotypes")
+
+        with open(y_soft_file, "wb") as f:
+            pickle.dump(y_soft, f)
+        print(f"  Saved y_soft to {y_soft_file}")
 
     # Filter to confident samples only
     print("\nFiltering to confident samples only...")
@@ -617,24 +628,27 @@ def main() -> None:
         threshold_high=CONFIDENCE_THRESHOLD_HIGH,
     )
 
-    # Print filtering summary
-    print("\nFiltering summary:")
+    # Print filtering summary (train + val; test is preserved in full).
+    print("\nFiltering summary (train + val; test set unchanged):")
     for split_type in filtered_split_data:
-        total_samples_original = sum(
-            len(split_data[split_type][key]["X_test"]) for key in split_data[split_type]
+        total_trainval_original = sum(
+            len(split_data[split_type][key]["X_train"])
+            + len(split_data[split_type][key]["X_val"])
+            for key in split_data[split_type]
         )
-        total_samples_filtered = sum(
-            len(filtered_split_data[split_type][key]["X_test"])
+        total_trainval_filtered = sum(
+            len(filtered_split_data[split_type][key]["X_train"])
+            + len(filtered_split_data[split_type][key]["X_val"])
             for key in filtered_split_data[split_type]
         )
         pct_retained = (
-            100 * total_samples_filtered / total_samples_original
-            if total_samples_original > 0
+            100 * total_trainval_filtered / total_trainval_original
+            if total_trainval_original > 0
             else 0
         )
         print(
-            f"  {split_type}: {total_samples_filtered}/{total_samples_original} "
-            f"test samples retained ({pct_retained:.1f}%)"
+            f"  {split_type}: {total_trainval_filtered}/{total_trainval_original} "
+            f"train+val samples retained ({pct_retained:.1f}%)"
         )
 
     # Run ML on filtered splits

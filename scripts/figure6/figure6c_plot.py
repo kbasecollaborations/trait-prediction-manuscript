@@ -40,31 +40,37 @@ def plot_precision_recall_scatter(
         List of phenotypes in order.
     """
     from scripts.minority_filter import (
-        concordant_minority_counts,
         filter_by_minority,
         full_test_minority_counts,
     )
 
-    concordant_minority = concordant_minority_counts()
     full_minority = full_test_minority_counts()
 
-    # Load data from three sources
-    # 1. Concordant samples (Figure 5A) — concordant test
+    # All three filtering strategies are scored on the same full cross-dataset
+    # held-out test set; only the training set changes between conditions.
+    #
+    # 1. Concordant-trained model, full cross-dataset test (Figure 5C data).
     concordant_df = pd.read_csv(
-        Path("data/outputs/figure5/figure5a_concordant_ml_results.csv")
+        Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
     )
-    concordant_df = concordant_df[concordant_df["split_type"] == "dataset_split"].copy()
-    concordant_df = filter_by_minority(concordant_df, concordant_minority)
+    concordant_df = concordant_df[
+        (concordant_df["split_type"] == "dataset_split")
+        & (concordant_df["test_type"] == "full")
+    ].copy()
+    concordant_df = filter_by_minority(concordant_df, full_minority)
 
-    # 2. Y_soft filtered samples (current Figure 6B) — full test
+    # 2. Y_soft-filtered training (Figure 6B data), full cross-dataset test.
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
     ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
-    # 3. Misclassified samples removed (Figure 6C filtered condition) — full test
+    # 3. Problematic-sample-removed training (Figure 6C "filtered" condition),
+    #    full cross-dataset test.
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
-    misclass_df = filter_by_minority(misclass_df, full_minority)
+    misclass_df = filter_by_minority(
+        misclass_df, full_minority, key_column="split"
+    )
 
     # Calculate mean precision and recall for each phenotype (for scatter points)
     concordant_summary = (

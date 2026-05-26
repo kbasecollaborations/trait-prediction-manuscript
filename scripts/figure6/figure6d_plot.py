@@ -124,8 +124,8 @@ def _add_pvalue_text(
         Number of dataset split phenotype pairs.
     """
     ax.text(
-        0.02,
-        1.04,
+        0.03,
+        0.97,
         (
             "Wilcoxon p: "
             f"random={_format_p_value(random_p_value)}; "
@@ -134,64 +134,9 @@ def _add_pvalue_text(
         ),
         transform=ax.transAxes,
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=8,
     )
-
-
-def _plot_feature_precision_recall_inset(
-    ax: Axes,
-    data: pd.DataFrame,
-    phenotypes: list[str],
-) -> None:
-    """Plot a compact precision-recall inset for feature-set comparisons.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes to plot on.
-    data : pd.DataFrame
-        Results dataframe with all data.
-    phenotypes : list[str]
-        List of phenotypes to include.
-    """
-    inset_ax = ax.inset_axes([0.08, 0.62, 0.32, 0.32])
-    summary = (
-        data.groupby(["phenotype", "experiment", "split_type"])[["precision", "recall"]]
-        .mean()
-        .reset_index()
-    )
-    summary = summary[summary["phenotype"].isin(phenotypes)]
-
-    colors = {"combined": "#2E86AB", "phenotype_filtered": "#E63946"}
-    markers = {"random_split": "o", "dataset_split": "s"}
-
-    for experiment in ["combined", "phenotype_filtered"]:
-        for split_type in ["random_split", "dataset_split"]:
-            subset = summary[
-                (summary["experiment"] == experiment)
-                & (summary["split_type"] == split_type)
-            ]
-            inset_ax.scatter(
-                subset["recall"],
-                subset["precision"],
-                s=12,
-                alpha=0.7,
-                color=colors[experiment],
-                edgecolors="black",
-                linewidths=0.4,
-                marker=markers[split_type],
-                zorder=3,
-            )
-
-    inset_ax.plot([0, 1], [0, 1], "k--", alpha=0.25, linewidth=0.8, zorder=1)
-    inset_ax.set_xlim(0, 1.05)
-    inset_ax.set_ylim(0, 1.05)
-    inset_ax.set_xticks([0, 1.0])
-    inset_ax.set_yticks([0, 1.0])
-    inset_ax.tick_params(labelsize=6, pad=1)
-    inset_ax.set_title("Precision-recall", fontsize=8, pad=2)
-    inset_ax.set_aspect("equal")
 
 
 def plot_split_comparison(
@@ -416,7 +361,6 @@ def plot_balanced_accuracy_scatter(
     )
     ax.set_aspect("equal")
     _add_pvalue_text(ax, random_p_value, random_n, dataset_p_value, dataset_n)
-    _plot_feature_precision_recall_inset(ax, data, phenotypes)
 
 
 def plot_precision_recall_scatter_by_feature_type(
