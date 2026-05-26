@@ -17,16 +17,16 @@ The limited mechanistic and phylogenetic baseline performance motivated testing 
 
 \FloatBarrier{}
 
-\subsection*{Machine learning models generalise within but not across datasets}
+\subsection*{Machine learning models predict accurately within but not across datasets}
 
 To test whether genome-derived features could overcome the limitations of the mechanistic and phylogenetic baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$4000--5000 features per genome after correlation filtering; Methods), evaluating all models with balanced accuracy to account for class imbalance.
 
-Data were aggregated across all four datasets and assessed under four evaluation scenarios that progressively test generalisation: repeated random holdout (training and test drawn from the same phenotype-cluster distribution); cross-dataset (training on three datasets and testing on the held-out one); in-clade cross-dataset splits (restricting evaluation to phylogenetically similar samples to isolate dataset from phylogenetic effects); and out-of-clade splits (phylogenetically distant training and test samples).
-Random holdout test samples were drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).
+Data were aggregated across all four datasets and assessed under four evaluation scenarios that progressively test generalisation: repeated random holdout (training and test drawn from the same datasets); cross-dataset (training on three datasets and testing on the held-out one); in-clade cross-dataset splits (restricting evaluation to phylogenetically similar samples to isolate dataset from phylogenetic effects); and out-of-clade splits (phylogenetically distant training and test samples).
+Random holdout test samples were found to be drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).
 
 In repeated random holdout evaluations (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and outperformed the GapMind baseline (paired Wilcoxon signed-rank across the 15 shared phenotypes, $p < 0.001$).
 Cross-dataset performance, however, decreased substantially (0.50--0.75; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts.
-The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), indicating that phylogenetic distance alone does not explain the failure and that dataset-level inconsistencies likely contribute substantially.
+The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), indicating that phylogenetic distance alone does not explain the failure and that dataset-specific signals likely contribute substantially.
 Out-of-clade splits showed similar trends (0.50--0.80; Figure~\ref{fig:in_clade_out_clade_performance}), consistent with prior observations that random holdout evaluations overestimate generalisation by fitting phylogeny-specific patterns \cite{Roberts2017CrossValidation,Li2023-up}.
 Despite the expectation that well-characterised catabolic pathways would enable cross-dataset transfer \cite{Price2022GapMindCarbon,Gralka2023-ft}, models trained on aggregated data did not consistently learn transferable mechanistic features.
 
@@ -35,11 +35,11 @@ Despite the expectation that well-characterised catabolic pathways would enable 
 
 \subsection*{Misclassification patterns implicate training-data heterogeneity}
 
-To understand the cross-dataset failures, we examined GapMind misclassification patterns across phenotypes and datasets (Figure~\ref{fig:misclassification_diagnosis}A,B), which can arise from incomplete annotations, alternative routes, and regulatory mechanisms~\cite{Price2020GapMind,Price2024Improving,Griesemer2018Combining,Pan2018Advances,Gorke2008CCR}.
+To understand the cross-dataset failures, we first examined GapMind misclassification patterns across phenotypes and datasets (Figure~\ref{fig:misclassification_diagnosis}A,B), which can arise from incomplete annotations, alternative routes, and regulatory mechanisms~\cite{Price2020GapMind,Price2024Improving,Griesemer2018Combining,Pan2018Advances,Gorke2008CCR}.
 Although phenotypes varied in GapMind accuracy (e.g., mannitol, galactose higher; serine, alanine lower), no consistent directional bias was observed in misclassifications, and datasets similarly varied in overall discordance (Biolog: $\sim$30\%; Populus: $\sim$26\%) without directional bias, indicating that discordance does not arise from a single dataset-specific artefact.
 
 To probe ML generalisation failures, we performed SHAP-based feature-importance stability analyses (Figure~\ref{fig:misclassification_diagnosis}C), grouping KOs by SHAP-supervised redundancy (Methods) so that biologically equivalent features are counted as a single signal.
-Across random holdout evaluations of the aggregated dataset, at least one stable feature cluster was consistently identified (top panel), indicating recovery of recurring predictors when training and test samples shared distribution.
+Across random holdout evaluations (cross-valiation) of the aggregated dataset, at least one stable feature cluster was consistently identified (top panel), indicating recovery of recurring predictors when training data is sampled from the same pool.
 By contrast, only six of fifteen phenotypes (glucose, histidine, maltose, mannitol, sucrose, and m-inositol) shared at least one common stable feature cluster between models trained on the three non-held-out datasets and the held-out dataset alone (bottom panel; per-phenotype full-data counts in Table~\ref{tab:main_feature_comparison}).
 
 Examining KOFAM annotations of the cross-dataset stable features (Supplementary Table~\ref{tab:feature_comparison}) showed that for histidine, the main catabolic enzyme K01712 (urocanate hydratase) was consistently identified across all datasets.
