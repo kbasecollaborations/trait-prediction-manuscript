@@ -63,7 +63,7 @@ Stable predictive features were identified by SHAP (SHapley Additive exPlanation
 For each phenotype--dataset configuration, models were trained across 20 random seeds; the top 10 features by mean absolute SHAP value per run were extracted, and features appearing in $\geq$70\% of runs were designated ``stable''.
 To avoid counting biologically redundant KOs (paralogues, operon-mates, alternative enzymes) as separate features, per-phenotype stable KOs were grouped into SHAP-supervised redundancy clusters via \texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} on the pooled concordant feature matrix at distance threshold 0.5; the resulting KO-to-cluster mapping replaced raw KO identity for intersection and uniqueness counts (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}; Supplementary Text~S8).
 This pooled clustering was used only for post hoc interpretive grouping and did not affect training, predictions, or reported metrics.
-For Table~\ref{tab:main_feature_comparison}, cluster representatives were mapped to KEGG reference pathway maps) instead of stricter catabolism modules, providing a uniform coverage metric across all 15 phenotypes.
+For Table~\ref{tab:main_feature_comparison}, cluster representatives were mapped to KEGG reference pathway maps instead of stricter catabolism modules, providing a uniform coverage metric across all 15 phenotypes.
 
 \subsection*{Data Quality Filtering Strategies}
 
