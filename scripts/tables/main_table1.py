@@ -453,8 +453,9 @@ def build_table(
 
     def _emit_row(phenotype: str) -> None:
         ph, pathway_cell, shared_cell, pct_cell, example = _row_cells(phenotype)
+        # ISME style: avoid colour/shading (does not reproduce in web view);
+        # use bold-text emphasis on the headline numeric cells only.
         if phenotype == highlight_phenotype:
-            lines.append("\\rowcolor{LightYellow1}")
             shared_render = f"\\textbf{{{shared_cell}}}"
             pct_render = f"\\textbf{{{pct_cell}}}"
         else:
@@ -482,8 +483,8 @@ def build_table(
         "models, summed across the three held-out comparisons (Methods). "
         "\\textbf{\\% unique in pathway} is the fraction of held-out-only "
         "cluster representatives that are members of the assigned KEGG "
-        "reference pathway map (Methods). Histidine (highlighted) is the "
-        "worked example; full per-comparison KO lists and the narrower "
+        "reference pathway map (Methods). Histidine is the worked example "
+        "(numeric cells in bold); full per-comparison KO lists and the narrower "
         "module-level statistic (M00045 \\textit{histidine degradation}: "
         "29\\% $\\rightarrow$ 75\\%) appear in Supplementary "
         "Tables~\\ref{tab:feature_comparison} (full-data) and "

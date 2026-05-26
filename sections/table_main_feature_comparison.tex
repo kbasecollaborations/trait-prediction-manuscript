@@ -9,7 +9,6 @@
 \hline
 \textbf{Phenotype} & \textbf{KEGG pathway map} & \makecell{\textbf{Shared stable clusters} \\ \textbf{Full $\rightarrow$ Conc.}} & \makecell{\textbf{\% unique in pathway} \\ \textbf{Full $\rightarrow$ Conc.}} & \makecell[l]{\textbf{Example shared} \\ \textbf{concordant-stable KO}} \\
 \hline
-\rowcolor{LightYellow1}
 Histidine & map00340 \textit{Histidine metabolism} & \textbf{4 $\rightarrow$ 8} & \textbf{29\% $\rightarrow$ 75\%} & K01468 imidazolonepropionase; K01712 urocanate hydratase \\
 \hline
 Galactose & map00052 \textit{Galactose metabolism} & 0 $\rightarrow$ 1 & 50\% $\rightarrow$ 24\% & K01190 beta-galactosidase \\
@@ -42,6 +41,6 @@ Arginine & map00330 \textit{Arg \& Pro metabolism} & 0 $\rightarrow$ 3 & 0\% $\r
 \hline
 \end{tabular}%
 }
-\caption{\textbf{Per-phenotype feature recovery under concordance filtering.} Comparison of two training regimes for each of the 15 phenotypes: \textbf{Full} (held-out-alone model trained on all genomes from one source dataset) and \textbf{Conc.} (same procedure restricted to GapMind-concordant samples). \textbf{Shared stable clusters} counts SHAP-supervised redundancy clusters stable in BOTH the three-dataset and held-out-alone models, summed across the three held-out comparisons (Methods). \textbf{\% unique in pathway} is the fraction of held-out-only cluster representatives that are members of the assigned KEGG reference pathway map (Methods). Histidine (highlighted) is the worked example; full per-comparison KO lists and the narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appear in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and \ref{tab:feature_comparison_concordant} (concordant).}
+\caption{\textbf{Per-phenotype feature recovery under concordance filtering.} Comparison of two training regimes for each of the 15 phenotypes: \textbf{Full} (held-out-alone model trained on all genomes from one source dataset) and \textbf{Conc.} (same procedure restricted to GapMind-concordant samples). \textbf{Shared stable clusters} counts SHAP-supervised redundancy clusters stable in BOTH the three-dataset and held-out-alone models, summed across the three held-out comparisons (Methods). \textbf{\% unique in pathway} is the fraction of held-out-only cluster representatives that are members of the assigned KEGG reference pathway map (Methods). Histidine is the worked example (numeric cells in bold); full per-comparison KO lists and the narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appear in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and \ref{tab:feature_comparison_concordant} (concordant).}
 \label{tab:main_feature_comparison}
 \end{table}
