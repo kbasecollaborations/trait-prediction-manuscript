@@ -433,7 +433,8 @@ def build_table(
         )
 
     lines: list[str] = []
-    lines.append("\\begin{table}[h]")
+    lines.append("\\FloatBarrier")
+    lines.append("\\begin{table}[!h]")
     lines.append("\\centering")
     lines.append("\\footnotesize")
     lines.append("\\setlength{\\tabcolsep}{4pt}")
@@ -471,38 +472,21 @@ def build_table(
     lines.append("\\end{tabular}%")
     lines.append("}")
     lines.append(
-        "\\caption{\\textbf{Concordance filtering recovers mechanism-linked "
-        "features.} For each of the 15 phenotypes, we compare two training "
-        "regimes: \\textbf{Full} (held-out-alone model trained on all genomes "
-        "from one source dataset) and \\textbf{Conc.} (same procedure "
-        "restricted to GapMind-concordant genomes only). \\textbf{Shared "
-        "stable clusters} counts SHAP-supervised redundancy clusters of "
-        "KOFAM features stable ($\\geq$70\\% of 20 random seeds) in BOTH the "
-        "three-dataset model and the held-out-alone model, summed across the "
-        "three held-out comparisons (clusters group KOs carrying the same "
-        "biological signal; Methods). The total rises under concordant "
-        "training, recovering more of the canonical pathway as a stable "
-        "cross-dataset signal (Fig.~\\ref{fig:concordant_analysis}B). The "
-        "\\textbf{\\% unique in pathway} column reports the fraction of "
-        "held-out-only cluster representatives that map to the assigned "
-        "KEGG reference pathway map for the phenotype (KO membership parsed "
-        "from \\texttt{data/external/mapping/pathway-ko-membership.tsv}). "
-        "KEGG pathway maps are broader than the strict catabolism modules "
-        "used in Supplementary Tables~\\ref{tab:feature_comparison} and "
-        "\\ref{tab:feature_comparison_concordant} (they include both "
-        "biosynthesis and degradation KOs for the same compound), but are "
-        "available for every phenotype and therefore enable a uniform "
-        "coverage metric. Histidine (highlighted) is the worked example: "
-        "shared stable clusters rise from 4 to 8 under concordant training, "
-        "and the fraction of held-out-only unique cluster representatives "
-        "that lie in pathway map00340 (histidine metabolism) rises "
-        "correspondingly. The shared stable signal under concordant "
-        "training is dominated by canonical urocanate-pathway enzymes "
-        "(K01468 imidazolonepropionase, K01712 urocanate hydratase) and the "
-        "histidine-utilization repressor K05836. The narrower "
+        "\\caption{\\textbf{Per-phenotype feature recovery under "
+        "concordance filtering.} Comparison of two training regimes for each "
+        "of the 15 phenotypes: \\textbf{Full} (held-out-alone model trained "
+        "on all genomes from one source dataset) and \\textbf{Conc.} (same "
+        "procedure restricted to GapMind-concordant samples). "
+        "\\textbf{Shared stable clusters} counts SHAP-supervised redundancy "
+        "clusters stable in BOTH the three-dataset and held-out-alone "
+        "models, summed across the three held-out comparisons (Methods). "
+        "\\textbf{\\% unique in pathway} is the fraction of held-out-only "
+        "cluster representatives that are members of the assigned KEGG "
+        "reference pathway map (Methods). Histidine (highlighted) is the "
+        "worked example; full per-comparison KO lists and the narrower "
         "module-level statistic (M00045 \\textit{histidine degradation}: "
-        "29\\% $\\rightarrow$ 75\\%) appears in "
-        "Supplementary Tables~\\ref{tab:feature_comparison} (full-data) and "
+        "29\\% $\\rightarrow$ 75\\%) appear in Supplementary "
+        "Tables~\\ref{tab:feature_comparison} (full-data) and "
         "\\ref{tab:feature_comparison_concordant} (concordant)."
         "}"
     )
