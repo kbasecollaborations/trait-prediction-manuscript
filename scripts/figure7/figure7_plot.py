@@ -132,7 +132,13 @@ def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
         ax.set_ylim(0.40, 1.0)
         ax.set_xlabel("Coverage")
     axes[0].set_ylabel("Balanced accuracy\n(retained subset)")
-    axes[0].legend(frameon=False, fontsize=8, loc="lower left")
+    axes[1].legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.22),
+        ncol=2,
+        frameon=False,
+        fontsize=9,
+    )
 
 
 def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
