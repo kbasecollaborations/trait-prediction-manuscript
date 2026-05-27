@@ -53,6 +53,7 @@ CONFIG_TO_LABEL: dict[str, str] = {
 }
 
 CONDITION_COLORS: dict[str, str] = {
+    "full_data": "#7F7F7F",
     "problematic_removed": "#8D6E63",
     "free_balanced": "#A6DBA0",
     "current": "#5AAE61",
@@ -130,6 +131,10 @@ def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
     rows.append(
         prob[cols].assign(config="problematic_removed")
     )
+    full_data = prob_all[prob_all["condition"] == "full"]
+    rows.append(
+        full_data[cols].assign(config="full_data")
+    )
 
     return pd.concat(rows, ignore_index=True)
 
@@ -193,11 +198,27 @@ def plot_metric_sweep(
         .reset_index()
     )
 
-    xs_sweep = [W_GAP_VALUES[c] for c in CONFIDENCE_CONFIGS]
-    ref_x = {"problematic_removed": -0.10, "concordant": 0.60}
-    config_to_x: dict[str, float] = {c: x for c, x in zip(CONFIDENCE_CONFIGS, xs_sweep)}
-    config_to_x.update(ref_x)
-    jitter_width = 0.018
+    # Equal categorical spacing for all seven columns (Full data, Problematic,
+    # four confidence-sweep settings, Concordant). Sweep positions are no
+    # longer at the literal w_gap values; the x-tick labels carry the values
+    # so the spacing remains uniform across the filter family.
+    column_order = [
+        "full_data",
+        "problematic_removed",
+        *CONFIDENCE_CONFIGS,
+        "concordant",
+    ]
+    column_step = 1.0
+    config_to_x: dict[str, float] = {
+        cfg: i * column_step for i, cfg in enumerate(column_order)
+    }
+    xs_sweep = [config_to_x[c] for c in CONFIDENCE_CONFIGS]
+    ref_x = {
+        "full_data": config_to_x["full_data"],
+        "problematic_removed": config_to_x["problematic_removed"],
+        "concordant": config_to_x["concordant"],
+    }
+    jitter_width = 0.12
 
     # Per-phenotype scatter underlay for each metric, lightly jittered around
     # the corresponding x-position so the spread across phenotypes is visible
@@ -230,7 +251,7 @@ def plot_metric_sweep(
             color=color,
             linewidth=1.6,
             marker=METRIC_MARKERS[metric],
-            markersize=7,
+            markersize=8,
             markeredgecolor="black",
             markeredgewidth=0.5,
             elinewidth=0.9,
@@ -240,13 +261,15 @@ def plot_metric_sweep(
         )
         for ref_cfg, ref_x_val in ref_x.items():
             sub = ph_means[ph_means["config"] == ref_cfg][metric]
+            if sub.empty:
+                continue
             ax.errorbar(
                 ref_x_val,
                 float(sub.mean()),
                 yerr=float(sub.sem()),
                 color=color,
                 marker=METRIC_MARKERS[metric],
-                markersize=9,
+                markersize=8,
                 markerfacecolor=color,
                 markeredgecolor="black",
                 markeredgewidth=0.5,
@@ -255,33 +278,42 @@ def plot_metric_sweep(
                 zorder=5,
             )
 
-    ax.axvline(-0.05, color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
-    ax.axvline(0.55, color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
+    # Dotted separators bracket the three filter groups (unfiltered references,
+    # confidence sweep, hard concordance reference).
+    ref_full_x = config_to_x["full_data"]
+    ref_prob_x = config_to_x["problematic_removed"]
+    sweep_start = config_to_x[CONFIDENCE_CONFIGS[0]]
+    sweep_end = config_to_x[CONFIDENCE_CONFIGS[-1]]
+    ref_conc_x = config_to_x["concordant"]
+    ax.axvline((ref_prob_x + sweep_start) / 2.0,
+               color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
+    ax.axvline((sweep_end + ref_conc_x) / 2.0,
+               color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
 
     # Mean train+val sample count per condition for the x-tick annotations.
     config_n: dict[str, int] = {
         cfg: int(round(float(long_df[long_df["config"] == cfg]["trainval"].mean())))
-        for cfg in list(CONFIDENCE_CONFIGS) + list(ref_x)
+        for cfg in column_order
     }
-    x_order = ["problematic_removed"] + list(CONFIDENCE_CONFIGS) + ["concordant"]
-    xticks = [-0.10] + xs_sweep + [0.60]
+    xticks = [config_to_x[cfg] for cfg in column_order]
     base_labels = [
+        "No filter",
         "Problematic\nremoved",
         "$w_{\\mathrm{gap}}\\!=\\!0$",
-        "0.3",
-        "0.4",
-        "0.5",
+        "$w_{\\mathrm{gap}}\\!=\\!0.3$",
+        "$w_{\\mathrm{gap}}\\!=\\!0.4$",
+        "$w_{\\mathrm{gap}}\\!=\\!0.5$",
         "Concordant",
     ]
     xticklabels = [
         f"{label}\n$n$={config_n[cfg]}"
-        for label, cfg in zip(base_labels, x_order)
+        for label, cfg in zip(base_labels, column_order)
     ]
-    ax.set_xlabel("Confidence-filter GapMind weight $w_{\\mathrm{gap}}$")
+    ax.set_xlabel("Training-data filter")
     ax.set_ylabel("Metric value across 15 phenotypes")
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, fontsize=8)
-    ax.set_xlim(-0.18, 0.68)
+    ax.set_xlim(ref_full_x - 0.6, ref_conc_x + 0.6)
     ax.set_ylim(0.45, 1.0)
     ax.grid(axis="y", alpha=0.18, linewidth=0.5)
     ax.legend(
