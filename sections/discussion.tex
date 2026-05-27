@@ -2,9 +2,9 @@
 
 \section*{Discussion}
 
-Predicting microbial phenotypes from genomic data underpins ecological characterisation, biotechnology, and the study of uncultured taxa, yet machine learning models generalise poorly across datasets, a limitation typically attributed to limited sample size or feature-space artefacts.
-By integrating four binary growth datasets covering 819 bacterial genomes across 242 carbon sources, we find that label--mechanism agreement in the training set is a complementary determinant: when training samples mix mechanistically tractable and intractable cases, models fit dataset and clade-specific shortcuts rather than transferable pathway features.
-Restricting training to mechanistically concordant samples produced bounded specialist predictors that recovered known pathway genes and rescued mechanistic false negatives at approximately twice the rate of false positives, and a mechanism-free filter combining phylogenetic neighbour agreement and experimental-label consistency recovered most of this gain without pathway tools.
+Predicting microbial phenotypes from genomic data underpins ecological characterisation, the study of uncultured taxa, and various biotechnological applications. However, machine learning models trained on genomic features generalise poorly across datasets, a limitation typically attributed to limited sample size or feature-space artefacts.
+By integrating four binary growth datasets covering 819 bacterial genomes across 242 carbon sources, we trained phenotype-specific binary classifiers using KOFAM features. We found that when training samples mix mechanistically tractable and intractable cases, models fit dataset and clade-specific shortcuts rather than transferable pathway features.
+Restricting training to mechanistically concordant samples produced bounded specialist predictors that recovered known pathway genes and rescued mechanistic false negatives at approximately twice the rate of false positives, and a mechanism-free filter combining phylogenetic neighbour agreement and experimental-label consistency recovered most of this gain without mechanism-specific tools.
 Per-genome prediction confidence ranked correct above incorrect predictions, defining a practical applicability domain for deployment.
 
 \subsection*{Label--Mechanism Agreement Governs Cross-Dataset Transfer}
