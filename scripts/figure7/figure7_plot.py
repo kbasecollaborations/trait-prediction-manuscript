@@ -174,11 +174,13 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
 
 def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     """
-    Plot balanced-accuracy gain per label-free selection strategy at the budget.
+    Plot balanced-accuracy gain per label-free selection strategy as violins.
 
-    One bar per strategy shows the mean cross-dataset balanced-accuracy gain after
-    adding the selected held-out labels, with standard-error-of-the-mean error bars
-    and jittered per-run points. The strategies are ordered by mean gain.
+    One violin per strategy shows the per-run distribution of cross-dataset
+    balanced-accuracy gain after adding the selected held-out labels, with
+    median and quartile markers and jittered per-run points overlaid. The
+    strategies are ordered to match Panel D's pairing (random and low-confidence
+    first).
 
     Parameters
     ----------
@@ -204,19 +206,33 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     rng = np.random.default_rng(42)
 
     ax.axhline(0.0, color="gray", ls="--", lw=0.8, alpha=0.7, zorder=1)
-    for x, strat in enumerate(order):
-        vals = final.loc[final.strategy == strat, "delta_balanced_accuracy"].to_numpy()
-        mean = float(np.mean(vals))
-        sem = float(np.std(vals, ddof=1) / np.sqrt(len(vals))) if len(vals) > 1 else 0.0
-        ax.bar(
-            x, mean, width=0.62, color=colors[strat], edgecolor="black",
-            linewidth=0.7, alpha=0.9, zorder=2,
-        )
-        ax.errorbar(x, mean, yerr=sem, color="black", lw=0.8, capsize=3, zorder=4)
-        jitter = rng.uniform(-0.16, 0.16, size=len(vals))
+    data_by_strategy = [
+        final.loc[final.strategy == s, "delta_balanced_accuracy"].to_numpy()
+        for s in order
+    ]
+    parts = ax.violinplot(
+        data_by_strategy,
+        positions=range(len(order)),
+        widths=0.72,
+        showmeans=False,
+        showmedians=True,
+        showextrema=True,
+    )
+    for i, body in enumerate(parts["bodies"]):
+        body.set_facecolor(colors[order[i]])
+        body.set_edgecolor("black")
+        body.set_linewidth(0.7)
+        body.set_alpha(0.65)
+    for key in ("cmedians", "cmaxes", "cmins", "cbars"):
+        bar = parts.get(key)
+        if bar is not None:
+            bar.set_color("black")
+            bar.set_linewidth(0.8)
+    for x, vals in enumerate(data_by_strategy):
+        jitter = rng.uniform(-0.10, 0.10, size=len(vals))
         ax.scatter(
             np.full(len(vals), x) + jitter, vals, s=10, color="black",
-            alpha=0.35, linewidth=0, zorder=3,
+            alpha=0.45, linewidth=0, zorder=4,
         )
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([STRATEGY_LABELS[s] for s in order], rotation=15, ha="right")
@@ -227,12 +243,13 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
 
 def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     """
-    Plot per-phenotype gain from randomly vs selectively added labels.
+    Plot per-phenotype gain from randomly vs selectively added labels (paired).
 
-    Grouped bars compare the cross-dataset balanced-accuracy gain from adding 25
-    randomly chosen labels against 25 low-confidence-selected labels, for the
-    three Panel-A archetype phenotypes (strong to weak generaliser). Error bars
-    are the standard error of the mean across runs.
+    For each Panel-A phenotype, two boxes show the per-run distribution of
+    cross-dataset balanced-accuracy gain after adding 25 randomly chosen labels
+    versus 25 low-confidence-selected labels. Thin grey lines connect matched
+    (held-out dataset, seed) runs across the two strategies so the within-run
+    improvement that underlies the paired Wilcoxon test is visible directly.
 
     Parameters
     ----------
@@ -243,37 +260,72 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     """
     budget = int(prior["n_added"].max())
     final = prior[prior["n_added"] == budget]
-    strategies = [("random", "Random", "0.6"),
-                  ("low_confidence", "Low-confidence", PRIMARY_COLOR)]
-    width = 0.38
-    x = np.arange(len(PANEL_A_PHENOTYPES))
+    strategies: list[tuple[str, str, str]] = [
+        ("random", "Random", "0.6"),
+        ("low_confidence", "Low-confidence", PRIMARY_COLOR),
+    ]
+    box_width = 0.32
+    rng = np.random.default_rng(42)
 
     ax.axhline(0.0, color="gray", ls="--", lw=0.8, alpha=0.7, zorder=1)
-    for i, (strat, label, color) in enumerate(strategies):
-        means, sems = [], []
-        for phen in PANEL_A_PHENOTYPES:
-            vals = final.loc[
-                (final.phenotype == phen) & (final.strategy == strat),
-                "delta_balanced_accuracy",
-            ].to_numpy()
-            means.append(float(np.mean(vals)))
-            sems.append(
-                float(np.std(vals, ddof=1) / np.sqrt(len(vals))) if len(vals) > 1 else 0.0
+    for p_idx, phen in enumerate(PANEL_A_PHENOTYPES):
+        paired = (
+            final[final.phenotype == phen]
+            .pivot_table(
+                index=["held_out_dataset", "seed"],
+                columns="strategy",
+                values="delta_balanced_accuracy",
             )
-        offset = (i - 0.5) * width
-        ax.bar(
-            x + offset, means, width=width, color=color, edgecolor="black",
-            linewidth=0.7, alpha=0.9, label=label, zorder=2,
+            .dropna(subset=[s[0] for s in strategies])
         )
-        ax.errorbar(
-            x + offset, means, yerr=sems, fmt="none", color="black",
-            lw=0.8, capsize=3, zorder=4,
-        )
-    ax.set_xticks(x)
+        if paired.empty:
+            continue
+
+        # Two box positions flanking the phenotype centre.
+        positions = [p_idx - box_width / 1.6, p_idx + box_width / 1.6]
+        jitters = [rng.uniform(-0.05, 0.05, size=len(paired)) for _ in strategies]
+
+        # Thin connecting lines first so boxes/points sit on top.
+        for run_idx in range(len(paired)):
+            xs = [positions[i] + jitters[i][run_idx] for i in range(2)]
+            ys = [paired.iloc[run_idx][s[0]] for s in strategies]
+            ax.plot(xs, ys, color="gray", alpha=0.45, linewidth=0.6, zorder=2)
+
+        # Boxes and overlaid points per strategy.
+        for i, (strat, _label, color) in enumerate(strategies):
+            vals = paired[strat].to_numpy()
+            ax.boxplot(
+                vals,
+                positions=[positions[i]],
+                widths=box_width,
+                patch_artist=True,
+                boxprops=dict(facecolor=color, edgecolor="black", linewidth=0.7, alpha=0.7),
+                medianprops=dict(color="black", linewidth=1.0),
+                whiskerprops=dict(color="black", linewidth=0.7),
+                capprops=dict(color="black", linewidth=0.7),
+                showfliers=False,
+                zorder=3,
+            )
+            ax.scatter(
+                np.full(len(vals), positions[i]) + jitters[i],
+                vals,
+                s=14, color=color, edgecolors="black", linewidth=0.4, zorder=4,
+            )
+
+    ax.set_xticks(range(len(PANEL_A_PHENOTYPES)))
     ax.set_xticklabels(PANEL_A_PHENOTYPES)
+    ax.set_xlim(-0.6, len(PANEL_A_PHENOTYPES) - 0.4)
     ax.set_ylabel(f"$\\Delta$ balanced accuracy\nfrom {budget} added labels")
     ax.set_xlabel("Phenotype (strong $\\rightarrow$ weak generaliser)")
-    ax.legend(frameon=False, fontsize=8, loc="upper left")
+
+    legend_handles = [
+        plt.Rectangle(
+            (0, 0), 1, 1, facecolor=color, edgecolor="black", linewidth=0.7,
+            alpha=0.7, label=label,
+        )
+        for _strat, label, color in strategies
+    ]
+    ax.legend(handles=legend_handles, frameon=False, fontsize=8, loc="upper left")
     _panel_label(ax, "D")
 
 
