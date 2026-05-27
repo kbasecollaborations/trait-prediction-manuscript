@@ -307,22 +307,24 @@ def _filter_example_to_pathway_clusters(
 def _pathway_cell(phenotype: str) -> str:
     """Render the "KEGG pathway map" cell for a phenotype.
 
-    Emits a ``\\makecell[l]{...}`` with the map ID on the first line and the
-    italic pathway name on the second (long names split across two italic
-    lines via :data:`PATHWAY_NAME_WRAPS`). Multiple maps for one phenotype
-    are joined with a comma.
+    Emits a single ``\\makecell[l]{...}`` block with each assigned KEGG map
+    rendered as two stacked lines: the map ID followed by the italic
+    pathway name (long names may take a third line via
+    :data:`PATHWAY_NAME_WRAPS`). When the phenotype has multiple maps they
+    are stacked vertically within the same cell to keep the column width
+    bounded.
     """
     map_ids = PHENOTYPE_TO_PATHWAY_MAPS.get(phenotype, ())
     if not map_ids:
         return "---"
-    parts: list[str] = []
+    blocks: list[str] = []
     for map_id in map_ids:
         name_render = PATHWAY_NAME_WRAPS.get(
             map_id,
             f"\\textit{{{PATHWAY_NAMES.get(map_id, map_id)}}}",
         )
-        parts.append(f"\\makecell[l]{{{map_id} \\\\ {name_render}}}")
-    return ", ".join(parts)
+        blocks.append(f"{map_id} \\\\ {name_render}")
+    return "\\makecell[l]{" + " \\\\[2pt] ".join(blocks) + "}"
 
 
 def build_table(
@@ -421,7 +423,7 @@ def build_table(
     lines.append("\\hline")
     lines.append(
         "\\textbf{Phenotype} & "
-        "\\textbf{KEGG pathway map} & "
+        "\\textbf{KEGG pathway map(s)} & "
         "\\makecell{\\textbf{Shared stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
         "\\makecell{\\textbf{Unique stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
         "\\makecell[l]{\\textbf{Example shared concordant-} \\\\ \\textbf{stable KO in pathway}} \\\\"

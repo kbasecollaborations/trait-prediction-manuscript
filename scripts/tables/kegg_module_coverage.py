@@ -45,18 +45,29 @@ MODULE_NAMES: dict[str, str] = {
     "M00879": "Arginine succinyltransferase pathway",
 }
 
-# Phenotype -> KEGG reference pathway map. Unlike modules, KEGG pathway maps
-# exist for every phenotype in this study; they are broader (typically
-# include both biosynthesis and degradation KOs for the same compound) but
-# enable a uniform per-phenotype coverage metric. The mappings are curated
-# to the most specific pathway map whose scope covers the phenotype's
-# catabolism.
+# Phenotype -> KEGG reference pathway map(s). Each entry lists every KEGG
+# map that contains an absolutely essential (gatekeeper) catabolic step for
+# the phenotype. Most phenotypes have a single canonical map, but two
+# phenotypes need a pair because KEGG splits their catabolic route across
+# maps:
+#
+# - Glycerol: glycerol kinase (K00864) lives on map00561 (Glycerolipid
+#   metabolism), but the committed oxidation glycerol-3-P -> DHAP
+#   (K00111/K00112/K00113) is only on map00564 (Glycerophospholipid
+#   metabolism). Both steps are required for growth.
+# - Arginine: arginase (K01476) and decarboxylase (K01585) are on map00330
+#   (Arginine and proline metabolism); the ADI-pathway gatekeepers
+#   (K01478 arcA, K00611 argF/arcB) are only on map00220 (despite the
+#   "Arginine biosynthesis" label, this map houses the ADI catabolic
+#   route in KEGG). Soil bacteria use both routes across lineages.
+#
+# Pathway-KO membership is the union across all listed maps.
 PHENOTYPE_TO_PATHWAY_MAPS: dict[str, tuple[str, ...]] = {
     "Histidine": ("map00340",),
     "Galactose": ("map00052",),
     "Galacturonic-Acid": ("map00040",),
     "Glucose": ("map00010",),
-    "Arginine": ("map00330",),
+    "Arginine": ("map00330", "map00220"),
     "Cellobiose": ("map00500",),
     "Maltose": ("map00500",),
     "Sucrose": ("map00500",),
@@ -64,7 +75,7 @@ PHENOTYPE_TO_PATHWAY_MAPS: dict[str, tuple[str, ...]] = {
     "Fructose": ("map00051",),
     "Mannitol": ("map00051",),
     "m-Inositol": ("map00562",),
-    "Glycerol": ("map00561",),
+    "Glycerol": ("map00561", "map00564"),
     "Alanine": ("map00250",),
     "Serine": ("map00260",),
 }
@@ -74,6 +85,7 @@ PATHWAY_NAMES: dict[str, str] = {
     "map00040": "Pentose and glucuronate interconversions",
     "map00051": "Fructose and mannose metabolism",
     "map00052": "Galactose metabolism",
+    "map00220": "Arginine biosynthesis",
     "map00250": "Alanine, aspartate and glutamate metabolism",
     "map00260": "Glycine, serine and threonine metabolism",
     "map00330": "Arginine and proline metabolism",
@@ -81,6 +93,7 @@ PATHWAY_NAMES: dict[str, str] = {
     "map00500": "Starch and sucrose metabolism",
     "map00561": "Glycerolipid metabolism",
     "map00562": "Inositol phosphate metabolism",
+    "map00564": "Glycerophospholipid metabolism",
 }
 
 
