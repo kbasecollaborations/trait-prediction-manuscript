@@ -110,11 +110,13 @@ Distributions in Panels C and D are right-skewed (a small fraction of runs produ
 For each phenotype, two models are compared: a three-dataset model trained on the three non-held-out source datasets pooled together, and a held-out-alone model trained on the held-out dataset alone.
 This pairwise comparison is repeated with each of the three datasets in turn serving as the held-out one, and counts are summed across these three held-out comparisons (Methods).
 The two columns labelled Full $\rightarrow$ Conc. report the same comparison under two training regimes applied to both models: Full uses all training genomes, while Conc. restricts training to GapMind-concordant samples.
-Shared stable clusters counts SHAP-supervised redundancy clusters stable in both the three-dataset and held-out-alone models.
-\% unique in pathway is the fraction of held-out-alone-only cluster representatives that are members of the assigned KEGG reference pathway map (Methods).
+Shared stable clusters counts SHAP-supervised redundancy clusters present in both the three-dataset and held-out-alone models (the same quantity plotted in Figure~\ref{fig:concordant_analysis}B), summed across the three held-out comparisons.
+Unique stable clusters counts those present only in the held-out-alone model on the same basis.
+The parenthetical (\% in pathway) is the fraction of those summed clusters whose membership includes at least one KO on the row's assigned KEGG reference pathway map (Methods); a cluster counts as pathway-resident when any of its KOs is on the map.
+The example column lists curated concordant-stable shared KOs restricted to those whose cluster is pathway-resident.
 Histidine is the worked example (numeric cells in bold); full per-comparison KO lists and the narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appear in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and~\ref{tab:feature_comparison_concordant} (concordant).
 
-\noindent\textbf{Alt text:} Five-column table listing 15 phenotypes with their KEGG pathway map, shared stable cluster counts (Full to Conc.), percent unique features in pathway (Full to Conc.), and an example shared concordant-stable KO. Histidine row shows bold values increasing from 4 to 8 shared clusters and 29 to 75 percent unique-in-pathway.
+\noindent\textbf{Alt text:} Five-column table listing 15 phenotypes with their KEGG pathway map, shared stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), unique stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), and an example pathway-resident shared concordant-stable KO. Histidine row shows bold values rising from 4 (75 percent) to 8 (38 percent) shared clusters and 6 (17 percent) to 4 (50 percent) unique clusters.
 \par\medskip
 
 %--------------------------------------------------------%

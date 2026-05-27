@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 """Regenerate the main-text Table 1 (concordance-vs-full feature comparison).
 
-The table summarises, for each of the 15 shared phenotypes, the number of
-KOFAM cluster representatives that are uniquely stable in the held-out-alone
-model under two training regimes (Full vs Concordant) and the fraction of
-those unique cluster representatives that fall inside the canonical KEGG
-catabolism module for the phenotype. Histidine is highlighted as the worked
-example.
+For each of the 15 shared phenotypes, the table reports the same cluster
+counts shown in Figure 5B (per-split cluster-level intersection and
+unique-to-individual sets, summed across the three held-out comparisons)
+under two training regimes (Full vs Concordant), enriched with a
+parenthetical pathway percentage: the fraction of those summed clusters
+that contain at least one KO on the row's assigned KEGG reference pathway
+map. The example column shows curated concordant-stable, shared,
+pathway-resident KOs. Histidine is highlighted as the worked example.
 
 Inputs (read-only):
 
-- ``data/outputs/figure4/feature_comparison_summary.csv`` — full-data
-  comparison summaries.
-- ``data/outputs/figure5/figure5b_feature_comparison_summary.csv`` —
-  concordant-only comparison summaries.
+- ``data/outputs/figure4/combined_splits_shap_features.json`` and
+  ``data/outputs/figure4/individual_datasets_shap_features.json`` — raw
+  per-(phenotype, dataset) SHAP-stable KO lists under full-data training.
+- ``data/outputs/figure5/figure5b_combined_splits_shap_features.json`` and
+  ``data/outputs/figure5/figure5b_individual_datasets_shap_features.json``
+  — the same under concordant-only training.
 - ``data/outputs/clustering/ko_clusters_shap_hclust.json`` — SHAP-supervised
   hierarchical clustering of KOs per phenotype.
 - ``data/external/mapping/KO_dictionary.json`` — KO -> human-readable name.
-- ``data/external/mapping/module-definitions.tsv`` — KEGG module ID -> KO
-  members, parsed through ``scripts.tables.kegg_module_coverage``.
 
 Output (overwritten):
 
@@ -31,11 +33,8 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter
 from pathlib import Path
 from typing import Any
-
-import pandas as pd
 
 from scripts.tables.kegg_module_coverage import (
     PATHWAY_NAMES,
@@ -66,17 +65,15 @@ PHENOTYPE_ORDER: tuple[str, ...] = (
     "Arginine",
 )
 
-# Short display label override for pathway-map names that would otherwise be
-# too long for the "KEGG pathway map" column. Keys are KEGG pathway IDs.
-PATHWAY_DISPLAY_OVERRIDES: dict[str, str] = {
-    "map00010": "Glycolysis/Gluconeogenesis",
-    "map00040": "Pentose \\& glucuronate interconv.",
-    "map00051": "Fructose \\& mannose metab.",
-    "map00250": "Ala/Asp/Glu metabolism",
-    "map00260": "Gly/Ser/Thr metabolism",
-    "map00330": "Arg \\& Pro metabolism",
-    "map00500": "Starch \\& sucrose metab.",
-    "map00562": "Inositol phosphate metab.",
+# Manual two-line italic splits for KEGG pathway names that are too long to
+# fit on a single line of the wrapped "KEGG pathway map" column. Keys are
+# KEGG pathway IDs; values are the full LaTeX render with an explicit \\
+# break between two italic spans. Names not listed render as a single
+# italic line via the canonical PATHWAY_NAMES entry.
+PATHWAY_NAME_WRAPS: dict[str, str] = {
+    "map00040": "\\textit{Pentose and glucuronate} \\\\ \\textit{interconversions}",
+    "map00250": "\\textit{Alanine, aspartate and} \\\\ \\textit{glutamate metabolism}",
+    "map00260": "\\textit{Glycine, serine and} \\\\ \\textit{threonine metabolism}",
 }
 
 # Hand-curated example concordant-stable KOs for the rightmost column.
@@ -135,152 +132,116 @@ def _short_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
     return name
 
 
-def _pool_kos(
-    df: pd.DataFrame,
+def _invert_cluster_mapping(
+    ko_to_cluster: dict[str, int],
+) -> dict[int, set[str]]:
+    """Invert a KO -> cluster mapping to cluster -> set of KO members."""
+    out: dict[int, set[str]] = {}
+    for ko, cid in ko_to_cluster.items():
+        out.setdefault(cid, set()).add(ko)
+    return out
+
+
+def _kos_to_cluster_ids(
+    kos: list[str], ko_to_cluster: dict[str, int]
+) -> set[str | int]:
+    """Map a list of KOs to the union of their cluster IDs.
+
+    Unmapped KOs become per-KO synthetic singleton IDs (``"sing:K01234"``)
+    so they are still represented as distinct clusters when intersecting or
+    differencing two sets.
+    """
+    ids: set[str | int] = set()
+    for ko in kos:
+        ids.add(ko_to_cluster[ko] if ko in ko_to_cluster else f"sing:{ko}")
+    return ids
+
+
+def _cluster_in_pathway(
+    cluster_id: str | int,
+    cluster_to_kos: dict[int, set[str]],
+    pathway_kos: set[str],
+) -> bool:
+    """Return True iff the cluster contains at least one KO on the pathway.
+
+    Singleton clusters (synthetic ``"sing:<KO>"`` IDs) reduce to a direct
+    KO-membership check.
+    """
+    if isinstance(cluster_id, str) and cluster_id.startswith("sing:"):
+        return cluster_id.split(":", 1)[1] in pathway_kos
+    return any(k in pathway_kos for k in cluster_to_kos.get(cluster_id, ()))
+
+
+def _shared_unique_counts(
     phenotype: str,
-    column: str,
-) -> list[str]:
-    """Pool KO identifiers from one ``feature_comparison_summary`` column.
+    combined_results: dict[str, list[str]],
+    individual_results: dict[str, dict[str, list[str]]],
+    ko_to_cluster: dict[str, int],
+    pathway_kos: set[str],
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Compute summed cluster-level shared and unique counts for one phenotype.
+
+    For each held-out dataset, the combined-of-three SHAP-stable KOs and the
+    held-out-alone SHAP-stable KOs are each mapped to their redundancy
+    cluster IDs; the intersection and unique-to-individual cluster sets are
+    summed across the three comparisons. The pathway hit count counts those
+    summed clusters whose membership includes at least one KO on the
+    assigned KEGG reference pathway map. Totals match Figure 5B exactly.
 
     Parameters
     ----------
-    df : pandas.DataFrame
-        Summary frame indexed by (phenotype, test_dataset).
     phenotype : str
-        Phenotype to filter on.
-    column : str
-        Source column, e.g. ``"unique_to_individual"`` or ``"intersection"``.
+        Phenotype to score.
+    combined_results : dict[str, list[str]]
+        Per-split combined-of-three stable KO lists, keyed by the
+        ``"{phenotype}_train(...),test({dataset})"`` convention.
+    individual_results : dict[str, dict[str, list[str]]]
+        Per-(dataset, phenotype) held-out-alone stable KO lists.
+    ko_to_cluster : dict[str, int]
+        Cluster mapping for the phenotype.
+    pathway_kos : set[str]
+        KOs on the row's assigned KEGG reference pathway map.
 
     Returns
     -------
-    list[str]
-        Concatenated KO IDs across the three held-out-dataset comparisons
-        (with duplicates preserved, so the caller can use a Counter).
+    tuple[tuple[int, int], tuple[int, int]]
+        ``((shared_total, shared_in_pathway), (unique_total, unique_in_pathway))``.
     """
-    pooled: list[str] = []
-    sub = df[df["phenotype"] == phenotype]
-    for _, row in sub.iterrows():
-        value = row[column]
-        if pd.notna(value) and value:
-            pooled.extend(value.split(";"))
-    return pooled
-
-
-def _unique_cluster_count(df: pd.DataFrame, phenotype: str) -> int:
-    """Return the per-row sum of unique-to-individual cluster counts.
-
-    The summary CSVs already record one cluster count per ``(phenotype,
-    test_dataset)`` row in ``n_unique_to_individual_clusters``; we sum these
-    across the three held-out datasets so the resulting count matches the
-    convention used in the original hand-written Table 1.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Summary frame.
-    phenotype : str
-        Phenotype to filter on.
-
-    Returns
-    -------
-    int
-        Sum of per-row unique-cluster counts across held-out datasets.
-    """
-    return int(
-        df.loc[df["phenotype"] == phenotype, "n_unique_to_individual_clusters"].sum()
-    )
-
-
-def _shared_cluster_count(df: pd.DataFrame, phenotype: str) -> int:
-    """Return the per-row sum of intersection (shared) cluster counts.
-
-    Mirrors :func:`_unique_cluster_count` for the ``intersection`` column.
-    The total shared cluster count summed across the three held-out
-    comparisons is monotonic with both the "at least one shared cluster"
-    binary used in the manuscript and the per-comparison mean (1.3 vs 0.5
-    cited in the prose).
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        Summary frame.
-    phenotype : str
-        Phenotype to filter on.
-
-    Returns
-    -------
-    int
-        Sum of per-row shared-cluster counts across held-out datasets.
-    """
-    return int(
-        df.loc[df["phenotype"] == phenotype, "n_intersection_clusters"].sum()
-    )
-
-
-def _pooled_cluster_reps(
-    kos: list[str], ko_to_cluster: dict[str, int] | None
-) -> list[str]:
-    """Collapse pooled KOs into one representative per redundancy cluster.
-
-    Mirrors the helper inside :func:`pathway_coverage_line`; we pick the
-    smallest KO ID per cluster (deterministic, matches the existing
-    pathway-coverage line denominator).
-
-    Parameters
-    ----------
-    kos : list[str]
-        Pooled KO identifiers (may contain duplicates).
-    ko_to_cluster : dict[str, int] | None
-        Mapping from KO to integer cluster id for the phenotype.
-
-    Returns
-    -------
-    list[str]
-        One representative KO per cluster, plus KOs with no cluster as
-        singletons.
-    """
-    if ko_to_cluster is None:
-        return sorted(set(kos))
-    seen_clusters: dict[int, str] = {}
-    singletons: list[str] = []
-    for ko in sorted(set(kos)):
-        cluster = ko_to_cluster.get(ko)
-        if cluster is None:
-            singletons.append(ko)
+    cluster_to_kos = _invert_cluster_mapping(ko_to_cluster)
+    shared_total = shared_hit = unique_total = unique_hit = 0
+    for ds in HELD_OUT_DATASETS:
+        combined_key = next(
+            (
+                k
+                for k in combined_results
+                if k.startswith(f"{phenotype}_train(") and k.endswith(f",test({ds})")
+            ),
+            None,
+        )
+        if (
+            combined_key is None
+            or ds not in individual_results
+            or phenotype not in individual_results[ds]
+        ):
             continue
-        if cluster not in seen_clusters:
-            seen_clusters[cluster] = ko
-    return list(seen_clusters.values()) + singletons
-
-
-def _unique_fraction_in_set(
-    pooled_unique_kos: list[str],
-    ko_to_cluster: dict[str, int] | None,
-    reference_kos: set[str],
-) -> tuple[int, int]:
-    """Return (hits, denom) for unique cluster reps that fall in a reference KO set.
-
-    Parameters
-    ----------
-    pooled_unique_kos : list[str]
-        Pooled ``unique_to_individual`` KOs for one phenotype.
-    ko_to_cluster : dict[str, int] | None
-        Cluster mapping for that phenotype.
-    reference_kos : set[str]
-        KO IDs belonging to the reference set (canonical KEGG pathway map,
-        module, or any other curated KO group).
-
-    Returns
-    -------
-    tuple[int, int]
-        Number of cluster representatives in the reference set, total
-        representatives.
-    """
-    reps = _pooled_cluster_reps(pooled_unique_kos, ko_to_cluster)
-    if not reps:
-        return 0, 0
-    hits = sum(1 for ko in reps if ko in reference_kos)
-    return hits, len(reps)
+        combined_clusters = _kos_to_cluster_ids(
+            combined_results[combined_key], ko_to_cluster
+        )
+        individual_clusters = _kos_to_cluster_ids(
+            individual_results[ds][phenotype], ko_to_cluster
+        )
+        shared = combined_clusters & individual_clusters
+        unique = individual_clusters - combined_clusters
+        shared_total += len(shared)
+        unique_total += len(unique)
+        if pathway_kos:
+            shared_hit += sum(
+                1 for c in shared if _cluster_in_pathway(c, cluster_to_kos, pathway_kos)
+            )
+            unique_hit += sum(
+                1 for c in unique if _cluster_in_pathway(c, cluster_to_kos, pathway_kos)
+            )
+    return (shared_total, shared_hit), (unique_total, unique_hit)
 
 
 def _format_pct(hits: int, denom: int) -> str:
@@ -290,80 +251,96 @@ def _format_pct(hits: int, denom: int) -> str:
     return f"{hits / denom * 100:.0f}\\%"
 
 
-def _pick_example_ko(
-    pooled_shared_kos: list[str],
-    ko_dict: dict[str, Any],
-    fallback: str = "---",
+def _filter_example_to_pathway_clusters(
+    example_text: str,
+    ko_to_cluster: dict[str, int] | None,
+    cluster_to_kos: dict[int, set[str]],
+    pathway_kos: set[str],
 ) -> str:
-    """Pick a representative example KO from the pooled concordant shared set.
+    """Drop semicolon-separated KO segments whose cluster is not pathway-resident.
 
-    "Shared" means KOs in the ``intersection`` column under concordant
-    training: stable features present in BOTH the model fit on the three
-    non-held-out datasets AND the model fit on the held-out dataset alone.
-    These are the "recovered mechanism" features the manuscript prose
-    highlights (Results §4: "Shared stable clusters often grouped established
-    pathway genes").
-
-    Selection rule:
-
-    1. KOs that recur across held-out splits (``count >= 2``) are preferred;
-       ties broken by lowest KO ID.
-    2. If no KO recurs (which happens when shared-set is empty or
-       single-occurrence only), return ``fallback``.
+    ``EXAMPLE_KO_OVERRIDES`` strings have the form
+    ``"K01468 imidazolonepropionase; K01712 urocanate hydratase"``. Each
+    segment is kept iff its leading K-id maps to a cluster (or, as a
+    singleton, is itself a KO) that contains at least one KO on the
+    assigned KEGG pathway map. Returns ``"---"`` when no segment survives.
 
     Parameters
     ----------
-    pooled_shared_kos : list[str]
-        Pooled concordant ``intersection`` KOs (duplicates kept).
-    ko_dict : dict[str, Any]
-        KO dictionary for description lookup.
-    fallback : str, optional
-        Returned when no KO recurs. Defaults to ``"---"``.
+    example_text : str
+        Display-ready example cell value.
+    ko_to_cluster : dict[str, int] | None
+        Cluster mapping for the phenotype.
+    cluster_to_kos : dict[int, set[str]]
+        Inverse of ``ko_to_cluster``.
+    pathway_kos : set[str]
+        KOs on the assigned KEGG reference pathway map.
 
     Returns
     -------
     str
-        ``"K01712 urocanate hydratase"``-style cell value, or the fallback.
+        Filtered cell value, or ``"---"`` if every segment was dropped.
     """
-    if not pooled_shared_kos:
-        return fallback
-    counts = Counter(pooled_shared_kos)
-    best_count = max(counts.values())
-    if best_count < 2:
-        return fallback
-    candidates = sorted(ko for ko, c in counts.items() if c == best_count)
-    chosen = candidates[0]
-    name = _short_ko_name(chosen, ko_dict)
-    return f"{chosen} {name}".rstrip()
+    if not pathway_kos:
+        return example_text
+    segments = [s.strip() for s in example_text.split(";") if s.strip()]
+    keep: list[str] = []
+    for seg in segments:
+        match = re.match(r"^(K\d{5})\b", seg)
+        if not match:
+            continue
+        ko = match.group(1)
+        cid: str | int | None = (
+            ko_to_cluster.get(ko) if ko_to_cluster else None
+        )
+        if cid is None:
+            in_path = ko in pathway_kos
+        else:
+            in_path = _cluster_in_pathway(cid, cluster_to_kos, pathway_kos)
+        if in_path:
+            keep.append(seg)
+    if not keep:
+        return "---"
+    return "; ".join(keep)
 
 
 def _pathway_cell(phenotype: str) -> str:
     """Render the "KEGG pathway map" cell for a phenotype.
 
-    Joins all pathway-map IDs assigned to the phenotype with a comma; each
-    entry shows ``mapXXXXX \\textit{display name}``.
+    Emits a ``\\makecell[l]{...}`` with the map ID on the first line and the
+    italic pathway name on the second (long names split across two italic
+    lines via :data:`PATHWAY_NAME_WRAPS`). Multiple maps for one phenotype
+    are joined with a comma.
     """
     map_ids = PHENOTYPE_TO_PATHWAY_MAPS.get(phenotype, ())
     if not map_ids:
         return "---"
     parts: list[str] = []
     for map_id in map_ids:
-        display = PATHWAY_DISPLAY_OVERRIDES.get(
-            map_id, PATHWAY_NAMES.get(map_id, map_id)
+        name_render = PATHWAY_NAME_WRAPS.get(
+            map_id,
+            f"\\textit{{{PATHWAY_NAMES.get(map_id, map_id)}}}",
         )
-        parts.append(f"{map_id} \\textit{{{display}}}")
+        parts.append(f"\\makecell[l]{{{map_id} \\\\ {name_render}}}")
     return ", ".join(parts)
 
 
 def build_table(
-    full_csv: Path = Path("data/outputs/figure4/feature_comparison_summary.csv"),
-    conc_csv: Path = Path(
-        "data/outputs/figure5/figure5b_feature_comparison_summary.csv"
+    full_combined_json: Path = Path(
+        "data/outputs/figure4/combined_splits_shap_features.json"
+    ),
+    full_individual_json: Path = Path(
+        "data/outputs/figure4/individual_datasets_shap_features.json"
+    ),
+    conc_combined_json: Path = Path(
+        "data/outputs/figure5/figure5b_combined_splits_shap_features.json"
+    ),
+    conc_individual_json: Path = Path(
+        "data/outputs/figure5/figure5b_individual_datasets_shap_features.json"
     ),
     cluster_json: Path = Path(
         "data/outputs/clustering/ko_clusters_shap_hclust.json"
     ),
-    ko_dict_json: Path = Path("data/external/mapping/KO_dictionary.json"),
     output_path: Path = Path("sections/table_main_feature_comparison.tex"),
     highlight_phenotype: str = "Histidine",
 ) -> None:
@@ -371,64 +348,64 @@ def build_table(
 
     Parameters
     ----------
-    full_csv : Path
-        Full-data feature-comparison summary CSV.
-    conc_csv : Path
-        Concordant feature-comparison summary CSV.
+    full_combined_json, full_individual_json : Path
+        Raw SHAP-stable KO lists for the combined-of-three and held-out-alone
+        models under full-data training.
+    conc_combined_json, conc_individual_json : Path
+        Same under concordant-only training.
     cluster_json : Path
         SHAP-supervised cluster JSON (per-phenotype KO -> cluster id).
-    ko_dict_json : Path
-        KEGG KO dictionary JSON.
     output_path : Path
         Destination ``.tex`` file (overwritten).
     highlight_phenotype : str, optional
-        Phenotype whose row receives the ``LightYellow1`` highlight and bold
-        percentage cell. Defaults to ``"Histidine"``.
+        Phenotype whose row receives bold emphasis on the headline numeric
+        cells. Defaults to ``"Histidine"``.
 
     Returns
     -------
     None
     """
-    df_full = pd.read_csv(full_csv)
-    df_conc = pd.read_csv(conc_csv)
-    with open(ko_dict_json) as handle:
-        ko_dict = json.load(handle)
+    with open(full_combined_json) as handle:
+        comb_full: dict[str, list[str]] = json.load(handle)
+    with open(full_individual_json) as handle:
+        ind_full: dict[str, dict[str, list[str]]] = json.load(handle)
+    with open(conc_combined_json) as handle:
+        comb_conc: dict[str, list[str]] = json.load(handle)
+    with open(conc_individual_json) as handle:
+        ind_conc: dict[str, dict[str, list[str]]] = json.load(handle)
     with open(cluster_json) as handle:
         cluster_mapping: dict[str, dict[str, int]] = json.load(handle)
 
     def _row_cells(phenotype: str) -> tuple[str, str, str, str, str]:
-        ko_to_cluster = cluster_mapping.get(phenotype)
-
-        shared_full = _shared_cluster_count(df_full, phenotype)
-        shared_conc = _shared_cluster_count(df_conc, phenotype)
-        shared_cell = f"{shared_full} $\\rightarrow$ {shared_conc}"
-
+        ko_to_cluster = cluster_mapping.get(phenotype, {})
         pathway_kos = pathway_kos_for_phenotype(phenotype)
-        if pathway_kos:
-            full_unique_pool = _pool_kos(df_full, phenotype, "unique_to_individual")
-            conc_unique_pool = _pool_kos(df_conc, phenotype, "unique_to_individual")
-            full_hits, full_denom = _unique_fraction_in_set(
-                full_unique_pool, ko_to_cluster, pathway_kos
-            )
-            conc_hits, conc_denom = _unique_fraction_in_set(
-                conc_unique_pool, ko_to_cluster, pathway_kos
-            )
-            pct_cell = (
-                f"{_format_pct(full_hits, full_denom)} $\\rightarrow$ "
-                f"{_format_pct(conc_hits, conc_denom)}"
-            )
-        else:
-            pct_cell = "---"
+        cluster_to_kos = _invert_cluster_mapping(ko_to_cluster)
 
-        example = EXAMPLE_KO_OVERRIDES.get(phenotype) or _pick_example_ko(
-            _pool_kos(df_conc, phenotype, "intersection"), ko_dict
+        (sf_t, sf_h), (uf_t, uf_h) = _shared_unique_counts(
+            phenotype, comb_full, ind_full, ko_to_cluster, pathway_kos
+        )
+        (sc_t, sc_h), (uc_t, uc_h) = _shared_unique_counts(
+            phenotype, comb_conc, ind_conc, ko_to_cluster, pathway_kos
+        )
+
+        def _fmt(total: int, hits: int) -> str:
+            if total == 0:
+                return "0"
+            return f"{total} ({_format_pct(hits, total)})"
+
+        shared_cell = f"{_fmt(sf_t, sf_h)} $\\rightarrow$ {_fmt(sc_t, sc_h)}"
+        unique_cell = f"{_fmt(uf_t, uf_h)} $\\rightarrow$ {_fmt(uc_t, uc_h)}"
+
+        example_override = EXAMPLE_KO_OVERRIDES.get(phenotype, "---")
+        example = _filter_example_to_pathway_clusters(
+            example_override, ko_to_cluster, cluster_to_kos, pathway_kos
         )
 
         return (
             phenotype,
             _pathway_cell(phenotype),
             shared_cell,
-            pct_cell,
+            unique_cell,
             example,
         )
 
@@ -436,7 +413,7 @@ def build_table(
     lines.append("\\FloatBarrier")
     lines.append("\\begin{table}[!h]")
     lines.append("\\centering")
-    lines.append("\\footnotesize")
+    lines.append("\\small")
     lines.append("\\setlength{\\tabcolsep}{4pt}")
     lines.append("\\renewcommand{\\arraystretch}{1.25}")
     lines.append("\\resizebox{\\textwidth}{!}{%")
@@ -445,9 +422,9 @@ def build_table(
     lines.append(
         "\\textbf{Phenotype} & "
         "\\textbf{KEGG pathway map} & "
-        "\\makecell{\\textbf{Shared stable clusters} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
-        "\\makecell{\\textbf{\\% unique in pathway} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
-        "\\makecell[l]{\\textbf{Example shared} \\\\ \\textbf{concordant-stable KO}} \\\\"
+        "\\makecell{\\textbf{Shared stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
+        "\\makecell{\\textbf{Unique stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
+        "\\makecell[l]{\\textbf{Example shared concordant-} \\\\ \\textbf{stable KO in pathway}} \\\\"
     )
     lines.append("\\hline")
 
