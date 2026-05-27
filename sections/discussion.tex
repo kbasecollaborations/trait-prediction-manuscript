@@ -2,10 +2,11 @@
 
 \section*{Discussion}
 
-Predicting microbial phenotypes from genomic data underpins ecological characterisation, the study of uncultured taxa, and various biotechnological applications. However, machine learning models trained on genomic features generalise poorly across datasets, a limitation typically attributed to limited sample size or feature-space artefacts.
-By integrating four binary growth datasets covering 819 bacterial genomes across 242 carbon sources, we trained phenotype-specific binary classifiers using KOFAM features. We found that when training samples mix mechanistically tractable and intractable cases, models fit dataset and clade-specific shortcuts rather than transferable pathway features.
-Restricting training to mechanistically concordant samples produced bounded specialist predictors that recovered known pathway genes and rescued mechanistic false negatives at approximately twice the rate of false positives, and a mechanism-free filter combining phylogenetic neighbour agreement and experimental-label consistency recovered most of this gain without mechanism-specific tools.
-Per-genome prediction confidence ranked correct above incorrect predictions, defining a practical applicability domain for deployment.
+Predicting microbial phenotypes from genomic data underpins ecological characterisation, the study of uncultured taxa, and various biotechnological applications.
+However, machine learning models trained on genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
+By integrating four binary growth datasets covering 819 bacterial genomes across 242 carbon sources and training phenotype-specific KOFAM classifiers, we identify label--mechanism agreement in the training set as a third and often dominant determinant of generalisation.
+Concordance-trained predictors behaved as bounded specialists rather than universal models, and their own prediction confidence supplied a deployment signal that ranked correct above incorrect predictions and guided which additional measurements would most improve transfer.
+These results reframe genome-based phenotype prediction as a problem of training-set curation and applicability-domain definition~\cite{Sambasivan2021DataCascades,Zha2025DataCentric}, alongside the data-volume and algorithm-choice axes that have dominated the field.
 
 \subsection*{Label--Mechanism Agreement Governs Cross-Dataset Transfer}
 
