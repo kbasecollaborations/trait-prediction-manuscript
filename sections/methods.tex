@@ -35,7 +35,7 @@ KOFAM yielded 4000--5000 features per dataset and GapMind around 1000.
 \subsection*{Machine Learning Classifiers}
 
 We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost} (v1.2.8), which outperformed random forests in most train--test and feature combinations (Supplementary Table~\ref{tab:best_models_counts}; Supplementary Text~S3).
-The hyperparameters of the CatBoost model were tuned based on performance across all phenotypes: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularization 15, random subspace method (10\% features per split), Bayesian bootstrap and early stopping in logloss validation with patience 50.
+The hyperparameters of the CatBoost model were tuned based on performance across all phenotypes: 1000 iterations, learning rate 0.03, tree depth 4, L2 regularisation 15, random subspace method (10\% features per split), Bayesian bootstrap and early stopping in logloss validation with patience 50.
 Random holdout evaluations used five 70:15:15 train/validation/test partitions stratified by phenotype cluster (genomes sharing the same binary growth pattern across the 15 phenotypes), preserving the joint phenotype distribution; data-split random states were set to 42--46 (Figure~\ref{fig:ml_performance}A).
 Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation partition on the non-test data.
 The CatBoost training \texttt{random\_state} was fixed to 42, with SHAP stability analyses sweeping it across 20 seeds.
@@ -49,7 +49,7 @@ Phenotype--dataset combinations with fewer than 10 minority-class test samples w
 
 \subsubsection*{Phylogenetic Partitioning}
 
-We applied the out-of-clade partitioning algorithm of \cite{Li2023-up}, which selects phylogenetically separated test clades (12--18\% of samples).
+We applied the out-of-clade partitioning algorithm of Li et al.~\cite{Li2023-up}, which selects phylogenetically separated test clades (12--18\% of samples).
 
 \subsection*{Concordant and Discordant Sample Analysis}
 

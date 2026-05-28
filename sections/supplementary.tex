@@ -26,7 +26,7 @@ This dataset provided the broadest ecological coverage of phyllosphere-associate
 \paragraph*{Biolog.}
 The Biolog dataset encompassed 362 strains across 64 substrates, compiled from multiple published studies~\cite{BiologDatasetCitation}.
 % TODO(CITATION): Ask Chris for the correct citation for this compiled Biolog phenotype matrix.
-Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilisation via colorimetric tetrazolium-based readout in 96-well plates.
+Growth phenotypes were measured using Biolog Phenotype MicroArray (PM) technology, which assesses carbon source utilisation via colourimetric tetrazolium-based readout in 96-well plates.
 All 362 genomes passed quality control and were retained for downstream analysis.
 The standardised, high-throughput nature of PM plates made this dataset a valuable complement to the other growth assays.
 
@@ -354,5 +354,5 @@ The $\beta$-ketoadipate pathway is widely distributed in soil and rhizosphere li
 
 \paragraph{Calibration and per-phenotype model-confidence detail.}
 Both the full-data and concordant-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
-Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed toward a single class.
+Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
