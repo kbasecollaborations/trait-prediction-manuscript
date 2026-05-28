@@ -8,10 +8,10 @@ Machine learning models often achieve high within-dataset accuracy yet fail to g
 To distinguish these explanations, we integrated binary growth phenotypes for 819 bacterial genomes across 242 carbon sources from four datasets.
 We observed that label--mechanism agreement was a major determinant of generalisation and that inconsistent genotype--phenotype mechanisms drove models to learn dataset- or phylogeny-correlated shortcuts.
 When we restricted training to samples where GapMind predictions and experimental measurements matched, the resulting models acted as bounded specialists, recovering known pathway genes as top predictors and rescuing mechanistic false negatives at twice the rate of false positives.
-Because mechanistic predictors are unavailable for most traits, we tested a simpler filter combining phylogenetic neighbour agreement and experimental-label consistency, which recovered most of the gain without mechanism-specific information.
-Using model confidence estimates to prioritise low-confidence genomes for measurement improved cross-dataset accuracy more than random or diversity-based sampling, with the largest gains for the lowest-performing phenotypes.
+Because mechanistic predictors are unavailable for most traits, we tested a simpler filter combining phylogenetic neighbour agreement and experimental-label consistency, which recovered most of the cross-dataset gain without mechanism-specific information.
+At deployment, model-confidence estimates defined a per-prediction applicability domain; using them to prioritise low-confidence genomes for measurement improved cross-dataset accuracy more than random or diversity-based sampling, with the largest gains for the lowest-performing phenotypes.
 Together, these findings recast generalisation in biological machine learning as a problem of label--mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice, and suggest a deployment workflow of concordant training, confidence-based applicability detection, and confidence-guided experimentation.
 }
 \end{abstract}
 
-\keywords{Machine learning, Microbial phenotypes, Genotype-phenotype mapping, Carbon utilisation}
+\keywords{Microbial ecology, Comparative genomics, Machine learning, Genotype-phenotype mapping, Cross-dataset generalisation, Active learning, Applicability domain}

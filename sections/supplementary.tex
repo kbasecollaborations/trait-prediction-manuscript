@@ -14,9 +14,10 @@
 
 \subsection*{Supplementary Text S1: Dataset Descriptions}
 
-We obtained and harmonised four published binary carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacterial communities.
+We obtained and harmonised four experimental carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacterial communities.
 Each dataset captures growth outcomes (growth vs.\ no-growth) of bacterial strains on various carbon substrates.
 Because of annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
+All analyses focused on the 15 shared phenotypes present across all four datasets.
 
 \paragraph*{ATLeaf.}
 The ATLeaf dataset~\cite{Schafer2023-nk} comprised 224 strains isolated from \textit{Arabidopsis thaliana} leaf surfaces, tested on 45 carbon substrates using minimal media on agar plates.
@@ -40,8 +41,6 @@ The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from
 % TODO(CITATION/PROVENANCE): Discuss with Ranjan and create a DOI for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
 After filtering, 55 genomes were retained.
 Because of its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
-
-All analyses focused on the 15 shared phenotypes present across all four datasets.
 
 \begin{table}[h]
 \centering
@@ -136,7 +135,7 @@ Biolog & ATLeaf & RAST  & CatBoost & 7  \\
 \end{tabular}
 \caption{\textbf{CatBoost vs.\ Random Forest performance comparison for the ATLeaf--Biolog dataset pair.}
 For each combination of training direction and feature type, the table shows how many phenotypes were best predicted by each classifier (measured by balanced accuracy) in this illustrative model-selection subset.
-CatBoost outperformed Random Forest in the KOFAM-feature subset shown here (24 vs.\ 8 wins across both dataset orderings), consistent with the complete model-selection analysis described in Supplementary Text S3.
+CatBoost outperformed Random Forest in 45 out of 64 comparisons, consistent with the complete model-selection analysis described in Supplementary Text S3.
 See Methods for classifier hyperparameters and training details.}
 \label{tab:best_models_counts}
 \end{table}
