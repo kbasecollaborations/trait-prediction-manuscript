@@ -1,12 +1,4 @@
-%--------------------------------------------------------%
-% Journal Article Manuscript Template
-%--------------------------------------------------------%
-
-\input{sections/preamble} % Edit preamble.tex to change the overall layout
-
-% Header from Page Three on: Edit below for left and right headers
-% \lhead{}
-% \rhead{}
+\input{sections/preamble}
 
 %--------------------------------------------------------%
 % BEGIN DOCUMENT
@@ -16,17 +8,14 @@
 
 % COVER PAGE
 
-\input{sections/coverpage} % Comment out to remove cover page
+\input{sections/coverpage}
 
-\thispagestyle{empty} % Removes header on page two.
+\thispagestyle{empty}
 
-% NOTE: Comment out the lines below to remove line numbers
-  % Running line numbers:
   \linenumbers
   \setlength\linenumbersep{15pt}
   \renewcommand\linenumberfont{\normalfont\footnotesize\sffamily\color{gray}}
-  %\pagewiselinenumbers % Same, but that reset on every page:
-  \modulolinenumbers[1] % Number only every line. Change for fewer.
+  \modulolinenumbers[1]
 
 %--------------------------------------------------------%
 %   CONTENT
@@ -84,7 +73,6 @@ The authors declare no competing interests. % TODO(VERIFY COI: confirm with all 
 %   APPENDIX
 %--------------------------------------------------------%
 
-%\input{sections/acronyms.tex}
 \input{sections/tables_figures.tex}
 \clearpage
 \input{sections/supplementary.tex}

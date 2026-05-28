@@ -22,7 +22,7 @@
   \usepackage{authblk}
 
   %Date
-  \usepackage{datetime2} % UPDATED: datetime2 is newer than datetime
+  \usepackage{datetime2}
   \DTMsetstyle{mdyy} % US date format
 
 %--------------------------------------------------------%
@@ -82,9 +82,8 @@
   \usepackage{xcolor}
   \usepackage{framed}
 
-  % Toggle: set \showalts true to display alternatives; false to hide
   \newif\ifshowalts
-  \showaltstrue   % <-- change to \showaltsfalse to hide
+  \showaltstrue
 
   \newenvironment{alttext}[1][]{
     \ifshowalts
@@ -123,7 +122,6 @@
   \usepackage{subcaption}
   \graphicspath{{figures/}}
   \usepackage{float}
-  \usepackage{floatpag}
   \usepackage{printlen}
   \usepackage[section]{placeins}
 
@@ -140,13 +138,22 @@
   \usepackage{makecell}
   \usepackage{relsize}
   \usepackage{multirow}
-  \usepackage{pdflscape} % UPDATED: better than lscape for PDFs
+  \usepackage{pdflscape}
 
 %--------------------------------------------------------%
 % REFERENCES (load hyperref last!)
 %--------------------------------------------------------%
 
   \usepackage{csquotes}
-  \usepackage[style=nature,url=false,backend=biber,sorting=none]{biblatex}
+  \usepackage[
+    style=nature,
+    doi=true,
+    url=false,
+    backend=biber,
+    sorting=none,
+    maxbibnames=3,
+    minbibnames=3,
+  ]{biblatex}
+  \DeclareFieldFormat{doi}{\url{https://doi.org/#1}}
   \bibliography{references.bib}
-  \usepackage{hyperref} % MOVED: hyperref should be loaded last
+  \usepackage{hyperref}
