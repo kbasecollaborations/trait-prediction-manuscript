@@ -184,12 +184,10 @@ def calculate_confusion_matrix_by_dataset(
         dataset_performance[dataset] = {}
 
         for phenotype_name in phenotype_dict.values():
-            # Get genome IDs for this dataset
             dataset_genome_ids = [
                 gid for gid, d in genomeid_dataset_map.items() if d == dataset
             ]
 
-            # Get experimental and GapMind data for this phenotype
             exp_data = (
                 phenotypes_combined.loc[:, phenotype_name].dropna().astype(np.uint8)
             )
@@ -197,7 +195,6 @@ def calculate_confusion_matrix_by_dataset(
                 gapmind_data_pheno.loc[:, phenotype_name].dropna().astype(np.uint8)
             )
 
-            # Filter for common indices in this dataset
             common_inds = exp_data.index.intersection(gapmind_data_subset.index)
             common_inds = [gid for gid in common_inds if gid in dataset_genome_ids]
 
@@ -213,7 +210,6 @@ def calculate_confusion_matrix_by_dataset(
             exp_data_subset = exp_data.loc[common_inds]
             gapmind_data_subset = gapmind_data_subset.loc[common_inds]
 
-            # Calculate confusion matrix components
             tp = ((exp_data_subset == 1) & (gapmind_data_subset == 1)).sum()
             tn = ((exp_data_subset == 0) & (gapmind_data_subset == 0)).sum()
             fp = ((exp_data_subset == 0) & (gapmind_data_subset == 1)).sum()
@@ -226,7 +222,6 @@ def calculate_confusion_matrix_by_dataset(
                 "FN": fn,
             }
 
-    # Create DataFrame for plotting
     performance_data = []
     for dataset in dataset_performance:
         for phenotype in phenotype_dict.values():
@@ -258,7 +253,6 @@ def create_confusion_matrix_plots(
     ax2 : plt.Axes
         Axes for confusion matrix by dataset plot (bottom).
     """
-    # Define phenotype_dict
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -300,7 +294,7 @@ def create_confusion_matrix_plots(
         phenotypes_combined, gapmind_data_pheno, genomeid_dataset_map, phenotype_dict
     )
 
-    # Top plot: Combined performance across all datasets for each phenotype
+    # Top plot: combined performance across all datasets for each phenotype.
     phenotype_combined = performance_df.groupby("Phenotype")[
         ["TP", "TN", "FP", "FN"]
     ].sum()
@@ -343,7 +337,7 @@ def create_confusion_matrix_plots(
     )
     ax1.grid(axis="y", alpha=0.3)
 
-    # Bottom plot: Combined performance across all phenotypes for each dataset
+    # Bottom plot: combined performance across all phenotypes for each dataset.
     dataset_combined = performance_df.groupby("Dataset")[["TP", "TN", "FP", "FN"]].sum()
 
     datasets = dataset_combined.index.tolist()

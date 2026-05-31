@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
-"""Helpers for the manuscript's minority-class-in-test exclusion rule.
+"""Minority-class-in-test exclusion rule: count helpers and row-level filter.
 
-The Methods section states that (phenotype, dataset) cells with fewer than 10
-samples in the minority class of the held-out test set should be excluded.
-This module computes the minority counts under three different test-set
-definitions used across the figures and provides a generic row-level filter
-for per-split result tables.
-
-The filter is applied post-hoc at plot/aggregation time so that the saved ML
-result CSVs remain intact and the same cells can be inspected manually if
-needed. Data-generation scripts may later be updated to apply the filter at
-training time as well.
+Applied post-hoc at plot/aggregation time, so saved ML result CSVs stay intact.
 """
 
 from __future__ import annotations

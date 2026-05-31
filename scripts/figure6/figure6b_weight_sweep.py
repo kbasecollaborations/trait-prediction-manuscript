@@ -1,24 +1,5 @@
 #!/usr/bin/env python3
-"""
-Phase 2 of mechanism-free filtering exploration: run full ML on the four
-soft-label weight configurations selected from Phase 1.
-
-For each configuration ``(w_phylo, w_gapmind, w_exp)`` the script:
-
-1. Reuses the Phase 1 cached ``conf_phylo`` / ``conf_mech`` / ``y_exp``
-   per-phenotype inputs (``phase1_inputs_cache.pkl``) to compute ``y_soft``.
-2. Applies the ``y_soft < 0.4`` OR ``y_soft > 0.6`` filter to train/val
-   indices (test set is left untouched, matching ``figure6b_data.py``).
-3. Trains CatBoost on the filtered train/val and evaluates on the unfiltered
-   cross-dataset and random-holdout test sets.
-4. Saves per-config CSVs plus a combined long-form CSV with a ``config``
-   column for downstream plotting.
-
-Speedups vs ``figure6b_data.py``:
-- Splits are loaded once and reused across configs.
-- ``y_soft`` inputs are loaded once from the Phase 1 cache.
-- ML fits are parallelised across (split_type, key) tuples with joblib.
-"""
+"""Phase 2 weight sweep: train CatBoost on y_soft-filtered splits for four weight configs."""
 
 from __future__ import annotations
 

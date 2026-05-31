@@ -1,7 +1,4 @@
-"""Module that defines the bernoulli classifier null model.
-
-Re-exports from trait_prediction for backward compatibility.
-"""
+"""Re-export the Bernoulli null-model classifier for backward compatibility."""
 
 from trait_prediction.classifiers import BernoulliClassifier
 

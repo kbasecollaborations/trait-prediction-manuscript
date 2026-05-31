@@ -1,7 +1,4 @@
-"""Module that defines the nearest neighbor null model.
-
-Re-exports from trait_prediction for backward compatibility.
-"""
+"""Re-export the nearest-neighbor null-model classifier for backward compatibility."""
 
 from trait_prediction.classifiers import NearestNeighborClassifier
 

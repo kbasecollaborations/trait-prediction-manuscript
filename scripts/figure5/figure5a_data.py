@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate ML results on GapMind-concordant samples for Figure 5A.
-
-This script filters train-test splits to only include samples where GapMind
-predictions match experimental data (concordant samples), then performs ML
-evaluation similar to Figure 3.
-
-Only processes: random_split, dataset_split, and phylo_ooc (excludes phylo_ic).
-"""
+"""Generate ML results on GapMind-concordant samples for Figure 5A."""
 
 from pathlib import Path
 
@@ -18,8 +10,7 @@ from scripts.ml_splits import load_split_data, perform_split_ml
 
 
 def load_gapmind_predictions(gapmind_file: Path) -> pd.DataFrame:
-    """
-    Load GapMind predictions.
+    """Load GapMind predictions.
 
     Parameters
     ----------
@@ -38,8 +29,7 @@ def load_gapmind_predictions(gapmind_file: Path) -> pd.DataFrame:
 
 
 def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
-    """
-    Load and combine experimental phenotype data from all datasets.
+    """Load and combine experimental phenotype data from all datasets.
 
     Parameters
     ----------
@@ -51,43 +41,26 @@ def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
     pd.DataFrame
         Combined phenotype data with genomeID as index and phenotypes as columns
     """
-    # Dictionary to store data for each phenotype across all datasets
     phenotype_data: dict[str, list[pd.DataFrame]] = {}
 
-    # Iterate through each dataset directory
     for dataset_dir in phenotype_dir.iterdir():
         if not dataset_dir.is_dir():
             continue
 
-        # Load each phenotype file in the dataset
         for phenotype_file in dataset_dir.glob("*.tsv"):
             phenotype_name = phenotype_file.stem
-
-            # Read the phenotype data
             df = pd.read_csv(phenotype_file, sep="\t", dtype={"genomeID": str})
-
-            # Skip if phenotype not already in dictionary
             if phenotype_name not in phenotype_data:
                 phenotype_data[phenotype_name] = []
-
-            # Add this dataset's data
             phenotype_data[phenotype_name].append(df)
 
-    # Combine all datasets for each phenotype
     combined_phenotypes = {}
     for phenotype_name, df_list in phenotype_data.items():
-        # Concatenate all datasets
         combined = pd.concat(df_list, ignore_index=True)
-
-        # Remove duplicates, keeping the first occurrence
         combined = combined.drop_duplicates(subset=["genomeID"], keep="first")
-
-        # Set genomeID as index
         combined = combined.set_index("genomeID")
-
         combined_phenotypes[phenotype_name] = combined[phenotype_name]
 
-    # Create a single DataFrame with all phenotypes
     experimental_data = pd.DataFrame(combined_phenotypes)
 
     return experimental_data
@@ -98,8 +71,7 @@ def get_concordant_samples(
     experimental_phenotypes: pd.DataFrame,
     phenotype: str,
 ) -> set[str]:
-    """
-    Get set of genome IDs where GapMind predictions match experimental data.
+    """Get genome IDs where GapMind predictions match experimental data.
 
     Parameters
     ----------
@@ -115,26 +87,22 @@ def get_concordant_samples(
     set[str]
         Set of genome IDs with concordant predictions
     """
-    # Check if phenotype exists in both datasets
     if phenotype not in gapmind_predictions.columns:
         return set()
     if phenotype not in experimental_phenotypes.columns:
         return set()
 
-    # Get common genomes
     common_genomes = gapmind_predictions.index.intersection(
         experimental_phenotypes.index
     )
 
-    # Filter to genomes with non-NaN experimental data
+    # Restrict to genomes with non-NaN experimental data.
     exp_data = experimental_phenotypes.loc[common_genomes, phenotype]
     valid_genomes = exp_data.dropna().index
 
-    # Get predictions for valid genomes
     gapmind_vals = gapmind_predictions.loc[valid_genomes, phenotype]
     exp_vals = experimental_phenotypes.loc[valid_genomes, phenotype]
 
-    # Find concordant samples (where predictions match experimental data)
     concordant_mask = gapmind_vals == exp_vals
     concordant_genomes = set(valid_genomes[concordant_mask])
 
@@ -146,8 +114,7 @@ def filter_split_to_concordant(
     concordant_genomes: set[str],
     min_samples: int = 5,
 ) -> dict[str, pd.DataFrame | pd.Series] | None:
-    """
-    Filter a train/val/test split to only include concordant samples.
+    """Filter a train/val/test split to only include concordant samples.
 
     Parameters
     ----------
@@ -165,15 +132,12 @@ def filter_split_to_concordant(
     """
     filtered_data = {}
 
-    # Filter each dataset to concordant samples
     for key in ["X_train", "y_train", "X_val", "y_val", "X_test", "y_test"]:
         data = split_data[key]
-        # Find intersection with concordant genomes
         concordant_in_data = set(data.index) & concordant_genomes
         filtered = data.loc[list(concordant_in_data)]
         filtered_data[key] = filtered
 
-    # Check if we have enough samples in each set
     n_train = len(filtered_data["X_train"])
     n_val = len(filtered_data["X_val"])
     n_test = len(filtered_data["X_test"])
@@ -181,7 +145,6 @@ def filter_split_to_concordant(
     if n_train < min_samples or n_val < min_samples or n_test < min_samples:
         return None
 
-    # Check if we have both classes in train and val
     y_train_unique = filtered_data["y_train"].unique()
     y_val_unique = filtered_data["y_val"].unique()
 
@@ -199,8 +162,7 @@ def run_ml_on_concordant_splits(
     random_state: int = 42,
     min_test_samples: int = 10,
 ) -> pd.DataFrame:
-    """
-    Run machine learning on concordant samples from all loaded splits.
+    """Run machine learning on concordant samples from all loaded splits.
 
     Parameters
     ----------
@@ -235,7 +197,6 @@ def run_ml_on_concordant_splits(
         "roc_auc",
     ]
 
-    # Calculate total iterations for progress bar
     total_splits = sum(len(splits) for splits in split_data.values())
 
     with tqdm(total=total_splits, desc="Running ML on concordant splits") as pbar:
@@ -247,7 +208,6 @@ def run_ml_on_concordant_splits(
                 split = split_data[split_type][key]
                 phenotype = key.split("_")[0]
 
-                # Get concordant samples for this phenotype
                 concordant_genomes = get_concordant_samples(
                     gapmind_predictions, experimental_phenotypes, phenotype
                 )
@@ -258,7 +218,6 @@ def run_ml_on_concordant_splits(
                     )
                     continue
 
-                # Filter split to concordant samples
                 filtered_split = filter_split_to_concordant(
                     split, concordant_genomes, min_samples=5
                 )
@@ -276,7 +235,6 @@ def run_ml_on_concordant_splits(
                 X_test = filtered_split["X_test"]
                 y_test = filtered_split["y_test"]
 
-                # Skip if test set is too small
                 n_test_samples = len(X_test)
                 if n_test_samples < min_test_samples:
                     print(
@@ -284,7 +242,6 @@ def run_ml_on_concordant_splits(
                     )
                     continue
 
-                # Run ML
                 result = perform_split_ml(
                     X_train,
                     y_train,
@@ -297,7 +254,6 @@ def run_ml_on_concordant_splits(
                     random_state=random_state,
                 )
 
-                # Add metadata
                 result["split_type"] = split_type
                 result["key"] = key
                 result["phenotype"] = phenotype
@@ -349,7 +305,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Define paths
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure5")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -358,12 +313,10 @@ def main() -> None:
     FEATURE_FILE = FEATURE_FILES[args.features]
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
-    # Define which split types to process (exclude phylo_ic)
-    SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
+    SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]  # phylo_ic excluded
 
     print(f"Using feature matrix: {args.features} ({FEATURE_FILE})")
 
-    # Load GapMind predictions and experimental phenotypes
     print("Loading GapMind predictions (loose)...")
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
     print(f"  Loaded {len(gapmind_predictions)} genomes, {len(gapmind_predictions.columns)} phenotypes")
@@ -372,7 +325,6 @@ def main() -> None:
     experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
     print(f"  Loaded {len(experimental_phenotypes)} genomes, {len(experimental_phenotypes.columns)} phenotypes")
 
-    # Load all splits
     print("\nLoading train-test splits...")
     split_data = load_split_data(
         base_dir=SPLITS_DIR,
@@ -380,12 +332,10 @@ def main() -> None:
         feature_file=FEATURE_FILE,
     )
 
-    # Print summary of loaded data
     print("\nLoaded splits summary:")
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Run ML on concordant samples only
     print("\nRunning machine learning on concordant samples...")
     results = run_ml_on_concordant_splits(
         split_data,
@@ -405,13 +355,11 @@ def main() -> None:
 
     results = annotate_minority_test(results, concordant_minority_counts())
 
-    # Save results
     suffix = "" if args.features == "kofam" else f"_{args.features}"
     results_file = OUTPUT_DIR / f"figure5a_concordant_ml_results{suffix}.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
     print("\nBy split type:")

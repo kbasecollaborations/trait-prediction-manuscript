@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""Script to generate training data splits for the ML pipeline.
-
-This script creates train/validation/test splits using three different strategies:
-1. Random split (cluster-based on phenotype data)
-2. Dataset split (leave-one-dataset-out)
-3. Phylogeny split (in-clade and out-of-clade)
-
-The splits are created for all common phenotypes across all 4 datasets.
-Output files contain only phenotype labels (y_train, y_val, y_test).
-"""
+"""Generate random, leave-one-dataset-out, and phylogeny train/val/test splits."""
 
 from pathlib import Path
 
@@ -58,7 +49,7 @@ def create_sample_map() -> dict[str, str]:
     """
     sample_map = {}
     for dataset_name in DATASET_SUBSET:
-        # Get samples from the first available phenotype file for this dataset
+        # Any phenotype file lists this dataset's full sample set.
         curr_dataset_dir = PHENOTYPE_DIR / dataset_name
         phenotype_files = list(curr_dataset_dir.glob("*.tsv"))
         if phenotype_files:
@@ -85,6 +76,7 @@ def load_phenotype_data() -> dict[str, pd.DataFrame]:
     for phenotype_name in COMMON_PHENOTYPES:
         # Combine phenotype data from all datasets
         phenotype_dfs = []
+        # Combine phenotype data from all datasets.
         for dataset_name in DATASET_SUBSET:
             phenotype_file = PHENOTYPE_DIR / dataset_name / f"{phenotype_name}.tsv"
             if phenotype_file.exists():
@@ -123,11 +115,8 @@ def create_y_data(
         phenotype_data = phenotype_data_dict[phenotype_name]
         y = phenotype_data.copy()
 
-        # Drop rows where phenotype data is missing
         mask = ~y.isna().any(axis=1)
         y = y.loc[mask, :]
-
-        # Convert phenotype data to int
         y = y.astype(int)
 
         print(f"Phenotype: {phenotype_name}")
@@ -260,7 +249,6 @@ def create_dataset_splits(
             test_indices = [ind for ind in y.index if sample_map[ind] == dataset_name]
             train_val_indices = [ind for ind in y.index if ind not in test_indices]
 
-            # Skip if test set is empty
             if len(test_indices) == 0:
                 print(f"  Skipping {dataset_name} (no test samples)")
                 continue
@@ -292,7 +280,6 @@ def load_phylogeny() -> tuple[Tree, pd.DataFrame]:
     if distance_file.exists():
         distance_df = pd.read_csv(distance_file, sep="\t", index_col=0)
     else:
-        # Calculate distance matrix
         print("Calculating distance matrix...")
         leaves = list(tree.get_leaf_names())
         n_leaves = len(leaves)
@@ -326,7 +313,6 @@ def create_phylogeny_splits(
     """
     print("\n=== Creating phylogeny splits ===")
 
-    # Load tree and distance matrix
     tree, distance_df = load_phylogeny()
 
     for phenotype_name in y_data:
@@ -334,7 +320,6 @@ def create_phylogeny_splits(
         output_dir = OUTPUT_DIR / f"phylogeny_split/{phenotype_name}"
         y = y_data[phenotype_name]
 
-        # Get samples that are in the tree
         samples = [leaf for leaf in tree.iter_leaf_names() if leaf in y.index]
         print(f"  {len(samples)} samples found in tree (out of {len(y)})")
 
@@ -381,21 +366,17 @@ def main() -> None:
     print(f"Number of phenotypes: {len(COMMON_PHENOTYPES)}")
     print(f"Number of datasets: {len(DATASET_SUBSET)}")
 
-    # Create sample map
     print("\n=== Creating sample map ===")
     sample_map = create_sample_map()
     print(f"Total samples: {len(sample_map)}")
 
-    # Load phenotypes
     print("\n=== Loading phenotypes ===")
     phenotype_data_dict = load_phenotype_data()
     print(f"Loaded {len(phenotype_data_dict)} phenotypes")
 
-    # Create y data
     print("\n=== Creating y data ===")
     y_data = create_y_data(phenotype_data_dict)
 
-    # Create all splits
     create_random_splits(y_data)
     create_dataset_splits(y_data, sample_map)
     create_phylogeny_splits(y_data)

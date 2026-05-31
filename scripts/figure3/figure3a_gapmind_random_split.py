@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
-"""
-Calculate GapMind metrics for random split test sets.
+"""Compute GapMind metrics on the test-set genomes of each random split (Figure 3A).
 
-This script calculates GapMind prediction performance metrics specifically
-for the test set genomes in each random split configuration used in Figure 3A.
-This ensures that the GapMind baseline is comparable to the ML model performance,
-which is also evaluated only on the test set.
+Evaluating only on the test set keeps GapMind comparable to the ML model.
 """
 
 from pathlib import Path
@@ -43,12 +39,11 @@ def calculate_metrics(
     dict[str, float]
         Dictionary of metric names and their values
     """
-    # Filter out NaN values (missing experimental data)
+    # Drop genomes with missing experimental labels
     mask = ~y_true.isna()
     y_true_filtered = y_true[mask].astype(int)
     y_pred_filtered = y_pred[mask].astype(int)
 
-    # Skip if no valid data
     if len(y_true_filtered) == 0:
         return {
             "n_samples": 0,
@@ -60,13 +55,12 @@ def calculate_metrics(
             "f1": np.nan,
         }
 
-    # Calculate metrics (handle cases where a class might be missing)
     try:
         accuracy = accuracy_score(y_true_filtered, y_pred_filtered)
         balanced_acc = balanced_accuracy_score(y_true_filtered, y_pred_filtered)
         mcc = matthews_corrcoef(y_true_filtered, y_pred_filtered)
 
-        # For precision, recall, F1 - handle cases with no positive predictions
+        # zero_division=0 guards against splits with no positive predictions
         precision = precision_score(
             y_true_filtered, y_pred_filtered, zero_division=0.0
         )
@@ -109,7 +103,7 @@ def extract_phenotype_and_repeat(key: str) -> tuple[str, str]:
     tuple[str, str]
         Tuple of (phenotype_name, repeat_number)
     """
-    # Split by last underscore to separate phenotype from repeat number
+    # Phenotype name may itself contain underscores, so split on the last one
     parts = key.rsplit("_", 1)
     phenotype = parts[0]
     repeat = parts[1] if len(parts) > 1 else "0"
@@ -118,64 +112,51 @@ def extract_phenotype_and_repeat(key: str) -> tuple[str, str]:
 
 
 def main() -> None:
-    """
-    Main function to calculate GapMind metrics for random split test sets.
-    """
-    # Define paths
+    """Calculate GapMind metrics for random split test sets."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     GAPMIND_FILE = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
     OUTPUT_DIR = Path("data/outputs/figure3")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load GapMind predictions (loose threshold)
+    # Use the loose-threshold GapMind predictions
     print(f"Loading GapMind predictions from: {GAPMIND_FILE}")
     gapmind_predictions = pd.read_csv(
         GAPMIND_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
     print(f"  Loaded {gapmind_predictions.shape[0]} genomes, {gapmind_predictions.shape[1]} phenotypes")
 
-    # Load random split data only
     print("\nLoading random split configurations...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=["random_split"])
 
     random_splits = split_data["random_split"]
     print(f"  Loaded {len(random_splits)} random split configurations")
 
-    # Process each random split
     print("\nCalculating GapMind metrics for each random split test set...")
     results = []
 
     for key in tqdm(random_splits, desc="Processing random splits"):
         split = random_splits[key]
 
-        # Get test set data
         y_test = split["y_test"]
         test_genomes = y_test.index.tolist()
 
-        # Extract phenotype and repeat info
         phenotype, repeat = extract_phenotype_and_repeat(key)
 
-        # Check if phenotype exists in GapMind predictions
         if phenotype not in gapmind_predictions.columns:
             print(f"\nWarning: Phenotype {phenotype} not found in GapMind predictions, skipping {key}")
             continue
 
-        # Get GapMind predictions for test set genomes
-        # Find common genomes between test set and GapMind
         common_genomes = list(set(test_genomes) & set(gapmind_predictions.index))
 
         if len(common_genomes) == 0:
             print(f"\nWarning: No common genomes found for {key}, skipping")
             continue
 
-        # Get true labels and predictions for common genomes
         y_true = y_test.loc[common_genomes]
         y_pred = gapmind_predictions.loc[common_genomes, phenotype]
 
-        # Calculate metrics
         metrics = calculate_metrics(y_true, y_pred)
 
-        # Add metadata
         metrics["key"] = key
         metrics["phenotype"] = phenotype
         metrics["repeat"] = repeat
@@ -184,15 +165,12 @@ def main() -> None:
 
         results.append(metrics)
 
-    # Create results DataFrame
     results_df = pd.DataFrame(results)
 
-    # Save results
     output_file = OUTPUT_DIR / "gapmind_random_split_metrics.tsv"
     results_df.to_csv(output_file, sep="\t", index=False)
     print(f"\nSaved results to: {output_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total random split configurations: {len(results_df)}")
     print(f"\nMean metrics across all random splits:")

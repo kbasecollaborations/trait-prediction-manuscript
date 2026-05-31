@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Create Figure 6: hybrid composition of filtering and feature-selection diagnostics.
-
-Layout (after the hybrid revision):
-
-- Panel A (row 1, two columns): condensed problematic-sample summary on the left
-  and the ranked top-20 misclassified microbe diagnostic on the right.
-- Panel B (row 2, full width): per-phenotype grouped balanced-accuracy bars across
-  three filtering strategies, with sample-removal annotations.
-- Panel C and D (row 3, two columns): combined ML+GapMind precision-recall
-  scatter on the left and combined-vs-phenotype-filtered balanced-accuracy
-  scatter on the right.
-"""
+"""Compose the four-panel Figure 6 from the per-panel diagnostic plots."""
 
 from pathlib import Path
 
@@ -72,7 +61,6 @@ def create_figure6(output_file: Path) -> None:
         hspace=0.55,
     )
 
-    # --- Panel A: condensed summary (left) + ranked microbe diagnostic (right) ---
     print("Creating Panel A...")
     gs_a = GridSpecFromSubplotSpec(
         1, 2, subplot_spec=gs[0, 0], width_ratios=[1.0, 1.18], wspace=0.45
@@ -82,15 +70,10 @@ def create_figure6(output_file: Path) -> None:
     plot_problematic_sample_summary(ax_a_left)
     plot_microbe_misclassification_ranking(ax_a_right)
 
-    # --- Panel B: metric sweep across GapMind weight with reference endpoints ---
     print("Creating Panel B...")
     ax_b = fig.add_subplot(gs[1, 0])
     plot_metric_sweep(ax_b, data_dir, common_phenotypes)
 
-    # --- Panel C (left) and Panel D (right): compact lower diagnostic block ---
-    # Panel C: per-phenotype delta-BA against the GapMind baseline for two
-    # representative filters (concordant ML and mech-free confidence). All
-    # comparisons are on the same full cross-dataset held-out test set.
     print("Creating Panels C and D...")
     best_config_name, best_label, summary = best_panel_b_config(
         data_dir, common_phenotypes

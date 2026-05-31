@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate data for Figure 6B: ML performance on confident samples only.
-
-This script:
-1. Loads train-test splits (random_split and dataset_split)
-2. Calculates confidence scores (y_soft) for each sample using:
-   - Phylogenetic k-NN agreement
-   - GapMind mechanistic predictions
-   - Experimental data (y_hard)
-3. Filters to keep only confident samples (y_soft < 0.4 OR y_soft > 0.6)
-4. Runs ML on the filtered confident samples
-5. Saves results for comparison with full-data performance
-"""
+"""Generate Figure 6B data: ML on confidence-filtered (y_soft) training samples."""
 
 import json
 from pathlib import Path
@@ -30,7 +18,6 @@ W_PHYLO = 0.2
 W_GAPMIND = 0.3
 W_EXP = 0.5
 
-# Filtering threshold
 CONFIDENCE_THRESHOLD_LOW = 0.4
 CONFIDENCE_THRESHOLD_HIGH = 0.6
 
@@ -44,7 +31,6 @@ def load_gapmind_data() -> pd.DataFrame:
     pd.DataFrame
         GapMind predictions as binary (0/1) for each phenotype.
     """
-    # Phenotype mapping
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -63,12 +49,10 @@ def load_gapmind_data() -> pd.DataFrame:
         "cellobiose": "Cellobiose",
     }
 
-    # Load marine ID mapping
     marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
     with open(marine_ids_file, "r") as f:
         marine_ids_map = {v.rsplit("_", 2)[0]: k for k, v in json.load(f).items()}
 
-    # Load GapMind data
     from scripts.io import index_format_func
 
     gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
@@ -91,7 +75,6 @@ def load_gapmind_data() -> pd.DataFrame:
     gapmind_data.columns = gapmind_data.columns.str.replace("Carbon__", "")
     gapmind_data.columns = gapmind_data.columns.map(phenotype_dict)  # type: ignore
 
-    # Convert to binary
     replace_dict = {
         "complete": 1,
         "likely_complete": 1,
@@ -115,7 +98,6 @@ def load_gapmind_confidence() -> dict[str, pd.Series]:
     dict[str, pd.Series]
         Dictionary mapping phenotype names to confidence scores (0-1).
     """
-    # Phenotype mapping
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -134,12 +116,11 @@ def load_gapmind_confidence() -> dict[str, pd.Series]:
         "cellobiose": "Cellobiose",
     }
 
-    # Load marine ID mapping
     marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
     with open(marine_ids_file, "r") as f:
         marine_ids_map = {v.rsplit("_", 2)[0]: k for k, v in json.load(f).items()}
 
-    # Load GapMind data (categorical, not binary)
+    # GapMind data here is categorical, not binary.
     from scripts.io import index_format_func
 
     gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
@@ -162,7 +143,6 @@ def load_gapmind_confidence() -> dict[str, pd.Series]:
     gapmind_data.columns = gapmind_data.columns.str.replace("Carbon__", "")
     gapmind_data.columns = gapmind_data.columns.map(phenotype_dict)  # type: ignore
 
-    # Map categories to confidence values
     gapmind_values = {
         "complete": 1.0,
         "likely_complete": 0.9,
@@ -173,7 +153,6 @@ def load_gapmind_confidence() -> dict[str, pd.Series]:
         "uncategorized": 0.0,
     }
 
-    # Create confidence scores
     conf_mech = {}
     for phenotype_name in gapmind_data.columns:
         y_conf = gapmind_data[phenotype_name].map(gapmind_values)  # type: ignore
@@ -196,7 +175,7 @@ def load_phylogenetic_data() -> tuple[Tree, pd.DataFrame]:
 
     distance_file = Path("data/processed/phylogeny/distance_matrix.tsv")
     distance_df = pd.read_csv(distance_file, sep="\t", index_col=0)
-    # Set diagonal to inf (exclude self from nearest neighbors)
+    # Exclude self from nearest neighbors.
     distance_df.values[np.arange(len(distance_df)), np.arange(len(distance_df))] = (
         np.inf
     )
@@ -230,7 +209,6 @@ def calculate_phylo_confidence(
     common_inds = y_exp.index.intersection(tree_leaves)
     y_exp_subset = y_exp.loc[common_inds]
 
-    # Use NearestNeighborClassifier to get k-NN predictions
     classifier = NearestNeighborClassifier(
         random_state=42,
         categorical_feature_names=[],
@@ -238,10 +216,9 @@ def calculate_phylo_confidence(
         distances=distance_df,
         k=k,
     )
-    # Fit on all data (using dummy X with same index as y)
     X_dummy = pd.DataFrame(index=y_exp_subset.index)
     classifier.fit(X_dummy, y_exp_subset)
-    # Predict returns average of k neighbors (float between 0 and 1)
+    # predict returns the average of the k neighbors (float in 0-1).
     y_conf = classifier.predict(X_dummy, round_to_int=False).apply(float)
 
     return y_conf
@@ -256,7 +233,7 @@ def load_phenotype_data() -> dict[str, pd.Series]:
     dict[str, pd.Series]
         Dictionary mapping phenotype names to Series with phenotype values.
     """
-    # Common phenotypes across all 4 datasets (15 total)
+    # Common phenotypes across all 4 datasets (15 total).
     COMMON_PHENOTYPES = [
         "Alanine",
         "Arginine",
@@ -278,10 +255,8 @@ def load_phenotype_data() -> dict[str, pd.Series]:
     DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
     PHENOTYPE_DIR = Path("data/processed/phenotypes/")
 
-    # Load phenotype data for all common phenotypes
     combined_phenotype_dict = {}
     for phenotype_name in COMMON_PHENOTYPES:
-        # Combine phenotype data from all datasets
         phenotype_dfs = []
         for dataset_name in DATASET_SUBSET:
             phenotype_file = PHENOTYPE_DIR / dataset_name / f"{phenotype_name}.tsv"
@@ -292,13 +267,8 @@ def load_phenotype_data() -> dict[str, pd.Series]:
                 phenotype_dfs.append(pheno_data)
 
         if phenotype_dfs:
-            # Concatenate all datasets
             combined = pd.concat(phenotype_dfs, axis=0)
-
-            # Remove duplicates, keeping the first occurrence
             combined = combined[~combined.index.duplicated(keep="first")]
-
-            # Store the phenotype series
             combined_phenotype_dict[phenotype_name] = combined[phenotype_name]
 
     return combined_phenotype_dict
@@ -347,17 +317,13 @@ def calculate_y_soft_all_phenotypes(
         phenotype_data.keys(), desc="Calculating y_soft for phenotypes"
     ):
         y_exp = phenotype_data[phenotype_name]
-
-        # Calculate phylogenetic confidence
         conf_phylo = calculate_phylo_confidence(y_exp, tree, distance_df, k=k)
 
-        # Get GapMind confidence
         if phenotype_name not in conf_mech:
             print(f"Warning: {phenotype_name} not in GapMind data, skipping")
             continue
         y_soft_mech = conf_mech[phenotype_name]
 
-        # Find common indices
         common_inds = conf_phylo.index.intersection(y_soft_mech.index).intersection(
             y_exp.index
         )
@@ -366,14 +332,11 @@ def calculate_y_soft_all_phenotypes(
         conf_phylo_subset = conf_phylo.loc[common_inds]
         y_soft_mech_subset = y_soft_mech.loc[common_inds]
 
-        # Calculate weighted confidence
         y_conf = (
             conf_phylo_subset * w_phylo
             + y_soft_mech_subset * w_gapmind
             + y_exp_subset * w_exp
         )
-
-        # Clip to valid probability range
         y_soft[phenotype_name] = np.clip(y_conf, 0.01, 1 - 0.01)
 
     return y_soft
@@ -428,7 +391,6 @@ def filter_confident_samples(
 
             filtered_split: dict[str, pd.DataFrame | pd.Series] = {}
 
-            # Filter only train and val; preserve full test set.
             for set_name in ["train", "val"]:
                 X_key = f"X_{set_name}"
                 y_key = f"y_{set_name}"
@@ -447,7 +409,7 @@ def filter_confident_samples(
                 filtered_split[X_key] = X.loc[confident_inds]
                 filtered_split[y_key] = y.loc[confident_inds]
 
-            # Pass the test set through unchanged.
+            # Test set passes through unchanged.
             filtered_split["X_test"] = split["X_test"]
             filtered_split["y_test"] = split["y_test"]
 
@@ -494,7 +456,6 @@ def run_ml_on_filtered_splits(
         "roc_auc",
     ]
 
-    # Calculate total iterations for progress bar
     total_splits = sum(len(splits) for splits in filtered_split_data.values())
 
     with tqdm(total=total_splits, desc="Running ML on filtered splits") as pbar:
@@ -511,7 +472,6 @@ def run_ml_on_filtered_splits(
                 X_test = split["X_test"]
                 y_test = split["y_test"]
 
-                # Skip if test set is too small
                 n_test_samples = len(X_test)
                 if n_test_samples < min_test_samples:
                     print(
@@ -519,14 +479,12 @@ def run_ml_on_filtered_splits(
                     )
                     continue
 
-                # Skip if training or validation sets don't have both classes
                 if len(y_train.unique()) != 2 or len(y_val.unique()) != 2:
                     print(
                         f"\nSkipping {split_type}/{key}: training or validation set doesn't have 2 classes"
                     )
                     continue
 
-                # Run ML
                 result = perform_split_ml(
                     X_train,
                     y_train,
@@ -539,7 +497,6 @@ def run_ml_on_filtered_splits(
                     random_state=random_state,
                 )
 
-                # Add metadata
                 result["split_type"] = split_type
                 result["key"] = key
                 result["phenotype"] = key.split("_")[0]
@@ -554,22 +511,16 @@ def run_ml_on_filtered_splits(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 6B data.
-    """
-    # Define paths
+    """Generate Figure 6B data."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure6")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Only process random_split and dataset_split
     SPLIT_TYPES = ["random_split", "dataset_split"]
 
-    # Load all splits
     print("Loading train-test splits...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
 
-    # Print summary of loaded data
     print("\nLoaded splits summary:")
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
@@ -616,7 +567,6 @@ def main() -> None:
             pickle.dump(y_soft, f)
         print(f"  Saved y_soft to {y_soft_file}")
 
-    # Filter to confident samples only
     print("\nFiltering to confident samples only...")
     print(
         f"  Keeping samples with y_soft < {CONFIDENCE_THRESHOLD_LOW} OR y_soft > {CONFIDENCE_THRESHOLD_HIGH}"
@@ -628,7 +578,6 @@ def main() -> None:
         threshold_high=CONFIDENCE_THRESHOLD_HIGH,
     )
 
-    # Print filtering summary (train + val; test is preserved in full).
     print("\nFiltering summary (train + val; test set unchanged):")
     for split_type in filtered_split_data:
         total_trainval_original = sum(
@@ -651,7 +600,6 @@ def main() -> None:
             f"train+val samples retained ({pct_retained:.1f}%)"
         )
 
-    # Run ML on filtered splits
     print("\nRunning machine learning on filtered splits...")
     results = run_ml_on_filtered_splits(
         filtered_split_data, model_type="cb", random_state=42, min_test_samples=10
@@ -665,12 +613,10 @@ def main() -> None:
 
     results = annotate_minority_test(results, full_test_minority_counts())
 
-    # Save results
     results_file = OUTPUT_DIR / "figure6b_confident_ml_results.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
 

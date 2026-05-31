@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Script to apply variance and correlation filtering to feature matrices.
-
-This script:
-1. Combines all datasets for each feature type
-2. Applies variance and correlation filtering to the combined dataset
-3. Saves the combined filtered feature matrix
-4. Saves individual dataset feature matrices (subset of combined filtered features)
-5. Fills missing columns with 0 and ensures all columns are integers
-"""
+"""Apply variance and correlation filtering to combined and per-dataset feature matrices."""
 
 import gzip
 import json
@@ -55,7 +47,6 @@ def load_and_combine_datasets(feature_type: str) -> pd.DataFrame:
         else:
             print(f"  Warning: {feature_file} not found, skipping")
 
-    # Concatenate and fill missing values with 0
     combined_df = pd.concat(combined_features, axis=0, sort=False)
     combined_df = combined_df.fillna(0).astype(int)
 
@@ -83,13 +74,11 @@ def filter_combined_features(
     """
     print(f"\nFiltering {feature_type} features on combined dataset...")
 
-    # Apply variance filtering using Feature class method
     filtered_df, low_var_features = Feature.remove_features_with_low_variance(
         combined_df, VARIANCE_THRESHOLD
     )
     print(f"  After variance filtering: {filtered_df.shape[1]} features remaining")
 
-    # Apply correlation filtering using Feature class method
     filtered_df, high_corr_features_dict = (
         Feature.remove_features_with_high_correlation(
             filtered_df, CORRELATION_THRESHOLD, parallel=True, method=CORRELATION_METHOD
@@ -97,7 +86,6 @@ def filter_combined_features(
     )
     print(f"  After correlation filtering: {filtered_df.shape[1]} features remaining")
 
-    # Ensure all values are integers
     filtered_df = filtered_df.astype(int)
 
     return filtered_df, low_var_features, high_corr_features_dict
@@ -125,18 +113,15 @@ def save_combined_features(
     output_dir = OUTPUT_DIR / "combined_datasets"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save filtered features
     output_file = output_dir / f"{feature_type}.tsv"
     combined_df.to_csv(output_file, sep="\t", index=True)
     print(f"  Saved combined filtered features to {output_file}")
 
-    # Save low variance features
     low_var_file = output_dir / f"{feature_type}_low_var_features.txt"
     with open(low_var_file, "w") as f:
         f.write("\n".join(low_var_features))
     print(f"  Saved {len(low_var_features)} low variance features to {low_var_file}")
 
-    # Save high correlation features
     corr_file = output_dir / f"{feature_type}_corr_features.json.gz"
     with gzip.open(corr_file, "wt") as f:
         json.dump(high_corr_features_dict, f)
@@ -158,7 +143,6 @@ def save_individual_dataset_features(
     print(f"\nSaving individual dataset features for {feature_type}...")
 
     for dataset_name in DATASET_SUBSET:
-        # Load original dataset to get the sample IDs
         feature_file = FEATURE_DIR / dataset_name / f"{feature_type}.tsv"
         if not feature_file.exists():
             print(f"  Warning: {feature_file} not found, skipping {dataset_name}")
@@ -168,11 +152,9 @@ def save_individual_dataset_features(
             feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
         )
 
-        # Extract rows for this dataset from the combined filtered matrix
         dataset_samples = original_data.index
         dataset_filtered = combined_filtered_df.loc[dataset_samples]
 
-        # Save to individual dataset directory
         output_dir = OUTPUT_DIR / dataset_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -198,20 +180,13 @@ def main() -> None:
         print(f"Processing {feature_type} features")
         print("=" * 80)
 
-        # Step 1: Load and combine all datasets
         combined_df = load_and_combine_datasets(feature_type)
-
-        # Step 2: Apply filtering to combined dataset
         filtered_df, low_var_features, high_corr_features_dict = (
             filter_combined_features(combined_df, feature_type)
         )
-
-        # Step 3: Save combined filtered features
         save_combined_features(
             feature_type, filtered_df, low_var_features, high_corr_features_dict
         )
-
-        # Step 4: Save individual dataset features (subset of combined)
         save_individual_dataset_features(feature_type, filtered_df)
 
     print("\n" + "=" * 80)

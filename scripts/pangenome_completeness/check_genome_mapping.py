@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Check genome-to-pangenome mapping coverage.
-
-This script analyzes how many genomes in the all_seqs directory have
-corresponding species assignments in the pangenome mapping file.
-"""
+"""Report how many genomes in all_seqs have species assignments and core genes."""
 
 from __future__ import annotations
 
@@ -12,7 +7,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# Import functions from the main module
 from pangenome_completeness import (
     extract_genome_name,
     get_core_genes_path,
@@ -21,7 +15,6 @@ from pangenome_completeness import (
 
 def main() -> None:
     """Analyze genome mapping coverage."""
-    # Paths
     project_root = Path(__file__).parent.parent.parent
     all_seqs_dir = project_root / "data" / "raw" / "all_seqs"
     core_genes_dir = project_root / "data" / "processed" / "unique_core_faas"
@@ -35,14 +28,12 @@ def main() -> None:
     print(f"Mapping file: {mapping_file}")
     print()
 
-    # Load full mapping file (not just ones with species)
     df = pd.read_csv(mapping_file, sep="\t")
     print(f"Total rows in mapping file: {len(df)}")
     print(f"Rows with species assignment: {df['gtdb_species_clade_id'].notna().sum()}")
     print(f"Rows without species assignment: {df['gtdb_species_clade_id'].isna().sum()}")
 
-    # Create lookup dictionaries
-    # All genomes in mapping (genome_name -> species or None)
+    # genome_name -> species (or None when unassigned)
     all_mapping: dict[str, str | None] = {}
     for _, row in df.iterrows():
         genome_name = row["Genome name"]
@@ -52,12 +43,10 @@ def main() -> None:
         else:
             all_mapping[genome_name] = None
 
-    # Get all genome files
     genome_files = sorted(all_seqs_dir.glob("*.faa"))
     print(f"Genome .faa files in all_seqs: {len(genome_files)}")
     print()
 
-    # Categorize genomes
     in_mapping_with_species: list[str] = []
     in_mapping_no_species: list[str] = []
     not_in_mapping: list[str] = []
@@ -73,7 +62,6 @@ def main() -> None:
             species = all_mapping[name]
             if species:
                 in_mapping_with_species.append(name)
-                # Check for core genes file
                 core_path = get_core_genes_path(core_genes_dir, species)
                 if core_path:
                     has_core_genes.append(name)
@@ -82,7 +70,6 @@ def main() -> None:
             else:
                 in_mapping_no_species.append(name)
 
-    # Print summary
     print("=" * 70)
     print("Summary")
     print("=" * 70)
@@ -94,7 +81,6 @@ def main() -> None:
     print(f"{'  NOT in mapping file:':<45} {len(not_in_mapping):>6}")
     print()
 
-    # Breakdown by naming convention
     numeric_not_in_mapping = [n for n in not_in_mapping if n[0].isdigit()]
     alpha_not_in_mapping = [n for n in not_in_mapping if not n[0].isdigit()]
     print(f"  Breakdown of NOT in mapping:")
@@ -102,7 +88,6 @@ def main() -> None:
     print(f"    {'Alphabetic names:':<43} {len(alpha_not_in_mapping):>6}")
     print()
 
-    # Show sample of missing genomes
     if not_in_mapping:
         print("=" * 70)
         print(f"Sample of genomes NOT in mapping file ({len(not_in_mapping)} total):")
@@ -113,7 +98,6 @@ def main() -> None:
             print(f"  ... and {len(not_in_mapping) - 20} more")
         print()
 
-    # Show genomes in mapping but no species
     if in_mapping_no_species:
         print("=" * 70)
         print(f"Genomes in mapping but NO species assignment ({len(in_mapping_no_species)} total):")
@@ -124,7 +108,6 @@ def main() -> None:
             print(f"  ... and {len(in_mapping_no_species) - 10} more")
         print()
 
-    # Show genomes missing core gene files
     if no_core_genes:
         print("=" * 70)
         print(f"Genomes with species but missing core gene file ({len(no_core_genes)} total):")
@@ -137,7 +120,6 @@ def main() -> None:
             print(f"  ... and {len(no_core_genes) - 10} more")
         print()
 
-    # Final stats
     print("=" * 70)
     print("Completeness Calculation Coverage")
     print("=" * 70)

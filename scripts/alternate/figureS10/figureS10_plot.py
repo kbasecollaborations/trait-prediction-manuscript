@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate Supplementary Figure S10.
-"""
+"""Generate Supplementary Figure S10 (saturation summary of learning curves)."""
 
 from scripts.supplementary_figure_learning_curves import (
     ensure_output_dir,

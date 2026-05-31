@@ -33,7 +33,6 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     phenotypes : list[str]
         List of phenotypes in alphabetical order.
     """
-    # Load data
     data_file = Path("data/outputs/figure4/all_datasets_combined_shap_features.json")
     with open(data_file) as f:
         feature_data = json.load(f)
@@ -64,13 +63,11 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
 
     feature_counts = [_cluster_count(p) for p in phenotypes]
 
-    # Create bar plot aligned with bottom subplot
-    # Need to match the bottom subplot's bar grouping
+    # Align bars with the bottom subplot's grouped-bar centers.
     x_pos = np.arange(len(phenotypes))
     n_datasets = 3  # atleaf, lit, marine
     bar_width_bottom = 0.8 / n_datasets  # Width used in bottom subplot
 
-    # Center the bars at the same position as the bottom subplot's grouped bars
     bar_center_offset = bar_width_bottom * (n_datasets - 1) / 2
     bar_width = 0.5  # Narrower bar for better appearance
 
@@ -82,20 +79,18 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
         alpha=0.8,
     )
 
-    # Add alternating background colors for x-axis categories (matching Figure 3)
-    # Center backgrounds around the bar positions
+    # Alternating background bands centered on the bar positions (matching Figure 3).
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             center = i + bar_center_offset
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Customize plot
     ax.set_ylabel(
         "Stable feature\nclusters (Combined)",
         fontsize=AXIS_LABEL_SIZE,
         labelpad=1,
     )
-    # Set ticks to match bottom subplot
+    # Match tick positions to the bottom subplot.
     ax.set_xticks(x_pos + bar_center_offset)
     ax.set_xticklabels([])  # No labels on top plot
     ax.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
@@ -106,10 +101,8 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     # Set x-axis limits to remove extra spacing
     ax.set_xlim(bar_center_offset - 0.5, len(phenotypes) - 1 + bar_center_offset + 0.5)
 
-    # Set y-axis limits
     ax.set_ylim(0, 10)
 
-    # Add value labels on bars
     for i, (bar, count) in enumerate(zip(bars, feature_counts)):
         height = bar.get_height()
         ax.text(
@@ -135,17 +128,15 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     phenotypes : list[str]
         List of phenotypes in alphabetical order.
     """
-    # Load data
     data_file = Path("data/outputs/figure4/feature_comparison_summary.csv")
     df = pd.read_csv(data_file)
 
-    # Datasets and their colors (using consistent color scheme)
     datasets = ["atleaf", "lit", "marine"]
     dataset_color_map = get_dataset_colors()
     dataset_colors = [dataset_color_map[d] for d in datasets]
     dataset_display_names = format_dataset_names(datasets)
 
-    # Hatching patterns for different feature types (similar to Figure 1C)
+    # Hatching patterns for feature types (matching Figure 1C).
     patterns = {
         "common": "",  # Solid (like positive counts in Figure 1C)
         "unique_individual": "//",  # Diagonal hatching (like negative counts)
@@ -165,15 +156,12 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         else "n_unique_to_individual"
     )
 
-    # Prepare data for plotting (matching Figure 1C style)
     x_pos = np.arange(len(phenotypes))
     bar_width = 0.8 / len(datasets)  # Match Figure 1C bar width calculation
 
-    # Plot for each dataset
     for i, dataset in enumerate(datasets):
         dataset_df = df[df["test_dataset"] == dataset].set_index("phenotype")
 
-        # Align with phenotypes order
         common = []
         unique_individual = []
 
@@ -186,11 +174,9 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
                 common.append(0)
                 unique_individual.append(0)
 
-        # Calculate positions for grouped bars (matching Figure 1C style)
         positions = x_pos + i * bar_width
 
-        # Create stacked bars with dataset color and patterns (matching Figure 1C)
-        # Bottom layer: common features (solid, alpha=0.8)
+        # Bottom layer: common features (solid, alpha=0.8).
         p1 = ax.bar(
             positions,
             common,
@@ -198,7 +184,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             color=dataset_colors[i],
             alpha=0.8,
         )
-        # Top layer: unique to individual (hatched //, alpha=0.4)
+        # Top layer: unique to individual (hatched //, alpha=0.4).
         p2 = ax.bar(
             positions,
             unique_individual,
@@ -209,14 +195,12 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             hatch="//",
         )
 
-    # Create custom legend with both datasets and feature types (matching Figure 1C)
-    # Dataset legend entries
+    # Separate legends for datasets and feature types (matching Figure 1C).
     dataset_handles = [
         Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
         for i in range(len(datasets))
     ]
 
-    # Feature type legend entries (matching Figure 1C style)
     feature_handles = [
         Rectangle(
             (0, 0),
@@ -237,7 +221,6 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         ),
     ]
 
-    # Add dataset legend (positioned left side of top)
     legend1 = ax.legend(
         dataset_handles,
         dataset_display_names,
@@ -254,7 +237,6 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     )
     ax.add_artist(legend1)
 
-    # Add feature type legend (positioned right side of top)
     ax.legend(
         handles=feature_handles,
         title="Stable feature clusters",
@@ -269,24 +251,21 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         columnspacing=0.8,
     )
 
-    # Calculate the center offset for grouped bars
     bar_group_center = bar_width * (len(datasets) - 1) / 2
 
-    # Add alternating background colors for x-axis categories (matching Figure 3)
-    # Center backgrounds around the grouped bar positions
+    # Alternating background bands centered on the grouped bars (matching Figure 3).
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             center = i + bar_group_center
             ax.axvspan(center - 0.5, center + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Customize plot (matching Figure 1C)
     ax.set_ylabel(
         "Stable feature\nclusters (Per Dataset)",
         fontsize=AXIS_LABEL_SIZE,
         labelpad=1,
     )
     ax.set_xlabel("Phenotype", fontsize=AXIS_LABEL_SIZE)
-    # Center x-tick labels in the middle of the group of bars (matching Figure 1C)
+    # Center x-tick labels under each group of bars (matching Figure 1C).
     ax.set_xticks(x_pos + bar_group_center)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=TICK_LABEL_SIZE)
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
@@ -294,10 +273,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     # ax.spines["top"].set_visible(False)
     # ax.spines["right"].set_visible(False)
 
-    # Set x-axis limits to remove extra spacing
     ax.set_xlim(bar_group_center - 0.5, len(phenotypes) - 1 + bar_group_center + 0.5)
-
-    # Set y-axis limits
     ax.set_ylim(0, 10)
 
 
@@ -311,7 +287,6 @@ def create_panel_c_plots(ax_top: Axes, ax_bottom: Axes) -> None:
     ax_bottom : Axes
         Bottom subplot for feature comparison plot.
     """
-    # Get unique phenotypes from both datasets and sort alphabetically
     data_file1 = Path("data/outputs/figure4/all_datasets_combined_shap_features.json")
     data_file2 = Path("data/outputs/figure4/feature_comparison_summary.csv")
 
@@ -320,7 +295,7 @@ def create_panel_c_plots(ax_top: Axes, ax_bottom: Axes) -> None:
 
     df = pd.read_csv(data_file2)
 
-    # Get all unique phenotypes and sort alphabetically
+    # Union of phenotypes across both sources, sorted alphabetically.
     phenotypes_set = set(feature_data.keys()) | set(df["phenotype"].unique())
     phenotypes = sorted(list(phenotypes_set))
 

@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
-"""
-Render Figure S8: SHAP beeswarm summaries for histidine and galactose.
-
-The figure stacks one beeswarm panel per phenotype. Each panel uses the
-canonical ``shap.summary_plot(plot_type="dot")`` representation, restricted
-to the top 15 features by mean absolute SHAP value, so readers can see the
-direction (and dispersion) in which each pathway gene drives the prediction
-toward growth. Feature value (binary 0/1 = absence/presence) is encoded by
-the colour bar.
-"""
+"""Render Figure S8: stacked SHAP beeswarm panels (top 15 features) for histidine
+and galactose."""
 
 from pathlib import Path
 
@@ -34,8 +26,7 @@ OUTPUT_PDF: Path = REPO_ROOT / "figures/figure_s8.pdf"
 
 
 def load_shap_arrays(npz_path: Path) -> dict[str, np.ndarray]:
-    """
-    Load SHAP arrays produced by ``figureS8_data.py``.
+    """Load SHAP arrays produced by ``figureS8_data.py``.
 
     Parameters
     ----------
@@ -69,8 +60,7 @@ def render_beeswarm_panel(
     top_n: int,
     show_colorbar: bool,
 ) -> None:
-    """
-    Render a single SHAP beeswarm panel onto an existing matplotlib axis.
+    """Render a single SHAP beeswarm panel onto an existing matplotlib axis.
 
     Parameters
     ----------
@@ -109,8 +99,7 @@ def make_figure(
     output_pdf: Path,
     top_n: int,
 ) -> None:
-    """
-    Build and save the two-panel Figure S11 PDF.
+    """Build and save the two-panel Figure S8 PDF.
 
     Parameters
     ----------
@@ -150,8 +139,7 @@ def make_figure(
 def report_top_features(
     phenotype: str, arrays: dict[str, np.ndarray], top_n: int
 ) -> None:
-    """
-    Print the top ``top_n`` features by mean absolute SHAP value.
+    """Print the top ``top_n`` features by mean absolute SHAP value.
 
     Parameters
     ----------
@@ -173,7 +161,7 @@ def report_top_features(
 
 
 def main() -> None:
-    """Entry point for the Figure S11 plotting script."""
+    """Entry point for the Figure S8 plotting script."""
     make_figure(
         phenotypes=PHENOTYPES,
         data_dir=DATA_DIR,

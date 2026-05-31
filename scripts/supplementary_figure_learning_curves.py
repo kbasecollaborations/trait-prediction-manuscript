@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Shared plotting utilities for supplementary learning-curve figures.
-"""
+"""Shared plotting utilities for the supplementary learning-curve figures."""
 
 from pathlib import Path
 
@@ -42,8 +40,7 @@ OUTPUT_DIR = Path("figures")
 
 
 def prepare_results(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Map internal result labels to manuscript display labels.
+    """Map internal result labels to manuscript display labels.
 
     Parameters
     ----------
@@ -77,8 +74,7 @@ def prepare_results(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def normalize_sample_size_labels(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Normalize sample-size labels to a consistent string representation.
+    """Normalize sample-size labels to a consistent string representation.
 
     Parameters
     ----------
@@ -96,8 +92,7 @@ def normalize_sample_size_labels(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def get_sample_size_order(df: pd.DataFrame) -> list[str]:
-    """
-    Return the canonical display order for sample sizes present in the data.
+    """Return the canonical display order for sample sizes present in the data.
 
     Parameters
     ----------
@@ -119,8 +114,7 @@ def get_sample_size_order(df: pd.DataFrame) -> list[str]:
 def estimate_saturation_sizes(
     df: pd.DataFrame, split_type: str = "Dataset Split"
 ) -> dict[str, str]:
-    """
-    Estimate the smallest sample size that reaches 90% of full performance.
+    """Estimate the smallest sample size that reaches 90% of full performance.
 
     Parameters
     ----------
@@ -163,15 +157,11 @@ def estimate_saturation_sizes(
 
 
 def load_plot_data() -> pd.DataFrame:
-    """
-    Load and normalize the shared learning-curve results used by S8--S10.
+    """Load and normalize the shared learning-curve results used by S8--S10.
 
-    Applies the manuscript's minority-class-in-test filter (Methods): rows
-    whose held-out test set has fewer than 10 minority-class samples are
-    dropped. The relevant test-set definition is the full held-out dataset
-    when ``test_subset == "full"``, the concordant subset when
-    ``test_subset == "concordant"``, and the discordant subset when
-    ``test_subset == "discordant"``.
+    Applies the minority-class-in-test filter (Methods): rows whose held-out
+    test set has fewer than 10 minority-class samples are dropped, using the
+    test-set definition matching each row's ``test_subset``.
 
     Returns
     -------
@@ -209,8 +199,7 @@ def load_plot_data() -> pd.DataFrame:
 
 
 def ensure_output_dir() -> Path:
-    """
-    Create the shared figure output directory if needed.
+    """Create the shared figure output directory if needed.
 
     Returns
     -------
@@ -222,8 +211,7 @@ def ensure_output_dir() -> Path:
 
 
 def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
-    """
-    Plot the supplementary heatmap figure.
+    """Plot the supplementary heatmap figure.
 
     Parameters
     ----------
@@ -282,8 +270,7 @@ def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
 
 
 def plot_learning_curves(df: pd.DataFrame, output_file: Path) -> None:
-    """
-    Plot the supplementary learning-curve grid.
+    """Plot the supplementary learning-curve grid.
 
     Parameters
     ----------
@@ -390,8 +377,7 @@ def plot_learning_curves(df: pd.DataFrame, output_file: Path) -> None:
 
 
 def plot_saturation_summary(df: pd.DataFrame, output_file: Path) -> None:
-    """
-    Plot the supplementary saturation summary.
+    """Plot the supplementary saturation summary.
 
     Parameters
     ----------

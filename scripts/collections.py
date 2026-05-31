@@ -54,12 +54,7 @@ class XyItem:
 
 
 class XyCollection(MutableMapping[DataIndex, XyItem]):
-    """
-    A mutable mapping collection for storing paired X-y data indexed by DataIndex.
-
-    Implements the MutableMapping interface to provide dictionary-like access to
-    stored XyItem objects.
-    """
+    """Mutable mapping of DataIndex to XyItem."""
 
     def __init__(self) -> None:
         self._items: dict[DataIndex, XyItem] = {}

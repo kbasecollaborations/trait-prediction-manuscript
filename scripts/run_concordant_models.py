@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-Train CatBoost models on random_split data filtered to GapMind-concordant samples.
-
-Loads only random_split splits, filters each split to concordant genomes (GapMind
-matches experimental phenotype), runs train/val/test ML per split, and saves each
-fitted model and CDM-style artifacts under data/outputs/concordant_models.
-"""
+"""Train CatBoost models on random_split data filtered to GapMind-concordant samples."""
 
 import json
 import re
@@ -26,7 +20,7 @@ from scripts.ml_splits import (
     perform_split_ml_with_model,
 )
 
-# Default paths (run from repo root)
+# Paths are relative to the repo root.
 SPLITS_DIR = Path("data/processed/train_test_splits")
 GAPMIND_FILE = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR = Path("data/processed/phenotypes")
@@ -83,12 +77,11 @@ def _save_model_artifacts(
     base_name = f"{phenotype}_{suffix}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # CatBoost native format
     cbm_path = out_dir / f"{base_name}.cbm"
     if hasattr(model, "save_model"):
         model.save_model(str(cbm_path), format="cbm")
 
-    # Feature importances for all features (trait_prediction defaults to top 10 only)
+    # Request all features; trait_prediction otherwise defaults to the top 10.
     n_feats = X_train.shape[1]
     importances = get_feature_importances(model, X_train, n_features=n_feats)
     fi_path = out_dir / f"{base_name}_feature_importances.csv"
@@ -96,14 +89,12 @@ def _save_model_artifacts(
     importances_df.columns = ["feature", "importance"]
     importances_df.to_csv(fi_path, index=False)
 
-    # Selected features (ordered by importance, one per line)
     features = result.get("features", importances.index.tolist())
     sf_path = out_dir / f"{base_name}_selected_features.txt"
     with open(sf_path, "w") as f:
         for feat in features:
             f.write(f"{feat}\n")
 
-    # Metadata JSON (no full model, only summary)
     metadata = {
         "model_name": base_name,
         "phenotype_name": phenotype,

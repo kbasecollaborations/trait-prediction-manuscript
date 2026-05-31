@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate data for Figure 6C: Impact of filtering problematic samples on P/R/AUPRC.
-
-This script:
-1. Identifies problematic samples from Figure 6A analysis
-2. Trains two models per split:
-   - "full": trained on the full train/val sets
-   - "filtered": trained on train/val with problematic samples removed
-3. Evaluates both models on the same full (unfiltered) cross-dataset test set
-4. Calculates precision, recall, AUPRC, and balanced accuracy for both conditions
-5. Saves results for comparison plotting
-"""
+"""Generate Figure 6C data: metrics before/after removing problematic training samples."""
 
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -156,7 +145,7 @@ def identify_problematic_samples(
     set[str]
         Set of genome IDs that are problematic (union of all three categories).
     """
-    # Category 1: No experimental growth but GapMind predicts growth
+    # Category 1: no experimental growth but GapMind predicts growth
     microbes_no_exp_growth = phenotypes_combined.index[
         phenotypes_combined.apply(lambda x: (x.dropna() == 0).all(), axis=1)
     ].to_list()
@@ -201,7 +190,6 @@ def identify_problematic_samples(
     most_common_misclassified = missclassified_counts.most_common(20)
     top_20_genomes = [genome_id for genome_id, _ in most_common_misclassified]
 
-    # Return union of all three categories
     all_problematic = set(
         microbes_gapmind_predicts_growth
         + microbes_gapmind_missing_predictions
@@ -253,19 +241,15 @@ def evaluate_with_predictions(
     dict[str, float]
         Dictionary with precision, recall, auprc, balanced_accuracy, and sample counts.
     """
-    # Filter samples if needed
     if exclude_samples is not None:
-        # Filter test set
         keep_mask_test = ~y_test.index.isin(exclude_samples)
         X_test_filtered = X_test[keep_mask_test]
         y_test_filtered = y_test[keep_mask_test]
 
-        # Filter train set
         keep_mask_train = ~y_train.index.isin(exclude_samples)
         X_train_filtered = X_train[keep_mask_train]
         y_train_filtered = y_train[keep_mask_train]
 
-        # Filter validation set
         keep_mask_val = ~y_val.index.isin(exclude_samples)
         X_val_filtered = X_val[keep_mask_val]
         y_val_filtered = y_val[keep_mask_val]
@@ -288,7 +272,6 @@ def evaluate_with_predictions(
             "n_val": len(y_val_filtered),
         }
 
-    # Check if we have both classes
     if len(np.unique(y_test_filtered)) < 2:
         return {
             "precision": np.nan,
@@ -300,11 +283,9 @@ def evaluate_with_predictions(
             "n_val": len(y_val_filtered),
         }
 
-    # Get predictions
     y_pred = model.predict(X_test_filtered)
     y_pred_proba = model.predict_proba(X_test_filtered)[:, 1]
 
-    # Calculate metrics
     precision = precision_score(y_test_filtered, y_pred, zero_division=0)
     recall = recall_score(y_test_filtered, y_pred, zero_division=0)
     auprc = average_precision_score(y_test_filtered, y_pred_proba)
@@ -337,7 +318,6 @@ def run_figure6c_analysis(
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Phenotype mapping
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -360,35 +340,30 @@ def run_figure6c_analysis(
     print("Figure 6C: Impact of filtering problematic samples")
     print("=" * 80)
 
-    # Load GapMind and experimental data
     print("\nLoading GapMind predictions...")
     gapmind_data = load_gapmind_predictions(phenotype_dict)
 
     print("Loading experimental phenotypes...")
     phenotypes_combined = load_experimental_phenotypes(phenotype_dict)
 
-    # Identify problematic samples
     print("\nIdentifying problematic samples...")
     problematic_samples = identify_problematic_samples(phenotypes_combined, gapmind_data)
 
-    # Load splits
     print(f"\nLoading {split_type} data...")
     splits_data = load_split_data(split_types=[split_type])
 
     if split_type not in splits_data or len(splits_data[split_type]) == 0:
         raise ValueError(f"No data found for split type: {split_type}")
 
-    # Process each split
     results = []
     split_dict = splits_data[split_type]
 
     from scripts.ml import make_classifier
 
     for split_key, data in tqdm(split_dict.items(), desc=f"Processing {split_type}"):
-        # Extract phenotype name and split number
         parts = split_key.split("_")
-        phenotype_name = "_".join(parts[:-1])  # Everything except last part
-        split_num = parts[-1]  # Last part is the split number
+        phenotype_name = "_".join(parts[:-1])
+        split_num = parts[-1]
 
         X_train = data["X_train"]
         y_train = data["y_train"]
@@ -413,7 +388,7 @@ def run_figure6c_analysis(
             X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
         X_test_aligned = X_test_aligned[X_train.columns]
 
-        # ---------------- full condition: train on full train/val ---------------
+        # Full condition: train on full train/val.
         model_full = make_classifier("cb", random_state=42)
         model_full.fit(
             X_train,
@@ -433,8 +408,8 @@ def run_figure6c_analysis(
             exclude_samples=None,
         )
 
-        # ---- filtered condition: drop problematic samples from train/val, ----
-        # ---- then evaluate on the same full cross-dataset held-out test. ----
+        # Filtered condition: drop problematic samples from train/val, then
+        # evaluate on the same full cross-dataset held-out test.
         keep_train = ~y_train.index.isin(problematic_samples)
         X_train_f = X_train[keep_train]
         y_train_f = y_train[keep_train]
@@ -482,7 +457,6 @@ def run_figure6c_analysis(
                 exclude_samples=None,
             )
 
-        # Store results
         for condition, metrics in [("full", metrics_full), ("filtered", metrics_filtered)]:
             results.append(
                 {
@@ -499,7 +473,6 @@ def run_figure6c_analysis(
                 }
             )
 
-    # Save results
     results_df = pd.DataFrame(results)
 
     # Annotate each row with its full-test minority-class count (Methods). The
@@ -518,7 +491,6 @@ def run_figure6c_analysis(
     results_df.to_csv(output_file, index=False)
     print(f"\nSaved results to {output_file}")
 
-    # Print summary statistics
     print("\n" + "=" * 80)
     print("Summary Statistics")
     print("=" * 80)

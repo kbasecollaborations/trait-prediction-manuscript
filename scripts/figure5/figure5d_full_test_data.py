@@ -1,22 +1,7 @@
 #!/usr/bin/env python3
-"""
-Generate Figure 5D data: concordant-trained model performance on the **full**
-held-out cross-dataset test set, decomposed by GapMind discordance categories.
-
-This script addresses Reviewer 2's request to evaluate concordant-trained models
-on the full held-out test set rather than only on the concordant subset (Fig 5A)
-or only on the discordant subset (Fig 5C). For each phenotype × held-out dataset
-combination, it reports:
-
-    - Total balanced accuracy on the full test set (from the existing
-      ``figure5c_concordant_train_different_test.csv`` artifact).
-    - Counts of test samples in each GapMind discordance category
-      (concordant, FP-discordant, FN-discordant).
-    - Per-subset balanced accuracies obtained by re-fitting the same
-      concordant-trained CatBoost model (deterministic with random_state=42 and
-      sorted index ordering) and partitioning predictions by category.
-
-Outputs ``data/outputs/figure5/figure5d_full_test.tsv``.
+"""Figure 5D data: concordant-trained model on the full held-out test set,
+decomposed by GapMind discordance category. Writes
+``data/outputs/figure5/figure5d_full_test.tsv``.
 """
 
 from __future__ import annotations
@@ -58,8 +43,7 @@ HELD_OUT_RE: re.Pattern[str] = re.compile(r"test\(([^)]+)\)")
 
 
 def parse_held_out_dataset(key: str) -> str | None:
-    """
-    Extract the held-out dataset name from a dataset_split key.
+    """Extract the held-out dataset name from a dataset_split key.
 
     Parameters
     ----------
@@ -85,14 +69,10 @@ def categorize_test_samples(
     experimental_phenotypes: pd.DataFrame,
     phenotype: str,
 ) -> dict[str, list[str]]:
-    """
-    Partition test samples into concordant, FP-discordant, FN-discordant subsets.
+    """Partition test samples into concordant, FP-discordant, FN-discordant subsets.
 
-    "Concordant" means the GapMind prediction matches the experimental
-    phenotype. "FP-discordant" means GapMind=1 but experimental=0 (false
-    positive of GapMind). "FN-discordant" means GapMind=0 but experimental=1
-    (false negative of GapMind). Samples without a GapMind call for the
-    phenotype are dropped.
+    FP-discordant is GapMind=1 but experimental=0; FN-discordant is GapMind=0
+    but experimental=1. Samples without a GapMind call are dropped.
 
     Parameters
     ----------
@@ -151,12 +131,10 @@ def fit_concordant_model_and_predict(
     split: Mapping[str, pd.DataFrame | pd.Series],
     concordant_genomes: set[str],
 ) -> pd.Series | None:
-    """
-    Fit a CatBoost classifier on concordant train/val and predict the full test.
+    """Fit a CatBoost classifier on concordant train/val and predict the full test.
 
-    The implementation mirrors ``figure5cd_data.run_ml_on_concordant_train_with_different_test_sets``
-    but with sorted index ordering to make CatBoost training deterministic
-    across runs (``set`` iteration order otherwise leaks into model fitting).
+    Index ordering is sorted to make CatBoost training deterministic across runs
+    (set iteration order otherwise leaks into model fitting).
 
     Parameters
     ----------
@@ -209,15 +187,11 @@ def fit_concordant_model_and_predict(
 
 
 def safe_balanced_accuracy(y_true: pd.Series, y_pred: pd.Series) -> float:
-    """
-    Compute balanced accuracy, falling back to plain accuracy when needed.
+    """Compute balanced accuracy, falling back to plain accuracy on single-class sets.
 
-    GapMind FP-discordant test subsets contain only ``y_true == 0`` samples and
-    FN-discordant subsets contain only ``y_true == 1`` samples by definition.
-    Balanced accuracy is undefined on a single-class set, so for these subsets
-    the function returns the per-class recall (which equals accuracy on the
-    single-class subset). When both classes are present the standard scikit-learn
-    balanced accuracy is returned.
+    FP-discordant subsets are all ``y_true == 0`` and FN-discordant subsets all
+    ``y_true == 1`` by definition, where balanced accuracy is undefined; for
+    these the per-class recall (equal to accuracy) is returned instead.
 
     Parameters
     ----------
@@ -246,15 +220,11 @@ def build_full_test_table(
     gapmind_predictions: pd.DataFrame,
     experimental_phenotypes: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    Assemble the per-(phenotype, held-out dataset) Figure 5D table.
+    """Assemble the per-(phenotype, held-out dataset) Figure 5D table.
 
-    For each ``dataset_split`` × ``test_type=="full"`` row in the existing
-    Figure 5C/D output, the function reuses ``balanced_accuracy`` and
-    ``n_test`` directly. Discordance counts are computed from the GapMind and
-    experimental loaders. Per-subset balanced accuracies are computed by
-    re-fitting the concordant-trained model deterministically and partitioning
-    predictions by discordance category.
+    Reuses ``balanced_accuracy`` and ``n_test`` from the existing Figure 5C/D
+    output; per-subset balanced accuracies come from re-fitting the
+    concordant-trained model and partitioning predictions by discordance category.
 
     Parameters
     ----------
@@ -345,9 +315,7 @@ def build_full_test_table(
 
 
 def main() -> None:
-    """
-    Build and persist the Figure 5D data table.
-    """
+    """Build and persist the Figure 5D data table."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     if not EXISTING_5C_FILE.exists():
@@ -402,7 +370,6 @@ def main() -> None:
         drop=True
     )
 
-    # Annotate each row with its full-test minority-class count (Methods).
     from scripts.minority_filter import (
         annotate_minority_test,
         full_test_minority_counts,

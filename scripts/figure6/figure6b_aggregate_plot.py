@@ -1,24 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate visualisations for Figure 6 Panels B and C.
-
-Panel B (``plot_metric_sweep``) plots cross-dataset balanced accuracy,
-precision, and recall (mean across 15 phenotypes, with SEM error bars) as a
-function of the GapMind weight $w_{\\mathrm{gap}}$ in the soft-label
-confidence filter. The problematic-sample-removal and concordance filters are
-anchored as marker columns at the left and right ends of the sweep so the
-six conditions appear on a single axis.
-
-Panel C (``plot_gapmind_delta_forest``) plots the per-phenotype difference
-$\\Delta = \\mathrm{ML} - \\mathrm{GapMind}$ on a chosen metric (recall by
-default) on the same full cross-dataset held-out test set, comparing two
-representative ML filters (concordance-trained ML and the mechanism-free
-confidence filter). Phenotypes are sorted by the concordant-ML $\\Delta$, and
-the annotation reports the count of phenotypes with positive $\\Delta$ and
-the paired one-sided Wilcoxon signed-rank $p$-value against GapMind.
-
-``best_panel_b_config`` is a small utility that returns the highest-performing
-confidence-sweep config for logging in ``figure6_plot.py``.
-"""
+"""Aggregate metric-sweep and per-phenotype delta plots for Figure 6 Panels B and C."""
 
 from __future__ import annotations
 
@@ -168,11 +149,6 @@ def plot_metric_sweep(
 ) -> pd.DataFrame:
     """Panel B: BA / precision / recall vs GapMind weight with reference endpoints.
 
-    The confidence-filter sweep occupies the central x range. The
-    problematic-sample-removal filter and the concordance filter are plotted
-    as separated marker columns to the left and right of the sweep so the
-    full filter family appears on a single axis.
-
     Parameters
     ----------
     ax : Axes
@@ -198,10 +174,8 @@ def plot_metric_sweep(
         .reset_index()
     )
 
-    # Equal categorical spacing for all seven columns (Full data, Problematic,
-    # four confidence-sweep settings, Concordant). Sweep positions are no
-    # longer at the literal w_gap values; the x-tick labels carry the values
-    # so the spacing remains uniform across the filter family.
+    # Equal categorical spacing for all seven columns; the x-tick labels carry
+    # the literal w_gap values so spacing stays uniform across the filter family.
     column_order = [
         "full_data",
         "problematic_removed",
@@ -220,9 +194,8 @@ def plot_metric_sweep(
     }
     jitter_width = 0.12
 
-    # Per-phenotype scatter underlay for each metric, lightly jittered around
-    # the corresponding x-position so the spread across phenotypes is visible
-    # behind the mean +/- SEM markers.
+    # Per-phenotype scatter underlay, jittered so the spread is visible behind
+    # the mean +/- SEM markers.
     for metric, color in METRIC_COLORS.items():
         for cfg, x_centre in config_to_x.items():
             vals = ph_means[ph_means["config"] == cfg][metric].to_numpy()
@@ -278,8 +251,7 @@ def plot_metric_sweep(
                 zorder=5,
             )
 
-    # Dotted separators bracket the three filter groups (unfiltered references,
-    # confidence sweep, hard concordance reference).
+    # Dotted separators bracket the three filter groups.
     ref_full_x = config_to_x["full_data"]
     ref_prob_x = config_to_x["problematic_removed"]
     sweep_start = config_to_x[CONFIDENCE_CONFIGS[0]]
@@ -290,7 +262,6 @@ def plot_metric_sweep(
     ax.axvline((sweep_end + ref_conc_x) / 2.0,
                color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
 
-    # Mean train+val sample count per condition for the x-tick annotations.
     config_n: dict[str, int] = {
         cfg: int(round(float(long_df[long_df["config"] == cfg]["trainval"].mean())))
         for cfg in column_order
@@ -334,18 +305,6 @@ def plot_gapmind_delta_forest(
     metric: str = "recall",
 ) -> pd.DataFrame:
     """Panel C: per-phenotype $\\Delta$ metric vs the GapMind baseline.
-
-    For each of the 15 phenotypes, two horizontal bars report
-    $\\Delta = \\mathrm{ML} - \\mathrm{GapMind}$ on the same full cross-dataset
-    held-out test set: one bar for concordance-trained ML and one bar for the
-    mechanism-free confidence-filtered ML. Positive bars indicate phenotypes
-    on which the ML filter exceeded GapMind; negative bars indicate phenotypes
-    on which GapMind achieved a higher value of the metric. Phenotypes are
-    sorted by the concordant-ML $\\Delta$.
-
-    The annotation reports the count of phenotypes on which each ML filter
-    exceeded GapMind and the paired one-sided Wilcoxon signed-rank $p$-value
-    against the GapMind baseline.
 
     Parameters
     ----------
@@ -471,9 +430,6 @@ def best_panel_b_config(
     metric: str = "balanced_accuracy",
 ) -> tuple[str, str, pd.Series]:
     """Identify the highest-performing weight-sweep config on the test set.
-
-    Used by ``figure6_plot.py`` to log the top-BA confidence-sweep config
-    alongside whichever config is actually rendered in Panel C.
 
     Parameters
     ----------

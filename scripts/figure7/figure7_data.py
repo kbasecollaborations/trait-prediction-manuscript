@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate Figure 8 data: selective prediction / applicability
-domain for concordant-trained models on the full held-out cross-dataset test set.
-
-The manuscript shows that concordant-trained models retain only intermediate
-balanced accuracy on the full, natural-composition held-out test set
-(Figure 5D). This script asks a complementary, deployment-oriented question:
-*for a new genome whose concordance is unknown, can the model itself flag which
-predictions to trust?*
-
-For every ``dataset_split`` (train on three datasets, test on the held-out
-fourth) the script re-fits the concordant-trained CatBoost model exactly as in
-``figure5d_full_test_data.py`` but records per-sample predicted probabilities.
-It then builds two label-free abstention signals --- both computable without
-knowing the experimental outcome of the test genome:
-
-    1. Model confidence: ``max(p, 1 - p)`` from ``predict_proba``.
-    2. GapMind-ML agreement: whether the GapMind call and the ML prediction
-       coincide.
-
-From these it produces risk-coverage curves (balanced accuracy on the retained
-subset versus the fraction of genomes the model commits to).
-
-Outputs (all under ``data/outputs/figure7/``):
-    - ``figure7_per_sample.tsv``                  one row per held-out test genome
-    - ``figure7_risk_coverage.tsv``               pooled balanced accuracy vs. coverage
-    - ``figure7_risk_coverage_by_phenotype.tsv``  per-phenotype risk-coverage curves
-"""
+"""Generate Figure 7 data: per-sample predictions and risk-coverage curves for selective prediction."""
 
 from __future__ import annotations
 
@@ -95,10 +68,6 @@ def fit_concordant_model_and_predict_proba(
     """
     Fit a concordant-trained CatBoost model and predict the full held-out test.
 
-    Mirrors ``figure5d_full_test_data.fit_concordant_model_and_predict`` (sorted
-    index ordering and ``random_state=42`` for determinism) but returns the
-    predicted probability of growth in addition to the hard label.
-
     Parameters
     ----------
     split : Mapping[str, pd.DataFrame | pd.Series]
@@ -157,9 +126,6 @@ def fit_full_data_model_and_predict_proba(
 ) -> pd.DataFrame | None:
     """
     Fit a full-data CatBoost model (all training samples) and predict the held-out test.
-
-    Mirrors :func:`fit_concordant_model_and_predict_proba` but trains on every training
-    genome with a valid label rather than the GapMind-concordant subset.
 
     Parameters
     ----------
@@ -340,11 +306,7 @@ def safe_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute the pooled risk-coverage curve using model confidence.
-
-    Test genomes are ranked by ``confidence`` (descending); at each coverage
-    level the most-confident fraction is retained and balanced accuracy is
-    recomputed on that subset.
+    Compute the pooled risk-coverage curve, retaining the most-confident genomes first.
 
     Parameters
     ----------
@@ -385,16 +347,10 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
     """
     Compute per-phenotype risk-coverage curves using class-stratified confidence.
 
-    Single-class abstention by raw ``max(p, 1 - p)`` is degenerate on
-    per-phenotype subsets when the model is class-skewed: the top-confidence
-    subset can be entirely one predicted class, collapsing balanced accuracy
-    to 0.5 regardless of how accurate the model actually is. To avoid that,
-    at each coverage level we retain the top fraction of predictions
-    *within each predicted class*: the most-confident ``y_pred = 1`` calls
-    (highest ``proba``) and the most-confident ``y_pred = 0`` calls (lowest
-    ``proba``) are kept in parallel. This guarantees both predicted classes
-    are represented at every coverage level, so balanced accuracy is
-    well-defined throughout.
+    Retaining the top-confidence fraction *within each predicted class* keeps both
+    predicted classes represented at every coverage level, so balanced accuracy
+    stays well-defined. Raw ``max(p, 1 - p)`` abstention is degenerate on
+    class-skewed per-phenotype subsets.
 
     Parameters
     ----------
@@ -447,7 +403,7 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    """Build and persist the Supplementary Figure S15 data tables."""
+    """Build and persist the Figure 7 data tables."""
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print("Loading GapMind predictions (loose)...")

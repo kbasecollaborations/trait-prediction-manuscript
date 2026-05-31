@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
-"""
-Plot Supplementary Figure S16: candidate non-canonical predictors of growth
-recovered by concordant-trained models.
-
-For the six phenotypes with the most correctly recovered FN-discordant
-(GapMind-missed) growth cases, the figure shows the top features ranked by mean
-signed SHAP contribution toward the growth class. Features are candidate
-predictors of growth that GapMind's curated pathway model does not capture; the
-analysis is hypothesis generating, not validated.
-"""
+"""Plot Supplementary Figure S16: top candidate non-canonical predictors of growth
+recovered by concordant-trained models, for the six phenotypes with the most
+recovered FN-discordant cases. Hypothesis generating, not validated."""
 
 from __future__ import annotations
 
@@ -37,8 +30,7 @@ NAME_MAX_CHARS: int = 42
 
 
 def _feature_label(feature: str, ko_name: str) -> str:
-    """
-    Build a compact y-axis label combining KO id and truncated function name.
+    """Build a compact y-axis label combining KO id and truncated function name.
 
     Parameters
     ----------
@@ -65,8 +57,7 @@ def plot_phenotype_panel(
     features: pd.DataFrame,
     n_recovered: int,
 ) -> None:
-    """
-    Draw the top candidate features for one phenotype as a horizontal bar chart.
+    """Draw the top candidate features for one phenotype as a horizontal bar chart.
 
     Parameters
     ----------
@@ -104,8 +95,7 @@ def plot_phenotype_panel(
 
 
 def create_figure(output_file: Path) -> None:
-    """
-    Build and persist Supplementary Figure S16.
+    """Build and persist Supplementary Figure S16.
 
     Parameters
     ----------

@@ -1,24 +1,10 @@
 #!/usr/bin/env python3
-"""Quantify taxonomic bias introduced by GapMind concordance filtering.
+"""Quantify taxonomic bias from GapMind concordance filtering.
 
-For each of the 15 shared phenotypes this module computes three measures
-comparing the full experimental dataset to the GapMind-loose concordant
-subset:
-
-(a) Class-level composition (fraction of genomes per GTDB Class) before vs
-    after filtering.
-(b) Faith phylogenetic diversity (PD) -- the sum of branch lengths in the
-    minimal subtree spanning the retained tips -- as ``pd_full``,
-    ``pd_concordant``, and the ratio ``pd_concordant / pd_full``.
-(c) Train/test taxonomic overlap: the fraction of test-set classes that also
-    appear in the training set, evaluated across the four
-    leave-one-dataset-out (LOO) splits, for both full-data training and
-    concordant-only training. The test set composition is held fixed (full
-    test set in both cases) so the metric isolates training-set coverage.
-
-Output is written to ``data/outputs/figureS9/taxonomic_bias.tsv`` in long
-form. One row per phenotype x measure (and per split for the overlap
-measure).
+For each shared phenotype, compares the full experimental set against the
+concordant subset on three measures: GTDB Class composition, Faith PD, and
+train/test class overlap across the four LOO splits (test set held fixed). Writes
+``data/outputs/figureS9/taxonomic_bias.tsv`` in long form.
 """
 
 from __future__ import annotations

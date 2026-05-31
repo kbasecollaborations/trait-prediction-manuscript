@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Create Figure 6B: Performance on confident samples only.
-
-This figure compares ML performance on confident samples (y_soft < 0.4 OR > 0.6)
-versus full data performance. Shows dataset split with random split as reference.
-"""
+"""Create Figure 6B: balanced accuracy across three training-set filtering conditions."""
 
 from pathlib import Path
 
@@ -56,10 +51,9 @@ def plot_confident_samples_performance(
 
     full_minority = full_test_minority_counts()
 
-    # Load data from three sources. All three evaluate on the same full
-    # cross-dataset held-out test set; only the training set differs.
-    #
-    # 1. Concordant-trained model, full cross-dataset test (Figure 5C data).
+    # All three conditions evaluate on the same full cross-dataset held-out test
+    # set; only the training set differs.
+    # 1. Concordant-trained model (Figure 5C data).
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
     )
@@ -69,34 +63,29 @@ def plot_confident_samples_performance(
     ].copy()
     concordant_df = filter_by_minority(concordant_df, full_minority)
 
-    # 2. Y_soft-filtered training (Figure 6B data), full cross-dataset test.
+    # 2. Y_soft-filtered training (Figure 6B data).
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
     ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
-    # 3. Problematic-sample-removed training (Figure 6C "filtered" condition),
-    #    full cross-dataset test.
+    # 3. Problematic-sample-removed training (Figure 6C "filtered" condition).
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
     misclass_df = filter_by_minority(
         misclass_df, full_minority, key_column="split"
     )
 
-    # Unfiltered training baseline (Figure 6C "full" condition) — used to
-    # report how many train+val samples each filter removed.
+    # Unfiltered baseline (Figure 6C "full"), used to report samples removed.
     full_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     full_df = full_df[full_df["condition"] == "full"].copy()
     full_df = filter_by_minority(full_df, full_minority, key_column="split")
 
-    # Get unique phenotypes
     if phenotypes is None:
         phenotypes = sorted(concordant_df["phenotype"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
-    width = 0.25  # Width of each bar
+    width = 0.25
 
-    # Calculate mean and std for balanced accuracy
     concordant_summary = (
         concordant_df.groupby("phenotype")["balanced_accuracy"]
         .agg(["mean", "std"])
@@ -113,8 +102,7 @@ def plot_confident_samples_performance(
         .reindex(phenotypes)
     )
 
-    # Compute train+val sample counts per condition (test is identical across
-    # conditions, so we ignore n_test when reporting samples removed).
+    # Test set is identical across conditions, so ignore n_test here.
     for df in (concordant_df, ysoft_df, misclass_df, full_df):
         df["trainval_samples"] = df["n_train"] + df["n_val"]
 
@@ -135,13 +123,11 @@ def plot_confident_samples_performance(
         full_df.groupby("phenotype")["trainval_samples"].mean().reindex(phenotypes)
     )
 
-    # Calculate train+val samples removed by each filter relative to the
-    # unfiltered training pool.
+    # Train+val samples removed by each filter relative to the unfiltered pool.
     concordant_removed = full_trainval - concordant_trainval
     ysoft_removed = full_trainval - ysoft_trainval
     misclass_removed = full_trainval - misclass_trainval
 
-    # Extract means and stds
     concordant_means = concordant_summary["mean"].values
     concordant_stds = concordant_summary["std"].values
     ysoft_means = ysoft_summary["mean"].values
@@ -149,7 +135,6 @@ def plot_confident_samples_performance(
     misclass_means = misclass_summary["mean"].values
     misclass_stds = misclass_summary["std"].values
 
-    # Create grouped bars
     bars1 = ax.bar(
         x - width,
         concordant_means,
@@ -188,8 +173,8 @@ def plot_confident_samples_performance(
     raised_offset = 0.085
 
     for i, phenotype in enumerate(phenotypes):
-        # Anchor every label in this group to the tallest bar top in the
-        # group so the stagger is visually consistent across phenotypes.
+        # Anchor every label in the group to the tallest bar top so the stagger
+        # stays consistent across phenotypes.
         tops = [
             (concordant_means[i] + concordant_stds[i])
             if not np.isnan(concordant_means[i])
@@ -203,7 +188,6 @@ def plot_confident_samples_performance(
         ]
         group_top = max(tops)
 
-        # Add annotations if samples were removed
         if not np.isnan(concordant_removed.iloc[i]) and concordant_removed.iloc[i] > 0:
             concordant_ha = "left" if i == 0 else "center"
             ax.text(
@@ -243,12 +227,10 @@ def plot_confident_samples_performance(
                 weight="bold",
             )
 
-    # Add alternating background colors for x-axis categories
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xticks(x)
@@ -261,13 +243,9 @@ def plot_confident_samples_performance(
     )
     ax.tick_params(axis="x", which="major", pad=1)
     ax.set_xlim(float(x[0] - width * 1.5), float(x[-1] + width * 1.5))
-    # Headroom above 1.0 leaves room for the `-N samples removed` annotations
-    # printed on top of each bar (with the middle bar's label staggered higher
-    # to avoid colliding with its neighbours).
+    # Headroom above 1.0 leaves room for the per-bar `-N` removal annotations.
     ax.set_ylim(0, 1.25)
 
-    # Legend sits just above the headroom region so it does not collide with
-    # the per-bar annotations.
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.22),
@@ -287,14 +265,12 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Load data from all three sources to determine common phenotypes
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
     )
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
 
-    # Get phenotypes from each dataset (dataset split only)
     concordant_phenotypes = set(
         concordant_df[
             (concordant_df["split_type"] == "dataset_split")
@@ -308,7 +284,6 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         misclass_df[misclass_df["condition"] == "filtered"]["phenotype"].unique()
     )
 
-    # Use intersection to ensure consistent x-axis across all three datasets
     print("Determining common phenotypes...")
     print(f" - Concordant samples: {len(concordant_phenotypes)}")
     print(f" - Y_soft filtered: {len(ysoft_phenotypes)}")
@@ -318,13 +293,8 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Create figure
     fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-
-    # Plot
     plot_confident_samples_performance(ax, data_dir, common_phenotypes)
-
-    # Adjust layout
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")

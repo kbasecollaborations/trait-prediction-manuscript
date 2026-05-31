@@ -35,7 +35,7 @@ def extract_test_dataset(key: str) -> str:
     str
         Test dataset name (e.g., "lit")
     """
-    # Extract test dataset from "test(dataset)" pattern
+    # Key encodes the test set as "test(dataset)"
     test_part = key.split("test(")[1].split(")")[0]
     return test_part
 
@@ -54,27 +54,21 @@ def plot_random_split_vs_gapmind(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load random split results
     ml_df = pd.read_csv(data_dir / "ml_results.csv")
     random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
 
-    # Load GapMind results for random split test sets
     gapmind_df = pd.read_csv(data_dir / "gapmind_random_split_metrics.tsv", sep="\t")
 
-    # Get unique phenotypes (sorted for consistency)
     if phenotypes is None:
         phenotypes = sorted(random_df["phenotype"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
 
-    # Prepare data for box plot
     box_data = [
         random_df[random_df["phenotype"] == phenotype]["balanced_accuracy"].values
         for phenotype in phenotypes
     ]
 
-    # Create box plot
     bp = ax.boxplot(
         box_data,
         positions=x,
@@ -88,7 +82,7 @@ def plot_random_split_vs_gapmind(
         flierprops=dict(marker="o", markersize=4, alpha=0.5),
     )
 
-    # Plot GapMind results as horizontal lines (mean across random splits for each phenotype)
+    # GapMind shown as a horizontal line at its per-phenotype mean across splits
     gapmind_color = "#A23B72"  # Purple (matches permissive in figure2)
     gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
@@ -105,7 +99,6 @@ def plot_random_split_vs_gapmind(
                 zorder=3,
             )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
     from matplotlib.patches import Patch
 
@@ -127,7 +120,6 @@ def plot_random_split_vs_gapmind(
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xticks(x)
@@ -135,10 +127,9 @@ def plot_random_split_vs_gapmind(
     ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
+    # Reference line at 0.5 (chance performance)
     ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -150,7 +141,6 @@ def plot_random_split_vs_gapmind(
         fontsize=14,
     )
 
-    # Add legend
     ax.legend(
         handles=legend_handles,
         loc="upper center",
@@ -176,14 +166,11 @@ def plot_dataset_split_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load data
     ml_df = pd.read_csv(data_dir / "ml_results.csv")
     dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
 
-    # Load GapMind results for dataset split test sets
     gapmind_df = pd.read_csv(data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t")
 
-    # Extract test dataset from key
     dataset_df["test_dataset"] = dataset_df["key"].apply(extract_test_dataset)
 
     # Apply manuscript's minority-class-in-test filter (Methods). For the
@@ -209,15 +196,12 @@ def plot_dataset_split_performance(
                 gapmind_df, full_minority, test_dataset_column="test_dataset"
             )
 
-    # Get dataset colors
     dataset_colors = get_dataset_colors()
 
-    # Get unique phenotypes and test datasets
     if phenotypes is None:
         phenotypes = sorted(dataset_df["phenotype"].unique())
     test_datasets = sorted(dataset_df["test_dataset"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
     width = 0.2
     offsets = np.linspace(
@@ -226,16 +210,14 @@ def plot_dataset_split_performance(
         len(test_datasets),
     )
 
-    # Plot dataset split results
     for idx, test_dataset in enumerate(test_datasets):
         test_data = dataset_df[dataset_df["test_dataset"] == test_dataset]
 
-        # Plot individual points
         for phenotype in phenotypes:
             phenotype_data = test_data[test_data["phenotype"] == phenotype]
             x_pos = x[phenotypes.index(phenotype)] + offsets[idx]
 
-            # Add jitter
+            # Jitter so overlapping points remain visible
             x_jitter = x_pos + np.random.normal(0, 0.02, len(phenotype_data))
 
             ax.scatter(
@@ -247,7 +229,7 @@ def plot_dataset_split_performance(
                 zorder=2,
             )
 
-    # Plot GapMind results as dashed lines (mean across dataset splits for each phenotype)
+    # GapMind shown as a dashed line at its per-phenotype mean across splits
     gapmind_color = "#A23B72"  # Purple (matches permissive in figure2)
     gapmind_means = gapmind_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
@@ -264,7 +246,6 @@ def plot_dataset_split_performance(
                 zorder=1,
             )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -300,7 +281,6 @@ def plot_dataset_split_performance(
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xticks(x)
@@ -347,10 +327,8 @@ def plot_phylogeny_independent_difference(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load phylogeny-independent results
     phylo_df = pd.read_csv(data_dir / "figure3c_results.csv")
 
-    # Extract test dataset from train_test_config
     phylo_df["test_dataset"] = phylo_df["train_test_config"].apply(extract_test_dataset)
 
     # Pivot to get full and in-clade side by side
@@ -363,7 +341,6 @@ def plot_phylogeny_independent_difference(
     # Calculate difference (full - in-clade)
     phylo_pivot["difference"] = phylo_pivot["full"] - phylo_pivot["in-clade"]
 
-    # Get dataset colors
     dataset_colors = get_dataset_colors()
 
     # Get unique phenotypes and test datasets
@@ -420,7 +397,6 @@ def plot_phylogeny_independent_difference(
         zorder=3,
     )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -456,7 +432,6 @@ def plot_phylogeny_independent_difference(
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy Difference\n(Full - In-Clade)")
     ax.set_xticks(x)
@@ -499,13 +474,11 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Load all data to determine common phenotypes
     ml_df = pd.read_csv(data_dir / "ml_results.csv")
     phylo_df = pd.read_csv(data_dir / "figure3c_results.csv")
     gapmind_random_df = pd.read_csv(data_dir / "gapmind_random_split_metrics.tsv", sep="\t")
     gapmind_dataset_df = pd.read_csv(data_dir / "gapmind_dataset_split_metrics.tsv", sep="\t")
 
-    # Get phenotypes from each dataset
     random_phenotypes = set(
         ml_df[ml_df["split_type"] == "random_split"]["phenotype"].unique()
     )

@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Create Figure 5: Performance on GapMind-concordant samples.
-
-This figure shows:
-- Panel A: Dataset split performance (concordant samples) with random split reference
-- Panel B: Shared stable features between individual datasets (concordant samples)
-- Panel C: Performance of concordant-trained models on discordant test sets (random split vs dataset split)
-"""
+"""Create Figure 5: performance on GapMind-concordant samples."""
 
 import json
 import warnings
@@ -77,10 +70,7 @@ def _paired_panel_pvalue(
     right_values: pd.Series,
     phenotypes: list[str],
 ) -> tuple[float | None, int]:
-    """Compute a paired phenotype-level Wilcoxon p-value.
-
-    Phenotype means are compared pairwise to avoid cluttering the figure with
-    per-phenotype significance annotations.
+    """Compute a paired phenotype-level Wilcoxon p-value on phenotype means.
 
     Parameters
     ----------
@@ -185,13 +175,12 @@ def plot_dataset_split_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load KOFAM-feature data (the main analysis)
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
 
-    # Apply the manuscript's minority-class-test-samples filter. Dataset-split
+    # Apply the minority-class-test-samples filter (Methods): drop dataset-split
     # cells whose held-out concordant test set has fewer than
-    # MIN_MINORITY_TEST_SAMPLES samples of the minority class are dropped, as
-    # described in Methods. Random-split rows are passed through unchanged.
+    # MIN_MINORITY_TEST_SAMPLES minority-class samples. Random-split rows pass
+    # through unchanged.
     minority_counts = _concordant_minority_counts()
     ml_df = _filter_by_minority(ml_df, minority_counts)
 
@@ -227,19 +216,16 @@ def plot_dataset_split_performance(
     else:
         gapmind_means = {}
 
-    # Get unique phenotypes
     if phenotypes is None:
         phenotypes = sorted(dataset_df["phenotype"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
 
-    # Alternating phenotype background bands for visual grouping
+    # Alternating phenotype background bands for visual grouping.
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Prepare data for box plot - combining all datasets
     box_data = []
     for phenotype in phenotypes:
         phenotype_data = dataset_df[dataset_df["phenotype"] == phenotype][
@@ -247,7 +233,6 @@ def plot_dataset_split_performance(
         ].values
         box_data.append(phenotype_data)
 
-    # Create box plot
     ax.boxplot(
         box_data,
         positions=x,
@@ -260,10 +245,9 @@ def plot_dataset_split_performance(
         capprops=dict(linewidth=1.1),
     )
 
-    # Calculate mean random split performance
     random_means = random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
-    # Plot random split mean as reference lines
+    # Random split mean as a per-phenotype reference line.
     for phenotype in phenotypes:
         if phenotype in random_means:
             x_pos = x[phenotypes.index(phenotype)]
@@ -295,7 +279,6 @@ def plot_dataset_split_performance(
                 zorder=2,
             )
 
-    # Create legend handles
     from matplotlib.patches import Patch
 
     legend_handles = [
@@ -322,7 +305,6 @@ def plot_dataset_split_performance(
             )
         )
 
-    # Formatting
     ax.set_xlabel("")
     ax.set_ylabel("Balanced Accuracy")
     ax.tick_params(axis="x", which="both", top=False, bottom=True, labelbottom=False)
@@ -344,7 +326,6 @@ def plot_dataset_split_performance(
     )
     _add_panel_pvalue_annotation(ax, p_value, n_pairs, position="bottom_right")
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -356,7 +337,6 @@ def plot_dataset_split_performance(
         fontsize=14,
     )
 
-    # Add legend
     ax.legend(
         handles=legend_handles,
         loc="upper center",
@@ -370,10 +350,7 @@ def plot_dataset_split_performance(
 def create_feature_comparison_plot(
     ax: Axes, data_dir: Path, phenotypes: list[str]
 ) -> None:
-    """Create grouped + stacked bar plot comparing features between datasets (concordant samples).
-
-    Shows the number of features in common (intersection) and unique features
-    between combined dataset and individual datasets.
+    """Plot grouped, stacked bars of common and unique features per dataset.
 
     Parameters
     ----------
@@ -384,7 +361,6 @@ def create_feature_comparison_plot(
     phenotypes : list[str]
         List of phenotypes in alphabetical order.
     """
-    # Load data
     data_file = data_dir / "figure5b_feature_comparison_summary.csv"
     df = pd.read_csv(data_file)
 
@@ -401,29 +377,23 @@ def create_feature_comparison_plot(
         else "n_unique_to_individual"
     )
 
-    # Datasets and their colors (using consistent color scheme)
     datasets = ["atleaf", "lit", "marine"]
     dataset_color_map = get_dataset_colors()
     dataset_colors = [dataset_color_map[d] for d in datasets]
     dataset_display_names = format_dataset_names(datasets)
 
-    # Prepare data for plotting
     x_pos = np.arange(len(phenotypes))
     bar_width = 0.8 / len(datasets)
-
-    # Calculate offset to center the grouped bars at each x position
     bar_group_center = bar_width * (len(datasets) - 1) / 2
 
-    # Alternating phenotype background bands for visual grouping
+    # Alternating phenotype background bands for visual grouping.
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Plot for each dataset
     for i, dataset in enumerate(datasets):
         dataset_df = df[df["test_dataset"] == dataset].set_index("phenotype")
 
-        # Align with phenotypes order
         common = []
         unique_individual = []
 
@@ -436,11 +406,9 @@ def create_feature_comparison_plot(
                 common.append(0)
                 unique_individual.append(0)
 
-        # Calculate positions for grouped bars (centered at each x position)
         positions = x_pos - bar_group_center + i * bar_width
 
-        # Create stacked bars with dataset color and patterns
-        # Bottom layer: common features (solid, alpha=0.8)
+        # Bottom layer: common features (solid, alpha=0.8).
         ax.bar(
             positions,
             common,
@@ -448,7 +416,7 @@ def create_feature_comparison_plot(
             color=dataset_colors[i],
             alpha=0.8,
         )
-        # Top layer: unique to individual (hatched //, alpha=0.4)
+        # Top layer: unique to individual (hatched //, alpha=0.4).
         ax.bar(
             positions,
             unique_individual,
@@ -459,7 +427,6 @@ def create_feature_comparison_plot(
             hatch="//",
         )
 
-    # Create separate legend entries for datasets and feature types
     dataset_handles = [
         Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
         for i in range(len(datasets))
@@ -505,19 +472,13 @@ def create_feature_comparison_plot(
         fontsize=8,
     )
 
-    # Customize plot
     ax.set_ylabel("Stable feature clusters (n)", fontsize=10)
     ax.set_xlabel("")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y")
-
-    # Set x-axis limits to match other panels
     ax.set_xlim(-0.5, len(phenotypes) - 0.5)
-
-    # Set y-axis limits
     ax.set_ylim(0, 10)
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -565,16 +526,11 @@ def plot_ml_vs_gapmind_full_test(
     phenotypes: list[str],
     panel_label: str = "C",
 ) -> None:
-    """Plot panel C: ML vs GapMind balanced accuracy on the FULL natural-composition test set.
+    """Plot panel C: ML vs GapMind balanced accuracy on the full test set.
 
-    Two series share the same scatter axes:
-    - Random holdout (green): training and test drawn from the same phenotype-cluster
-      distribution.
-    - Cross-dataset (blue): training on three datasets, testing on the held-out one.
-
-    Each point is one phenotype-mean. The dashed diagonal marks ML BA equal to
-    GapMind BA; points above the diagonal indicate ML outperforming GapMind on
-    the natural-composition deployment-like test.
+    Two series share the scatter axes: random holdout (green) and cross-dataset
+    (blue). Each point is one phenotype-mean; points above the dashed y=x
+    diagonal mark ML outperforming GapMind.
 
     Parameters
     ----------
@@ -694,17 +650,12 @@ def plot_ml_vs_gapmind_test_subsets(
     phenotypes: list[str],
     panel_label: str = "D",
 ) -> None:
-    """Plot panel D: ML vs GapMind balanced accuracy decomposed by test subset (cross-dataset).
+    """Plot panel D: cross-dataset ML vs GapMind BA split by test subset.
 
-    Shares panel C's axes (GapMind BA on the horizontal, concordant-ML BA on
-    the vertical, dashed y=x diagonal). The two series here are
-    cross-dataset test-set subsets: the concordant test subset (purple) and
-    the discordant test subset (orange). GapMind BA is exactly 1 on the
-    concordant subset and exactly 0 on the discordant subset by
-    construction (concordance is defined as GapMind matching the
-    experiment), so each series collapses to a vertical strip; the height
-    of those strips conveys ML performance inside and outside the
-    applicability domain.
+    Shares panel C's axes. The concordant (purple) and discordant (orange)
+    cross-dataset subsets sit at GapMind BA exactly 1 and 0 by construction, so
+    each series collapses to a vertical strip whose height conveys ML
+    performance inside and outside the applicability domain.
 
     Parameters
     ----------
@@ -824,7 +775,6 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Load all data to determine common phenotypes
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
     feature_comp_df = pd.read_csv(data_dir / "figure5b_feature_comparison_summary.csv")
     test_df = pd.read_csv(data_dir / "figure5c_concordant_train_different_test.csv")
@@ -855,9 +805,8 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     )
 
     fig = plt.figure(figsize=(12, 10))
-    # Panels A and B share the per-phenotype x-axis, so they are placed in a
-    # tight gridspec at the top; panels C and D are scatters with a
-    # different x-axis and live in a separate, looser gridspec below.
+    # Panels A and B share the per-phenotype x-axis (tight top gridspec); panels
+    # C and D are scatters with a different x-axis (looser bottom gridspec).
     gs_top = fig.add_gridspec(
         nrows=2,
         ncols=1,
@@ -886,13 +835,12 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         ax_d, data_dir, full_test_phenotypes, panel_label="D"
     )
 
-    # Align per-phenotype x-axes on panels A and B
     x_pos = np.arange(len(common_phenotypes))
     for ax in (ax_a, ax_b):
         ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
         ax.set_xticks(x_pos)
 
-    # Phenotype tick labels now live on panel B (panel C/D are scatters).
+    # Phenotype tick labels live on panel B (panel C/D are scatters).
     ax_a.set_xlabel("")
     ax_a.set_xticklabels([])
     ax_b.set_xlabel("")

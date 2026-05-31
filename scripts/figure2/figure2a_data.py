@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
-"""
-Generate GapMind phenotype prediction files with strict and loose thresholds.
+"""Generate strict and loose GapMind phenotype prediction files and evaluate them.
 
-This script processes raw GapMind phenotype data and creates two binary prediction files:
-1. Strict: Only 'complete' status is marked as 1 (present)
-2. Loose: Both 'complete' and 'likely_complete' are marked as 1 (present)
+Strict marks only 'complete' as present; loose also counts 'likely_complete'.
 """
 
 from pathlib import Path
@@ -48,7 +45,6 @@ def create_gapmind_predictions(
     None
         Writes two TSV files to output_dir
     """
-    # Read the raw GapMind data
     print(f"Reading GapMind data from: {input_file}")
     gapmind_data = pd.read_csv(
         input_file, sep="\t", index_col=0, dtype={"genomeID": str}
@@ -58,7 +54,6 @@ def create_gapmind_predictions(
     print(f"Number of genomes: {len(gapmind_data)}")
     print(f"Number of phenotypes: {len(gapmind_data.columns)}")
 
-    # Create strict predictions (only 'complete' = 1)
     print("\nCreating strict predictions...")
     gapmind_strict = gapmind_data.replace(strict_mapping).astype(np.uint8)
     strict_output = output_dir / "gapmind_phenotypes_strict.tsv"
@@ -66,7 +61,6 @@ def create_gapmind_predictions(
     print(f"Saved strict predictions to: {strict_output}")
     print(f"  Total positive predictions: {gapmind_strict.sum().sum()}")
 
-    # Create loose predictions ('complete' and 'likely_complete' = 1)
     print("\nCreating loose predictions...")
     gapmind_loose = gapmind_data.replace(loose_mapping).astype(np.uint8)
     loose_output = output_dir / "gapmind_phenotypes_loose.tsv"
@@ -74,7 +68,6 @@ def create_gapmind_predictions(
     print(f"Saved loose predictions to: {loose_output}")
     print(f"  Total positive predictions: {gapmind_loose.sum().sum()}")
 
-    # Summary statistics
     print("\n" + "=" * 60)
     print("SUMMARY")
     print("=" * 60)
@@ -108,10 +101,8 @@ def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
     """
     print(f"\nLoading experimental phenotype data from: {phenotype_dir}")
 
-    # Dictionary to store data for each phenotype across all datasets
     phenotype_data = {}
 
-    # Iterate through each dataset directory
     for dataset_dir in phenotype_dir.iterdir():
         if not dataset_dir.is_dir():
             continue
@@ -119,35 +110,23 @@ def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
         dataset_name = dataset_dir.name
         print(f"  Processing dataset: {dataset_name}")
 
-        # Load each phenotype file in the dataset
         for phenotype_file in dataset_dir.glob("*.tsv"):
             phenotype_name = phenotype_file.stem
 
-            # Read the phenotype data
             df = pd.read_csv(phenotype_file, sep="\t", dtype={"genomeID": str})
 
-            # Skip if phenotype not already in dictionary
             if phenotype_name not in phenotype_data:
                 phenotype_data[phenotype_name] = []
 
-            # Add this dataset's data
             phenotype_data[phenotype_name].append(df)
 
-    # Combine all datasets for each phenotype
     combined_phenotypes = {}
     for phenotype_name, df_list in phenotype_data.items():
-        # Concatenate all datasets
         combined = pd.concat(df_list, ignore_index=True)
-
-        # Remove duplicates, keeping the first occurrence
         combined = combined.drop_duplicates(subset=["genomeID"], keep="first")
-
-        # Set genomeID as index
         combined = combined.set_index("genomeID")
-
         combined_phenotypes[phenotype_name] = combined[phenotype_name]
 
-    # Create a single DataFrame with all phenotypes
     experimental_data = pd.DataFrame(combined_phenotypes)
 
     print(f"\nCombined experimental data shape: {experimental_data.shape}")
@@ -177,12 +156,11 @@ def calculate_metrics(
     Dict[str, float]
         Dictionary of metric names and their values
     """
-    # Filter out NaN values (missing experimental data)
+    # Drop genomes with missing experimental labels
     mask = ~y_true.isna()
     y_true_filtered = y_true[mask].astype(int)
     y_pred_filtered = y_pred[mask].astype(int)
 
-    # Skip if no valid data
     if len(y_true_filtered) == 0:
         return {
             "phenotype": phenotype_name,
@@ -195,13 +173,12 @@ def calculate_metrics(
             "f1": np.nan,
         }
 
-    # Calculate metrics (handle cases where a class might be missing)
     try:
         accuracy = accuracy_score(y_true_filtered, y_pred_filtered)
         balanced_acc = balanced_accuracy_score(y_true_filtered, y_pred_filtered)
         mcc = matthews_corrcoef(y_true_filtered, y_pred_filtered)
 
-        # For precision, recall, F1 - handle cases with no positive predictions
+        # zero_division=0 guards against splits with no positive predictions
         precision = precision_score(
             y_true_filtered, y_pred_filtered, zero_division=0.0
         )
@@ -259,11 +236,9 @@ def evaluate_predictions(
     """
     print(f"\nEvaluating {prediction_type} predictions...")
 
-    # Find common phenotypes between predictions and experimental data
     common_phenotypes = set(predictions.columns) & set(experimental.columns)
     print(f"  Common phenotypes: {len(common_phenotypes)}")
 
-    # Find common genomes
     common_genomes = predictions.index.intersection(experimental.index)
     print(f"  Common genomes: {len(common_genomes)}")
 
@@ -273,7 +248,6 @@ def evaluate_predictions(
         )
         return pd.DataFrame()
 
-    # Calculate metrics for each phenotype
     metrics_list = []
     for phenotype in sorted(common_phenotypes):
         y_true = experimental.loc[common_genomes, phenotype]
@@ -282,18 +256,13 @@ def evaluate_predictions(
         metrics = calculate_metrics(y_true, y_pred, phenotype)
         metrics_list.append(metrics)
 
-    # Create DataFrame with all metrics
     metrics_df = pd.DataFrame(metrics_list)
-
-    # Sort by phenotype name
     metrics_df = metrics_df.sort_values("phenotype").reset_index(drop=True)
 
-    # Save to file
     output_file = output_dir / f"gapmind_{prediction_type}_metrics.tsv"
     metrics_df.to_csv(output_file, sep="\t", index=False)
     print(f"  Saved metrics to: {output_file}")
 
-    # Print summary statistics
     print(f"\n  Metrics summary for {prediction_type}:")
     for metric in [
         "accuracy",
@@ -311,16 +280,13 @@ def evaluate_predictions(
 
 def main() -> None:
     """Main execution function."""
-    # Define paths
     input_file = Path("data/interim/gapmind/gapmind_phenotype_data_raw.tsv")
     output_dir = Path("data/outputs/figure2")
     phenotype_dir = Path("data/processed/phenotypes")
 
-    # Create output directory if it doesn't exist
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define mapping dictionaries
-    # Strict: Only 'complete' is considered positive
+    # Strict: only 'complete' is considered positive
     strict_mapping = {
         "complete": 1,
         "likely_complete": 0,
@@ -331,7 +297,7 @@ def main() -> None:
         "not_present": 0,
     }
 
-    # Loose: Both 'complete' and 'likely_complete' are considered positive
+    # Loose: 'complete' and 'likely_complete' are considered positive
     loose_mapping = {
         "complete": 1,
         "likely_complete": 1,
@@ -342,13 +308,10 @@ def main() -> None:
         "not_present": 0,
     }
 
-    # Generate the prediction files
     create_gapmind_predictions(input_file, output_dir, strict_mapping, loose_mapping)
 
-    # Load experimental phenotype data
     experimental_data = load_experimental_phenotypes(phenotype_dir)
 
-    # Load the generated predictions
     print("\n" + "=" * 60)
     print("EVALUATING PREDICTIONS AGAINST EXPERIMENTAL DATA")
     print("=" * 60)
@@ -366,12 +329,10 @@ def main() -> None:
         dtype={"genomeID": str},
     )
 
-    # Evaluate strict predictions
     strict_metrics = evaluate_predictions(
         strict_predictions, experimental_data, "strict", output_dir
     )
 
-    # Evaluate loose predictions
     loose_metrics = evaluate_predictions(
         loose_predictions, experimental_data, "loose", output_dir
     )

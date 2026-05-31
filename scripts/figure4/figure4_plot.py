@@ -29,7 +29,6 @@ def create_figure4(output_file: Path) -> None:
     # labels remain legible after LaTeX includes the PDF at \textwidth.
     fig = plt.figure(figsize=(12.5, 10.4))
 
-    # Create grid: 2 rows, top row has 2 columns, bottom row spans full width
     import matplotlib.gridspec as gridspec
 
     # Main grid: tighten the top row so panels A/B do not carry excess empty
@@ -83,7 +82,6 @@ def create_figure4(output_file: Path) -> None:
     ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])  # Top subplot
     ax_c2 = fig.add_subplot(bottom_panel_gs[1, 0], sharex=ax_c1)  # Bottom subplot, shared x-axis
 
-    # Create the plots
     print("Creating Figure 4A (quadrant plot)...")
     create_quadrant_plot(ax_quadrant)
 
@@ -116,7 +114,6 @@ def create_figure4(output_file: Path) -> None:
         ha="left",
     )
 
-    # Save figure
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved combined figure to {output_file}")
     plt.close()

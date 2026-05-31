@@ -1,27 +1,5 @@
 #!/usr/bin/env python3
-"""
-Plot Figure 8: diagnostic and applicability-domain toolkit for genome-based
-phenotype prediction.
-
-Four panels span two levels of reliability assessment --- per genome and
-per phenotype:
-
-    A. Risk-coverage curves for three phenotypes spanning strong, medium,
-        and weak cross-dataset generalization (m-Inositol, Histidine,
-        Glucose). Each mini-plot compares the concordant-trained model with
-        the full-data model: balanced accuracy on the retained subset as the
-        least-confident genomes are abstained on first.
-    B. Reliability diagram: mean predicted probability of growth against the
-        empirically observed growth fraction within each confidence bin, per
-        model. The expected calibration error (ECE) is reported in the legend.
-    C. Label-free prioritization: the gain in cross-dataset balanced accuracy
-        after adding selected held-out genome labels, one bar per selection
-        strategy (low confidence, diversity, random, high novelty) at the
-        labelling budget.
-    D. Per-phenotype gain from randomly versus selectively (low-confidence)
-        added labels, for the three Panel-A archetypes, showing that selective
-        acquisition helps most on the weak generaliser.
-"""
+"""Plot Figure 7: risk-coverage, calibration, and label-acquisition diagnostics."""
 
 from __future__ import annotations
 
@@ -47,9 +25,7 @@ PRIOR_FILE = DATA_DIR / "figure7_prioritization.tsv"
 OUTPUT_FILE = Path("figures/figure7.pdf")
 
 # Colour palette: seaborn ``colorblind`` (matches ``visualization.get_dataset_colors``).
-# Index 0 (blue ``#0173b2``) is reused across panels as the primary accent so
-# Figure 8 sits visually next to Figures 3 and 5; index 3 (vermillion
-# ``#d55e00``) is the secondary accent.
+# Index 0 (blue) is the primary accent; index 3 (vermillion) the secondary.
 _PALETTE = sns.color_palette("colorblind", n_colors=6)
 PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
 ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
@@ -68,9 +44,6 @@ STRATEGY_LABELS = {
 def _panel_label(ax: Axes, label: str, x: float = -0.08) -> None:
     """
     Draw a bold panel label in the upper-left corner of an axes.
-
-    Position and size match the convention used in Figures 3 and 5
-    (``(-0.08, 1.05)`` in axes coordinates, ``fontsize=14``, bold).
 
     Parameters
     ----------
@@ -96,10 +69,6 @@ def _panel_label(ax: Axes, label: str, x: float = -0.08) -> None:
 def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
     """
     Plot three mini risk-coverage plots, one per Panel-A phenotype.
-
-    Within each phenotype the concordant-trained and full-data models are
-    compared, showing balanced accuracy on the retained subset as coverage
-    rises (least-confident genomes abstained on first).
 
     Parameters
     ----------
@@ -145,10 +114,6 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
     """
     Plot a reliability diagram of predicted confidence vs empirical accuracy.
 
-    One curve per model is drawn, with the model's expected calibration error
-    (ECE) reported in the legend. The dashed diagonal marks perfect
-    calibration.
-
     Parameters
     ----------
     ax : Axes
@@ -181,12 +146,6 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
 def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     """
     Plot balanced-accuracy gain per label-free selection strategy as violins.
-
-    One violin per strategy shows the per-run distribution of cross-dataset
-    balanced-accuracy gain after adding the selected held-out labels, with
-    median and quartile markers and jittered per-run points overlaid. The
-    strategies are ordered to match Panel D's pairing (random and low-confidence
-    first).
 
     Parameters
     ----------
@@ -250,12 +209,6 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
 def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     """
     Plot per-phenotype gain from randomly vs selectively added labels (paired).
-
-    For each Panel-A phenotype, two boxes show the per-run distribution of
-    cross-dataset balanced-accuracy gain after adding 25 randomly chosen labels
-    versus 25 low-confidence-selected labels. Thin grey lines connect matched
-    (held-out dataset, seed) runs across the two strategies so the within-run
-    improvement that underlies the paired Wilcoxon test is visible directly.
 
     Parameters
     ----------
@@ -337,7 +290,7 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
 
 def create_figure(output_file: Path) -> None:
     """
-    Build and persist the redesigned Figure 8.
+    Build and persist Figure 7.
 
     Parameters
     ----------
@@ -347,7 +300,6 @@ def create_figure(output_file: Path) -> None:
     risk = pd.read_csv(RISK_FILE, sep="\t")
     calib = pd.read_csv(CALIB_FILE, sep="\t")
     prior = pd.read_csv(PRIOR_FILE, sep="\t")
-
     fig = plt.figure(figsize=(12, 12))
     gs = fig.add_gridspec(3, 3, height_ratios=[1, 1, 1], hspace=0.42, wspace=0.32)
     ax_a = [fig.add_subplot(gs[0, i]) for i in range(3)]
@@ -366,7 +318,7 @@ def create_figure(output_file: Path) -> None:
 
 
 def main() -> None:
-    """Build Figure 8."""
+    """Build Figure 7."""
     create_figure(OUTPUT_FILE)
 
 

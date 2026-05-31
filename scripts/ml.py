@@ -1,17 +1,10 @@
-"""
-Machine learning utilities.
-
-This module provides utilities for creating classifiers and evaluating
-ML models. It wraps trait_prediction utilities with manuscript-specific
-model type aliases (e.g., "cb" for "catboost").
-"""
+"""Classifier construction and evaluation helpers (manuscript model-type aliases)."""
 
 import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import StratifiedKFold, cross_validate
 
-# Import from trait_prediction
 from trait_prediction.classifiers import make_classifier as _make_classifier
 from trait_prediction.pipeline import (
     align_columns,
@@ -21,7 +14,6 @@ from trait_prediction.pipeline import (
 
 sklearn.set_config(enable_metadata_routing=True)  # type: ignore
 
-# Model type aliases for backward compatibility
 # Manuscript uses "cb" but trait_prediction uses "catboost"
 MODEL_TYPE_ALIASES = {
     "cb": "catboost",
@@ -58,7 +50,6 @@ def make_classifier(model_type: str, **kwargs) -> BaseEstimator:
     ValueError
         If model_type is not one of the supported values
     """
-    # Map manuscript model types to trait_prediction model types
     mapped_type = MODEL_TYPE_ALIASES.get(model_type, model_type)
     return _make_classifier(mapped_type, **kwargs)
 
@@ -116,16 +107,14 @@ def perform_cv(
     model = make_classifier(model_type, **model_kwargs)
     kfold = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
-    # Check all folds before running cross-validation
+    # Bail out if any fold lacks two classes or enough minority samples
     for train_idx, test_idx in kfold.split(X, y):
         y_train_fold = y.iloc[train_idx]
         train_class_counts = y_train_fold.value_counts()
 
-        # Ensure there are exactly two classes
         if len(train_class_counts) != 2:
             return None
 
-        # Return None if minority class has fewer than min samples
         if train_class_counts.min() < minority_class_min_samples:
             return None
 
@@ -134,7 +123,7 @@ def perform_cv(
         X,
         y,
         cv=kfold,
-        scoring=["accuracy"],  # Use simple metric for cross_validate
+        scoring=["accuracy"],
         return_estimator=True,
     )
 
@@ -212,7 +201,6 @@ def perform_train_test(
     X_test = test_X.copy()
     y_test = test_y.copy()
 
-    # Align columns using trait_prediction utility
     X_test = align_columns(X_train, X_test)
 
     model.fit(X_train, y_train)
@@ -245,16 +233,13 @@ def perform_train_test(
     return pd.DataFrame(results)
 
 
-# Re-export for backward compatibility
 __all__ = [
     "make_classifier",
     "get_feature_importances",
     "perform_cv",
     "perform_train_test",
     "align_columns",
-    # Keep _get_scores accessible for existing code
     "_get_scores",
 ]
 
-# Alias for backward compatibility
 _get_scores = _get_scores

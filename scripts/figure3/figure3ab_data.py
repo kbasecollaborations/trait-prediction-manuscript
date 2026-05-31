@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
-"""
-Generate train-test split performance data for Figure 3.
+"""Evaluate model performance across train-test split types for Figure 3.
 
-This script processes pre-generated train-test splits from data/processed/train_test_splits/
-and evaluates model performance across different split types:
-- Random splits: Random train/val/test partitioning
-- Dataset splits: Train on one dataset, test on another
-- Phylogenetic out-of-clade: Test on phylogenetically distant samples
-- Phylogenetic in-clade: Test on phylogenetically similar samples
-
-The script uses the ml_splits module to load data and run machine learning pipelines.
+Covers random, dataset, and phylogenetic out-of-clade and in-clade splits.
 """
 
 from pathlib import Path
@@ -65,7 +57,6 @@ def run_ml_on_splits(
         "roc_auc",
     ]
 
-    # Calculate total iterations for progress bar
     total_splits = sum(len(splits) for splits in split_data.values())
 
     with tqdm(total=total_splits, desc="Running ML on splits") as pbar:
@@ -82,7 +73,6 @@ def run_ml_on_splits(
                 X_test = split["X_test"]
                 y_test = split["y_test"]
 
-                # Skip if test set is too small
                 n_test_samples = len(X_test)
                 if n_test_samples < min_test_samples:
                     print(
@@ -90,14 +80,13 @@ def run_ml_on_splits(
                     )
                     continue
 
-                # Skip if training or validation sets don't have both classes
+                # CatBoost needs both classes present in train and validation
                 if len(y_train.unique()) != 2 or len(y_val.unique()) != 2:
                     print(
                         f"\nSkipping {split_type}/{key}: training or validation set doesn't have 2 classes"
                     )
                     continue
 
-                # Run ML
                 result = perform_split_ml(
                     X_train,
                     y_train,
@@ -110,7 +99,6 @@ def run_ml_on_splits(
                     random_state=random_state,
                 )
 
-                # Add metadata
                 result["split_type"] = split_type
                 result["key"] = key
                 result["phenotype"] = key.split("_")[0]
@@ -125,28 +113,21 @@ def run_ml_on_splits(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 3 data from train-test splits.
-    """
-    # Define paths
+    """Generate Figure 3 data from train-test splits."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure3")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Define which split types to process
     # Options: ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
     SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
 
-    # Load all splits
     print("Loading train-test splits...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
 
-    # Print summary of loaded data
     print("\nLoaded splits summary:")
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Run ML on all splits
     print("\nRunning machine learning on all splits...")
     results = run_ml_on_splits(
         split_data, model_type="cb", random_state=42, min_test_samples=10
@@ -160,12 +141,10 @@ def main() -> None:
 
     results = annotate_minority_test(results, full_test_minority_counts())
 
-    # Save results
     results_file = OUTPUT_DIR / "ml_results.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
     print("\nBy split type:")

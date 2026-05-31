@@ -1,17 +1,7 @@
-"""Per-dataset concordant-subset diagnostics for poor Fig 5A performers.
-
-For each (phenotype, source dataset) cell, tabulate:
-
-1. Concordant positive fraction and minority count.
-2. GenomeID overlap across the four source datasets.
-3. Phylogenetic (phylum) composition of the concordant subset, plus Jensen
-   -Shannon divergence between the held-out dataset's concordant subset and the
-   training pool's concordant subset.
-4. Per-fold breakdown (dataset_split) for the poor performers, including
-   train/test majority class.
-5. Per-fold phylo_ooc breakdown (Glucose, Serine, Alanine).
-
-Outputs Markdown tables to stdout; no files written.
+"""Per-dataset concordant-subset diagnostics for poor Fig 5A performers:
+class composition, genome overlap, phylum composition with Jensen-Shannon
+divergence, and per-fold dataset_split and phylo_ooc breakdowns. Prints
+Markdown tables to stdout.
 """
 
 from __future__ import annotations
@@ -157,7 +147,6 @@ def phylum_composition(
     """For each held-out dataset, top-5 GTDB classes (concordant subset) and JSD vs train pool."""
     rows = []
     for phen in POOR:
-        # Build per-dataset concordant genome sets
         ds_genomes: dict[str, set[str]] = {}
         for ds in DATASETS:
             labels = load_dataset_labels(ds, phen)
@@ -169,13 +158,12 @@ def phylum_composition(
             preds = gapmind.loc[common, phen]
             ds_genomes[ds] = set(labels.index[labels == preds])
 
-        # Per-dataset class-composition counts
         ds_dist: dict[str, pd.Series] = {}
         for ds in DATASETS:
             classes = [taxonomy.get(g, "Unassigned") for g in ds_genomes[ds]]
             ds_dist[ds] = pd.Series(Counter(classes))
 
-        # For each held-out, compute JSD vs train pool
+        # For each held-out dataset, compute JSD against the training pool.
         for held in DATASETS:
             train_ds = [d for d in DATASETS if d != held]
             train_counts = pd.Series(dtype=float)
@@ -210,7 +198,6 @@ def phylum_composition(
 def per_fold_breakdown(gapmind: pd.DataFrame) -> pd.DataFrame:
     """Per-fold breakdown for dataset_split, with train/test majority class."""
     results = pd.read_csv(FIG5A_CSV)
-    # Helpers
     import re
 
     def held_out(key: str) -> str | None:
@@ -221,7 +208,7 @@ def per_fold_breakdown(gapmind: pd.DataFrame) -> pd.DataFrame:
         m = re.search(r"train\(([^)]+)\)", str(key))
         return m.group(1).split("+") if m else []
 
-    # Cache concordant pos/neg per (phen, ds)
+    # Cache concordant pos/neg counts per (phenotype, dataset).
     cache: dict[tuple[str, str], tuple[int, int]] = {}
 
     def conc_counts(phen: str, ds: str) -> tuple[int, int]:

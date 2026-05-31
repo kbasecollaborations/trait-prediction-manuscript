@@ -220,7 +220,7 @@ def identify_microbe_categories(
         Lists of genome IDs for: (1) no exp growth but GapMind predicts growth,
         (2) all exp growth but GapMind incomplete, (3) top 20 most misclassified.
     """
-    # Category 1: No experimental growth but GapMind predicts growth
+    # Category 1: no experimental growth but GapMind predicts growth
     microbes_no_exp_growth = phenotypes_combined.index[
         phenotypes_combined.apply(lambda x: (x.dropna() == 0).all(), axis=1)
     ].to_list()
@@ -294,7 +294,6 @@ def create_misclassification_plots(
     if gapmind_data_dir is None:
         gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
 
-    # Load data
     phenotype_dict = {
         "alanine": "Alanine",
         "arginine": "Arginine",
@@ -327,7 +326,6 @@ def create_misclassification_plots(
         phenotypes_combined, gapmind_data_pheno
     )
 
-    # Count microbes by dataset for each category
     def count_by_dataset(microbe_list: list[str]) -> dict[str, int]:
         counts = defaultdict(int)
         for microbe in microbe_list:
@@ -338,7 +336,6 @@ def create_misclassification_plots(
     cat1_counts = count_by_dataset(cat1_microbes)
     cat2_counts = count_by_dataset(cat2_microbes)
 
-    # Get misclassification counts for top 20 genomes
     misclassifications = dict()
     phenotype_names = phenotypes_combined.columns
 
@@ -362,7 +359,7 @@ def create_misclassification_plots(
     datasets = ["atleaf", "lit", "pmi", "marine"]
     dataset_colors = get_dataset_colors()
 
-    # Subplot 1: No growth but GapMind predicts growth
+    # Subplot 1: no growth but GapMind predicts growth
     cat1_data = pd.DataFrame({"count": [cat1_counts.get(d, 0) for d in datasets]})
     bars1 = ax1.bar(
         range(len(datasets)),
@@ -385,7 +382,7 @@ def create_misclassification_plots(
         0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
     )
 
-    # Subplot 2: All growth but GapMind incomplete
+    # Subplot 2: all growth but GapMind incomplete
     cat2_data = pd.DataFrame({"count": [cat2_counts.get(d, 0) for d in datasets]})
     bars2 = ax2.bar(
         range(len(datasets)),
@@ -408,15 +405,12 @@ def create_misclassification_plots(
         0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
     )
 
-    # Subplot 3: Top 20 most frequently misclassified genomes
-    # Get category membership for each genome
+    # Subplot 3: top 20 most frequently misclassified genomes
     cat1_set = set(cat1_microbes)
     cat2_set = set(cat2_microbes)
 
-    # Prepare data for plotting
     top_20_data = []
     for genome_id, count in missclassified_counts.most_common(20):
-        # Determine category (excluding "both")
         in_cat1 = genome_id in cat1_set
         in_cat2 = genome_id in cat2_set
 
@@ -441,7 +435,6 @@ def create_misclassification_plots(
 
     top_20_df = pd.DataFrame(top_20_data)
 
-    # Create horizontal bar plot (vertical layout)
     bars3 = ax3.barh(
         range(len(top_20_df)),
         top_20_df["count"],
@@ -458,19 +451,14 @@ def create_misclassification_plots(
     #     pad=20,
     # )
     ax3.set_yticks(range(len(top_20_df)))
-    # Shorten genome IDs for readability - use only first part
     short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
     ax3.set_yticklabels(short_labels, fontsize=8)
-    ax3.invert_yaxis()  # Highest misclassified at top
-
-    # Adjust tick parameters to prevent label overlap
+    ax3.invert_yaxis()
     ax3.tick_params(axis='y', which='major', pad=2)
 
-    # Set x-axis limit to make bars shorter
     max_count = top_20_df["count"].max()
     ax3.set_xlim(0, max_count * 1.1)
 
-    # Add legend for categories at the top in one line
     from matplotlib.patches import Patch
 
     category_handles = [
@@ -487,7 +475,6 @@ def create_misclassification_plots(
         fontsize=10,
     )
 
-    # Calculate overlaps for summary
     cat1_set = set(cat1_microbes)
     cat2_set = set(cat2_microbes)
     cat3_set = set(cat3_microbes)
@@ -497,7 +484,6 @@ def create_misclassification_plots(
     overlap_23 = cat2_set.intersection(cat3_set)
     overlap_123 = cat1_set.intersection(cat2_set).intersection(cat3_set)
 
-    # Print summary
     print(f"\n=== Figure 6A Summary ===")
     print(f"Category 1 (No growth, GM predicts growth): {len(cat1_microbes)} genomes")
     print(f"Category 2 (All growth, GM incomplete): {len(cat2_microbes)} genomes")
@@ -513,10 +499,6 @@ def plot_microbe_misclassification_ranking(
     gapmind_data_dir: Path | None = None,
 ) -> None:
     """Plot the ranked top-20 microbe misclassification diagnostic.
-
-    This is the third subplot from the original ``create_misclassification_plots``
-    pulled out as a stand-alone helper so it can be combined with the new
-    condensed problematic-sample summary in the hybrid Figure 6 layout.
 
     Parameters
     ----------

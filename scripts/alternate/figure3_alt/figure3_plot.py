@@ -18,7 +18,7 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Set random seed for reproducible jitter
+# Reproducible jitter
 np.random.seed(42)
 
 
@@ -36,34 +36,27 @@ def plot_within_dataset_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load CV results
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
 
-    # Get dataset colors
     dataset_colors = get_dataset_colors()
 
-    # Get unique phenotypes (sorted for consistency)
     if phenotypes is None:
         phenotypes = sorted(cv_df["phenotype"].unique())
     datasets = sorted(cv_df["dataset"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
     width = 0.25
     offsets = np.linspace(
         -width * (len(datasets) - 1) / 2, width * (len(datasets) - 1) / 2, len(datasets)
     )
 
-    # Plot stripplot for each dataset
     for idx, dataset in enumerate(datasets):
         dataset_data = cv_df[cv_df["dataset"] == dataset]
 
-        # Plot individual points
         for phenotype in phenotypes:
             phenotype_data = dataset_data[dataset_data["phenotype"] == phenotype]
             x_pos = x[phenotypes.index(phenotype)] + offsets[idx]
 
-            # Add jitter to x position
             x_jitter = x_pos + np.random.normal(0, 0.03, len(phenotype_data))
 
             ax.scatter(
@@ -75,7 +68,6 @@ def plot_within_dataset_performance(
                 zorder=2,
             )
 
-            # Plot mean as horizontal line
             mean_val = phenotype_data["balanced_accuracy"].mean()
             ax.plot(
                 [x_pos - 0.08, x_pos + 0.08],
@@ -86,7 +78,6 @@ def plot_within_dataset_performance(
                 zorder=3,
             )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -104,12 +95,11 @@ def plot_within_dataset_performance(
         for dataset in datasets
     ]
 
-    # Add alternating background colors for x-axis categories
+    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_title("Within-Dataset Performance (CV)", fontweight="bold", pad=10)
@@ -118,10 +108,9 @@ def plot_within_dataset_performance(
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
+    # Random-performance reference at 0.5
     ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -133,7 +122,6 @@ def plot_within_dataset_performance(
         fontsize=14,
     )
 
-    # Add legend
     ax.legend(
         handles=legend_handles,
         title="Dataset",
@@ -163,30 +151,24 @@ def plot_cross_dataset_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load test results and CV results for comparison
     test_df = pd.read_csv(data_dir / "intra_vs_inter" / "test_results.csv")
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
 
-    # Load GapMind results (using loose threshold)
     gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
 
-    # Filter for cross-dataset tests (train_dataset != test_dataset)
-    # Only show test on Literature dataset, trained on AtLeaf and Marine
+    # Cross-dataset tests: trained on AtLeaf/Marine, tested on Literature
     cross_df = test_df[
         (test_df["train_dataset"] != test_df["test_dataset"])
         & (test_df["test_dataset"] == "lit")
         & (test_df["train_dataset"].isin(["atleaf", "marine"]))
     ].copy()
 
-    # Get dataset colors
     dataset_colors = get_dataset_colors()
 
-    # Get unique phenotypes and datasets
     if phenotypes is None:
         phenotypes = sorted(cross_df["phenotype"].unique())
     train_datasets = sorted(cross_df["train_dataset"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
     width = 0.25
     offsets = np.linspace(
@@ -195,16 +177,13 @@ def plot_cross_dataset_performance(
         len(train_datasets),
     )
 
-    # Plot cross-dataset test results
     for idx, train_dataset in enumerate(train_datasets):
         dataset_data = cross_df[cross_df["train_dataset"] == train_dataset]
 
-        # Plot individual points
         for phenotype in phenotypes:
             phenotype_data = dataset_data[dataset_data["phenotype"] == phenotype]
             x_pos = x[phenotypes.index(phenotype)] + offsets[idx]
 
-            # Add jitter
             x_jitter = x_pos + np.random.normal(0, 0.03, len(phenotype_data))
 
             ax.scatter(
@@ -216,7 +195,6 @@ def plot_cross_dataset_performance(
                 zorder=2,
             )
 
-            # Plot mean as horizontal line
             if len(phenotype_data) > 0:
                 mean_val = phenotype_data["balanced_accuracy"].mean()
                 ax.plot(
@@ -228,14 +206,13 @@ def plot_cross_dataset_performance(
                     zorder=3,
                 )
 
-    # Calculate mean within-dataset CV performance for Literature (test dataset)
+    # Within-dataset CV reference for Literature (the test dataset)
     cv_lit = (
         cv_df[cv_df["dataset"] == "lit"]
         .groupby("phenotype")["balanced_accuracy"]
         .mean()
     )
 
-    # Plot within-dataset performance as red reference lines
     for phenotype in phenotypes:
         if phenotype in cv_lit.index:
             x_pos = x[phenotypes.index(phenotype)]
@@ -249,9 +226,6 @@ def plot_cross_dataset_performance(
                 zorder=1,
             )
 
-    # Plot GapMind predictions as dashed lines
-    # Color from figure2: loose GapMind uses #2E86AB (blue), but for consistency with
-    # GapMind being a baseline, we'll use the purple color #A23B72
     gapmind_color = "#A23B72"  # Purple (same as strict in figure2)
     gapmind_dict = gapmind_df.set_index("phenotype")["balanced_accuracy"].to_dict()
 
@@ -268,7 +242,6 @@ def plot_cross_dataset_performance(
                 zorder=1,
             )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -286,7 +259,6 @@ def plot_cross_dataset_performance(
         for dataset in train_datasets
     ]
 
-    # Add within-dataset reference to legend
     legend_handles.append(
         Line2D(
             [0],
@@ -298,7 +270,6 @@ def plot_cross_dataset_performance(
         )
     )
 
-    # Add GapMind reference to legend
     legend_handles.append(
         Line2D(
             [0],
@@ -311,12 +282,11 @@ def plot_cross_dataset_performance(
         )
     )
 
-    # Add alternating background colors for x-axis categories
+    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_title(
@@ -327,10 +297,9 @@ def plot_cross_dataset_performance(
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
+    # Random-performance reference at 0.5
     ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -342,7 +311,6 @@ def plot_cross_dataset_performance(
         fontsize=14,
     )
 
-    # Add legend
     ax.legend(
         handles=legend_handles,
         title="Train → Test",
@@ -370,30 +338,25 @@ def plot_phylogeny_independent_performance(
     phenotypes : list[str] | None
         List of phenotypes to plot in order. If None, uses all available.
     """
-    # Load phylogeny-independent test results and CV results for reference
     phylo_df = pd.read_csv(data_dir / "phylo_indep" / "test_results.tsv", sep="\t")
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
 
-    # Filter for "full" test type (cross-dataset with phylogenetic filtering)
-    # Based on the notebook, "full" means testing on full test dataset but with phylogenetic control
+    # "full" = full test dataset with phylogenetic control
     phylo_full = phylo_df[phylo_df["test_type"] == "full"].copy()
 
-    # Filter for test on Literature, train on AtLeaf (phylo_indep only has atleaf->lit based on notebook)
+    # Marine -> Literature only
     phylo_cross = phylo_full[
         (phylo_full["train_dataset"] != phylo_full["test_dataset"])
         & (phylo_full["test_dataset"] == "lit")
         & (phylo_full["train_dataset"] == "marine")
     ].copy()
 
-    # Get dataset colors
     dataset_colors = get_dataset_colors()
 
-    # Get unique phenotypes and training datasets
     if phenotypes is None:
         phenotypes = sorted(phylo_cross["phenotype"].unique())
     train_datasets = sorted(phylo_cross["train_dataset"].unique())
 
-    # Set up positions
     x = np.arange(len(phenotypes))
     width = 0.25
     offsets = np.linspace(
@@ -402,16 +365,13 @@ def plot_phylogeny_independent_performance(
         len(train_datasets),
     )
 
-    # Plot phylo-independent test results
     for idx, train_dataset in enumerate(train_datasets):
         dataset_data = phylo_cross[phylo_cross["train_dataset"] == train_dataset]
 
-        # Plot individual points
         for phenotype in phenotypes:
             phenotype_data = dataset_data[dataset_data["phenotype"] == phenotype]
             x_pos = x[phenotypes.index(phenotype)] + offsets[idx]
 
-            # Add jitter
             x_jitter = x_pos + np.random.normal(0, 0.03, len(phenotype_data))
 
             ax.scatter(
@@ -423,7 +383,6 @@ def plot_phylogeny_independent_performance(
                 zorder=2,
             )
 
-            # Plot mean as horizontal line
             if len(phenotype_data) > 0:
                 mean_val = phenotype_data["balanced_accuracy"].mean()
                 ax.plot(
@@ -435,14 +394,13 @@ def plot_phylogeny_independent_performance(
                     zorder=3,
                 )
 
-    # Calculate mean within-dataset CV performance for Literature (test dataset)
+    # Within-dataset CV reference for Literature (the test dataset)
     cv_lit = (
         cv_df[cv_df["dataset"] == "lit"]
         .groupby("phenotype")["balanced_accuracy"]
         .mean()
     )
 
-    # Plot within-dataset performance as red reference lines
     for phenotype in phenotypes:
         if phenotype in cv_lit.index:
             x_pos = x[phenotypes.index(phenotype)]
@@ -456,7 +414,6 @@ def plot_phylogeny_independent_performance(
                 zorder=1,
             )
 
-    # Create legend handles
     from matplotlib.lines import Line2D
 
     legend_handles = [
@@ -474,7 +431,6 @@ def plot_phylogeny_independent_performance(
         for dataset in train_datasets
     ]
 
-    # Add within-dataset reference to legend
     legend_handles.append(
         Line2D(
             [0],
@@ -486,12 +442,11 @@ def plot_phylogeny_independent_performance(
         )
     )
 
-    # Add alternating background colors for x-axis categories
+    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_title(
@@ -504,10 +459,9 @@ def plot_phylogeny_independent_performance(
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.set_ylim(0, 1.05)
 
-    # Add horizontal line at 0.5 (random performance)
+    # Random-performance reference at 0.5
     ax.axhline(y=0.5, color="gray", linestyle="--", linewidth=1, alpha=0.4, zorder=0)
 
-    # Add subplot label
     ax.text(
         -0.08,
         1.05,
@@ -519,7 +473,6 @@ def plot_phylogeny_independent_performance(
         fontsize=14,
     )
 
-    # Add legend
     ax.legend(
         handles=legend_handles,
         title="Train → Test",
@@ -552,13 +505,11 @@ def create_figure(
     if gapmind_dir is None:
         gapmind_dir = Path("data/outputs/figure2")
 
-    # Load all data to determine common phenotypes
     cv_df = pd.read_csv(data_dir / "intra_vs_inter" / "cv_results.csv")
     test_df = pd.read_csv(data_dir / "intra_vs_inter" / "test_results.csv")
     phylo_df = pd.read_csv(data_dir / "phylo_indep" / "test_results.tsv", sep="\t")
     gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
 
-    # Get phenotypes from each dataset
     cv_phenotypes = set(cv_df["phenotype"].unique())
     test_phenotypes = set(
         test_df[
@@ -577,7 +528,6 @@ def create_figure(
     )
     gapmind_phenotypes = set(gapmind_df["phenotype"].unique())
 
-    # Use intersection of all phenotypes to ensure consistent x-axis
     print("Determining common phenotypes across all analyses...")
     print(f" - Test phenotypes: {len(test_phenotypes)}")
     print(f" - Phylo-independent phenotypes: {len(phylo_phenotypes)}")
@@ -588,23 +538,18 @@ def create_figure(
         .intersection(gapmind_phenotypes)
     )
 
-    # Create figure with 3 subplots arranged vertically with shared x-axis
     fig, axes = plt.subplots(3, 1, figsize=(12, 15), sharex=True)
 
-    # Plot each subplot with common phenotypes
     plot_within_dataset_performance(axes[0], data_dir, common_phenotypes)
     plot_cross_dataset_performance(axes[1], data_dir, gapmind_dir, common_phenotypes)
     plot_phylogeny_independent_performance(axes[2], data_dir, common_phenotypes)
 
-    # Remove x-axis labels from all but bottom plot
+    # x labels/ticks only on bottom subplot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
-
-    # Only show x-tick labels on bottom plot
     axes[0].tick_params(axis="x", labelbottom=False)
     axes[1].tick_params(axis="x", labelbottom=False)
 
-    # Adjust layout with more space between subplots
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")

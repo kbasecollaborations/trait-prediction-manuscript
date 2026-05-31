@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
-"""
-Render Supplementary Figure S8: per-phenotype x per-dataset concordance counts.
-
-Each cell in the 15 (phenotype) x 4 (dataset) grid is a horizontal stacked bar
-showing the breakdown of genomes into concordant, discordant false positive,
-discordant false negative, and excluded categories. Counts are annotated in
-each segment so the figure doubles as a legible table.
-"""
+"""Render Supplementary Figure S8: faceted stacked-bar grid of per-phenotype x
+per-dataset concordance counts."""
 
 from __future__ import annotations
 
@@ -60,7 +54,7 @@ def prepare_plot_frame(counts: pd.DataFrame) -> pd.DataFrame:
     Parameters
     ----------
     counts : pd.DataFrame
-        Long-form counts table from ``figureS12_data``.
+        Long-form counts table from ``figureS8_data``.
 
     Returns
     -------

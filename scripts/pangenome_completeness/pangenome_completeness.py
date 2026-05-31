@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-"""
-Calculate genome completeness based on core gene presence from species pangenomes.
-
-This script uses MMseqs2 to search genome protein sequences against core gene sets
-from their assigned species pangenomes, calculating completeness as the proportion
-of core genes found above identity and coverage thresholds.
-"""
+"""Calculate genome completeness as the fraction of species core genes recovered
+by MMseqs2 search above identity and coverage thresholds."""
 
 from __future__ import annotations
 
@@ -67,8 +62,7 @@ class CompletenessResult:
 
 
 def load_genome_species_mapping(mapping_file: Path) -> dict[str, str]:
-    """
-    Load genome-to-species mapping from TSV file.
+    """Load genome-to-species mapping from TSV file.
 
     Parameters
     ----------
@@ -99,15 +93,13 @@ def load_genome_species_mapping(mapping_file: Path) -> dict[str, str]:
     if missing:
         raise ValueError(f"Missing required columns in mapping file: {missing}")
 
-    # Filter to rows with valid species assignments
     df = df[df["gtdb_species_clade_id"].notna() & (df["gtdb_species_clade_id"] != "")]
 
     return dict(zip(df["Genome name"], df["gtdb_species_clade_id"], strict=False))
 
 
 def discover_genome_files(all_seqs_dir: Path) -> list[Path]:
-    """
-    Discover all .faa files in the genome sequences directory.
+    """Discover all .faa files in the genome sequences directory.
 
     Parameters
     ----------
@@ -123,8 +115,7 @@ def discover_genome_files(all_seqs_dir: Path) -> list[Path]:
 
 
 def extract_genome_name(faa_path: Path) -> str:
-    """
-    Extract genome name from a .faa filename.
+    """Extract genome name from a .faa filename.
 
     Handles various naming conventions:
     - 'Species_name_ID.fna.RAST.faa' -> 'Species_name_ID'
@@ -143,7 +134,6 @@ def extract_genome_name(faa_path: Path) -> str:
         Genome name with extensions removed.
     """
     name = faa_path.stem  # removes .faa
-    # Remove common suffixes in order of specificity
     for suffix in [".fna.RAST", ".RAST", ".fna"]:
         if name.endswith(suffix):
             name = name[: -len(suffix)]
@@ -152,8 +142,7 @@ def extract_genome_name(faa_path: Path) -> str:
 
 
 def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
-    """
-    Get path to core genes file for a species.
+    """Get path to core genes file for a species.
 
     Tries multiple naming conventions:
     - '{species_id}_unique_core_reps.faa' (e.g., from pangenome analysis)
@@ -171,7 +160,6 @@ def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
     Path | None
         Path to the core genes file if it exists, None otherwise.
     """
-    # Try different naming conventions
     for suffix in ["_unique_core_reps.faa", ".faa"]:
         core_path = core_genes_dir / f"{species_id}{suffix}"
         if core_path.exists():
@@ -180,8 +168,7 @@ def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
 
 
 def count_fasta_sequences(fasta_path: Path) -> int:
-    """
-    Count the number of sequences in a FASTA file.
+    """Count the number of sequences in a FASTA file.
 
     Parameters
     ----------
@@ -202,8 +189,7 @@ def count_fasta_sequences(fasta_path: Path) -> int:
 
 
 def create_mmseqs2_db(fasta_path: Path, db_path: Path) -> None:
-    """
-    Create an MMseqs2 database from a FASTA file.
+    """Create an MMseqs2 database from a FASTA file.
 
     Parameters
     ----------
@@ -234,8 +220,7 @@ def run_mmseqs2_search(
     min_coverage: float,
     evalue: float = DEFAULT_EVALUE,
 ) -> None:
-    """
-    Run MMseqs2 search between query and target databases.
+    """Run MMseqs2 search between query and target databases.
 
     Parameters
     ----------
@@ -291,8 +276,7 @@ def convert_mmseqs2_results(
     result_db: Path,
     output_tsv: Path,
 ) -> None:
-    """
-    Convert MMseqs2 results to tabular format.
+    """Convert MMseqs2 results to tabular format.
 
     Parameters
     ----------
@@ -328,8 +312,7 @@ def convert_mmseqs2_results(
 
 
 def count_unique_core_genes_found(results_tsv: Path) -> int:
-    """
-    Count unique core genes (targets) found in MMseqs2 results.
+    """Count unique core genes (targets) found in MMseqs2 results.
 
     Parameters
     ----------
@@ -360,8 +343,7 @@ def calculate_single_genome_completeness(
     min_coverage: float,
     evalue: float = DEFAULT_EVALUE,
 ) -> tuple[int, int]:
-    """
-    Calculate completeness for a single genome against its core genes.
+    """Calculate completeness for a single genome against its core genes.
 
     Parameters
     ----------
@@ -391,7 +373,6 @@ def calculate_single_genome_completeness(
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
 
-        # Create databases
         query_db = tmp_path / "query_db"
         target_db = tmp_path / "target_db"
         result_db = tmp_path / "result_db"
@@ -403,7 +384,6 @@ def calculate_single_genome_completeness(
         create_mmseqs2_db(genome_faa, query_db)
         create_mmseqs2_db(core_genes_faa, target_db)
 
-        # Run search
         run_mmseqs2_search(
             query_db,
             target_db,
@@ -414,7 +394,6 @@ def calculate_single_genome_completeness(
             evalue,
         )
 
-        # Convert and count results
         convert_mmseqs2_results(query_db, target_db, result_db, results_tsv)
         core_genes_found = count_unique_core_genes_found(results_tsv)
 
@@ -429,8 +408,7 @@ def process_genome(
     min_coverage: float,
     evalue: float = DEFAULT_EVALUE,
 ) -> CompletenessResult:
-    """
-    Process a single genome and calculate its completeness.
+    """Process a single genome and calculate its completeness.
 
     Parameters
     ----------
@@ -454,7 +432,6 @@ def process_genome(
     """
     genome_id = extract_genome_name(genome_faa)
 
-    # Check if genome has species assignment
     species = genome_species_mapping.get(genome_id, "")
     if not species:
         return CompletenessResult(
@@ -463,7 +440,6 @@ def process_genome(
             error_message="No species mapping found",
         )
 
-    # Check if core genes file exists
     core_genes_path = get_core_genes_path(core_genes_dir, species)
     if core_genes_path is None:
         return CompletenessResult(
@@ -473,7 +449,6 @@ def process_genome(
             error_message=f"Core genes file not found: {species}.faa",
         )
 
-    # Calculate completeness
     try:
         found, total = calculate_single_genome_completeness(
             genome_faa,
@@ -523,8 +498,7 @@ def process_all_genomes(
     jobs: int,
     quiet: bool,
 ) -> list[CompletenessResult]:
-    """
-    Process all genomes and calculate completeness.
+    """Process all genomes and calculate completeness.
 
     Parameters
     ----------
@@ -550,12 +524,10 @@ def process_all_genomes(
     list[CompletenessResult]
         Results for all processed genomes.
     """
-    # Load mapping
     genome_species_mapping = load_genome_species_mapping(mapping_file)
     if not quiet:
         print(f"Loaded {len(genome_species_mapping)} genome-species mappings")
 
-    # Discover genome files
     genome_files = discover_genome_files(all_seqs_dir)
     if not quiet:
         print(f"Found {len(genome_files)} genome .faa files")
@@ -565,14 +537,12 @@ def process_all_genomes(
 
     results: list[CompletenessResult] = []
 
-    # Prepare arguments for each genome
     args_list = [
         (gf, genome_species_mapping, core_genes_dir, min_identity, min_coverage, evalue)
         for gf in genome_files
     ]
 
     if jobs == 1:
-        # Sequential processing
         for i, args in enumerate(args_list, 1):
             result = process_genome(*args)
             results.append(result)
@@ -582,7 +552,6 @@ def process_all_genomes(
                     f"{result.status} ({result.completeness:.2%})"
                 )
     else:
-        # Parallel processing
         with ProcessPoolExecutor(max_workers=jobs) as executor:
             futures = {
                 executor.submit(_process_genome_wrapper, args): args[0]
@@ -603,8 +572,7 @@ def process_all_genomes(
 
 
 def write_results(results: list[CompletenessResult], output_path: Path) -> None:
-    """
-    Write completeness results to TSV file.
+    """Write completeness results to TSV file.
 
     Parameters
     ----------
@@ -633,8 +601,7 @@ def write_results(results: list[CompletenessResult], output_path: Path) -> None:
 
 
 def print_summary(results: list[CompletenessResult]) -> None:
-    """
-    Print summary statistics of completeness results.
+    """Print summary statistics of completeness results.
 
     Parameters
     ----------
@@ -652,7 +619,6 @@ def print_summary(results: list[CompletenessResult]) -> None:
 
     print(f"\nTotal genomes: {total}")
 
-    # Status breakdown
     print("\nStatus Breakdown:")
     print("-" * 30)
     status_counts = {}
@@ -664,7 +630,6 @@ def print_summary(results: list[CompletenessResult]) -> None:
         pct = 100 * count / total
         print(f"  {status:15s}: {count:6d} ({pct:5.1f}%)")
 
-    # Completeness statistics for successful genomes
     successful = [r for r in results if r.status == "success"]
     if successful:
         completeness_values = [r.completeness for r in successful]
@@ -675,7 +640,6 @@ def print_summary(results: list[CompletenessResult]) -> None:
         print(f"  Min:    {min(completeness_values):6.2%}")
         print(f"  Max:    {max(completeness_values):6.2%}")
 
-        # Distribution
         print("\nCompleteness Distribution:")
         print("-" * 30)
         brackets = [
@@ -694,8 +658,7 @@ def print_summary(results: list[CompletenessResult]) -> None:
 
 
 def check_mmseqs2_installed() -> bool:
-    """
-    Check if MMseqs2 is installed and accessible.
+    """Check if MMseqs2 is installed and accessible.
 
     Returns
     -------
@@ -706,8 +669,7 @@ def check_mmseqs2_installed() -> bool:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """
-    Main entry point for the pangenome completeness script.
+    """Main entry point for the pangenome completeness script.
 
     Parameters
     ----------
@@ -786,7 +748,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # Validate inputs
     if not check_mmseqs2_installed():
         print("Error: MMseqs2 is not installed or not in PATH.", file=sys.stderr)
         print("Please install MMseqs2: https://github.com/soedinglab/MMseqs2", file=sys.stderr)
@@ -804,7 +765,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Error: --mapping file does not exist: {args.mapping}", file=sys.stderr)
         return 1
 
-    # Validate thresholds
     if not 0.0 <= args.min_identity <= 1.0:
         print("Error: --min-identity must be between 0.0 and 1.0", file=sys.stderr)
         return 1
@@ -821,7 +781,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("Error: --evalue must be positive", file=sys.stderr)
         return 1
 
-    # Process genomes
     if not args.quiet:
         print(f"Processing genomes from: {args.all_seqs}")
         print(f"Using core genes from: {args.core_genes}")
@@ -849,12 +808,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    # Write results
     write_results(results, args.output)
     if not args.quiet:
         print(f"\nResults saved to: {args.output}")
 
-    # Print summary
     if not args.quiet:
         print_summary(results)
 

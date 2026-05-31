@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Pilot retrospective active-learning analysis for experimental target selection.
-
-This script simulates selecting a small batch of held-out genome--phenotype
-experiments, adding those labels to the training set, and measuring whether the
-selected batch improves cross-dataset performance more than random selection.
-It is intentionally small and exploratory so it can be run quickly before a full
-analysis is designed.
-"""
+"""Retrospective active-learning pilot: does selective label acquisition beat random?"""
 
 from __future__ import annotations
 
@@ -41,7 +33,7 @@ PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 OUTPUT_DIR: Path = Path("data/outputs/figure7")
 HELD_OUT_RE: re.Pattern[str] = re.compile(r"test\(([^)]+)\)")
 
-# Label-free candidate-selection strategies compared in Figure 8 Panel C.
+# Label-free candidate-selection strategies compared in Figure 7 Panel C.
 STRATEGIES: tuple[str, ...] = ("low_confidence", "high_ood", "diversity", "random")
 
 
@@ -442,7 +434,7 @@ def run_pilot(config: PilotConfig) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
 
 
 def main() -> None:
-    """Run the prioritization simulation and save Figure 8 Panel C tables."""
+    """Run the prioritization simulation and save Figure 7 Panel C tables."""
     config = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     detailed, _selected_detail, by_phenotype = run_pilot(config)

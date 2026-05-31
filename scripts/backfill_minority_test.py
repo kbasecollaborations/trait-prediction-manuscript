@@ -1,18 +1,8 @@
 #!/usr/bin/env python3
 """Backfill an ``n_minority_test`` column on existing per-cell ML result CSVs.
 
-Each per-split row in the affected CSVs gets a column recording the
-minority-class count of its held-out test set, computed using the
-appropriate test-set definition (full, concordant, or discordant). This makes
-downstream filtering (``filter_by_minority``) a column lookup instead of a
-re-derivation from the phenotype files.
-
-Random-split rows (no ``test(<ds>)`` token in the key) and rows whose
-``phenotype`` is not present in the GapMind / experimental data are written
-with ``n_minority_test`` left empty.
-
-Run once after data generation; the data-generation scripts are also updated
-to populate this column on subsequent runs.
+Rows that lack a resolvable test set (random splits, or phenotypes absent from
+the GapMind / experimental data) are left empty.
 """
 
 from __future__ import annotations

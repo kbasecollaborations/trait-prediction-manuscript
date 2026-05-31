@@ -1,31 +1,5 @@
 #!/usr/bin/env python3
-"""Cluster KOFAM features into target-aware redundancy groups for SHAP comparison.
-
-Pre-computes a per-phenotype mapping ``KO -> cluster_id`` used downstream by
-``scripts/figure4/figure4c_data.py`` and ``scripts/figure5/figure5b_data.py``.
-The cluster space is fixed per phenotype so that Figure 4 (full data) and
-Figure 5 (concordant data) compare on identical cluster identities.
-
-Main method (Lundberg-style supervised redundancy):
-    Pairwise distance is ``1 - R^2`` from univariate XGBoost models predicting
-    the phenotype, as implemented in ``shap.utils.hclust``. Two KOs cluster
-    if they share more than ``1 - cutoff`` of their univariate explanatory
-    power with respect to the phenotype.
-
-Supplementary methods:
-    Jaccard distance with average linkage (UPGMA), the pan-genome convention
-    for binary presence/absence data (Snipen & Liland 2010).
-
-Notes
------
-- KOFAM features are 0/1 (presence/absence).
-- The pooled concordant feature matrix is used for clustering; this is the
-  matrix the manuscript is reasoning about under the applicability-domain
-  framing.
-- Clustering scope per phenotype is the union of every KO that appears in any
-  stable feature list across Fig 4 and Fig 5 outputs, plus the union of those
-  with non-zero variance in the pooled matrix.
-"""
+"""Build per-phenotype KO redundancy clusters for the SHAP stable-feature comparison."""
 
 from __future__ import annotations
 
@@ -158,10 +132,6 @@ def load_pooled_matrix(
 def collect_stable_ko_union(phenotype: str) -> set[str]:
     """Collect the union of stable KOs ever picked for a phenotype.
 
-    Pools stable feature lists across both Figure 4 (full data) and Figure 5
-    (concordant data), and across both combined-split and individual-dataset
-    analyses, so the cluster space is fixed for downstream comparisons.
-
     Parameters
     ----------
     phenotype : str
@@ -208,10 +178,6 @@ def cluster_shap_hclust(
 ) -> dict[str, int]:
     """Cluster features using SHAP's supervised redundancy linkage.
 
-    Pairwise distance is ``1 - R^2`` from univariate XGBoost models
-    (``shap.utils.hclust``), so features with similar predictive power
-    w.r.t. ``y`` are placed close together.
-
     Parameters
     ----------
     X : pd.DataFrame
@@ -245,8 +211,6 @@ def cluster_jaccard(
     cutoff: float = 0.3,
 ) -> dict[str, int]:
     """Cluster binary features using Jaccard distance and average linkage.
-
-    Used as a domain-standard robustness check (pan-genome convention).
 
     Parameters
     ----------

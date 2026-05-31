@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
-"""
-Phase 1 of mechanism-free filtering exploration: cheap parameter sweep over the
-soft-label weights ``(w_phylo, w_gapmind, w_exp)`` used to build ``y_soft`` in
-``figure6b_data.py``.
-
-No ML training is done here. The script:
-
-1. Computes ``conf_phylo``, ``conf_mech``, and ``y_exp`` once per phenotype and
-   caches the slow phylogenetic k-NN step.
-2. For each weight configuration, computes ``y_soft`` and applies the
-   ``y_soft < 0.4`` OR ``y_soft > 0.6`` filter used by ``figure6b_data.py``.
-3. Reports per-phenotype and pooled statistics: retention rate, overlap with
-   the concordant sample set, and Jaccard overlap between filtered-out sets
-   across configurations.
-
-The goal is to identify 3-4 qualitatively distinct, non-degenerate parameter
-points to evaluate with full ML in Phase 2.
-"""
+"""Phase 1 soft-label weight sweep: report y_soft retention and concordant overlap, no ML."""
 
 from __future__ import annotations
 
@@ -309,7 +292,6 @@ def main() -> None:
                               "frac_kept_in_concordant",
                               "frac_concordant_in_kept"]].round(3))
 
-        # Build the pooled "removed" set for Jaccard comparison.
         removed_pool: set[str] = set()
         for phenotype_name, parts in inputs.items():
             conf_phylo = parts["conf_phylo"]

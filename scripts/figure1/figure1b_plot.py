@@ -23,15 +23,12 @@ configure_plot_style()
 def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     """Plot stacked bar chart of positive and negative genome counts per phenotype, hued by dataset."""
 
-    # Get unique phenotypes and datasets
     phenotypes = sorted(df["phenotype"].unique())
     datasets = sorted(df["dataset"].unique())
     dataset_display_names = format_dataset_names(datasets)
 
-    # Set up the figure
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    # Add subplot label C (ISME Journal standard: 10pt bold)
     ax.text(
         -0.05,
         1.05,
@@ -42,21 +39,18 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
         ha="right",
     )
 
-    # Set bar width and positions
     bar_width = 0.8 / len(datasets)
     x = np.arange(len(phenotypes))
 
-    # Get colorblind-friendly colors for each dataset
     dataset_colors = get_dataset_color_list(datasets)
 
-    # Plot bars for each dataset
     for i, dataset in enumerate(datasets):
         df_dataset = df[df["dataset"] == dataset].set_index("phenotype")
         df_dataset = df_dataset.reindex(phenotypes, fill_value=0)
 
         positions = x + i * bar_width
 
-        # Plot positive counts (bottom of stack)
+        # Positive counts form the bottom of each stacked bar
         positive = df_dataset["positive_count"].values
         ax.bar(
             positions,
@@ -67,7 +61,7 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
             alpha=0.8,
         )
 
-        # Plot negative counts (top of stack)
+        # Negative counts stack on top of the positive counts
         negative = df_dataset["negative_count"].values
         ax.bar(
             positions,
@@ -87,9 +81,6 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y")
 
-    # Create legend using matplotlib patches (proplot compatible)
-
-    # Add dataset legend (positioned left-center)
     dataset_handles = [
         Rectangle((0, 0), 1, 1, fc=color, alpha=0.8) for color in dataset_colors
     ]
@@ -104,7 +95,6 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
     )
     ax.add_artist(legend1)
 
-    # Add status legend (positioned right-center)
     status_handles = [
         Rectangle((0, 0), 1, 1, fc="gray", alpha=0.8, label="Positive"),
         Rectangle((0, 0), 1, 1, fc="gray", alpha=0.4, hatch="//", label="Negative"),

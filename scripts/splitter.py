@@ -1,11 +1,5 @@
-"""
-Data splitting utilities.
+"""Re-export data splitters from trait_prediction.pipeline.splitters."""
 
-This module provides backward-compatible access to data splitters from
-trait_prediction. The actual implementations are in trait_prediction.pipeline.splitters.
-"""
-
-# Re-export splitters from trait_prediction for backward compatibility
 from trait_prediction.pipeline.splitters import (
     DataSplitter,
     InCladeSplitter,

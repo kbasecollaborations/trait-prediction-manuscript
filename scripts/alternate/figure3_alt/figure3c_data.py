@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
-"""
-Generate phylogeny-independent dataset analysis data for Figure 3C.
-
-This script performs inter-dataset testing with phylogenetic controls:
-1. Full inter-dataset testing (all test samples)
-2. In-clade testing (phylogenetically matched test samples only)
-
-The clustering approach ensures test samples are phylogenetically similar to
-training samples, controlling for phylogenetic distance effects.
-"""
+"""Generate phylogeny-independent inter-dataset data for Figure 3C: full testing vs
+in-clade testing (test samples phylogenetically matched to training)."""
 
 import warnings
 from collections import defaultdict
@@ -28,8 +20,7 @@ warnings.filterwarnings("ignore")
 
 
 def _get_samples(cluster_samples: list[str], X: pd.DataFrame) -> list[str]:
-    """
-    Filter cluster samples to only those present in the dataset.
+    """Filter cluster samples to those present in the dataset.
 
     Parameters
     ----------
@@ -49,11 +40,10 @@ def _get_samples(cluster_samples: list[str], X: pd.DataFrame) -> list[str]:
 def get_test_samples(
     X_train: pd.DataFrame, X_test: pd.DataFrame, distance_df: pd.DataFrame
 ) -> list[str]:
-    """
-    Get phylogenetically matched test samples using agglomerative clustering.
+    """Select phylogenetically matched test samples using agglomerative clustering.
 
-    Performs clustering on the combined train+test samples, then selects only
-    test samples from clusters that contain sufficient training samples.
+    Clusters the combined train+test samples, then keeps test samples only from
+    clusters that contain sufficient training samples.
 
     Parameters
     ----------
@@ -86,7 +76,6 @@ def get_test_samples(
         curr_train_samples = _get_samples(cluster_samples, X_train)
         curr_test_samples = _get_samples(cluster_samples, X_test)
 
-        # Only include clusters with sufficient training samples
         if len(curr_train_samples) < 2 or len(curr_test_samples) == 0:
             continue
 
@@ -98,11 +87,7 @@ def get_test_samples(
 def calculate_distance(
     train_samples: pd.Index, test_samples: pd.Index, distance_df: pd.DataFrame
 ) -> tuple[float, float]:
-    """
-    Calculate average and minimum phylogenetic distances.
-
-    Computes the average distance from each test sample to all training samples,
-    and the minimum distance from each test sample to any training sample.
+    """Calculate mean of per-test-sample average and minimum distances to training.
 
     Parameters
     ----------
@@ -141,11 +126,10 @@ def calculate_test_results(
     test_size: int = 50,
     n_repeats: int = 5,
 ) -> pd.DataFrame:
-    """
-    Calculate inter-dataset test results with phylogenetic controls.
+    """Calculate inter-dataset test results with phylogenetic controls.
 
-    Tests all combinations of train/test datasets for each phenotype,
-    comparing full testing vs. phylogenetically matched (in-clade) testing.
+    Tests all train/test dataset combinations per phenotype, comparing full vs
+    phylogenetically matched (in-clade) testing.
 
     Parameters
     ----------
@@ -167,19 +151,16 @@ def calculate_test_results(
         matthews_corrcoef, phenotype, feature, train_dataset, test_dataset,
         test_type, avg_dist, min_dist
     """
-    # Create data map for all dataset-phenotype-feature combinations
+    # Map every dataset-phenotype-feature combination to its data (PMI excluded)
     data_map = {}
     for feature in dataset.feature_set.features:
         for phenotype in dataset.phenotype_set.phenotypes:
             pindex = phenotype.pindex
             findex = feature.findex
 
-            # Skip if feature dataset doesn't match phenotype dataset
             dataset_name = findex.name.split("_")[0]
             if dataset_name != pindex.category:
                 continue
-
-            # Skip PMI dataset
             if dataset_name == "pmi":
                 continue
 
@@ -187,7 +168,6 @@ def calculate_test_results(
             key = (pindex.name, pindex.category, findex.name)
             data_map[key] = (feature_obj.feature_data, phenotype_obj.phenotype_data)
 
-    # Generate all train-test combinations
     results = []
     combinations_list = list(product(data_map.keys(), repeat=2))
     total_combinations = len(combinations_list)
@@ -201,34 +181,26 @@ def calculate_test_results(
             train_phenotype, train_dataset, train_feature = train_key
             test_phenotype, test_dataset, test_feature = test_key
 
-            # Skip if same dataset (covered by CV)
+            # Same-dataset pairs are covered by CV; require matching phenotype and feature type
             if train_dataset == test_dataset:
                 continue
-
-            # Skip if different phenotypes
             if train_phenotype != test_phenotype:
                 continue
-
-            # Skip if different feature types
             if train_feature.split("_")[-1] != test_feature.split("_")[-1]:
                 continue
 
             X_train, y_train = data_map[train_key]
             X_test, y_test = data_map[test_key]
 
-            # Skip if training set doesn't have two classes
+            # Require both classes with minority class >= 10 samples in training
             train_class_counts = y_train.value_counts()
             if len(train_class_counts) != 2:
                 continue
-
-            # Skip if minority class in training data has fewer than 10 samples
             if train_class_counts.min() < 10:
                 continue
 
-            # Get phylogenetically matched test samples
             test_samples_inclade = get_test_samples(X_train, X_test, distance_df)
 
-            # Perform both full and in-clade testing
             for test_type in ["full", "in-clade"]:
                 if test_type == "full":
                     X_test_subset = X_test
@@ -237,17 +209,14 @@ def calculate_test_results(
                     X_test_subset = X_test.loc[test_samples_inclade]
                     y_test_subset = y_test.loc[test_samples_inclade]
 
-                # Skip if not enough test samples
                 if len(y_test_subset) < 10:
                     continue
 
-                # Adjust test_size if needed
                 if test_size >= len(y_test_subset):
                     updated_test_size = int(len(y_test_subset) * 0.8)
                 else:
                     updated_test_size = test_size
 
-                # Skip if not enough test samples
                 if updated_test_size < 10:
                     continue
 
@@ -261,12 +230,10 @@ def calculate_test_results(
                     n_repeats=n_repeats,
                 )
 
-                # Calculate distances
                 avg_dist, min_dist = calculate_distance(
                     X_train.index, X_test_subset.index, distance_df
                 )
 
-                # Add metadata
                 test_results["phenotype"] = train_phenotype
                 test_results["feature"] = train_feature
                 test_results["train_dataset"] = train_dataset
@@ -283,8 +250,7 @@ def calculate_test_results(
 def calculate_cv_results(
     dataset: DataSet, model_type: str = "cb_noeval", n_splits: int = 5
 ) -> pd.DataFrame:
-    """
-    Calculate cross-validation results for intra-dataset performance.
+    """Calculate cross-validation results for intra-dataset performance.
 
     Parameters
     ----------
@@ -303,7 +269,6 @@ def calculate_cv_results(
     """
     results = []
 
-    # Calculate total iterations for progress bar
     total_iterations = len(list(dataset.feature_set.features)) * len(
         list(dataset.phenotype_set.phenotypes)
     )
@@ -316,30 +281,24 @@ def calculate_cv_results(
 
                 pbar.update(1)
 
-                # Skip if feature dataset doesn't match phenotype dataset
+                # Feature dataset must match phenotype dataset (PMI excluded)
                 dataset_name = findex.name.split("_")[0]
                 if dataset_name != pindex.category:
                     continue
-
-                # Skip PMI dataset
                 if dataset_name == "pmi":
                     continue
 
-                # Get data
                 phenotype_obj, feature_obj = dataset.get_data(pindex, findex)
                 feature_data = feature_obj.feature_data
                 phenotype_data = phenotype_obj.phenotype_data
 
-                # Skip if training set doesn't have two classes
+                # Require both classes with minority class >= 10 samples
                 class_counts = phenotype_data.value_counts()
                 if len(class_counts) != 2:
                     continue
-
-                # Skip if minority class has fewer than 10 samples
                 if class_counts.min() < 10:
                     continue
 
-                # Perform CV
                 cv_results = perform_cv(
                     feature_data,
                     phenotype_data,
@@ -351,7 +310,6 @@ def calculate_cv_results(
                 if cv_results is None:
                     continue
 
-                # Add metadata
                 cv_results["model_type"] = model_type
                 cv_results["phenotype"] = pindex.name
                 cv_results["dataset"] = pindex.category
@@ -364,31 +322,24 @@ def calculate_cv_results(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 3C data.
-    """
-    # Define paths
+    """Generate Figure 3C phylogeny-independent data."""
     FEATURE_DIR = Path("data/processed/features_reduced")
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
     DISTANCE_FILE = Path("data/processed/phylogeny/distance_matrix.tsv")
     OUTPUT_DIR = Path("data/outputs/figure3_alt/phylo_indep")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Define datasets to include (exclude PMI as noted in notebook)
     DATASETS_TO_INCLUDE = ["atleaf", "lit", "marine"]
 
-    # Load distance matrix
     print("Loading phylogenetic distance matrix...")
     distance_df = pd.read_csv(DISTANCE_FILE, sep="\t", index_col=0)
 
-    # Load features
     feature_type = "kofam"
     print(f"Loading features for {feature_type}...")
     feature_files = list(FEATURE_DIR.glob(f"**/{feature_type}.tsv"))
     feature_files = [f for f in feature_files if f.parent.stem in DATASETS_TO_INCLUDE]
     feature_set = read_features(feature_files)
 
-    # Load phenotypes and identify common phenotypes across datasets
     print("Loading phenotypes...")
     phenotype_files_all = list(PHENOTYPE_DIR.glob("**/*.tsv"))
     phenotype_files = []
@@ -397,26 +348,21 @@ def main() -> None:
     for phenotype_file in phenotype_files_all:
         dataset_name = phenotype_file.parent.stem
 
-        # Only include specified datasets
         if dataset_name not in DATASETS_TO_INCLUDE:
             continue
 
         phenotype_files.append(phenotype_file)
         dataset_phenotype_name_map[dataset_name].add(phenotype_file.stem)
 
-    # Find common phenotypes across all datasets
     COMMON_PHENOTYPES = sorted(set.intersection(*dataset_phenotype_name_map.values()))
     print(f"Found {len(COMMON_PHENOTYPES)} common phenotypes across datasets")
 
-    # Filter to only common phenotypes
     phenotype_files = [p for p in phenotype_files if p.stem in COMMON_PHENOTYPES]
     phenotype_set = read_phenotypes(phenotype_files)
 
-    # Create dataset
     print("Creating dataset...")
     dataset = DataSet(phenotype_set, feature_set)
 
-    # Generate CV results
     print("\nGenerating cross-validation results...")
     cv_results_file = OUTPUT_DIR / "cv_results.csv"
     if not cv_results_file.exists():
@@ -426,7 +372,6 @@ def main() -> None:
     else:
         print(f"CV results already exist at {cv_results_file}, skipping...")
 
-    # Generate test results
     print("\nGenerating phylogeny-independent test results...")
     test_results_file = OUTPUT_DIR / "test_results.tsv"
     if not test_results_file.exists():

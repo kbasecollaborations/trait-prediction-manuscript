@@ -1,21 +1,6 @@
-"""Diagnose why some KOFAM phenotypes underperform on Figure 5A.
-
-Three diagnostics:
-
-1. Per-phenotype cross-dataset BA: KOFAM vs GapMind (raw) on concordant
-   subset, with random-split KOFAM as reference. Applies the standard
-   minority-test filter.
-
-2. Single-feature discriminability ceiling: maximum single-feature AUROC
-   (and top-5 features) on the *pooled concordant* sample, for KOFAM and
-   for GapMind step features.
-
-3. Top stable SHAP features per phenotype (from
-   ``figure5b_combined_splits_shap_features.json``) for comparison.
-
-Run::
-
-    uv run python -m scripts.figure5_diagnostic.feature_signal_analysis
+"""Diagnose why some KOFAM phenotypes underperform on Figure 5A: per-phenotype
+cross-dataset BA (KOFAM vs GapMind), single-feature AUROC ceiling, and top
+stable SHAP features per phenotype.
 """
 
 from __future__ import annotations

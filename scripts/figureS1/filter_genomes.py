@@ -32,7 +32,6 @@ class GenomeFilter:
     def __init__(self, fasta_dir, extension=".fna"):
         self.fasta_dir = fasta_dir
         self.ext = extension
-        # Get list of genome IDs based on filenames
         self.files = [f for f in os.listdir(fasta_dir) if f.endswith(extension)]
         self.genome_ids = [os.path.splitext(f)[0] for f in self.files]
         print(f"Detected {len(self.genome_ids)} genomes in {fasta_dir}")
@@ -43,7 +42,6 @@ class GenomeFilter:
         """
         print(f"Counting contigs using {threads} threads...")
 
-        # Prepare arguments for the worker
         tasks = []
         for f in self.files:
             gid = os.path.splitext(f)[0]
@@ -52,7 +50,6 @@ class GenomeFilter:
 
         keep_ids = set()
 
-        # Run in parallel
         with ProcessPoolExecutor(max_workers=threads) as executor:
             results = executor.map(_count_contigs_single_file, tasks)
 
@@ -178,7 +175,8 @@ if __name__ == "__main__":
     )
 
     # 3. CheckM2 (Runs externally, then filters)
-    # Note: We pass the full directory to CheckM2, but we filter the *results* # based on `ids_passed_contigs` to ignore the fragmented ones.
+    # We pass the full directory to CheckM2 but filter the results by
+    # ids_passed_contigs to ignore the fragmented assemblies.
     ids_passed_checkm = qc_pipeline.run_checkm2_and_filter(
         valid_ids=ids_passed_contigs,
         output_dir="checkm2_results",

@@ -1,17 +1,6 @@
-"""Decompose Figure 5A cross-dataset performance shortfall.
-
-This script attributes the per-phenotype gap between concordant random-split BA
-and concordant dataset-split BA (Figure 5A) to:
-
-1. Majority-class collapse (sensitivity/specificity asymmetry).
-2. Train/test class-balance shift across held-out datasets.
-3. Random-split vs dataset-split BA gap (intrinsic difficulty vs domain shift).
-4. GapMind-feature rescue (does the curated feature set improve cross-dataset BA?).
-
-All numbers respect the manuscript's minority-class filter
-(``MIN_MINORITY_TEST_SAMPLES = 10``) using
-:func:`scripts.minority_filter.filter_by_minority` keyed on
-:func:`scripts.minority_filter.concordant_minority_counts`.
+"""Decompose the Figure 5A cross-dataset performance shortfall into
+majority-class collapse, class-balance shift, random-vs-dataset gap, and
+GapMind-feature rescue. All numbers respect the minority-class filter.
 """
 
 from __future__ import annotations
@@ -186,7 +175,7 @@ def summarize_phenotype(
         cross = sub[sub["split_type"] == "dataset_split"]
         phylo = sub[sub["split_type"] == "phylo_ooc"]
 
-        # Pooled concordant size + positive fraction (from labels, not CSV).
+        # Pooled concordant size and positive fraction from labels, not the CSV.
         concordant_series = pd.concat(
             list(load_concordant_labels(str(phenotype)).values())
         )

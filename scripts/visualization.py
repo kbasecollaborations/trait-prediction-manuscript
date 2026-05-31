@@ -1,18 +1,11 @@
-"""
-Visualization utilities and color schemes for consistent plotting across figures.
-"""
+"""Color schemes and plot-style helpers shared across figures."""
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
 def configure_plot_style() -> None:
-    """
-    Configure matplotlib plotting parameters for consistent, publication-quality figures.
-
-    Sets font sizes for various plot elements to ensure readability and consistency
-    across all figures in the manuscript.
-    """
+    """Set matplotlib font sizes for publication-quality figures."""
     plt.rcParams.update(
         {
             "font.size": 12,
@@ -35,15 +28,13 @@ def get_dataset_colors():
     dict
         Dictionary mapping dataset names to colors.
     """
-    # Use seaborn's colorblind palette (designed for accessibility)
     palette = sns.color_palette("colorblind", n_colors=4)
 
-    # Map datasets to colors (alphabetically sorted for consistency)
     dataset_color_map = {
-        "atleaf": palette[0],  # Blue
-        "lit": palette[1],  # Orange
-        "marine": palette[2],  # Green
-        "pmi": palette[3],  # Red
+        "atleaf": palette[0],
+        "lit": palette[1],
+        "marine": palette[2],
+        "pmi": palette[3],
     }
 
     return dataset_color_map

@@ -1,15 +1,5 @@
 #!/usr/bin/env python3
-"""
-Combine GapMind, KOFAM, and RAST features with correlation filtering.
-
-This script:
-1. Loads GapMind, KOFAM, and RAST features from the reduced features directory
-2. Filters to common genomes present in all three feature sets
-3. Removes RAST features that are correlated with KOFAM features (Pearson correlation)
-4. Removes KOFAM features that are correlated with GapMind features (Spearman correlation)
-5. Combines the remaining features into a single feature matrix
-6. Saves the combined feature matrix and the lists of removed features
-"""
+"""Combine GapMind, KOFAM, and RAST features after cross-source correlation filtering."""
 
 import gzip
 import json
@@ -22,8 +12,7 @@ import pandas as pd
 def compute_correlation_matrix(
     features_a: np.ndarray, features_b: np.ndarray, method: str = "pearson"
 ) -> np.ndarray:
-    """
-    Compute correlation matrix between two feature matrices using vectorized operations.
+    """Compute the correlation matrix between two feature matrices.
 
     Parameters
     ----------
@@ -41,30 +30,24 @@ def compute_correlation_matrix(
         Element [i, j] is the correlation between features_b[:, i] and features_a[:, j].
     """
     if method == "spearman":
-        # Convert to ranks for Spearman correlation
-        # Use scipy's rankdata which handles ties properly
         from scipy.stats import rankdata
 
         features_a = np.apply_along_axis(rankdata, 0, features_a)
         features_b = np.apply_along_axis(rankdata, 0, features_b)
 
-    # Standardize features (subtract mean, divide by std)
-    # This handles the case where std is 0 by setting those to 0
     a_mean = np.mean(features_a, axis=0, keepdims=True)
     b_mean = np.mean(features_b, axis=0, keepdims=True)
 
     a_std = np.std(features_a, axis=0, keepdims=True)
     b_std = np.std(features_b, axis=0, keepdims=True)
 
-    # Avoid division by zero - set std=1 for constant columns (they'll have corr=0)
+    # Avoid division by zero: constant columns get std=1 and thus corr=0.
     a_std = np.where(a_std == 0, 1, a_std)
     b_std = np.where(b_std == 0, 1, b_std)
 
     a_centered = (features_a - a_mean) / a_std
     b_centered = (features_b - b_mean) / b_std
 
-    # Compute correlation matrix: (n_samples, n_features_b).T @ (n_samples, n_features_a)
-    # Result is (n_features_b, n_features_a)
     n_samples = features_a.shape[0]
     corr_matrix = (b_centered.T @ a_centered) / n_samples
 
@@ -77,8 +60,7 @@ def find_correlated_features(
     threshold: float = 0.95,
     method: str = "pearson",
 ) -> dict[str, list[str]]:
-    """
-    Find features in features_b that are correlated with features in features_a.
+    """Find features in features_b that are correlated with features in features_a.
 
     Parameters
     ----------
@@ -97,7 +79,6 @@ def find_correlated_features(
         Dictionary mapping each feature in features_b to the list of features in
         features_a it is correlated with (if correlation > threshold).
     """
-    # Get common samples (genomeIDs) between the two feature sets
     common_samples = features_a.index.intersection(features_b.index)
     features_a_aligned = features_a.loc[common_samples]
     features_b_aligned = features_b.loc[common_samples]
@@ -106,26 +87,18 @@ def find_correlated_features(
         raise ValueError(f"Unknown correlation method: {method}")
 
     print(f"  Computing {method} correlation matrix...")
-    # Compute correlation matrix using vectorized operations
-    # Shape: (n_features_b, n_features_a)
     corr_matrix = compute_correlation_matrix(
         features_a_aligned.values, features_b_aligned.values, method=method
     )
 
-    # Find correlations above threshold
     print(f"  Finding correlations above threshold {threshold}...")
     correlated = {}
-
-    # Take absolute value for threshold comparison
     abs_corr_matrix = np.abs(corr_matrix)
 
-    # For each feature in features_b, find which features in features_a are correlated
     for i, col_b in enumerate(features_b_aligned.columns):
-        # Find indices where correlation exceeds threshold
         correlated_indices = np.where(abs_corr_matrix[i, :] >= threshold)[0]
 
         if len(correlated_indices) > 0:
-            # Get the feature names from features_a
             correlated_with = [
                 features_a_aligned.columns[j] for j in correlated_indices
             ]
@@ -135,10 +108,7 @@ def find_correlated_features(
 
 
 def main() -> None:
-    """
-    Main function to combine GapMind, KOFAM, and RAST features with correlation filtering.
-    """
-    # Define paths
+    """Combine GapMind, KOFAM, and RAST features with correlation filtering."""
     INPUT_DIR = Path("data/processed/features_reduced/combined_datasets")
     OUTPUT_DIR = Path("data/processed/features_reduced/combined_datasets")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -150,14 +120,12 @@ def main() -> None:
     OUTPUT_FILE = OUTPUT_DIR / "gapmind_kofam_rast.tsv"
     CORR_OUTPUT_FILE = OUTPUT_DIR / "correlation_removed_features.json.gz"
 
-    # Correlation thresholds
     CORRELATION_THRESHOLD = 0.95
 
     print("=" * 80)
     print("Combining GapMind, KOFAM, and RAST features with correlation filtering")
     print("=" * 80)
 
-    # Load feature matrices
     print("\nLoading feature matrices...")
     print(f"  Loading GapMind features from {GAPMIND_FILE}...")
     gapmind_features = pd.read_csv(
@@ -177,7 +145,6 @@ def main() -> None:
     )
     print(f"    Shape: {rast_features.shape}")
 
-    # Get common genomes across all feature matrices
     print("\nFinding common genomes across all feature matrices...")
     common_genomes = (
         gapmind_features.index.intersection(kofam_features.index).intersection(
@@ -189,13 +156,11 @@ def main() -> None:
     print(f"    KOFAM: {len(kofam_features)}")
     print(f"    RAST: {len(rast_features)}")
 
-    # Filter all feature matrices to only include common genomes
     print("\nFiltering to common genomes...")
     gapmind_features = gapmind_features.loc[common_genomes]
     kofam_features = kofam_features.loc[common_genomes]
     rast_features = rast_features.loc[common_genomes]
 
-    # Step 1: Remove RAST features correlated with KOFAM features (Pearson)
     print("\n" + "=" * 80)
     print("Step 1: Remove RAST features correlated with KOFAM features")
     print(f"  Method: Pearson correlation, threshold: {CORRELATION_THRESHOLD}")
@@ -213,7 +178,6 @@ def main() -> None:
         f"Remaining RAST features: {rast_features_filtered.shape[1]} / {rast_features.shape[1]}"
     )
 
-    # Step 2: Remove KOFAM features correlated with GapMind features (Spearman)
     print("\n" + "=" * 80)
     print("Step 2: Remove KOFAM features correlated with GapMind features")
     print(f"  Method: Spearman correlation, threshold: {CORRELATION_THRESHOLD}")
@@ -234,13 +198,10 @@ def main() -> None:
         f"Remaining KOFAM features: {kofam_features_filtered.shape[1]} / {kofam_features.shape[1]}"
     )
 
-    # Step 3: Combine all remaining features
     print("\n" + "=" * 80)
     print("Step 3: Combine all remaining features")
     print("=" * 80)
 
-    # All feature matrices already have the same genomes (common genomes)
-    # Just concatenate along columns
     combined_features = pd.concat(
         [gapmind_features, kofam_features_filtered, rast_features_filtered],
         axis=1,
@@ -253,7 +214,6 @@ def main() -> None:
     print(f"  RAST features: {rast_features_filtered.shape[1]}")
     print(f"  Total features: {combined_features.shape[1]}")
 
-    # Step 4: Save combined feature matrix
     print("\n" + "=" * 80)
     print("Step 4: Save outputs")
     print("=" * 80)
@@ -262,7 +222,6 @@ def main() -> None:
     combined_features.to_csv(OUTPUT_FILE, sep="\t")
     print("  Done!")
 
-    # Save correlation information
     correlation_info = {
         "rast_kofam_correlated": {
             feature: corr_with for feature, corr_with in rast_kofam_correlated.items()

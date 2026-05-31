@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import scienceplots
 from matplotlib.patches import FancyBboxPatch, Rectangle
 
-# Apply publication-ready style
 plt.style.use(["science", "nature"])
 
 

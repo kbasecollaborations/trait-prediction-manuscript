@@ -1,15 +1,7 @@
 #!/usr/bin/env python3
 """Compute KEGG-module coverage for stable feature clusters per phenotype.
 
-Used by the Table S2 / Table S3 generators to append a one-line summary
-showing what fraction of the shared (and unique) stable cluster
-representatives map to the canonical KEGG catabolism module for the
-target phenotype.
-
-This is a deliberately small module: the manuscript only needs the
-mapping for the 15 shared phenotypes, and only catabolism modules are
-relevant (growth on a carbon source implies degradation, not
-biosynthesis).
+Used by the Table S2 / Table S3 generators to append a coverage summary line.
 """
 
 import re
@@ -106,11 +98,8 @@ def _load_module_kos(
 ) -> dict[str, frozenset[str]]:
     """Parse the KEGG module-definitions table into module-id -> KO members.
 
-    The module definitions are encoded with parentheses, commas (alternative
-    enzymes), plus signs (complex subunits), and spaces (sequential steps).
-    For the purpose of "is this KO part of this module" we ignore the
-    grammar and simply extract every ``K\\d{5}`` token from the definition
-    column.
+    Ignores the definition grammar and extracts every ``K\\d{5}`` token from
+    the definition column.
 
     Parameters
     ----------
@@ -154,11 +143,6 @@ def _load_pathway_kos(
 ) -> dict[str, frozenset[str]]:
     """Parse the KEGG pathway-KO membership TSV into pathway-id -> KO members.
 
-    The file is written by :func:`scripts.refresh_kegg_data.write_pathway_tsv`
-    with header ``Pathway ID\\tName\\tKO IDs`` and one row per reference
-    pathway map (``mapXXXXX``); the ``KO IDs`` column is a comma-separated
-    list of KO identifiers.
-
     Parameters
     ----------
     pathway_membership_path : Path
@@ -196,10 +180,6 @@ def _load_pathway_kos(
 def pathway_kos_for_phenotype(phenotype: str) -> set[str]:
     """Return the union of KEGG-pathway-map KOs assigned to a phenotype.
 
-    Looks up :data:`PHENOTYPE_TO_PATHWAY_MAPS` for the phenotype, then loads
-    each referenced pathway map's KO members from the local pathway TSV.
-    Empty set if the phenotype is unmapped or no KOs are found.
-
     Parameters
     ----------
     phenotype : str
@@ -227,11 +207,6 @@ def pathway_coverage_line(
     ko_to_cluster: dict[str, int] | None,
 ) -> str | None:
     """Build a single LaTeX-ready coverage line for a phenotype's table block.
-
-    For each phenotype with a canonical KEGG catabolism module assigned in
-    :data:`PHENOTYPE_TO_MODULES`, we collapse the shared and unique KOs
-    into cluster representatives (one KO per cluster) and report the
-    fraction of representatives that hit the canonical module.
 
     Parameters
     ----------
@@ -264,11 +239,8 @@ def pathway_coverage_line(
         module_kos.update(_load_module_kos().get(module_id, frozenset()))
 
     def _cluster_representatives(kos: list[str]) -> list[str]:
-        """Pick one KO per cluster (smallest KO id by convention).
-
-        Falls back to the raw KO list when no clustering metadata is
-        available for the phenotype.
-        """
+        """Pick one KO per cluster, falling back to the raw KO list when no
+        clustering metadata is available."""
         if ko_to_cluster is None:
             return sorted(set(kos))
         seen_clusters: dict[int, str] = {}

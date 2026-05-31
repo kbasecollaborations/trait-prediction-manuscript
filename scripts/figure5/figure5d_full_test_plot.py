@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
-"""
-Plot Figure 5D: concordant-trained model performance on the full held-out test
-set, with discordance-category composition for context.
-
-Two stacked panels:
-
-    Top    -- Per-phenotype balanced accuracy on the full cross-dataset test
-              set (one strip per held-out dataset, four colours), with a
-              boxplot summarising the four held-out datasets per phenotype.
-    Bottom -- Per-phenotype stacked bar of the test-set composition
-              (concordant / FP-discordant / FN-discordant fractions), averaged
-              across the four held-out datasets.
+"""Plot Figure 5D: full held-out test BA (top) and discordance-category
+composition (bottom), per phenotype.
 """
 
 from __future__ import annotations
@@ -61,12 +51,10 @@ def plot_full_test_balanced_accuracy(
     df: pd.DataFrame,
     phenotypes: list[str],
 ) -> None:
-    """
-    Plot per-phenotype balanced accuracy on the full held-out test set.
+    """Plot per-phenotype balanced accuracy on the full held-out test set.
 
-    Each phenotype receives a boxplot summarising performance across the four
-    held-out datasets, overlaid with coloured strip points (one per held-out
-    dataset).
+    Each phenotype gets a boxplot over the four held-out datasets, overlaid with
+    one coloured strip point per held-out dataset.
 
     Parameters
     ----------
@@ -176,12 +164,10 @@ def plot_test_composition(
     df: pd.DataFrame,
     phenotypes: list[str],
 ) -> None:
-    """
-    Plot per-phenotype stacked bar of test-set discordance composition.
+    """Plot per-phenotype stacked bar of test-set discordance composition.
 
-    For each phenotype, fractions are computed by summing counts across the
-    four held-out datasets, so a single bar per phenotype reflects the overall
-    cross-dataset test composition.
+    Fractions sum counts across the four held-out datasets, so one bar per
+    phenotype reflects the overall cross-dataset test composition.
 
     Parameters
     ----------
@@ -272,8 +258,7 @@ from scripts.minority_filter import full_test_minority_counts as _full_test_mino
 
 
 def create_figure(data_file: Path, output_file: Path) -> None:
-    """
-    Build and persist Figure 5D.
+    """Build and persist Figure 5D.
 
     Parameters
     ----------
@@ -284,9 +269,8 @@ def create_figure(data_file: Path, output_file: Path) -> None:
     """
     df = pd.read_csv(data_file, sep="\t")
 
-    # Apply the manuscript's minority-class-test-samples filter
-    # (Methods): exclude (phenotype, held-out dataset) cells whose full
-    # held-out test set has fewer than 10 minority-class samples.
+    # Minority-class-test-samples filter (Methods): exclude (phenotype, held-out
+    # dataset) cells with fewer than 10 minority-class samples in the full test.
     full_minority = _full_test_minority_counts()
     keep = df.apply(
         lambda r: full_minority.get((r["phenotype"], r["held_out_dataset"]), 0) >= 10,
@@ -309,8 +293,7 @@ def create_figure(data_file: Path, output_file: Path) -> None:
 
 
 def report_summary(data_file: Path) -> None:
-    """
-    Print median balanced accuracies for the full and per-subset evaluations.
+    """Print median balanced accuracies for the full and per-subset evaluations.
 
     Parameters
     ----------
@@ -344,9 +327,7 @@ def report_summary(data_file: Path) -> None:
 
 
 def main() -> None:
-    """
-    Build Figure 5D and print the summary statistics requested by the plan.
-    """
+    """Build Figure 5D and print the summary statistics."""
     create_figure(DATA_FILE, OUTPUT_FILE)
     report_summary(DATA_FILE)
 

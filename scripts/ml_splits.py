@@ -1,10 +1,4 @@
-"""
-Machine learning utilities for train-test splits.
-
-This module provides utilities to run machine learning pipelines on
-pre-generated train-test split data. It wraps trait_prediction utilities
-with manuscript-specific configurations.
-"""
+"""Run ML pipelines on pre-generated train/val/test split data."""
 
 import warnings
 from pathlib import Path
@@ -13,7 +7,6 @@ from typing import Any
 import pandas as pd
 from sklearn.base import BaseEstimator
 
-# Import from trait_prediction
 from trait_prediction.pipeline import (
     align_columns,
     get_feature_importances,
@@ -22,7 +15,6 @@ from trait_prediction.pipeline import (
     load_splits as _load_splits,
 )
 
-# Import local utilities (for model type aliases)
 from scripts.ml import make_classifier
 
 warnings.filterwarnings("ignore")
@@ -33,9 +25,6 @@ def load_single_split_data(
 ) -> dict[str, pd.DataFrame | pd.Series]:
     """
     Load train/val/test data from a single split folder.
-
-    This is a wrapper around trait_prediction.pipeline.load_single_split
-    for backward compatibility.
 
     Parameters
     ----------
@@ -59,9 +48,6 @@ def load_split_data(
 ) -> dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]]:
     """
     Load all train/val/test splits from the base directory.
-
-    This is a wrapper around trait_prediction.pipeline.load_splits
-    for backward compatibility.
 
     Parameters
     ----------
@@ -98,11 +84,7 @@ def perform_split_ml(
     **model_kwargs,
 ) -> dict[str, Any]:
     """
-    Perform machine learning on a single train/val/test split.
-
-    This function trains a model on the training set with validation set for
-    early stopping (if applicable), evaluates on the test set, and returns
-    performance metrics along with feature importances.
+    Train on the training set (with validation for early stopping), evaluate on the test set.
 
     Parameters
     ----------
@@ -146,13 +128,10 @@ def perform_split_ml(
 
     model = make_classifier(model_type, **model_kwargs)
 
-    # Align columns using trait_prediction utility
     X_val_aligned = align_columns(X_train, X_val)
     X_test_aligned = align_columns(X_train, X_test)
 
-    # Train model with eval_set for CatBoost models
     if model_type == "cb":
-        # CatBoost with early stopping using validation set
         model.fit(
             X_train,
             y_train,
@@ -161,16 +140,12 @@ def perform_split_ml(
             verbose=False,
         )
     elif model_type == "cb_noeval":
-        # CatBoost without early stopping
         model.fit(X_train, y_train, verbose=False)
     else:
-        # Other models (RF, DT, etc.)
         model.fit(X_train, y_train)
 
-    # Get scores on test set using trait_prediction utility
     scores = get_scores(model, X_test_aligned, y_test, scoring)
 
-    # Get feature importances using trait_prediction utility
     features = get_feature_importances(model, X_train).index.tolist()
     scores["features"] = features
 
@@ -189,10 +164,7 @@ def perform_split_ml_with_model(
     **model_kwargs,
 ) -> tuple[dict[str, Any], BaseEstimator]:
     """
-    Perform machine learning on a single train/val/test split and return the fitted model.
-
-    Same as perform_split_ml but also returns the fitted classifier for saving
-    (e.g. CatBoost .cbm, metadata, feature importances).
+    Like perform_split_ml but also return the fitted classifier for saving.
 
     Parameters
     ----------
@@ -260,7 +232,6 @@ def perform_split_ml_with_model(
     return scores, model
 
 
-# Re-export for convenience
 __all__ = [
     "load_single_split_data",
     "load_split_data",

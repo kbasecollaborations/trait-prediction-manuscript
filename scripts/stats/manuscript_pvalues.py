@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
 """Recompute every p-value cited in the manuscript and apply BH correction.
 
-Outputs a single TSV at ``data/outputs/stats/manuscript_pvalues.tsv`` listing
-each test, its raw two-sided p-value, the sample size (paired units), and the
-Benjamini--Hochberg adjusted q-value across all reported tests.
-
-The script is intentionally self-contained and re-loads the same precomputed
-result tables that the figure plotting scripts consume so that the numbers
-match the figures exactly.
+Writes a TSV of each test's raw p-value, paired sample size, and BH q-value.
 """
 
 from __future__ import annotations
@@ -130,7 +124,6 @@ def test_fig5c_dataset() -> tuple[float, int]:
 def test_fig5d_fn_vs_fp_rescue() -> tuple[float, int]:
     """Figure 5D: per-phenotype FN rescue rate vs FP rescue rate (concordant model)."""
     per_sample = pd.read_csv("data/outputs/figure6/figure6_per_sample.tsv", sep="\t")
-    # Discordant samples: GapMind disagrees with experiment.
     disc = per_sample[per_sample["gapmind_pred"] != per_sample["y_true"]].copy()
     disc["error_type"] = np.where(disc["y_true"] == 1, "FN", "FP")
     disc["rescued"] = (disc["y_pred"] == disc["y_true"]).astype(int)
@@ -152,7 +145,6 @@ def _phenotype_aggregates() -> pd.DataFrame:
         mean_confidence=("confidence", "mean"),
         frac_high_conf=("high_conf", "mean"),
     )
-    # Cross-dataset BA per phenotype on full test (Fig 5C).
     ml = pd.read_csv(
         "data/outputs/figure5/figure5c_concordant_train_different_test.csv"
     )

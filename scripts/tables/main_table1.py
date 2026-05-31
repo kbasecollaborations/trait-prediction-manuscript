@@ -1,31 +1,6 @@
 #!/usr/bin/env python3
 """Regenerate the main-text Table 1 (concordance-vs-full feature comparison).
 
-For each of the 15 shared phenotypes, the table reports the same cluster
-counts shown in Figure 5B (per-split cluster-level intersection and
-unique-to-individual sets, summed across the three held-out comparisons)
-under two training regimes (Full vs Concordant), enriched with a
-parenthetical pathway percentage: the fraction of those summed clusters
-that contain at least one KO on the row's assigned KEGG reference pathway
-map. The example column shows curated concordant-stable, shared,
-pathway-resident KOs. Histidine is highlighted as the worked example.
-
-Inputs (read-only):
-
-- ``data/outputs/figure4/combined_splits_shap_features.json`` and
-  ``data/outputs/figure4/individual_datasets_shap_features.json`` — raw
-  per-(phenotype, dataset) SHAP-stable KO lists under full-data training.
-- ``data/outputs/figure5/figure5b_combined_splits_shap_features.json`` and
-  ``data/outputs/figure5/figure5b_individual_datasets_shap_features.json``
-  — the same under concordant-only training.
-- ``data/outputs/clustering/ko_clusters_shap_hclust.json`` — SHAP-supervised
-  hierarchical clustering of KOs per phenotype.
-- ``data/external/mapping/KO_dictionary.json`` — KO -> human-readable name.
-
-Output (overwritten):
-
-- ``sections/table_main_feature_comparison.tex``
-
 Run with ``uv run python -m scripts.tables.main_table1``.
 """
 
@@ -103,9 +78,6 @@ EXAMPLE_KO_OVERRIDES: dict[str, str] = {
 def _short_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
     """Return a short, human-readable name for a KO identifier.
 
-    Pulls the first (canonical) name from the KO dictionary entry and strips
-    any EC-number suffix in square brackets so the table cell stays compact.
-
     Parameters
     ----------
     ko_id : str
@@ -123,11 +95,8 @@ def _short_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
     if not term:
         return ""
     name = term.get("name", "")
-    # KO dictionary names often pack multiple synonyms with ';' and trail
-    # an EC bracket like ``[EC:2.7.1.1]`` -- collapse to the first synonym.
     name = name.split(";")[0].strip()
     name = re.sub(r"\s*\[EC:[^]]+\]\s*$", "", name).strip()
-    # LaTeX-safe: underscores rarely appear in enzyme names, but be defensive.
     name = name.replace("_", r"\_")
     return name
 
@@ -180,13 +149,6 @@ def _shared_unique_counts(
     pathway_kos: set[str],
 ) -> tuple[tuple[int, int], tuple[int, int]]:
     """Compute summed cluster-level shared and unique counts for one phenotype.
-
-    For each held-out dataset, the combined-of-three SHAP-stable KOs and the
-    held-out-alone SHAP-stable KOs are each mapped to their redundancy
-    cluster IDs; the intersection and unique-to-individual cluster sets are
-    summed across the three comparisons. The pathway hit count counts those
-    summed clusters whose membership includes at least one KO on the
-    assigned KEGG reference pathway map. Totals match Figure 5B exactly.
 
     Parameters
     ----------
@@ -259,12 +221,6 @@ def _filter_example_to_pathway_clusters(
 ) -> str:
     """Drop semicolon-separated KO segments whose cluster is not pathway-resident.
 
-    ``EXAMPLE_KO_OVERRIDES`` strings have the form
-    ``"K01468 imidazolonepropionase; K01712 urocanate hydratase"``. Each
-    segment is kept iff its leading K-id maps to a cluster (or, as a
-    singleton, is itself a KO) that contains at least one KO on the
-    assigned KEGG pathway map. Returns ``"---"`` when no segment survives.
-
     Parameters
     ----------
     example_text : str
@@ -305,15 +261,7 @@ def _filter_example_to_pathway_clusters(
 
 
 def _pathway_cell(phenotype: str) -> str:
-    """Render the "KEGG pathway map" cell for a phenotype.
-
-    Emits a single ``\\makecell[l]{...}`` block with each assigned KEGG map
-    rendered as two stacked lines: the map ID followed by the italic
-    pathway name (long names may take a third line via
-    :data:`PATHWAY_NAME_WRAPS`). When the phenotype has multiple maps they
-    are stacked vertically within the same cell to keep the column width
-    bounded.
-    """
+    """Render the "KEGG pathway map" cell for a phenotype."""
     map_ids = PHENOTYPE_TO_PATHWAY_MAPS.get(phenotype, ())
     if not map_ids:
         return "---"
@@ -362,10 +310,6 @@ def build_table(
     highlight_phenotype : str, optional
         Phenotype whose row receives bold emphasis on the headline numeric
         cells. Defaults to ``"Histidine"``.
-
-    Returns
-    -------
-    None
     """
     with open(full_combined_json) as handle:
         comb_full: dict[str, list[str]] = json.load(handle)
@@ -432,8 +376,7 @@ def build_table(
 
     def _emit_row(phenotype: str) -> None:
         ph, pathway_cell, shared_cell, pct_cell, example = _row_cells(phenotype)
-        # ISME style: avoid colour/shading (does not reproduce in web view);
-        # use bold-text emphasis on the headline numeric cells only.
+        # Use bold-text emphasis on the headline numeric cells only.
         if phenotype == highlight_phenotype:
             shared_render = f"\\textbf{{{shared_cell}}}"
             pct_render = f"\\textbf{{{pct_cell}}}"
@@ -451,9 +394,8 @@ def build_table(
 
     lines.append("\\end{tabular}%")
     lines.append("}")
-    # Asterisked caption: prints "Table N" label without re-incrementing the
-    # counter (counter was already advanced in the Legends section of
-    # tables_figures.tex, where the full legend text and alt text live).
+    # Asterisked caption: prints "Table N" without re-incrementing the counter
+    # (already advanced in the Legends section of tables_figures.tex).
     lines.append("\\caption*{\\textbf{Table \\arabic{table}}}")
     lines.append("\\end{table}")
 

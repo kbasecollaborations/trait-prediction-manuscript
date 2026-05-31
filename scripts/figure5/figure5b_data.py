@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
-"""
-Generate SHAP-based feature importance data for Figure 5B (concordant samples only).
+"""SHAP-based feature importance data for Figure 5B (concordant samples only).
 
-This script is similar to Figure 4C analysis but only uses GapMind-concordant samples.
-KOFAM annotations provide the model feature space; GapMind is used only for
-sample stratification.
-It performs two main analyses:
-1. Trains ML models on combined train-test splits (concordant samples only) and identifies
-   consistent top features using SHAP values across multiple random seeds.
-2. Trains ML models on individual datasets (concordant samples only) and identifies
-   consistent top features using SHAP values across multiple random seeds.
-
-The script uses CatBoost's native SHAP implementation for feature importance.
-For high-dimensional KOFAM matrices, each phenotype/split is first screened to a
-broad set of CatBoost-important candidate features before seeded SHAP stability
-analysis is run on the reduced matrix.
+KOFAM annotations provide the feature space; GapMind is used only to stratify
+samples. Each phenotype/split is screened to a broad CatBoost-important
+candidate set before seeded SHAP stability analysis.
 """
 
 import json
@@ -39,8 +28,7 @@ warnings.filterwarnings("ignore")
 
 
 def load_gapmind_predictions(gapmind_file: Path) -> pd.DataFrame:
-    """
-    Load GapMind predictions.
+    """Load GapMind predictions.
 
     Parameters
     ----------
@@ -59,8 +47,7 @@ def load_gapmind_predictions(gapmind_file: Path) -> pd.DataFrame:
 
 
 def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
-    """
-    Load and combine experimental phenotype data from all datasets.
+    """Load and combine experimental phenotype data from all datasets.
 
     Parameters
     ----------
@@ -72,43 +59,26 @@ def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
     pd.DataFrame
         Combined phenotype data with genomeID as index and phenotypes as columns
     """
-    # Dictionary to store data for each phenotype across all datasets
     phenotype_data: dict[str, list[pd.DataFrame]] = {}
 
-    # Iterate through each dataset directory
     for dataset_dir in phenotype_dir.iterdir():
         if not dataset_dir.is_dir():
             continue
 
-        # Load each phenotype file in the dataset
         for phenotype_file in dataset_dir.glob("*.tsv"):
             phenotype_name = phenotype_file.stem
-
-            # Read the phenotype data
             df = pd.read_csv(phenotype_file, sep="\t", dtype={"genomeID": str})
-
-            # Skip if phenotype not already in dictionary
             if phenotype_name not in phenotype_data:
                 phenotype_data[phenotype_name] = []
-
-            # Add this dataset's data
             phenotype_data[phenotype_name].append(df)
 
-    # Combine all datasets for each phenotype
     combined_phenotypes = {}
     for phenotype_name, df_list in phenotype_data.items():
-        # Concatenate all datasets
         combined = pd.concat(df_list, ignore_index=True)
-
-        # Remove duplicates, keeping the first occurrence
         combined = combined.drop_duplicates(subset=["genomeID"], keep="first")
-
-        # Set genomeID as index
         combined = combined.set_index("genomeID")
-
         combined_phenotypes[phenotype_name] = combined[phenotype_name]
 
-    # Create a single DataFrame with all phenotypes
     experimental_data = pd.DataFrame(combined_phenotypes)
 
     return experimental_data
@@ -119,8 +89,7 @@ def get_concordant_samples(
     experimental_phenotypes: pd.DataFrame,
     phenotype: str,
 ) -> set[str]:
-    """
-    Get set of genome IDs where GapMind predictions match experimental data.
+    """Get genome IDs where GapMind predictions match experimental data.
 
     Parameters
     ----------
@@ -136,26 +105,22 @@ def get_concordant_samples(
     set[str]
         Set of genome IDs with concordant predictions
     """
-    # Check if phenotype exists in both datasets
     if phenotype not in gapmind_predictions.columns:
         return set()
     if phenotype not in experimental_phenotypes.columns:
         return set()
 
-    # Get common genomes
     common_genomes = gapmind_predictions.index.intersection(
         experimental_phenotypes.index
     )
 
-    # Filter to genomes with non-NaN experimental data
+    # Restrict to genomes with non-NaN experimental data.
     exp_data = experimental_phenotypes.loc[common_genomes, phenotype]
     valid_genomes = exp_data.dropna().index
 
-    # Get predictions for valid genomes
     gapmind_vals = gapmind_predictions.loc[valid_genomes, phenotype]
     exp_vals = experimental_phenotypes.loc[valid_genomes, phenotype]
 
-    # Find concordant samples (where predictions match experimental data)
     concordant_mask = gapmind_vals == exp_vals
     concordant_genomes = set(valid_genomes[concordant_mask])
 
@@ -163,8 +128,7 @@ def get_concordant_samples(
 
 
 def get_test_dataset_from_key(key: str) -> str | None:
-    """
-    Extract the test dataset name from a dataset_split key.
+    """Extract the test dataset name from a dataset_split key.
 
     Parameters
     ----------
@@ -192,8 +156,7 @@ def get_shap_top_features(
     y: pd.Series,
     n_features: int = 10,
 ) -> list[str]:
-    """
-    Get top features using SHAP values from a trained CatBoost model.
+    """Get top features by mean absolute SHAP value from a trained CatBoost model.
 
     Parameters
     ----------
@@ -211,21 +174,18 @@ def get_shap_top_features(
     list[str]
         List of top n_features feature names ranked by mean absolute SHAP value
     """
-    # Create Pool for SHAP calculation
     pool = Pool(data=X, label=y)
 
-    # Get SHAP values using CatBoost's native implementation
     shap_values = model.get_feature_importance(
         data=pool,
         type="ShapValues",
         thread_count=-1,
     )
 
-    # Remove last column (base value) and take mean absolute SHAP value per feature
+    # Drop the base-value column, then mean absolute SHAP per feature.
     shap_values = shap_values[:, :-1]
     mean_abs_shap = np.abs(shap_values).mean(axis=0)
 
-    # Create Series and sort by importance
     feature_importance = pd.Series(mean_abs_shap, index=X.columns)
     feature_importance.sort_values(ascending=False, inplace=True)
 
@@ -307,8 +267,7 @@ def get_screened_split_data(
 def get_consistent_features(
     feature_lists: list[list[str]], threshold: float = 0.7
 ) -> list[str]:
-    """
-    Get features that appear in at least threshold proportion of runs.
+    """Get features appearing in at least the threshold proportion of runs.
 
     Parameters
     ----------
@@ -322,17 +281,14 @@ def get_consistent_features(
     list[str]
         List of features appearing in >= threshold proportion of runs
     """
-    # Count feature occurrences
     all_features = [feat for feat_list in feature_lists for feat in feat_list]
     feature_counts = Counter(all_features)
 
-    # Filter by threshold
     min_count = int(np.ceil(len(feature_lists) * threshold))
     consistent_features = [
         feat for feat, count in feature_counts.items() if count >= min_count
     ]
 
-    # Sort by frequency (descending)
     consistent_features.sort(key=lambda x: feature_counts[x], reverse=True)
 
     return consistent_features
@@ -341,8 +297,7 @@ def get_consistent_features(
 def load_individual_dataset(
     dataset_name: str, phenotype: str
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """
-    Load features and phenotype for an individual dataset.
+    """Load features and phenotype for an individual dataset.
 
     Parameters
     ----------
@@ -363,16 +318,12 @@ def load_individual_dataset(
         Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
     )
 
-    # Load features using the proper reading functions
     feature_set = read_features([features_path], ftype="int")
-
-    # Load phenotype using the proper reading functions
     phenotype_set = read_phenotypes([phenotype_path])
 
-    # Create dataset which handles NaN values and alignment
+    # DataSet handles NaN values and index alignment.
     dataset = DataSet(phenotype_set, feature_set)
 
-    # Get the specific phenotype data
     for feature_object in dataset.feature_set.features:
         for phenotype_object in dataset.phenotype_set.phenotypes:
             pindex = phenotype_object.pindex
@@ -393,8 +344,7 @@ def load_individual_dataset(
 def load_all_datasets_combined(
     datasets: Sequence[str], phenotype: str
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """
-    Load features and phenotype from all datasets combined.
+    """Load features and phenotype from all datasets combined.
 
     Parameters
     ----------
@@ -408,7 +358,6 @@ def load_all_datasets_combined(
     tuple[pd.DataFrame, pd.Series]
         Feature matrix and target variable from all datasets combined
     """
-    # Collect all feature and phenotype files
     feature_files = []
     phenotype_files = []
 
@@ -424,14 +373,12 @@ def load_all_datasets_combined(
             feature_files.append(features_path)
             phenotype_files.append(phenotype_path)
 
-    # Load all features and phenotypes
     feature_set = read_features(feature_files)
     phenotype_set = read_phenotypes(phenotype_files)
 
-    # Create dataset which handles NaN values and alignment
+    # DataSet handles NaN values and index alignment.
     dataset = DataSet(phenotype_set, feature_set)
 
-    # Combine all phenotype data for this phenotype across all datasets
     all_X_list = []
     all_y_list = []
 
@@ -448,15 +395,12 @@ def load_all_datasets_combined(
             all_X_list.append(feature_df)
             all_y_list.append(phenotype_df)
 
-    # Concatenate all datasets
     X_combined = pd.concat(all_X_list, axis=0)
     y_combined = pd.concat(all_y_list, axis=0)
 
-    # Handle duplicate indices by keeping first occurrence
     X_combined = X_combined[~X_combined.index.duplicated(keep="first")]
     y_combined = y_combined[~y_combined.index.duplicated(keep="first")]
 
-    # Align indices
     common_idx = X_combined.index.intersection(y_combined.index)
     X_combined = X_combined.loc[common_idx]
     y_combined = y_combined.loc[common_idx]
@@ -470,8 +414,7 @@ def train_and_get_top_features_individual(
     random_state: int = 42,
     n_features: int = 10,
 ) -> list[str]:
-    """
-    Train model on individual dataset and get top SHAP features.
+    """Train model on an individual dataset and get top SHAP features.
 
     Parameters
     ----------
@@ -489,16 +432,13 @@ def train_and_get_top_features_individual(
     list[str]
         List of top feature names
     """
-    # Resample 80% with stratification
     X_train, _, y_train, _ = train_test_split(
         X, y, train_size=0.8, stratify=y, random_state=random_state, shuffle=True
     )
 
-    # Train cb_noeval model
     model = make_classifier("cb_noeval", random_state=random_state)
     model.fit(X_train, y_train, verbose=False)
 
-    # Get top features using SHAP
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
 
     return top_features
@@ -509,8 +449,7 @@ def train_and_get_top_features_split(
     random_state: int = 42,
     n_features: int = 10,
 ) -> list[str]:
-    """
-    Train model on combined train+val split and get top SHAP features.
+    """Train model on combined train+val split and get top SHAP features.
 
     Parameters
     ----------
@@ -526,11 +465,9 @@ def train_and_get_top_features_split(
     list[str]
         List of top feature names
     """
-    # Combine train and val sets
     X_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
     y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
 
-    # Resample 80% with stratification
     X_train, _, y_train, _ = train_test_split(
         X_combined,
         y_combined,
@@ -540,11 +477,9 @@ def train_and_get_top_features_split(
         shuffle=True,
     )
 
-    # Train cb_noeval model
     model = make_classifier("cb_noeval", random_state=random_state)
     model.fit(X_train, y_train, verbose=False)
 
-    # Get top features using SHAP
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
 
     return top_features
@@ -559,8 +494,7 @@ def analyze_combined_splits(
     n_features: int = 10,
     n_candidate_features: int = 300,
 ) -> dict[str, list[str]]:
-    """
-    Analyze combined train-test splits and get consistent top features (concordant samples only).
+    """Analyze combined train-test splits for consistent top features (concordant only).
 
     Parameters
     ----------
@@ -587,10 +521,8 @@ def analyze_combined_splits(
     """
     dataset_split_dir = splits_dir / "dataset_split"
 
-    # Get all phenotypes
     phenotypes = [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
 
-    # Load feature data once
     feature_file = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
     feature_data = pd.read_csv(
         feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
@@ -601,25 +533,21 @@ def analyze_combined_splits(
     for phenotype in tqdm(phenotypes, desc="Analyzing combined splits (concordant)"):
         phenotype_dir = dataset_split_dir / phenotype
 
-        # Get all split types for this phenotype
         split_types = [d.name for d in phenotype_dir.iterdir() if d.is_dir()]
 
         for split_type in split_types:
             split_dir = phenotype_dir / split_type
             key = f"{phenotype}_{split_type}"
 
-            # Load split data
             try:
                 split_data = load_single_split_data(split_dir, feature_data)
             except Exception as e:
                 print(f"Error loading {key}: {e}")
                 continue
 
-            # Combine train and val sets to filter for concordant samples
             X_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
             y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
 
-            # Get concordant samples for this phenotype
             concordant_genomes = get_concordant_samples(
                 gapmind_predictions, experimental_phenotypes, phenotype
             )
@@ -627,25 +555,21 @@ def analyze_combined_splits(
             if len(concordant_genomes) == 0:
                 continue
 
-            # Filter to concordant samples
             concordant_in_data = set(X_combined.index) & concordant_genomes
-            if len(concordant_in_data) < 20:  # Need minimum samples
+            if len(concordant_in_data) < 20:
                 continue
 
             X_concordant = X_combined.loc[list(concordant_in_data)]
             y_concordant = y_combined.loc[list(concordant_in_data)]
 
-            # Check if we have enough samples for both classes
             if len(y_concordant.unique()) != 2:
                 continue
 
-            # Check minimum samples per class
             class_counts = y_concordant.value_counts()
             if class_counts.min() < 10:
                 continue
 
-            # Create filtered split_data for concordant samples
-            # Split back into train/val (80/20)
+            # Re-split the concordant samples into train/val (80/20).
             X_train_conc, X_val_conc, y_train_conc, y_val_conc = train_test_split(
                 X_concordant,
                 y_concordant,
@@ -667,7 +591,6 @@ def analyze_combined_splits(
                 n_candidate_features=n_candidate_features,
             )
 
-            # Run for multiple seeds
             feature_lists = []
             for seed in range(n_seeds):
                 try:
@@ -679,7 +602,6 @@ def analyze_combined_splits(
                     print(f"Error in {key} with seed {seed}: {e}")
                     continue
 
-            # Get consistent features
             if len(feature_lists) > 0:
                 consistent_features = get_consistent_features(
                     feature_lists, threshold=threshold
@@ -699,8 +621,7 @@ def analyze_individual_datasets(
     n_features: int = 10,
     n_candidate_features: int = 300,
 ) -> dict[str, dict[str, list[str]]]:
-    """
-    Analyze individual datasets and get consistent top features (concordant samples only).
+    """Analyze individual datasets for consistent top features (concordant only).
 
     Parameters
     ----------
@@ -734,10 +655,8 @@ def analyze_individual_datasets(
 
         for phenotype in tqdm(phenotypes, desc=f"Processing {dataset}", leave=False):
             try:
-                # Load data
                 X, y = load_individual_dataset(dataset, phenotype)
 
-                # Get concordant samples
                 concordant_genomes = get_concordant_samples(
                     gapmind_predictions, experimental_phenotypes, phenotype
                 )
@@ -745,19 +664,16 @@ def analyze_individual_datasets(
                 if len(concordant_genomes) == 0:
                     continue
 
-                # Filter to concordant samples
                 concordant_in_data = set(X.index) & concordant_genomes
-                if len(concordant_in_data) < 20:  # Need minimum samples
+                if len(concordant_in_data) < 20:
                     continue
 
                 X_concordant = X.loc[list(concordant_in_data)]
                 y_concordant = y.loc[list(concordant_in_data)]
 
-                # Check if we have enough samples for both classes
                 if len(y_concordant.unique()) != 2:
                     continue
 
-                # Check minimum samples per class
                 class_counts = y_concordant.value_counts()
                 if class_counts.min() < 10:
                     continue
@@ -769,7 +685,6 @@ def analyze_individual_datasets(
                 )
                 X_concordant = X_concordant.loc[:, candidate_features]
 
-                # Run for multiple seeds
                 feature_lists = []
                 for seed in range(n_seeds):
                     try:
@@ -784,7 +699,6 @@ def analyze_individual_datasets(
                         print(f"Error in {dataset}/{phenotype} with seed {seed}: {e}")
                         continue
 
-                # Get consistent features
                 if len(feature_lists) > 0:
                     consistent_features = get_consistent_features(
                         feature_lists, threshold=threshold
@@ -810,8 +724,7 @@ def analyze_all_datasets_combined(
     n_features: int = 10,
     n_candidate_features: int = 300,
 ) -> dict[str, list[str]]:
-    """
-    Analyze all datasets combined and get consistent top features (concordant samples only).
+    """Analyze all datasets combined for consistent top features (concordant only).
 
     Parameters
     ----------
@@ -844,10 +757,8 @@ def analyze_all_datasets_combined(
         phenotypes, desc="Analyzing all datasets combined (concordant)"
     ):
         try:
-            # Load data from all datasets combined
             X, y = load_all_datasets_combined(datasets, phenotype)
 
-            # Get concordant samples
             concordant_genomes = get_concordant_samples(
                 gapmind_predictions, experimental_phenotypes, phenotype
             )
@@ -855,19 +766,16 @@ def analyze_all_datasets_combined(
             if len(concordant_genomes) == 0:
                 continue
 
-            # Filter to concordant samples
             concordant_in_data = set(X.index) & concordant_genomes
-            if len(concordant_in_data) < 20:  # Need minimum samples
+            if len(concordant_in_data) < 20:
                 continue
 
             X_concordant = X.loc[list(concordant_in_data)]
             y_concordant = y.loc[list(concordant_in_data)]
 
-            # Check if we have enough samples for both classes
             if len(y_concordant.unique()) != 2:
                 continue
 
-            # Check minimum samples per class
             class_counts = y_concordant.value_counts()
             if class_counts.min() < 10:
                 continue
@@ -879,7 +787,6 @@ def analyze_all_datasets_combined(
             )
             X_concordant = X_concordant.loc[:, candidate_features]
 
-            # Run for multiple seeds
             feature_lists = []
             for seed in range(n_seeds):
                 try:
@@ -894,7 +801,6 @@ def analyze_all_datasets_combined(
                     print(f"Error in all_combined/{phenotype} with seed {seed}: {e}")
                     continue
 
-            # Get consistent features
             if len(feature_lists) > 0:
                 consistent_features = get_consistent_features(
                     feature_lists, threshold=threshold
@@ -944,8 +850,7 @@ def compare_features(
     individual_results: dict[str, dict[str, list[str]]],
     ko_clusters_by_phenotype: dict[str, dict[str, int]] | None = None,
 ) -> pd.DataFrame:
-    """
-    Compare features between combined train-test splits and individual dataset models.
+    """Compare features between combined train-test splits and individual dataset models.
 
     For each combination where the dataset was not used in training the combined model,
     find the intersection and unique features at both the KO level and (when a
@@ -973,25 +878,21 @@ def compare_features(
     summary_data = []
 
     for combined_key, combined_features in combined_results.items():
-        # Extract phenotype and test dataset
         phenotype = combined_key.split("_")[0]
         test_dataset = get_test_dataset_from_key(combined_key)
 
         if test_dataset is None:
             continue
 
-        # Check if this is one of our target datasets
         if test_dataset not in ["atleaf", "lit", "marine"]:
             continue
 
-        # Check if we have individual results for this dataset/phenotype
         if (
             test_dataset in individual_results
             and phenotype in individual_results[test_dataset]
         ):
             individual_features = individual_results[test_dataset][phenotype]
 
-            # Calculate intersection and unique features
             combined_set = set(combined_features)
             individual_set = set(individual_features)
 
@@ -1041,10 +942,7 @@ def compare_features(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 5B data (concordant samples only).
-    """
-    # Define paths
+    """Generate Figure 5B data (concordant samples only)."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure5")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1052,14 +950,12 @@ def main() -> None:
     GAPMIND_FILE = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
     PHENOTYPE_DIR = Path("data/processed/phenotypes")
 
-    # Parameters
     N_SEEDS = 20
     THRESHOLD = 0.7
     N_FEATURES = 10
     N_CANDIDATE_FEATURES = 300
     DATASETS = ["atleaf", "lit", "marine"]
 
-    # Load GapMind predictions and experimental phenotypes
     print("Loading GapMind predictions (loose)...")
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
     print(f"  Loaded {len(gapmind_predictions)} genomes")
@@ -1068,7 +964,6 @@ def main() -> None:
     experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
     print(f"  Loaded {len(experimental_phenotypes)} genomes")
 
-    # Get common phenotypes from dataset_split directory
     dataset_split_dir = SPLITS_DIR / "dataset_split"
     COMMON_PHENOTYPES = sorted(
         [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
@@ -1079,7 +974,6 @@ def main() -> None:
     print("Figure 5B: SHAP-based Feature Importance (Concordant Samples Only)")
     print("=" * 80)
 
-    # Step 1: Analyze combined train-test splits (concordant samples)
     combined_file = OUTPUT_DIR / "figure5b_combined_splits_shap_features.json"
 
     if combined_file.exists():
@@ -1104,7 +998,6 @@ def main() -> None:
             n_candidate_features=N_CANDIDATE_FEATURES,
         )
 
-        # Filter to only include common phenotypes
         combined_results_filtered = {
             k: v
             for k, v in combined_results.items()
@@ -1115,12 +1008,10 @@ def main() -> None:
             f"\nCompleted analysis for {len(combined_results_filtered)} combined splits (concordant samples)"
         )
 
-        # Save combined results
         with open(combined_file, "w") as f:
             json.dump(combined_results_filtered, f, indent=2)
         print(f"Saved combined results to: {combined_file}")
 
-    # Step 2: Analyze individual datasets (concordant samples)
     individual_file = OUTPUT_DIR / "figure5b_individual_datasets_shap_features.json"
 
     if individual_file.exists():
@@ -1154,16 +1045,13 @@ def main() -> None:
         for dataset, phenotypes in individual_results.items():
             print(f"  - {dataset}: {len(phenotypes)} phenotypes")
 
-        # Save individual results
         with open(individual_file, "w") as f:
             json.dump(individual_results, f, indent=2)
         print(f"Saved individual results to: {individual_file}")
 
-    # Step 3: Compare features between combined splits and individual datasets
     # Always re-run the comparison step (cheap) so cluster-mapping updates propagate.
     comparison_file = OUTPUT_DIR / "figure5b_feature_comparison_summary.csv"
 
-    # Load redundancy-cluster mapping if available.
     cluster_file = Path("data/outputs/clustering/ko_clusters_shap_hclust.json")
     if cluster_file.exists():
         with open(cluster_file, "r") as f:
@@ -1187,7 +1075,6 @@ def main() -> None:
     summary_df.to_csv(comparison_file, index=False)
     print(f"Saved comparison summary to: {comparison_file}")
 
-    # Print summary statistics
     print("\n" + "=" * 80)
     print("Summary Statistics")
     print("=" * 80)

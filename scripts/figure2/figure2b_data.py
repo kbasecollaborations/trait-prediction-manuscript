@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
-"""
-Generate baseline predictions using nearest neighbor and null models.
+"""Generate baseline predictions (identity, Bernoulli, nearest neighbor) across split types.
 
-This script generates baseline predictions for phenotype prediction using:
-- Identity classifier (always predicts the majority class)
-- Bernoulli classifier (random predictions based on class frequencies)
-- Nearest neighbor classifier (phylogeny-based predictions)
-
-The script processes three types of data splits:
-- Random splits (5 repeats per phenotype)
-- Dataset splits (cross-dataset validation)
-- Out-of-clade splits (phylogeny-based cross-validation)
+Covers random, dataset, and out-of-clade splits.
 """
 
 from pathlib import Path
@@ -108,7 +99,6 @@ def perform_ml(
         test_X = test_X.loc[common_test_index]
         test_y = test_y.loc[common_test_index]
 
-        # Initialize classifiers
         bernoulli_classifier = BernoulliClassifier(
             random_state=42, categorical_feature_names=[]
         )
@@ -123,12 +113,10 @@ def perform_ml(
             random_state=42, categorical_feature_names=[]
         )
 
-        # Fit classifiers
         bernoulli_classifier.fit(train_X, train_y)
         nearest_neighbor_classifier.fit(train_X, train_y)
         identity_classifier.fit(train_X, train_y)
 
-        # Get scores
         bernoulli_scores = get_scores(bernoulli_classifier, test_X, test_y)
         bernoulli_scores["model"] = "bernoulli"
         bernoulli_scores["phenotype"] = key.split("_")[0]
@@ -151,10 +139,7 @@ def perform_ml(
 
 
 def main() -> None:
-    """
-    Main function to generate baseline predictions.
-    """
-    # Define paths
+    """Main function to generate baseline predictions."""
     RANDOM_SPLIT_DIR = Path("data/processed/train_test_splits/random_split")
     DATASET_SPLIT_DIR = Path("data/processed/train_test_splits/dataset_split")
     PHYLO_SPLIT_DIR = Path("data/processed/train_test_splits/phylogeny_split")
@@ -162,14 +147,12 @@ def main() -> None:
     OUTPUT_DIR = Path("data/outputs/figure2")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load feature data
     print(f"Loading feature data from {FEATURE_FILE}")
     feature_data = pd.read_csv(
         FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
     print(f"Feature data shape: {feature_data.shape}")
 
-    # Load tree and distance matrix
     tree_file = Path("data/processed/phylogeny/gtdb-pruned.nwk")
     tree = Tree(str(tree_file), format=1)
 
@@ -183,7 +166,6 @@ def main() -> None:
     tree_leaves = [leaf.name for leaf in tree.get_leaves()]
     assert len(tree_leaves) == len(distance_df)
 
-    # Load random split data
     print("Loading random split data...")
     random_split_data = {}
     for random_dir in tqdm(list(RANDOM_SPLIT_DIR.iterdir())):
@@ -198,7 +180,6 @@ def main() -> None:
             data = load_single_split_data(repeat_dir, feature_data)
             random_split_data[key] = data
 
-    # Load dataset split data
     print("Loading dataset split data...")
     dataset_split_data = {}
     for dataset_dir in tqdm(list(DATASET_SPLIT_DIR.iterdir())):
@@ -213,7 +194,6 @@ def main() -> None:
             data = load_single_split_data(split_dir, feature_data)
             dataset_split_data[key] = data
 
-    # Load out-of-clade split data
     print("Loading out-of-clade split data...")
     out_of_clade_split_data = {}
     for phenotype_dir in tqdm(list(PHYLO_SPLIT_DIR.iterdir())):
@@ -231,7 +211,6 @@ def main() -> None:
             data = load_single_split_data(split_dir, feature_data)
             out_of_clade_split_data[key] = data
 
-    # Perform ML and save results
     print("Performing ML for random split...")
     random_results_df = perform_ml(random_split_data, tree, tree_leaves, distance_df)
     random_results_df.to_csv(OUTPUT_DIR / "random_split_baselines.tsv", sep="\t")

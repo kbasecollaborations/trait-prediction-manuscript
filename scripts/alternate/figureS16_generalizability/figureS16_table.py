@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
-"""
-Build the Supplementary Table of candidate non-canonical predictors.
-
-Reads the Supplementary Figure S16 data and emits a LaTeX table listing, for
-each phenotype with a sufficient number of recovered FN-discordant samples, the
-top candidate features (KO id, function, mean signed SHAP toward growth).
-
-Writes ``sections/table_recovered_features.tex``.
-"""
+"""Build the Supplementary Table of candidate non-canonical predictors from the
+Figure S16 data, writing ``sections/table_recovered_features.tex``."""
 
 from __future__ import annotations
 
@@ -25,8 +18,7 @@ NAME_MAX_CHARS: int = 48
 
 
 def latex_escape(text: str) -> str:
-    """
-    Escape the LaTeX special characters that occur in KO function names.
+    """Escape the LaTeX special characters that occur in KO function names.
 
     Parameters
     ----------
@@ -52,8 +44,7 @@ def latex_escape(text: str) -> str:
 
 
 def format_feature(feature: str, ko_name: object, shap: float) -> str:
-    """
-    Format one candidate feature as a LaTeX cell fragment.
+    """Format one candidate feature as a LaTeX cell fragment.
 
     Parameters
     ----------
@@ -78,8 +69,7 @@ def format_feature(feature: str, ko_name: object, shap: float) -> str:
 
 
 def build_table(features: pd.DataFrame, counts: pd.DataFrame) -> str:
-    """
-    Assemble the LaTeX table string.
+    """Assemble the LaTeX table string.
 
     Parameters
     ----------

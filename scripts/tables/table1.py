@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Supplementary Table S2 of stable features for the full-data analysis.
-
-The table is built from ``data/outputs/figure4/feature_comparison_summary.csv``,
-which records, for each (phenotype, held-out dataset) pair, the stable feature
-lists produced by the model trained on the other three datasets and by the
-model trained on the held-out dataset alone. KO members are grouped by their
-SHAP-supervised redundancy cluster (computed in ``scripts/feature_clustering``)
-so readers can see which features represent the same biological signal.
-"""
+"""Generate Supplementary Table S2 of stable features for the full-data analysis."""
 
 import json
 from collections import defaultdict
@@ -61,8 +53,8 @@ def _format_clustered_kos(
     Returns
     -------
     str
-        LaTeX-ready string with one cluster per ``\\newline`` block. KOs with no
-        cluster sibling (singletons) are listed last under "Singletons".
+        LaTeX-ready string with one cluster per ``\\newline`` block. Singletons
+        are listed last.
     """
     if not kos:
         return "None"

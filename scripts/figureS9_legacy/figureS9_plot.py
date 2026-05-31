@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 """Render Figure S9: taxonomic bias from GapMind concordance filtering.
 
-Three panels:
-
-A. Stacked-bar comparison of GTDB Class composition before vs after
-   concordance filtering, side-by-side per phenotype.
-B. Faith-PD scatter (concordant vs full) with a y = x reference. Phenotypes
-   whose ``pd_concordant / pd_full`` ratio falls below 0.5 are annotated by
-   name.
-C. Grouped bar of mean train/test class overlap (full vs concordant
-   training), per phenotype. The test set is held fixed; only the training
-   subset changes between scenarios.
+Panel A, GTDB Class composition (full vs concordant); panel B, Faith PD scatter;
+panel C, mean train/test class overlap (full vs concordant training).
 """
 
 from __future__ import annotations
@@ -101,10 +93,8 @@ def plot_panel_a(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.set_ylabel("Genome fraction")
     ax.set_xlabel("Phenotype")
 
-    # Tick lower-bar / upper-bar legend cue using a small subtitle line
     ax.set_title("(A) Class composition: full (left) vs concordant (right)", loc="left", fontsize=12)
 
-    # Build legend from the unique class colours
     handles = [
         plt.Rectangle((0, 0), 1, 1, color=palette[c], label=c) for c in classes
     ]
@@ -234,12 +224,12 @@ def plot_panel_c(ax: plt.Axes, df: pd.DataFrame) -> None:
 
 
 def create_figure(data_file: Path, output_file: Path) -> None:
-    """Build and save Figure S13.
+    """Build and save Figure S9.
 
     Parameters
     ----------
     data_file : Path
-        Path to the TSV produced by :mod:`scripts.figureS13.figureS13_data`.
+        Path to the TSV produced by the Figure S9 data script.
     output_file : Path
         Where to write the PDF.
     """

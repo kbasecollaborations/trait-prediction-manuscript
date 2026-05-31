@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate plots for Figure 7: Data requirements for model performance.
-
-Creates visualizations showing how training data size affects model performance
-across different split types and training data quality (full vs concordant).
-"""
+"""Plot Figure S6: model performance versus training sample size."""
 
 from pathlib import Path
 
@@ -100,14 +95,11 @@ def plot_performance_vs_sample_size(
         Which test subset to plot (Full Test, Concordant Test, Discordant Test),
         by default "Full Test".
     """
-    # Filter to selected test subset
     plot_data = df[df["test_subset"] == test_subset].copy()
 
-    # Get unique phenotypes and split types
     phenotypes = sorted(plot_data["phenotype"].unique())
     split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
 
-    # Create figure
     fig, axes = plt.subplots(
         nrows=len(phenotypes),
         ncols=len(split_types),
@@ -123,7 +115,6 @@ def plot_performance_vs_sample_size(
         key=lambda x: float("inf") if str(x) == "full" else float(x),
     )
 
-    # Define colors and markers for training types
     colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
     markers = {"Full": "o", "Concordant": "s"}
 
@@ -131,7 +122,6 @@ def plot_performance_vs_sample_size(
         for col_idx, split_type in enumerate(split_types):
             ax = axes[row_idx, col_idx]
 
-            # Filter data for this subplot
             subset = plot_data[
                 (plot_data["phenotype"] == phenotype)
                 & (plot_data["split_type"] == split_type)
@@ -148,7 +138,6 @@ def plot_performance_vs_sample_size(
                 )
                 continue
 
-            # Plot for each training type
             for training_type in ["Full", "Concordant"]:
                 train_subset = subset[subset["training_type"] == training_type].copy()
 
@@ -170,7 +159,6 @@ def plot_performance_vs_sample_size(
                     # Sort by n_train_samples for proper line connection
                     line_data = line_data.sort_values("n_train_samples")
 
-                    # Plot line
                     ax.plot(
                         line_data["n_train_samples"],
                         line_data["balanced_accuracy"],
@@ -195,13 +183,11 @@ def plot_performance_vs_sample_size(
                     linewidths=0.5,
                 )
 
-            # Set labels and title
             if row_idx == len(phenotypes) - 1:
                 ax.set_xlabel("Number of Training Samples")
             if col_idx == 0:
                 ax.set_ylabel("Balanced Accuracy")
 
-            # Add subplot title
             if row_idx == 0:
                 ax.set_title(split_type, fontweight="bold")
 
@@ -218,7 +204,6 @@ def plot_performance_vs_sample_size(
                     fontweight="bold",
                 )
 
-            # Set y-axis limits
             ax.set_ylim(0, 1.05)
 
             # Set x-axis ticks to match sample sizes
@@ -237,7 +222,6 @@ def plot_performance_vs_sample_size(
                 ax.set_xticks(x_ticks)
                 ax.set_xticklabels(x_labels, rotation=45, ha="right")
 
-            # Format x-axis
             ax.tick_params(axis="both", which="both")
 
     # Add figure-level legend at the top in one row
@@ -311,7 +295,6 @@ def plot_combined_test_subsets(
         key=lambda x: float("inf") if str(x) == "full" else float(x),
     )
 
-    # Define colors and markers for training types
     colors = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
     markers = {"Full": "o", "Concordant": "s"}
 
@@ -328,7 +311,6 @@ def plot_combined_test_subsets(
             for col_idx, split_type in enumerate(split_types):
                 ax = axes[row_idx, col_idx]
 
-                # Filter data
                 subset = df[
                     (df["phenotype"] == phenotype)
                     & (df["split_type"] == split_type)
@@ -346,7 +328,6 @@ def plot_combined_test_subsets(
                     )
                     continue
 
-                # Plot for each training type
                 for training_type in ["Full", "Concordant"]:
                     train_subset = subset[
                         subset["training_type"] == training_type
@@ -370,7 +351,6 @@ def plot_combined_test_subsets(
                         # Sort by n_train_samples for proper line connection
                         line_data = line_data.sort_values("n_train_samples")
 
-                        # Plot line
                         ax.plot(
                             line_data["n_train_samples"],
                             line_data["balanced_accuracy"],
@@ -395,13 +375,11 @@ def plot_combined_test_subsets(
                         linewidths=0.5,
                     )
 
-                # Set labels
                 if row_idx == len(test_subsets) - 1:
                     ax.set_xlabel("Number of Training Samples")
                 if col_idx == 0:
                     ax.set_ylabel("Balanced Accuracy")
 
-                # Add titles
                 if row_idx == 0:
                     ax.set_title(split_type, fontweight="bold")
 
@@ -509,8 +487,7 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    """Main function to generate Figure 7 plots."""
-    # Load data
+    """Generate Figure S6 plots."""
     data_file = Path(
         f"data/outputs/figureS6/figure_s6_data_requirements_{FEATURE_TYPE}.csv"
     )
@@ -519,7 +496,6 @@ def main() -> None:
     print(f"Loaded {len(df)} rows from {data_file}")
     print(f"Feature type: {FEATURE_TYPE.upper()}")
 
-    # Prepare data
     plot_data = prepare_plot_data(df)
 
     # Create output directories. The manuscript figure (figure_s6.pdf) lives in
@@ -529,7 +505,6 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     alternate_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create plots
     print("\nGenerating plots...")
 
     # Auxiliary main plot (Full Test only, 2x3 grid for both phenotypes): alternate.
@@ -551,7 +526,6 @@ def main() -> None:
         alternate_dir=alternate_dir,
     )
 
-    # Print summary statistics
     print_summary_statistics(plot_data)
 
     print("\nDone!")

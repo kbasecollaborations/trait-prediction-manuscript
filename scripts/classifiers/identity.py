@@ -1,7 +1,4 @@
-"""Module that defines the identity classifier null model.
-
-Re-exports from trait_prediction for backward compatibility.
-"""
+"""Re-export the identity null-model classifier for backward compatibility."""
 
 from trait_prediction.classifiers import IdentityClassifier
 

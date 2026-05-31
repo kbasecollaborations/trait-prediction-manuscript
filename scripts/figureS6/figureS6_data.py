@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
-"""
-Generate data for Figure 7: Data requirements for model performance.
+"""Generate Figure S6 data: model performance versus training sample size.
 
-This script investigates how much training data is needed to achieve certain
-performance levels, comparing:
-- Different training data sizes: [50, 100, 200, 500, full]
-- Different training data types: full vs concordant (GapMind-matching)
-- Different split types: random_split, dataset_split, out-of-clade
-- Different test subsets: full, concordant, discordant
-
-For each configuration, we run 3 repeats with different random subsamples.
-Analysis is limited to Histidine and Galactose phenotypes.
+Sweeps training size, training type (full vs concordant), split type, and test
+subset for Histidine and Galactose, with 3 repeats per configuration.
 """
 
 import json
@@ -77,12 +69,10 @@ def load_gapmind_predictions() -> pd.DataFrame:
         "cellobiose": "Cellobiose",
     }
 
-    # Load marine ID mapping
     marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
     with open(marine_ids_file, "r") as f:
         marine_ids_map = {v.rsplit("_", 2)[0]: k for k, v in json.load(f).items()}
 
-    # Load GapMind data
     from scripts.io import index_format_func
 
     gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
@@ -151,7 +141,6 @@ def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]
                     if not repeat_dir.is_dir():
                         continue
                     key = f"{phenotype_name}_{repeat_dir.name}"
-                    # Load y files only
                     y_train = pd.read_csv(
                         repeat_dir / "y_train.tsv",
                         sep="\t",
@@ -385,17 +374,14 @@ def run_data_requirements_analysis(
                     pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
                     continue
 
-                # Get split data
                 y_train = split_data[split_type][key]["y_train"]
                 y_val = split_data[split_type][key]["y_val"]
                 y_test = split_data[split_type][key]["y_test"]
 
-                # Get feature indices
                 train_indices = y_train.index.intersection(feature_data.index)
                 val_indices = y_val.index.intersection(feature_data.index)
                 test_indices = y_test.index.intersection(feature_data.index)
 
-                # Get features and labels
                 X_train_full = feature_data.loc[train_indices]
                 y_train_full = y_train.loc[train_indices]
                 X_val_full = feature_data.loc[val_indices]
@@ -455,7 +441,6 @@ def run_data_requirements_analysis(
                             if len(sampled_train_indices) < 5:
                                 continue
 
-                            # Get subsampled data
                             X_train = X_train_full.loc[sampled_train_indices]
                             y_train = y_train_full.loc[sampled_train_indices]
 
@@ -561,8 +546,7 @@ def run_data_requirements_analysis(
 
 
 def main() -> None:
-    """Main function to generate Figure 7 data."""
-    # Define paths
+    """Generate Figure S6 data."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     FEATURE_FILE = Path(
         f"data/processed/features_reduced/combined_datasets/{FEATURE_TYPE}.tsv"
@@ -570,26 +554,22 @@ def main() -> None:
     OUTPUT_DIR = Path("data/outputs/figureS6")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load features
     print(f"Loading {FEATURE_TYPE.upper()} feature data...")
     feature_data = pd.read_csv(
         FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
     print(f"  Feature data shape: {feature_data.shape}")
 
-    # Load GapMind predictions
     print("\nLoading GapMind predictions...")
     gapmind_data = load_gapmind_predictions()
     print(f"  GapMind predictions shape: {gapmind_data.shape}")
 
-    # Load splits
     print("\nLoading train-test splits...")
     split_data = load_split_files(SPLITS_DIR)
     print("\nLoaded splits summary:")
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Run analysis
     print("\nRunning data requirements analysis...")
     print(f"  Feature type: {FEATURE_TYPE.upper()}")
     print(f"  Phenotypes: {PHENOTYPES_TO_ANALYZE}")
@@ -605,15 +585,12 @@ def main() -> None:
         split_data, feature_data, gapmind_data, checkpoint_file=checkpoint_file
     )
 
-    # Add feature type to results
     results["feature_type"] = FEATURE_TYPE
 
-    # Save results
     results_file = OUTPUT_DIR / f"figure_s6_data_requirements_{FEATURE_TYPE}.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
 

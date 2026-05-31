@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
-"""
-Generate phylogeny-independent dataset analysis data for Figure 3C.
+"""Generate phylogeny-independent dataset analysis data for Figure 3C.
 
-This script processes pre-generated dataset splits and applies phylogenetic
-filtering to create two test conditions:
-1. Full inter-dataset testing (all test samples)
-2. In-clade testing (phylogenetically matched test samples only)
-
-The clustering approach ensures test samples are phylogenetically similar to
-training samples, controlling for phylogenetic distance effects.
+Compares full inter-dataset testing against in-clade testing on
+phylogenetically matched test samples.
 """
 
 import warnings
@@ -25,8 +19,7 @@ warnings.filterwarnings("ignore")
 
 
 def _get_samples(cluster_samples: list[str], X: pd.DataFrame) -> list[str]:
-    """
-    Filter cluster samples to only those present in the dataset.
+    """Filter cluster samples to those present in the dataset.
 
     Parameters
     ----------
@@ -38,7 +31,7 @@ def _get_samples(cluster_samples: list[str], X: pd.DataFrame) -> list[str]:
     Returns
     -------
     list[str]
-        List of sample IDs present in both cluster and dataset
+        Sample IDs present in both cluster and dataset
     """
     return [sample for sample in cluster_samples if sample in X.index]
 
@@ -46,11 +39,10 @@ def _get_samples(cluster_samples: list[str], X: pd.DataFrame) -> list[str]:
 def get_test_samples(
     X_train: pd.DataFrame, X_test: pd.DataFrame, distance_df: pd.DataFrame
 ) -> list[str]:
-    """
-    Get phylogenetically matched test samples using agglomerative clustering.
+    """Select phylogenetically matched test samples using agglomerative clustering.
 
-    Performs clustering on the combined train+test samples, then selects only
-    test samples from clusters that contain sufficient training samples.
+    Clusters the combined train+test samples, then keeps test samples only
+    from clusters that contain sufficient training samples.
 
     Parameters
     ----------
@@ -83,7 +75,6 @@ def get_test_samples(
         curr_train_samples = _get_samples(cluster_samples, X_train)
         curr_test_samples = _get_samples(cluster_samples, X_test)
 
-        # Only include clusters with sufficient training samples
         if len(curr_train_samples) < 2 or len(curr_test_samples) == 0:
             continue
 
@@ -95,11 +86,7 @@ def get_test_samples(
 def calculate_distance(
     train_samples: pd.Index, test_samples: pd.Index, distance_df: pd.DataFrame
 ) -> tuple[float, float]:
-    """
-    Calculate average and minimum phylogenetic distances.
-
-    Computes the average distance from each test sample to all training samples,
-    and the minimum distance from each test sample to any training sample.
+    """Calculate average and minimum phylogenetic distances from test to train samples.
 
     Parameters
     ----------
@@ -138,11 +125,7 @@ def run_ml_on_dataset_splits_with_phylo_filter(
     random_state: int = 42,
     min_test_samples: int = 10,
 ) -> pd.DataFrame:
-    """
-    Run ML on dataset splits with phylogenetic filtering.
-
-    For each split, performs both full testing and in-clade testing,
-    comparing performance with and without phylogenetic filtering.
+    """Run ML on dataset splits with full and in-clade phylogenetic filtering.
 
     Parameters
     ----------
@@ -195,21 +178,18 @@ def run_ml_on_dataset_splits_with_phylo_filter(
             X_test = split["X_test"]
             y_test = split["y_test"]
 
-            # Extract phenotype and train/test config from key
             # Key format: "Phenotype_train(datasets),test(dataset)"
             parts = key.split("_", 1)
             phenotype = parts[0]
             train_test_config = parts[1] if len(parts) > 1 else "unknown"
 
-            # Skip if training or validation sets don't have both classes
+            # CatBoost needs both classes present in train and validation
             if len(y_train.unique()) != 2 or len(y_val.unique()) != 2:
                 pbar.update(2)
                 continue
 
-            # Get phylogenetically matched test samples
             test_samples_inclade = get_test_samples(X_train, X_test, distance_df)
 
-            # Perform both full and in-clade testing
             for test_type in ["full", "in-clade"]:
                 pbar.set_postfix_str(f"{key} ({test_type})")
 
@@ -220,17 +200,14 @@ def run_ml_on_dataset_splits_with_phylo_filter(
                     X_test_subset = X_test.loc[test_samples_inclade]
                     y_test_subset = y_test.loc[test_samples_inclade]
 
-                # Skip if test set is too small
                 if len(X_test_subset) < min_test_samples:
                     pbar.update(1)
                     continue
 
-                # Skip if test set doesn't have both classes
                 if len(y_test_subset.unique()) != 2:
                     pbar.update(1)
                     continue
 
-                # Run ML
                 result = perform_split_ml(
                     X_train,
                     y_train,
@@ -243,12 +220,10 @@ def run_ml_on_dataset_splits_with_phylo_filter(
                     random_state=random_state,
                 )
 
-                # Calculate distances
                 avg_dist, min_dist = calculate_distance(
                     X_train.index, X_test_subset.index, distance_df
                 )
 
-                # Add metadata
                 result["test_type"] = test_type
                 result["avg_dist"] = avg_dist
                 result["min_dist"] = min_dist
@@ -266,27 +241,20 @@ def run_ml_on_dataset_splits_with_phylo_filter(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 3C data.
-    """
-    # Define paths
+    """Generate Figure 3C data."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     DISTANCE_FILE = Path("data/processed/phylogeny/distance_matrix.tsv")
     OUTPUT_DIR = Path("data/outputs/figure3")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load distance matrix
     print("Loading phylogenetic distance matrix...")
     distance_df = pd.read_csv(DISTANCE_FILE, sep="\t", index_col=0)
 
-    # Load dataset splits only
     print("\nLoading dataset splits...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=["dataset_split"])
 
-    # Print summary of loaded data
     print(f"\nLoaded {len(split_data['dataset_split'])} dataset splits")
 
-    # Run ML with phylogenetic filtering
     print("\nRunning ML with phylogenetic filtering...")
     results = run_ml_on_dataset_splits_with_phylo_filter(
         split_data["dataset_split"],
@@ -307,12 +275,10 @@ def main() -> None:
         results, full_test_minority_counts(), key_column="train_test_config"
     )
 
-    # Save results
     results_file = OUTPUT_DIR / "figure3c_results.csv"
     results.to_csv(results_file, index=False)
     print(f"\nSaved results to: {results_file}")
 
-    # Print summary statistics
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
     print("\nBy test type (mean balanced accuracy):")

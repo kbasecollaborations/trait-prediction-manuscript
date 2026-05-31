@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Create Figure 6D: Comparing combined vs phenotype-filtered features.
-
-This figure shows the performance difference between:
-1. Combined features (GapMind + KOFAM + RAST)
-2. Phenotype-filtered features (GapMind features specific to each phenotype)
-
-Performance is shown for both random split and dataset split approaches.
-"""
+"""Create Figure 6D: combined vs phenotype-filtered feature performance."""
 
 import warnings
 from pathlib import Path
@@ -162,10 +154,8 @@ def plot_split_comparison(
     title : str
         Subplot title.
     """
-    # Filter data for this split type
     split_data = data[data["split_type"] == split_type].copy()
 
-    # Calculate mean and std for each phenotype and experiment
     summary = (
         split_data.groupby(["phenotype", "experiment"])["balanced_accuracy"]
         .agg(["mean", "std", "count"])
@@ -175,13 +165,11 @@ def plot_split_comparison(
     x = np.arange(len(phenotypes))
     width = 0.35
 
-    # Separate combined and filtered data
     combined_data = summary[summary["experiment"] == "combined"].set_index("phenotype")
     filtered_data = summary[summary["experiment"] == "phenotype_filtered"].set_index(
         "phenotype"
     )
 
-    # Align with phenotypes order
     combined_means = [
         combined_data.loc[p, "mean"] if p in combined_data.index else np.nan
         for p in phenotypes
@@ -199,7 +187,6 @@ def plot_split_comparison(
         for p in phenotypes
     ]
 
-    # Create bars
     bars1 = ax.bar(
         x - width / 2,
         combined_means,
@@ -221,12 +208,10 @@ def plot_split_comparison(
         capsize=3,
     )
 
-    # Add alternating background colors
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
 
-    # Formatting
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xlabel("Phenotype")
     ax.set_title(title, pad=10)
@@ -235,8 +220,6 @@ def plot_split_comparison(
     ax.set_ylim(0, 1.05)
     ax.legend(loc="upper right", frameon=False)
 
-    # Add feature count annotation
-    # Get average feature counts for this split type
     combined_n_features = (
         split_data[split_data["experiment"] == "combined"]["n_features"]
         .mean()
@@ -246,7 +229,6 @@ def plot_split_comparison(
         .mean()
     )
 
-    # Add text annotation for feature counts
     if not np.isnan(combined_n_features):
         ax.text(
             0.02,
@@ -291,14 +273,12 @@ def plot_balanced_accuracy_scatter(
     phenotypes : list[str]
         List of phenotypes to include.
     """
-    # Calculate mean balanced accuracy for each phenotype, experiment, and split_type
     summary = (
         data.groupby(["phenotype", "experiment", "split_type"])["balanced_accuracy"]
         .mean()
         .reset_index()
     )
 
-    # Define markers for split type (no fill colors, just shape difference)
     markers = {"random_split": "o", "dataset_split": "s"}
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
     random_p_value = None
@@ -306,7 +286,6 @@ def plot_balanced_accuracy_scatter(
     dataset_p_value = None
     dataset_n = 0
 
-    # Plot combined vs filtered for each phenotype and split type
     for split_type in ["random_split", "dataset_split"]:
         split_data = summary[summary["split_type"] == split_type]
 
@@ -317,7 +296,6 @@ def plot_balanced_accuracy_scatter(
             split_data["experiment"] == "phenotype_filtered"
         ].set_index("phenotype")["balanced_accuracy"]
 
-        # Get common phenotypes
         common = [p for p in phenotypes if p in combined.index and p in filtered.index]
 
         combined_vals = [combined.loc[p] for p in common]
@@ -344,10 +322,8 @@ def plot_balanced_accuracy_scatter(
             dataset_p_value = p_value
             dataset_n = n_pairs
 
-    # Add diagonal line (y = x)
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
-    # Formatting
     ax.set_xlabel("Combined Features\n(Balanced Accuracy)")
     ax.set_ylabel("Phenotype-Filtered\n(Balanced Accuracy)")
     ax.set_xlim(0.4, 1.05)
@@ -383,17 +359,13 @@ def plot_precision_recall_scatter_by_feature_type(
     phenotypes : list[str]
         List of phenotypes to include.
     """
-    # Calculate mean precision and recall for each phenotype, experiment, and split_type
     summary = (
         data.groupby(["phenotype", "experiment", "split_type"])[["precision", "recall"]]
         .mean()
         .reset_index()
     )
-
-    # Filter to phenotypes of interest
     summary = summary[summary["phenotype"].isin(phenotypes)]
 
-    # Define colors for filter type and markers for split type
     colors = {"combined": "#2E86AB", "phenotype_filtered": "#E63946"}
     markers = {"random_split": "o", "dataset_split": "s"}
     filter_labels = {
@@ -402,7 +374,6 @@ def plot_precision_recall_scatter_by_feature_type(
     }
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
 
-    # Plot each combination of experiment and split type
     for experiment in ["combined", "phenotype_filtered"]:
         for split_type in ["random_split", "dataset_split"]:
             subset = summary[
@@ -410,7 +381,6 @@ def plot_precision_recall_scatter_by_feature_type(
                 & (summary["split_type"] == split_type)
             ]
 
-            # Create combined label for legend
             label = f"{filter_labels[experiment]} ({split_labels[split_type]})"
 
             ax.scatter(
@@ -426,10 +396,8 @@ def plot_precision_recall_scatter_by_feature_type(
                 zorder=3,
             )
 
-    # Add diagonal line (precision = recall)
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
-    # Formatting
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
@@ -455,7 +423,6 @@ def create_figure(
     phenotype_order : list[str] | None
         Order of phenotypes for x-axis. If None, uses alphabetical order.
     """
-    # Load data
     df = pd.read_csv(data_file)
 
     # Apply the manuscript's minority-class-in-test filter (Methods). Fig 6D
@@ -468,17 +435,13 @@ def create_figure(
 
     df = filter_by_minority(df, full_test_minority_counts())
 
-    # Get unique phenotypes
     if phenotype_order is None:
         phenotypes = sorted(df["phenotype"].unique())
     else:
-        # Filter to only phenotypes that are in the data
         phenotypes = [p for p in phenotype_order if p in df["phenotype"].values]
 
-    # Create figure with 2 subplots (one for each split type)
     fig, axes = plt.subplots(2, 1, figsize=(12, 12))
 
-    # Plot random split
     plot_split_comparison(
         axes[0],
         df,
@@ -487,7 +450,6 @@ def create_figure(
         title="A. Random Split: Combined vs Phenotype-Filtered Features",
     )
 
-    # Plot dataset split
     plot_split_comparison(
         axes[1],
         df,
@@ -496,13 +458,11 @@ def create_figure(
         title="B. Dataset Split: Combined vs Phenotype-Filtered Features",
     )
 
-    # Adjust layout
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     plt.close()
 
-    # Print summary statistics
     print("\n" + "=" * 80)
     print("Summary: Combined vs Phenotype-Filtered Features")
     print("=" * 80)
@@ -522,7 +482,6 @@ def create_figure(
                 print(f"    Balanced Accuracy: {mean_ba:.4f} ± {std_ba:.4f}")
                 print(f"    Features: ~{int(mean_features)}")
 
-        # Calculate difference
         combined_mean = split_data[split_data["experiment"] == "combined"][
             "balanced_accuracy"
         ].mean()
@@ -535,7 +494,6 @@ def create_figure(
             pct_diff = (diff / combined_mean) * 100 if combined_mean != 0 else 0
             print(f"  Difference (Filtered - Combined): {diff:+.4f} ({pct_diff:+.2f}%)")
 
-    # Print per-phenotype comparison
     print("\n" + "=" * 80)
     print("Per-Phenotype Comparison (Dataset Split)")
     print("=" * 80)
@@ -561,7 +519,7 @@ if __name__ == "__main__":
     output_file = Path("figures/figure6d.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Define phenotype order (matching common phenotypes from figure3)
+    # Phenotype order matches the common phenotypes from figure3.
     phenotype_order = [
         "Alanine",
         "Arginine",

@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Create Figure 6C: Impact of filtering problematic samples on precision/recall/AUPRC.
-
-This figure shows how removing GapMind-misclassified samples (identified in Figure 6A)
-affects ML model performance metrics across all phenotypes.
-"""
+"""Create Figure 6C: precision-recall scatter across training-set filtering conditions."""
 
 from pathlib import Path
 
@@ -46,10 +41,9 @@ def plot_precision_recall_scatter(
 
     full_minority = full_test_minority_counts()
 
-    # All three filtering strategies are scored on the same full cross-dataset
-    # held-out test set; only the training set changes between conditions.
-    #
-    # 1. Concordant-trained model, full cross-dataset test (Figure 5C data).
+    # All three conditions are scored on the same full cross-dataset held-out
+    # test set; only the training set changes.
+    # 1. Concordant-trained model (Figure 5C data).
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
     )
@@ -59,20 +53,18 @@ def plot_precision_recall_scatter(
     ].copy()
     concordant_df = filter_by_minority(concordant_df, full_minority)
 
-    # 2. Y_soft-filtered training (Figure 6B data), full cross-dataset test.
+    # 2. Y_soft-filtered training (Figure 6B data).
     ysoft_df = pd.read_csv(data_dir / "figure6b_confident_ml_results.csv")
     ysoft_df = ysoft_df[ysoft_df["split_type"] == "dataset_split"].copy()
     ysoft_df = filter_by_minority(ysoft_df, full_minority)
 
-    # 3. Problematic-sample-removed training (Figure 6C "filtered" condition),
-    #    full cross-dataset test.
+    # 3. Problematic-sample-removed training (Figure 6C "filtered" condition).
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
     misclass_df = filter_by_minority(
         misclass_df, full_minority, key_column="split"
     )
 
-    # Calculate mean precision and recall for each phenotype (for scatter points)
     concordant_summary = (
         concordant_df.groupby("phenotype")[["precision", "recall"]]
         .mean()
@@ -102,7 +94,6 @@ def plot_precision_recall_scatter(
         .reindex(phenotypes)
     )
 
-    # Plot scatter points for each condition (per-phenotype means)
     ax.scatter(
         concordant_summary["recall"],
         concordant_summary["precision"],
@@ -148,10 +139,8 @@ def plot_precision_recall_scatter(
         zorder=3,
     )
 
-    # Add diagonal line (precision = recall)
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
-    # Formatting
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
@@ -186,17 +175,14 @@ def plot_gapmind_precision_recall_scatter(
     if gapmind_file is None:
         gapmind_file = Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv")
 
-    # Load GapMind data
     gapmind_df = pd.read_csv(gapmind_file, sep="\t")
 
-    # Calculate mean precision and recall for each phenotype (across test datasets)
     gapmind_summary = (
         gapmind_df.groupby("phenotype")[["precision", "recall"]]
         .mean()
         .reindex(phenotypes)
     )
 
-    # Plot scatter points for GapMind (per-phenotype means)
     ax.scatter(
         gapmind_summary["recall"],
         gapmind_summary["precision"],
@@ -209,10 +195,8 @@ def plot_gapmind_precision_recall_scatter(
         zorder=3,
     )
 
-    # Add diagonal line (precision = recall)
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
-    # Formatting
     ax.set_xlabel("Recall")
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
@@ -238,19 +222,15 @@ def create_figure(
     phenotype_order : list[str] | None
         Order of phenotypes for x-axis. If None, uses alphabetical order.
     """
-    # Load data
     df = pd.read_csv(data_file)
 
-    # Get unique phenotypes
     if phenotype_order is None:
         phenotypes = sorted(df["phenotype"].unique())
     else:
         phenotypes = phenotype_order
 
-    # Create figure with 3 subplots (one for each metric)
     fig, axes = plt.subplots(3, 1, figsize=(12, 15))
 
-    # Plot precision
     plot_metric_comparison(
         axes[0],
         df,
@@ -260,7 +240,6 @@ def create_figure(
         title="A. Precision Before vs After Filtering",
     )
 
-    # Plot recall
     plot_metric_comparison(
         axes[1],
         df,
@@ -270,7 +249,6 @@ def create_figure(
         title="B. Recall Before vs After Filtering",
     )
 
-    # Plot AUPRC
     plot_metric_comparison(
         axes[2],
         df,
@@ -280,13 +258,11 @@ def create_figure(
         title="C. AUPRC Before vs After Filtering",
     )
 
-    # Adjust layout
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     plt.close()
 
-    # Print summary statistics
     print("\n" + "=" * 80)
     print("Summary: Average change after filtering")
     print("=" * 80)

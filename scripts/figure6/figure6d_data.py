@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate data for Figure 6D: Comparing combined vs phenotype-filtered features.
-
-This script performs two machine learning experiments:
-1. Combined features: Uses the combined GapMind+KOFAM+RAST feature matrix
-2. Phenotype-filtered features: Uses only phenotype-specific GapMind features
-
-Both experiments use random_split and dataset_split train-test splits.
-Results are saved for comparison plotting.
-"""
+"""Generate Figure 6D data: combined vs phenotype-filtered GapMind feature experiments."""
 
 from pathlib import Path
 
@@ -70,7 +61,6 @@ def run_ml_on_splits(
         "roc_auc",
     ]
 
-    # Calculate total iterations for progress bar
     total_splits = sum(len(splits) for splits in split_data.values())
 
     with tqdm(
@@ -89,7 +79,6 @@ def run_ml_on_splits(
                 X_test = split["X_test"]
                 y_test = split["y_test"]
 
-                # Skip if test set is too small
                 n_test_samples = len(X_test)
                 if n_test_samples < min_test_samples:
                     print(
@@ -97,14 +86,12 @@ def run_ml_on_splits(
                     )
                     continue
 
-                # Skip if training or validation sets don't have both classes
                 if len(y_train.unique()) != 2 or len(y_val.unique()) != 2:
                     print(
                         f"\nSkipping {split_type}/{key}: training or validation set doesn't have 2 classes"
                     )
                     continue
 
-                # Run ML
                 result = perform_split_ml(
                     X_train,
                     y_train,
@@ -117,7 +104,6 @@ def run_ml_on_splits(
                     random_state=random_state,
                 )
 
-                # Add metadata
                 result["split_type"] = split_type
                 result["key"] = key
                 result["phenotype"] = key.split("_")[0]
@@ -151,7 +137,6 @@ def filter_gapmind_by_phenotype(
     pd.DataFrame
         Filtered feature matrix containing only features for the specified phenotype.
     """
-    # Filter columns that start with "{phenotype_name}-"
     phenotype_columns = [
         col for col in gapmind_features.columns if col.startswith(f"{phenotype_name}-")
     ]
@@ -169,13 +154,7 @@ def run_phenotype_filtered_experiment(
     phenotype_list: list[str],
 ) -> pd.DataFrame:
     """
-    Run ML experiment with phenotype-filtered GapMind features.
-
-    For each phenotype, this function:
-    1. Loads the full unreduced GapMind feature matrix
-    2. Filters features by phenotype prefix (e.g., "Alanine-*")
-    3. Loads train-test splits for that phenotype
-    4. Runs ML using only the phenotype-specific features
+    Run ML per phenotype using only that phenotype's GapMind feature columns.
 
     Parameters
     ----------
@@ -202,7 +181,6 @@ def run_phenotype_filtered_experiment(
     all_results = []
 
     for phenotype in tqdm(phenotype_list, desc="Processing phenotypes"):
-        # Filter features for this phenotype
         try:
             phenotype_features = filter_gapmind_by_phenotype(
                 gapmind_features, phenotype
@@ -215,8 +193,6 @@ def run_phenotype_filtered_experiment(
             f"\n  {phenotype}: {phenotype_features.shape[1]} features (out of {gapmind_features.shape[1]})"
         )
 
-        # Load splits for this phenotype using the filtered features
-        # We need to load splits and then subset to this phenotype only
         split_data_filtered = {}
 
         for split_type in split_types:
@@ -225,25 +201,21 @@ def run_phenotype_filtered_experiment(
             if not split_type_dir.exists():
                 continue
 
-            # Find all splits for this phenotype
             split_data_filtered[split_type] = {}
 
             for phenotype_dir in split_type_dir.iterdir():
                 if not phenotype_dir.is_dir():
                     continue
 
-                # Check if this directory is for our phenotype
                 if phenotype_dir.name != phenotype:
                     continue
 
-                # Load all splits in this phenotype directory
                 for repeat_dir in phenotype_dir.iterdir():
                     if not repeat_dir.is_dir():
                         continue
 
                     key = f"{phenotype}_{repeat_dir.name}"
 
-                    # Load split data with phenotype-filtered features
                     from scripts.ml_splits import load_single_split_data
 
                     data = load_single_split_data(repeat_dir, phenotype_features)
@@ -255,7 +227,6 @@ def run_phenotype_filtered_experiment(
             print(f"  No splits found for {phenotype}, skipping...")
             continue
 
-        # Run ML on this phenotype with filtered features
         results = run_ml_on_splits(
             split_data_filtered,
             model_type="cb",
@@ -270,15 +241,11 @@ def run_phenotype_filtered_experiment(
 
 
 def main() -> None:
-    """
-    Main function to generate Figure 6D data.
-    """
-    # Define paths
+    """Generate Figure 6D data."""
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure6")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Feature files
     COMBINED_FEATURES_FILE = Path(
         "data/processed/features_reduced/combined_datasets/gapmind_kofam_rast.tsv"
     )
@@ -286,10 +253,9 @@ def main() -> None:
         "data/interim/features/combined_datasets/gapmind.tsv"
     )
 
-    # Define which split types to process
     SPLIT_TYPES = ["random_split", "dataset_split"]
 
-    # Common phenotypes (from figure3ab_data.py and figure6c_data.py)
+    # Common phenotypes (from figure3ab_data.py and figure6c_data.py).
     PHENOTYPES = [
         "Alanine",
         "Arginine",
@@ -311,9 +277,6 @@ def main() -> None:
     print("Figure 6D: Comparing combined vs phenotype-filtered features")
     print("=" * 80)
 
-    # =========================================================================
-    # Experiment 1: Combined features (GapMind + KOFAM + RAST)
-    # =========================================================================
     print("\n" + "=" * 80)
     print("Experiment 1: Combined features (GapMind + KOFAM + RAST)")
     print("=" * 80)
@@ -323,7 +286,6 @@ def main() -> None:
         print("Please run scripts/combine_features.py first to generate this file.")
         return
 
-    # Load splits with combined features
     print("\nLoading train-test splits with combined features...")
     split_data_combined = load_split_data(
         base_dir=SPLITS_DIR,
@@ -331,12 +293,10 @@ def main() -> None:
         feature_file=COMBINED_FEATURES_FILE,
     )
 
-    # Print summary of loaded data
     print("\nLoaded splits summary:")
     for split_type in split_data_combined:
         print(f"  {split_type}: {len(split_data_combined[split_type])} splits")
 
-    # Run ML on all splits with combined features
     print("\nRunning machine learning with combined features...")
     results_combined = run_ml_on_splits(
         split_data_combined,
@@ -346,14 +306,10 @@ def main() -> None:
         experiment_name="combined",
     )
 
-    # Save results
     results_file_combined = OUTPUT_DIR / "figure6d_combined_features_results.csv"
     results_combined.to_csv(results_file_combined, index=False)
     print(f"\nSaved combined features results to: {results_file_combined}")
 
-    # =========================================================================
-    # Experiment 2: Phenotype-filtered features (GapMind only)
-    # =========================================================================
     print("\n" + "=" * 80)
     print("Experiment 2: Phenotype-filtered features (GapMind only)")
     print("=" * 80)
@@ -364,7 +320,6 @@ def main() -> None:
         )
         return
 
-    # Run phenotype-filtered experiment
     results_filtered = run_phenotype_filtered_experiment(
         gapmind_file=GAPMIND_FEATURES_FILE,
         splits_dir=SPLITS_DIR,
@@ -372,7 +327,6 @@ def main() -> None:
         phenotype_list=PHENOTYPES,
     )
 
-    # Save results
     if not results_filtered.empty:
         results_file_filtered = OUTPUT_DIR / "figure6d_phenotype_filtered_results.csv"
         results_filtered.to_csv(results_file_filtered, index=False)
@@ -380,14 +334,10 @@ def main() -> None:
     else:
         print("\nNo results generated for phenotype-filtered experiment.")
 
-    # =========================================================================
-    # Combined summary
-    # =========================================================================
     print("\n" + "=" * 80)
     print("Summary Statistics")
     print("=" * 80)
 
-    # Combine results for comparison
     all_results = pd.concat(
         [results_combined, results_filtered], ignore_index=True
     )
@@ -400,13 +350,11 @@ def main() -> None:
 
     all_results = annotate_minority_test(all_results, full_test_minority_counts())
 
-    # Save combined results
     results_file_all = OUTPUT_DIR / "figure6d_all_results.csv"
     all_results.to_csv(results_file_all, index=False)
     print(f"\nSaved all results to: {results_file_all}")
 
     if len(all_results) > 0:
-        # Print summary by experiment and split type
         print("\nBy experiment and split type:")
         summary = (
             all_results.groupby(["experiment", "split_type"])["balanced_accuracy"]

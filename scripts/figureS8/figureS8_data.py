@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-"""
-Generate per-sample SHAP value arrays for the Figure S8 beeswarm plot.
-
-For each target phenotype the script:
-1. Loads the canonical random-split fold (fold 0) for the phenotype.
-2. Restricts both training and held-out test samples to GapMind-concordant
-   genomes (as in Figure 5B).
-3. Uses KOFAM annotations as the feature space; GapMind is used only to define
-   concordance.
-4. Trains a single CatBoost classifier with ``make_classifier("cb_noeval")``.
-5. Computes SHAP values on the concordant held-out test set with
-   ``shap.TreeExplainer``.
-6. Persists ``shap_values``, ``feature_values``, ``feature_names``,
-   ``predictions``, and ``y_true`` to a compressed ``.npz`` file.
-"""
+"""Train CatBoost on GapMind-concordant samples and persist per-sample SHAP arrays
+for the Figure S8 beeswarm plot."""
 
 import argparse
 import warnings
@@ -55,8 +42,7 @@ def load_concordant_train_test(
     gapmind_predictions: pd.DataFrame,
     experimental_phenotypes: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
-    """
-    Load random-split data and filter train+val and test sets to concordant samples.
+    """Load random-split data and filter train+val and test sets to concordant samples.
 
     Parameters
     ----------
@@ -125,8 +111,7 @@ def load_concordant_train_test(
 def compute_shap_values(
     model: CatBoostClassifier, X: pd.DataFrame
 ) -> np.ndarray:
-    """
-    Compute per-sample SHAP values for a fitted CatBoost classifier.
+    """Compute per-sample SHAP values for a fitted CatBoost classifier.
 
     Parameters
     ----------
@@ -156,8 +141,7 @@ def generate_phenotype_data(
     experimental_phenotypes: pd.DataFrame,
     output_dir: Path,
 ) -> Path:
-    """
-    Train a CatBoost model and persist SHAP arrays for one phenotype.
+    """Train a CatBoost model and persist SHAP arrays for one phenotype.
 
     Parameters
     ----------
@@ -233,8 +217,7 @@ def generate_phenotype_data(
 
 
 def parse_args() -> argparse.Namespace:
-    """
-    Parse command-line arguments.
+    """Parse command-line arguments.
 
     Returns
     -------
@@ -261,7 +244,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Entry point for the Figure S11 SHAP data generation script."""
+    """Entry point for the Figure S8 SHAP data generation script."""
     args = parse_args()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

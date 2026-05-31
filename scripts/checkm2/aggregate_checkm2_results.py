@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-Aggregate CheckM2 results and identify low-quality genomes.
-
-This script reads CheckM2 quality_report.tsv output files, aggregates results
-from multiple runs (if applicable), and generates lists of genomes that fail
-quality thresholds based on completeness and contamination metrics.
-"""
+"""Aggregate CheckM2 quality reports and split genomes into pass/fail QC lists."""
 
 from __future__ import annotations
 
@@ -33,8 +27,7 @@ HIGH_QUALITY_CONTAMINATION = 5.0
 def load_checkm2_results(
     input_paths: Sequence[Path],
 ) -> pd.DataFrame:
-    """
-    Load and concatenate CheckM2 quality report files.
+    """Load and concatenate CheckM2 quality report files.
 
     Parameters
     ----------
@@ -61,7 +54,6 @@ def load_checkm2_results(
             if report_file.exists():
                 dfs.append(pd.read_csv(report_file, sep="\t"))
             else:
-                # Search for quality_report.tsv in subdirectories
                 for subfile in path.rglob("quality_report.tsv"):
                     dfs.append(pd.read_csv(subfile, sep="\t"))
 
@@ -72,7 +64,7 @@ def load_checkm2_results(
 
     combined = pd.concat(dfs, ignore_index=True)
 
-    # Remove duplicates if same genome appears in multiple runs
+    # Drop genomes appearing in multiple runs, keeping the first.
     if combined["Name"].duplicated().any():
         print(
             f"Warning: Found {combined['Name'].duplicated().sum()} duplicate "
@@ -89,8 +81,7 @@ def classify_genome_quality(
     min_completeness: float = DEFAULT_MIN_COMPLETENESS,
     max_contamination: float = DEFAULT_MAX_CONTAMINATION,
 ) -> pd.DataFrame:
-    """
-    Classify genomes by quality tier based on MIMAG standards.
+    """Classify genomes by quality tier based on MIMAG standards.
 
     Parameters
     ----------
@@ -108,22 +99,18 @@ def classify_genome_quality(
     """
     df = df.copy()
 
-    # Quality classification
     df["Quality_Tier"] = "Low"
 
-    # Medium quality: meets minimum thresholds
     medium_mask = (df["Completeness"] >= min_completeness) & (
         df["Contamination"] <= max_contamination
     )
     df.loc[medium_mask, "Quality_Tier"] = "Medium"
 
-    # High quality: MIMAG high-quality criteria
     high_mask = (df["Completeness"] >= HIGH_QUALITY_COMPLETENESS) & (
         df["Contamination"] <= HIGH_QUALITY_CONTAMINATION
     )
     df.loc[high_mask, "Quality_Tier"] = "High"
 
-    # Failure flags
     df["Low_Completeness"] = df["Completeness"] < min_completeness
     df["High_Contamination"] = df["Contamination"] > max_contamination
     df["Fails_QC"] = df["Low_Completeness"] | df["High_Contamination"]
@@ -132,8 +119,7 @@ def classify_genome_quality(
 
 
 def print_summary(df: pd.DataFrame) -> None:
-    """
-    Print summary statistics of genome quality.
+    """Print summary statistics of genome quality.
 
     Parameters
     ----------
@@ -147,7 +133,6 @@ def print_summary(df: pd.DataFrame) -> None:
 
     print(f"\nTotal genomes: {total}")
 
-    # Quality tier distribution
     print("\nQuality Tier Distribution:")
     print("-" * 30)
     for tier in ["High", "Medium", "Low"]:
@@ -155,7 +140,6 @@ def print_summary(df: pd.DataFrame) -> None:
         pct = 100 * count / total if total > 0 else 0
         print(f"  {tier:8s}: {count:6d} ({pct:5.1f}%)")
 
-    # Failure reasons
     print("\nQC Failure Breakdown:")
     print("-" * 30)
     low_comp = df["Low_Completeness"].sum()
@@ -166,7 +150,6 @@ def print_summary(df: pd.DataFrame) -> None:
     print(f"  Both issues:              {both:6d}")
     print(f"  Total failing QC:         {df['Fails_QC'].sum():6d}")
 
-    # Statistics
     print("\nCompleteness Statistics:")
     print("-" * 30)
     print(f"  Mean:   {df['Completeness'].mean():6.2f}%")
@@ -185,8 +168,7 @@ def print_summary(df: pd.DataFrame) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """
-    Main entry point for the script.
+    """Main entry point for the script.
 
     Parameters
     ----------
@@ -250,7 +232,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # Load results
     print(f"Loading CheckM2 results from {len(args.input)} path(s)...")
     try:
         df = load_checkm2_results(args.input)
@@ -260,30 +241,24 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     print(f"Loaded {len(df)} genome records.")
 
-    # Classify quality
     df = classify_genome_quality(
         df,
         min_completeness=args.min_completeness,
         max_contamination=args.max_contamination,
     )
 
-    # Print summary
     if not args.no_summary:
         print_summary(df)
 
-    # Save outputs
-    # Full aggregated results
     args.output.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(args.output, sep="\t", index=False)
     print(f"\nAggregated results saved to: {args.output}")
 
-    # Failed genomes list
     failed_genomes = df.loc[df["Fails_QC"], "Name"]
     args.failed_list.parent.mkdir(parents=True, exist_ok=True)
     failed_genomes.to_csv(args.failed_list, index=False, header=False)
     print(f"Failed genome list saved to: {args.failed_list} ({len(failed_genomes)} genomes)")
 
-    # Passed genomes list
     passed_genomes = df.loc[~df["Fails_QC"], "Name"]
     args.passed_list.parent.mkdir(parents=True, exist_ok=True)
     passed_genomes.to_csv(args.passed_list, index=False, header=False)

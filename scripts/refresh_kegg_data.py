@@ -1,22 +1,4 @@
-"""Refresh KEGG mapping files from the KEGG REST API.
-
-This script fetches the current KEGG catalogs and rewrites three mapping files
-used downstream for pathway-coverage analysis:
-
-- ``data/external/mapping/module-definitions.tsv``: tab-separated with header
-  ``Module ID\tAlternative\tName\tDefinition``. The ``Alternative`` index
-  enumerates the multi-line DEFINITION block returned by the KEGG API: line 0
-  is the first row, line 1 the second, and so on.
-- ``data/external/mapping/KO_dictionary.json``: JSON with a ``term_hash`` map
-  keyed by ``KO:Kxxxxx`` and value ``{"id": "...", "name": "..."}``. The
-  ``synonyms`` field present in the legacy file is intentionally omitted
-  because no downstream script consumes it.
-- ``data/external/mapping/pathway-ko-membership.tsv``: tab-separated with header
-  ``Pathway ID\tName\tKO IDs``. One row per reference pathway map (``path:mapXXXXX``);
-  ``KO IDs`` is a comma-separated list of KO members. Used by the main-text
-  table to compute per-phenotype "fraction of stable cluster representatives
-  that map to the canonical KEGG pathway map", which generalises the
-  module-membership metric to phenotypes that lack a dedicated catabolism module.
+"""Refresh the KEGG module, KO, and pathway mapping files from the KEGG REST API.
 
 Existing files are backed up to ``*.bak`` before being overwritten.
 """
@@ -213,9 +195,7 @@ def fetch_ko_entries() -> dict[str, dict[str, str]]:
 def fetch_pathway_names() -> dict[str, str]:
     """Fetch the KEGG reference pathway-map catalog.
 
-    The KEGG REST endpoint ``/list/pathway`` returns one row per reference
-    pathway: ``map00010\tGlycolysis / Gluconeogenesis``. Only entries with the
-    ``map`` prefix (organism-agnostic reference maps) are retained.
+    Only ``map``-prefixed (organism-agnostic) reference maps are retained.
 
     Returns
     -------
@@ -239,11 +219,8 @@ def fetch_pathway_names() -> dict[str, str]:
 def fetch_pathway_ko_membership() -> dict[str, set[str]]:
     """Fetch KEGG pathway-map -> KO membership in a single API call.
 
-    The KEGG REST endpoint ``/link/ko/pathway`` returns one row per
-    pathway-to-KO link, e.g. ``path:map00010\tko:K00001``. The function
-    inverts this into a ``pathway_id -> {ko_ids}`` mapping, restricted to
-    reference ``path:mapXXXXX`` pathways (not the organism-specific
-    ``path:koXXXXX`` mirrors, which carry identical content).
+    Restricted to reference ``path:mapXXXXX`` pathways, excluding the
+    ``path:koXXXXX`` mirrors that carry identical content.
 
     Returns
     -------
@@ -271,10 +248,7 @@ def fetch_pathway_ko_membership() -> dict[str, set[str]]:
 def write_pathway_tsv(
     names: dict[str, str], members: dict[str, set[str]], path: Path
 ) -> None:
-    """Write the pathway-KO membership TSV.
-
-    The output schema is ``Pathway ID\tName\tKO IDs`` with KOs comma-separated.
-    Rows are sorted by pathway ID for diffability.
+    """Write the pathway-KO membership TSV, sorted by pathway ID.
 
     Parameters
     ----------

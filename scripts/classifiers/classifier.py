@@ -1,7 +1,4 @@
-"""Module that defines the base classifier class.
-
-Re-exports from trait_prediction for backward compatibility.
-"""
+"""Re-export the base classifier class for backward compatibility."""
 
 from trait_prediction.classifiers import Classifier
 

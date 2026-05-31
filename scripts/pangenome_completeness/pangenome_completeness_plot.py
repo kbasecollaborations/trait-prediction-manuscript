@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-"""
-Visualize pangenome completeness results for the supplementary section.
-
-Reads the completeness TSV from data/outputs/pangenome_completeness/ and produces
-a multi-panel figure: status breakdown, completeness distribution, completeness
-by species, and core genes found vs expected.
-"""
+"""Plot the supplementary pangenome completeness figure (status, distribution,
+by-species, and core-gene scatter panels)."""
 
 from __future__ import annotations
 

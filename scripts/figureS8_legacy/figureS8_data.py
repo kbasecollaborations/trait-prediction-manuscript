@@ -1,20 +1,9 @@
 #!/usr/bin/env python3
-"""
-Compute per-phenotype x per-dataset concordance/discordance counts.
-
-For every (phenotype, dataset) combination represented in the experimental
-phenotype directory, tally the number of genomes that are concordant with
-GapMind, discordant as a false positive, discordant as a false negative,
-excluded because GapMind has no prediction, and excluded because the
-experimental phenotype value is missing. The resulting long-form table
-underpins Supplementary Figure S8.
+"""Compute per-phenotype x per-dataset GapMind concordance/discordance counts.
 
 The per-dataset genome universe is the union of ``genomeID`` rows across all
-phenotype TSVs in ``data/processed/phenotypes/<dataset>/``. This is the
-"phenotype-file" universe: every genome with at least one experimental
-phenotype measurement in that dataset, regardless of whether it survived the
-feature-matrix QC pipeline. The counts here describe GapMind concordance with
-experimental phenotypes and therefore do not require feature data.
+phenotype TSVs in ``data/processed/phenotypes/<dataset>/`` (every genome with at
+least one experimental measurement, independent of feature-matrix QC).
 """
 
 from __future__ import annotations

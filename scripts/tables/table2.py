@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Supplementary Table S3 of stable features for the concordant analysis.
-
-The table is built from ``data/outputs/figure5/figure5b_feature_comparison_summary.csv``,
-which records, for each (phenotype, held-out dataset) pair, the stable feature
-lists from concordant-trained models (trained on the other three datasets vs
-on the held-out dataset alone). KO members are grouped by their
-SHAP-supervised redundancy cluster (computed in ``scripts/feature_clustering``)
-so readers can see which features represent the same biological signal.
-"""
+"""Generate Supplementary Table S3 of stable features for the concordant analysis."""
 
 import json
 from collections import defaultdict
