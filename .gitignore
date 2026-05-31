@@ -518,6 +518,7 @@ pyrightconfig.json
 figures/misc/
 figures/v1/
 figures/old/
+figures/_archive/
 
 # Data and pdfs
 data/
