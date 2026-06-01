@@ -3088,7 +3088,7 @@ wheels = [
 [[package]]
 name = "trait-prediction"
 version = "0.4.0"
-source = { git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=feat%2Fml-pipeline-enhancements#df0e78242550570e107fb06e263e1c36eab08168" }
+source = { git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=main#d5360dc80abec577f69ddf6d745fb1008c077b52" }
 dependencies = [
     { name = "catboost" },
     { name = "ete3" },
@@ -3158,7 +3158,7 @@ requires-dist = [
     { name = "seaborn" },
     { name = "shap", specifier = ">=0.49.1" },
     { name = "statsmodels" },
-    { name = "trait-prediction", git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=feat%2Fml-pipeline-enhancements" },
+    { name = "trait-prediction", git = "ssh://git@github.com/kbasecollaborations/trait-prediction.git?rev=main" },
     { name = "ultraplot", specifier = ">=1.66.0" },
     { name = "xgboost", specifier = ">=3.2.0" },
 ]
