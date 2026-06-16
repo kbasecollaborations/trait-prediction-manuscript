@@ -93,6 +93,14 @@ ATLeaf showed the highest absolute attrition, attributable to assembly fragmenta
 
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
 
+\paragraph*{GapMind pathway annotation.}
+Carbon-utilisation pathway completeness was computed with GapMind for carbon sources~\cite{Price2022GapMindCarbon,Price2020GapMind} from the PaperBLAST suite (\url{https://github.com/morgannprice/PaperBLAST}, commit 1033662, accessed May 2025).
+For each pathway step, candidate genes were identified by sequence search against GapMind's curated reference databases with USEARCH v11.0.667~\cite{Edgar2010} (minimum 30\% identity; E-value threshold of $0.02 \times$ the number of genomes searched) and by profile search with HMMer v3.3.1~\cite{Eddy2011}.
+Candidates were validated by reverse search against the reference database to reduce false positives, and pathway completeness was scored from the presence and quality of matches to required steps, accounting for alternative routes and isofunctional enzymes.
+% TODO(VALIDATE): confirm the HMM profile count (drafted as 145) and the worked E-value examples (E approx 12.46 for ATLeaf, E approx 4.12 for Marine) against the actual GapMind run logs before submission.
+Because it scaled with dataset size, the E-value threshold differed across datasets (E~$\approx$~12.46 for ATLeaf and E~$\approx$~4.12 for Marine).
+The integer step scores used here (0--2) and the strict and permissive thresholds applied for the mechanistic baseline are described in the Methods.
+
 We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types.
 CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
 Table~\ref{tab:best_models_counts} shows the ATLeaf--Biolog bidirectional subset of this comparison as an illustrative model-selection summary.

@@ -46,8 +46,8 @@ Examining KOFAM annotations of the cross-dataset stable features (Supplementary 
 The repeated recovery of K01712 indicates that models can recover pathway-linked features when those genes are present, consistently annotated, and clearly tied to the phenotype.
 Other core histidine enzymes were present in dataset-specific stable features but absent from the aggregated dataset, likely because of annotation gaps or alternative pathways.
 Heterogeneous training pools that mix well-characterised with mechanistically ambiguous samples are a known source of poor cross-dataset generalisation in genomic ML~\cite{Whalen2022Pitfalls}.
-The misclassification and feature-stability analyses suggest the aggregated training set mixes mechanistically tractable samples with intractable ones.
-We therefore hypothesised that restricting training to samples with internally consistent genotype--phenotype relationships would let models recover transferable mechanistic features, and we used GapMind concordance to stratify samples by mechanistic consistency.
+Together, the misclassification and feature-stability analyses indicate that the aggregated training set pools many distinct genotype--phenotype mechanisms, mixing mechanistically tractable samples with intractable ones.
+We therefore hypothesised that reducing this mechanistic heterogeneity, by restricting training to samples with internally consistent genotype--phenotype relationships, would let models recover transferable mechanistic features, and we used GapMind concordance as a filter to isolate this consistent subset.
 \FloatBarrier{}
 
 \subsection*{Concordant training produces bounded specialist models}

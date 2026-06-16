@@ -6,6 +6,9 @@
 
 \begin{document}
 
+% ============ MAIN MANUSCRIPT REFERENCES ============
+\begin{refsection}
+
 % COVER PAGE
 
 \input{sections/coverpage}
@@ -63,19 +66,35 @@ Both repositories will be archived at Zenodo with citable DOIs prior to publicat
 The authors declare no competing interests. % TODO(VERIFY COI: confirm with all co-authors prior to submission)
 
 %--------------------------------------------------------%
-%   REFERENCE LIST
+%   REFERENCE LIST (main manuscript)
 %--------------------------------------------------------%
 \newpage
 \singlespacing
 \printbibliography
 
 %--------------------------------------------------------%
-%   APPENDIX
+%   APPENDIX (main figures and tables)
 %--------------------------------------------------------%
 
 \input{sections/tables_figures.tex}
+
+\end{refsection}
+% ============ END MAIN MANUSCRIPT REFERENCES ============
+
 \clearpage
+
+% ============ SUPPLEMENTARY REFERENCES ============
+\begin{refsection}
 \input{sections/supplementary.tex}
+
+%--------------------------------------------------------%
+%   SUPPLEMENTARY REFERENCE LIST
+%--------------------------------------------------------%
+\newpage
+\printbibliography[title={Supplementary References}]
+
+\end{refsection}
+% ============ END SUPPLEMENTARY REFERENCES ============
 
 %--------------------------------------------------------%
 %   END DOCUMENT

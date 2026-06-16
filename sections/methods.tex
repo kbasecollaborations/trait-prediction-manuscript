@@ -13,7 +13,7 @@ Carbon source names were standardised and analyses were restricted to the 15 phe
 
 Each genome was annotated with three tools.
 KofamScan v1.3.0 \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}.
-GapMind for carbon sources~\cite{Price2022GapMindCarbon,Price2020GapMind} predicted carbon-utilisation pathway completeness, scored 0 (incomplete) to 2 (high confidence).
+GapMind for carbon sources~\cite{Price2022GapMindCarbon,Price2020GapMind} predicted carbon-utilisation pathway completeness, scored 0 (incomplete) to 2 (high confidence); GapMind was run from the PaperBLAST suite (commit 1033662) with USEARCH v11.0.667~\cite{Edgar2010} and HMMer v3.3.1~\cite{Eddy2011} (Supplementary Text~S3).
 RAST \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
 
 \subsection*{Phylogenetic Tree Construction}
