@@ -493,6 +493,7 @@ def create_feature_comparison_plot(
 
 def _load_gapmind_phenotype_means(
     metrics_path: Path,
+    minority_counts: dict | None = None,
 ) -> pd.Series:
     """Load GapMind permissive-threshold balanced accuracy aggregated to phenotype means.
 
@@ -501,6 +502,10 @@ def _load_gapmind_phenotype_means(
     metrics_path : Path
         TSV file with per-phenotype, per-split rows containing
         ``balanced_accuracy`` and ``phenotype`` columns.
+    minority_counts : dict | None, optional
+        When provided, exclude per-(phenotype, held-out-dataset) cells below the
+        minority-class threshold before aggregating, so the GapMind baseline is
+        filtered on the same cells as the ML side (symmetric comparison).
 
     Returns
     -------
@@ -508,6 +513,9 @@ def _load_gapmind_phenotype_means(
         Phenotype-mean balanced accuracy indexed by phenotype.
     """
     df = pd.read_csv(metrics_path, sep="\t")
+    if minority_counts is not None:
+        test_col = "test_dataset" if "test_dataset" in df.columns else None
+        df = _filter_by_minority(df, minority_counts, test_dataset_column=test_col)
     return df.groupby("phenotype")["balanced_accuracy"].mean()
 
 
@@ -564,7 +572,8 @@ def plot_ml_vs_gapmind_full_test(
         Path("data/outputs/figure3/gapmind_random_split_metrics.tsv")
     )
     gm_dataset_mean = _load_gapmind_phenotype_means(
-        Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv")
+        Path("data/outputs/figure3/gapmind_dataset_split_metrics.tsv"),
+        minority_counts=full_minority,
     )
 
     common_r = sorted(

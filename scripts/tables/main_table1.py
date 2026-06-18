@@ -61,7 +61,6 @@ EXAMPLE_KO_OVERRIDES: dict[str, str] = {
     "Galacturonic-Acid": "K18981 uronate dehydrogenase",
     "Galactose": "K01190 beta-galactosidase",
     "Glucose": "K01785 aldose 1-epimerase",
-    "Arginine": "K02167 betI",
     "Cellobiose": "K05349 beta-glucosidase; K01443 NAG-6-P deacetylase",
     "Maltose": "K01187 alpha-glucosidase",
     "Sucrose": "K01187 alpha-glucosidase; K01193 beta-fructofuranosidase",
@@ -206,6 +205,90 @@ def _shared_unique_counts(
     return (shared_total, shared_hit), (unique_total, unique_hit)
 
 
+def _concordant_shared_kos(
+    phenotype: str,
+    conc_combined: dict[str, list[str]],
+    conc_individual: dict[str, dict[str, list[str]]],
+) -> set[str]:
+    """Return KOs shared between the three-dataset and held-out-alone concordant models.
+
+    A KO counts as shared for a held-out dataset when it appears in both the
+    combined-of-three concordant stable list and the held-out-alone concordant
+    stable list; the union is taken across the three held-out datasets.
+
+    Parameters
+    ----------
+    phenotype : str
+        Phenotype to score.
+    conc_combined : dict[str, list[str]]
+        Per-split combined-of-three concordant stable KO lists.
+    conc_individual : dict[str, dict[str, list[str]]]
+        Per-(dataset, phenotype) held-out-alone concordant stable KO lists.
+
+    Returns
+    -------
+    set[str]
+        KOs shared across at least one held-out comparison.
+    """
+    shared: set[str] = set()
+    for ds in HELD_OUT_DATASETS:
+        combined_key = next(
+            (
+                k
+                for k in conc_combined
+                if k.startswith(f"{phenotype}_train(") and k.endswith(f",test({ds})")
+            ),
+            None,
+        )
+        if (
+            combined_key is None
+            or ds not in conc_individual
+            or phenotype not in conc_individual[ds]
+        ):
+            continue
+        shared |= set(conc_combined[combined_key]) & set(
+            conc_individual[ds][phenotype]
+        )
+    return shared
+
+
+def _assert_overrides_are_shared_stable(
+    conc_combined: dict[str, list[str]],
+    conc_individual: dict[str, dict[str, list[str]]],
+) -> None:
+    """Verify each ``EXAMPLE_KO_OVERRIDES`` KO is a genuine concordant shared-stable feature.
+
+    The example column is hand-curated (see ``EXAMPLE_KO_OVERRIDES``). This guard
+    enforces that every listed KO actually recurs as a shared concordant-stable
+    feature for its phenotype, so the curated examples cannot silently drift away
+    from the data the figure and table report.
+
+    Parameters
+    ----------
+    conc_combined : dict[str, list[str]]
+        Concordant combined-of-three stable KO lists.
+    conc_individual : dict[str, dict[str, list[str]]]
+        Concordant held-out-alone stable KO lists.
+
+    Raises
+    ------
+    ValueError
+        If any override KO is absent from its phenotype's concordant
+        shared-stable set.
+    """
+    problems: list[str] = []
+    for phenotype, text in EXAMPLE_KO_OVERRIDES.items():
+        shared = _concordant_shared_kos(phenotype, conc_combined, conc_individual)
+        for ko in re.findall(r"K\d{5}", text):
+            if ko not in shared:
+                problems.append(f"{phenotype}:{ko}")
+    if problems:
+        raise ValueError(
+            "EXAMPLE_KO_OVERRIDES contains KOs that are not concordant "
+            "shared-stable features: " + ", ".join(problems)
+        )
+
+
 def _format_pct(hits: int, denom: int) -> str:
     """Format a hits/denom fraction as ``"NN\\%"`` (or ``"--"`` when empty)."""
     if denom == 0:
@@ -321,6 +404,10 @@ def build_table(
         ind_conc: dict[str, dict[str, list[str]]] = json.load(handle)
     with open(cluster_json) as handle:
         cluster_mapping: dict[str, dict[str, int]] = json.load(handle)
+
+    # Guard: every curated example KO must be a genuine concordant shared-stable
+    # feature (the pathway-residency filter alone does not check this).
+    _assert_overrides_are_shared_stable(comb_conc, ind_conc)
 
     def _row_cells(phenotype: str) -> tuple[str, str, str, str, str]:
         ko_to_cluster = cluster_mapping.get(phenotype, {})

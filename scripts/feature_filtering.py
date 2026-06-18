@@ -14,9 +14,7 @@ CORRELATION_THRESHOLD = 0.95
 FEATURE_DIR = Path("data/interim/features")
 OUTPUT_DIR = Path("data/processed/features_reduced")
 DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
-# FEATURE_TYPES = ["kofam", "rast"]
-# CORRELATION_METHOD = "pearson"
-FEATURE_TYPES = ["gapmind"]
+FEATURE_TYPES = ["kofam", "rast", "gapmind"]
 CORRELATION_METHOD = "spearman"
 
 

@@ -64,7 +64,7 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \refstepcounter{figure}\label{fig:concordant_analysis}%
 \noindent\textbf{Figure \arabic{figure}: Concordant-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
-(\textbf{A}) Balanced accuracy on held-out concordant samples under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
+(\textbf{A}) Balanced accuracy on held-out concordant samples, the easier in-domain subset (panel~C shows the full held-out test), under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
 (\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone.
 Solid bars: shared clusters; patterned bars: held-out-only clusters.
 (\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
@@ -85,7 +85,7 @@ Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees
 Large markers with error bars are the average model performance across the 15 shared phenotypes, the small dots are the per-phenotype values jittered horizontally to expose the distribution, and the mean train+val sample size per phenotype-split is annotated below each tick.
 The $w_{\mathrm{gap}} = 0$ setting is the mechanism-free configuration; all conditions are evaluated on the same full held-out cross-dataset test set.
 (C) Per-phenotype $\Delta$ recall (ML minus GapMind) on the same test set for ML models trained on concordance-filtered (blue) and mechanism-free filter (light green); phenotypes are sorted by concordant-ML $\Delta$ recall, and mean train+val sample sizes are given in the legend.
-Annotation: count of phenotypes with positive $\Delta$ and paired one-sided Wilcoxon $p$-value.
+Annotation: count of phenotypes with positive $\Delta$ and paired Wilcoxon $p$-value.
 (D) Balanced-accuracy scatter under random holdout and cross-dataset evaluation comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (GapMind-only) features; points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
 The annotation reports split-specific paired Wilcoxon p-values across phenotype means.
 
@@ -113,8 +113,8 @@ The two columns labelled Full $\rightarrow$ Conc. report the same comparison und
 Shared stable clusters counts SHAP-supervised redundancy clusters present in both the three-dataset and held-out-alone models (the same quantity plotted in Figure~\ref{fig:concordant_analysis}B), summed across the three held-out comparisons.
 Unique stable clusters counts those present only in the held-out-alone model on the same basis.
 The parenthetical (\% in pathway) is the fraction of those clusters whose membership includes at least one KO on the row's assigned KEGG reference pathway map (Methods); a cluster counts as pathway-resident when any of its KOs is on the map.
-The example column lists curated concordant-stable shared KOs restricted to those whose cluster is pathway-resident.
-Histidine is the worked example (numeric cells in bold); full per-comparison KO lists and the narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appear in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and~\ref{tab:feature_comparison_concordant} (concordant).
+The final example column gives one or two manually selected, biologically representative KOs drawn from the concordant shared-stable set for that phenotype (present in both the three-dataset and held-out-alone models and summed across the three held-out comparisons), further restricted to KOs whose redundancy cluster is pathway-resident; the column is illustrative rather than exhaustive.
+Histidine is the worked example (numeric cells in bold); its per-comparison KO lists and the narrower module-level statistic (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 75\%) appear in Supplementary Tables~\ref{tab:feature_comparison} (full-data) and~\ref{tab:feature_comparison_concordant} (concordant).
 
 \noindent\textbf{Alt text:} Five-column table listing 15 phenotypes with their KEGG pathway map, shared stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), unique stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), and an example pathway-resident shared concordant-stable KO. Histidine row shows bold values rising from 4 (75 percent) to 8 (38 percent) shared clusters and 6 (17 percent) to 4 (50 percent) unique clusters.
 \par\medskip

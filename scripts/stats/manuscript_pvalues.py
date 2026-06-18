@@ -72,6 +72,12 @@ def _load_gapmind_dataset() -> pd.Series:
     df = pd.read_csv(
         "data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t"
     )
+    # Apply the same minority-class test filter as the ML side so the
+    # cross-dataset comparison is scored on matched cells (symmetric).
+    test_col = "test_dataset" if "test_dataset" in df.columns else None
+    df = filter_by_minority(
+        df, full_test_minority_counts(), test_dataset_column=test_col
+    )
     return _per_phenotype_mean(df)
 
 
@@ -123,7 +129,7 @@ def test_fig5c_dataset() -> tuple[float, int]:
 
 def test_fig5d_fn_vs_fp_rescue() -> tuple[float, int]:
     """Figure 5D: per-phenotype FN rescue rate vs FP rescue rate (concordant model)."""
-    per_sample = pd.read_csv("data/outputs/figure6/figure6_per_sample.tsv", sep="\t")
+    per_sample = pd.read_csv("data/outputs/figure7/figure7_per_sample.tsv", sep="\t")
     disc = per_sample[per_sample["gapmind_pred"] != per_sample["y_true"]].copy()
     disc["error_type"] = np.where(disc["y_true"] == 1, "FN", "FP")
     disc["rescued"] = (disc["y_pred"] == disc["y_true"]).astype(int)
@@ -138,7 +144,7 @@ def test_fig5d_fn_vs_fp_rescue() -> tuple[float, int]:
 
 def _phenotype_aggregates() -> pd.DataFrame:
     """Per-phenotype mean confidence, fraction high-confidence, and cross-dataset BA."""
-    per_sample = pd.read_csv("data/outputs/figure6/figure6_per_sample.tsv", sep="\t")
+    per_sample = pd.read_csv("data/outputs/figure7/figure7_per_sample.tsv", sep="\t")
     high_conf = (per_sample["confidence"] >= 0.8).astype(float)
     per_sample["high_conf"] = high_conf
     agg = per_sample.groupby("phenotype").agg(
@@ -168,7 +174,7 @@ def test_fig6_spearman_frac_high_vs_ba() -> tuple[float, int]:
 
 def test_fig6_spearman_novelty_vs_ba() -> tuple[float, int] | None:
     """Spearman between feature-space novelty and cross-dataset BA per phenotype."""
-    novelty_path = Path("data/outputs/figure6/figure6_per_sample.tsv")
+    novelty_path = Path("data/outputs/figure7/figure7_per_sample.tsv")
     sample = pd.read_csv(novelty_path, sep="\t")
     if "ood" not in sample.columns and "novelty" not in sample.columns:
         return None
@@ -185,9 +191,9 @@ def test_fig6_spearman_novelty_vs_ba() -> tuple[float, int] | None:
     return float(p), len(common)
 
 
-def test_fig6c_low_conf_vs_random() -> tuple[float, int]:
-    """Figure 6C: low-confidence vs random selection paired by (phen, held-out, seed)."""
-    df = pd.read_csv("data/outputs/figure6/figure6_prioritization.tsv", sep="\t")
+def test_fig7c_low_conf_vs_random() -> tuple[float, int]:
+    """Figure 7C: low-confidence vs random selection paired by (phen, held-out, seed)."""
+    df = pd.read_csv("data/outputs/figure7/figure7_prioritization.tsv", sep="\t")
     pivot = (
         df.pivot_table(
             index=["phenotype", "held_out_dataset", "seed"],
@@ -206,9 +212,87 @@ def test_fig6c_low_conf_vs_random() -> tuple[float, int]:
     return float(res.pvalue), len(pivot)
 
 
-def test_fig7d_combined_vs_filtered(split: str) -> tuple[float, int]:
-    """Figure 7D: combined features vs phenotype-filtered features (per phenotype)."""
-    df = pd.read_csv("data/outputs/figure7/figure7d_all_results.csv")
+def _figure6_recall_means() -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Per-phenotype mean cross-dataset recall for the Figure 6C comparison.
+
+    Mirrors the Figure 6C panel computation in
+    ``scripts.figure6.figure6b_aggregate_plot`` (same data sources and minority
+    filtering) so the recomputed p-values match the plotted panel.
+
+    Returns
+    -------
+    tuple[pd.Series, pd.Series, pd.Series]
+        ``(concordant_recall, mechanism_free_recall, gapmind_recall)``, each a
+        per-phenotype mean recall indexed by phenotype.
+    """
+    from scripts.figure6.figure6b_aggregate_plot import (
+        _gapmind_baseline,
+        _load_long_form,
+    )
+
+    phenotypes = list(COMMON_PHENOTYPES)
+    long_df = _load_long_form(Path("data/outputs/figure6"), phenotypes)
+    ml_recall = (
+        long_df.groupby(["phenotype", "config"])["recall"].mean().unstack("config")
+    )
+    gm_recall = _gapmind_baseline(phenotypes).groupby("phenotype")["recall"].mean()
+    return ml_recall["concordant"], ml_recall["free_balanced"], gm_recall
+
+
+def test_fig6c_concordant_recall_vs_gapmind() -> tuple[float, int]:
+    """Figure 6C: concordant-trained ML recall vs GapMind recall (cross-dataset)."""
+    concordant, _mech_free, gapmind = _figure6_recall_means()
+    return _paired_wilcoxon(concordant, gapmind)
+
+
+def test_fig6c_mechfree_recall_vs_gapmind() -> tuple[float, int]:
+    """Figure 6C: mechanism-free filter recall vs GapMind recall (cross-dataset)."""
+    _concordant, mech_free, gapmind = _figure6_recall_means()
+    return _paired_wilcoxon(mech_free, gapmind)
+
+
+def fig6c_concordant_recall_delta_ci(
+    n_boot: int = 10000, seed: int = 42
+) -> dict[str, float]:
+    """Effect size and bootstrap CI for the concordant-ML minus GapMind recall delta.
+
+    Reproducible companion to the borderline rank-based test
+    (``test_fig6c_concordant_recall_vs_gapmind``): reports the per-phenotype mean
+    recall delta, a fixed-seed percentile bootstrap 95% CI, and the count of
+    phenotypes favouring ML. Cited in the main text alongside the Wilcoxon q-value.
+
+    Parameters
+    ----------
+    n_boot : int, optional
+        Bootstrap resamples (default 10000).
+    seed : int, optional
+        Fixed RNG seed for reproducibility (default 42).
+
+    Returns
+    -------
+    dict[str, float]
+        ``mean_delta``, ``ci_low``, ``ci_high``, ``n_positive``, ``n``.
+    """
+    concordant, _mech_free, gapmind = _figure6_recall_means()
+    common = sorted(
+        set(concordant.index) & set(gapmind.index) & set(COMMON_PHENOTYPES)
+    )
+    delta = (concordant.loc[common] - gapmind.loc[common]).to_numpy()
+    rng = np.random.default_rng(seed)
+    boot = rng.choice(delta, size=(n_boot, delta.size), replace=True).mean(axis=1)
+    lo, hi = np.percentile(boot, [2.5, 97.5])
+    return {
+        "mean_delta": float(delta.mean()),
+        "ci_low": float(lo),
+        "ci_high": float(hi),
+        "n_positive": int((delta > 0).sum()),
+        "n": len(delta),
+    }
+
+
+def test_fig6d_combined_vs_filtered(split: str) -> tuple[float, int]:
+    """Figure 6D: combined features vs phenotype-filtered features (per phenotype)."""
+    df = pd.read_csv("data/outputs/figure6/figure6d_all_results.csv")
     df = df[df["split_type"] == split]
     summary = (
         df.groupby(["phenotype", "experiment"])["balanced_accuracy"]
@@ -290,33 +374,43 @@ def main() -> None:
     )
     add(
         "T6a_spearman_conf_vs_ba",
-        "Results §99",
+        "Results §108",
         test_fig6_spearman_confidence_vs_ba(),
     )
     add(
         "T6b_spearman_frac_high_vs_ba",
-        "Results §99",
+        "Results §108",
         test_fig6_spearman_frac_high_vs_ba(),
     )
     add(
         "T6c_spearman_novelty_vs_ba",
-        "Results §99",
+        "Not reported; skipped if novelty column is unavailable",
         test_fig6_spearman_novelty_vs_ba(),
     )
     add(
-        "T7_fig6c_low_conf_vs_random",
-        "Results §102 / Fig 6C",
-        test_fig6c_low_conf_vs_random(),
+        "T7_fig7c_low_conf_vs_random",
+        "Results §111 / Fig 7C",
+        test_fig7c_low_conf_vs_random(),
     )
     add(
-        "T8a_fig7d_combined_vs_filtered_random",
-        "Results §117 / Fig 7D",
-        test_fig7d_combined_vs_filtered("random_split"),
+        "T9_fig6c_concordant_recall_vs_gapmind",
+        "Results §90 / Fig 6C",
+        test_fig6c_concordant_recall_vs_gapmind(),
     )
     add(
-        "T8b_fig7d_combined_vs_filtered_dataset",
-        "Results §117 / Fig 7D",
-        test_fig7d_combined_vs_filtered("dataset_split"),
+        "T10_fig6c_mechfree_recall_vs_gapmind",
+        "Results §90 / Fig 6C",
+        test_fig6c_mechfree_recall_vs_gapmind(),
+    )
+    add(
+        "T8a_fig6d_combined_vs_filtered_random",
+        "Results §95 / Fig 6D",
+        test_fig6d_combined_vs_filtered("random_split"),
+    )
+    add(
+        "T8b_fig6d_combined_vs_filtered_dataset",
+        "Results §95 / Fig 6D",
+        test_fig6d_combined_vs_filtered("dataset_split"),
     )
 
     df = pd.DataFrame(rows)
@@ -325,6 +419,14 @@ def main() -> None:
     df.to_csv(OUTPUT_FILE, sep="\t", index=False, float_format="%.6g")
     print(df.to_string(index=False))
     print(f"\nWrote {OUTPUT_FILE}")
+
+    ci = fig6c_concordant_recall_delta_ci()
+    print(
+        "\nFig 6C concordant-ML recall delta (effect size): "
+        f"mean={ci['mean_delta']:.3f}, 95% CI "
+        f"[{ci['ci_low']:.3f}, {ci['ci_high']:.3f}], "
+        f"{ci['n_positive']}/{ci['n']} phenotypes favour ML"
+    )
 
 
 if __name__ == "__main__":

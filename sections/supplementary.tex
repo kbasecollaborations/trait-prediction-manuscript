@@ -37,7 +37,7 @@ All 172 genomes that passed annotation quality control were retained for analysi
 This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
 
 \paragraph*{Populus.}
-The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on Biolog PM plates~\cite{Timm2015Populus}; the compiled matrix used here included 58 isolates tested on 191 carbon sources.
+The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on defined carbon sources~\cite{Timm2015Populus}; the compiled matrix used here recorded growth as optical density in minimal medium and included 58 isolates tested on 191 carbon sources.
 % TODO(CITATION/PROVENANCE): Discuss with Ranjan and create a DOI for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
 After filtering, 55 genomes were retained.
 Because of its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
@@ -52,7 +52,7 @@ Because of its small sample size and narrow phylogenetic breadth, Populus contri
 ATLeaf  & 224 & 45  & 206 & 15 & Agar plate \\
 Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
 Marine  & 175 & 100 & 172 & 15 & Liquid culture OD \\
-Populus & 58  & 191 & 55  & 15 & Biolog PM (colorimetric) \\
+Populus & 58  & 191 & 55  & 15 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
@@ -110,6 +110,13 @@ The minority-class filter (Methods) prevents balanced-accuracy collapse on test 
 For example, the Populus concordant test set contained 36--37 growers and a single non-grower for some amino-acid phenotypes.
 The minority count was computed against the appropriate test-set definition for each figure: the concordant subset for Figure~\ref{fig:concordant_analysis}A and the concordant-test points of Figure~\ref{fig:concordant_analysis}D, the discordant subset for the discordant-test points of Figure~\ref{fig:concordant_analysis}D, and the full labelled subset for Figures~\ref{fig:ml_performance}B, \ref{fig:concordant_analysis}C, \ref{fig:improvement_strategies}B--D, and~\ref{fig:full_held_out_test}.
 Implementation is consolidated in \texttt{scripts/minority\_filter.py}.
+In every machine-learning-versus-GapMind comparison the same minority filter is applied identically to both series, so each contrast is evaluated on a matched set of phenotype--dataset cells.
+
+\paragraph*{Replicate genomes and random-holdout overlap.}
+A small number of genomes in the pooled data share an identical KOFAM feature vector with another genome: 19 of 822 genomes fall into nine identical-vector groups, each consisting of within-dataset replicate or re-assembled isolates (for example, the marine pair \texttt{4A09} and \texttt{4A09\_2}).
+Because random-holdout partitions are drawn from the pooled data, such a pair can be split across training and test, so a small fraction of random-holdout test predictions have a same-label feature near-duplicate in the training pool (approximately 1.4\% with an identical feature vector and approximately 8\% at Jaccard $\geq 0.98$; \texttt{scripts/leakage\_check\_feature\_dup.py}).
+This contributes to the optimism of the random-holdout estimate.
+Every identical-vector group lies within a single dataset, so leave-one-dataset-out cross-dataset evaluation keeps both copies on the same side of the split and is unaffected.
 
 \subsection*{Supplementary Text S4: Feature Comparison Tables}
 
@@ -214,6 +221,12 @@ To isolate the effect of concordant training, we compared KOFAM-based models tra
 Figure~\ref{fig:kofam_concordant} shows that concordant training improves cross-dataset balanced accuracy on concordant test samples under the same KOFAM feature space used in the main analysis.
 The parity plot (panel~A) indicates that the majority of phenotype--split combinations achieve higher balanced accuracy with concordant training when evaluation is restricted to concordant held-out samples.
 Per-phenotype box plots (panel~B) confirm that the concordant-training improvement is consistent across most phenotypes, supporting the interpretation that data coherence, rather than feature--criterion alignment, drives the generalisation gains reported in the main text.
+
+A related caveat applies to the feature-recovery analysis (Figure~\ref{fig:concordant_analysis}B; Table~\ref{tab:main_feature_comparison}).
+Concordance is defined by agreement with GapMind, and the pathway-coverage metric scores stable features against KEGG reference maps, so the selection criterion and the recovery yardstick are biologically related.
+They are not, however, the same construct: GapMind scores pathway completeness against curated reference protein databases (Supplementary Text~S3) rather than against KEGG modules, the model features are KofamScan KEGG Orthologs, and the recovered quantity is the cross-dataset stability of those features under SHAP analysis, which is not entailed by the selection rule.
+Consistent with this, several concordant phenotypes recover predominantly off-map features (for example, the glycerol glp regulon at 0\% formal pathway residency, and alanine, whose GapMind definition encodes only transport), showing that pathway-map residency is not an automatic consequence of concordance filtering.
+The pathway-coverage percentages should therefore be read as a descriptive localisation of stable features rather than as an independent validation of GapMind.
 
 For the GapMind-feature pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed lines), raw rather than correlation-filtered GapMind features were used because GapMind represents the same underlying gene under multiple per-phenotype prefixes (for example, the same amino-acid transporter appears as \texttt{Alanine-braC}, \texttt{Serine-braC}, etc.), so the standard 0.95 correlation filter consolidates these duplicates and unfairly depletes the per-phenotype feature space for some pathways.
 Because concordant labels are by construction consistent with GapMind's pathway-completeness rule, the GapMind-feature setting establishes the balanced accuracy reachable by the pipeline when feature resolution matches the mechanism.

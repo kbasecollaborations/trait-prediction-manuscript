@@ -400,12 +400,12 @@ def plot_gapmind_delta_forest(
     _, p_conc = wilcoxon(
         ml_means.loc[common, "concordant"],
         gm_means.loc[common],
-        alternative="greater",
+        alternative="two-sided",
     )
     _, p_mech = wilcoxon(
         ml_means.loc[common, "free_balanced"],
         gm_means.loc[common],
-        alternative="greater",
+        alternative="two-sided",
     )
     ax.text(
         0.98,
