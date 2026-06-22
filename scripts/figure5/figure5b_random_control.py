@@ -47,12 +47,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import zlib
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
 from tqdm import tqdm
 
+from scripts.figure5 import figure5b_data as _f5b
 from scripts.figure5.figure5b_data import (
     compare_features,
     get_concordant_samples,
@@ -67,6 +70,17 @@ from scripts.figure5.figure5b_data import (
     train_and_get_top_features_split,
 )
 from scripts.ml_splits import load_single_split_data
+
+
+def _cell_rng(control_seed: int, key: str) -> np.random.Generator:
+    """Deterministic, thread-safe per-cell RNG.
+
+    Each (control_seed, cell) pair gets its own generator so cells can run in
+    parallel without sharing a single mutable RNG. Equivalent in distribution to
+    drawing one matched random subset per cell.
+    """
+    cell_hash = zlib.crc32(key.encode()) & 0xFFFFFFFF
+    return np.random.default_rng(np.random.SeedSequence([control_seed, cell_hash]))
 
 # Match the concordant pipeline's eligibility gates so the control runs on the
 # same (phenotype, split) cells as Figure 5B.
@@ -223,19 +237,20 @@ def analyze_combined_splits_random(
     splits_dir: Path,
     gapmind_predictions: pd.DataFrame,
     experimental_phenotypes: pd.DataFrame,
-    rng: np.random.Generator,
     control_seed: int,
     *,
     n_seeds: int,
     threshold: float,
     n_features: int,
     n_candidate_features: int,
+    n_jobs: int = 1,
 ) -> dict[str, list[str]]:
     """Combined-of-three stable features on size/class-matched random subsets.
 
     Mirrors ``figure5b_data.analyze_combined_splits`` but, for each dataset_split
     cell, replaces the concordant subset with a random subset matched to the
-    concordant subset's size and class balance.
+    concordant subset's size and class balance. Cells are independent and run in
+    parallel (threading backend) when ``n_jobs > 1``.
     """
     dataset_split_dir = splits_dir / "dataset_split"
     phenotypes = [d.name for d in dataset_split_dir.iterdir() if d.is_dir()]
@@ -245,99 +260,120 @@ def analyze_combined_splits_random(
         feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
     )
 
-    results: dict[str, list[str]] = {}
-    for phenotype in tqdm(
-        phenotypes, desc=f"[seed {control_seed}] combined (random)", leave=False
-    ):
-        phenotype_dir = dataset_split_dir / phenotype
-        for split_type in [d.name for d in phenotype_dir.iterdir() if d.is_dir()]:
-            key = f"{phenotype}_{split_type}"
-            try:
-                split_data = load_single_split_data(
-                    phenotype_dir / split_type, feature_data
-                )
-            except Exception as exc:  # noqa: BLE001 - mirror figure5b tolerance
-                print(f"Error loading {key}: {exc}")
-                continue
+    cells = [
+        (phenotype, split_type)
+        for phenotype in phenotypes
+        for split_type in [
+            d.name for d in (dataset_split_dir / phenotype).iterdir() if d.is_dir()
+        ]
+    ]
 
-            X_pool = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
-            y_pool = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
-
-            concordant = get_concordant_samples(
-                gapmind_predictions, experimental_phenotypes, phenotype
+    def _process(phenotype: str, split_type: str) -> tuple[str, list[str] | None]:
+        key = f"{phenotype}_{split_type}"
+        try:
+            split_data = load_single_split_data(
+                dataset_split_dir / phenotype / split_type, feature_data
             )
-            matched = _matched_counts(y_pool, concordant)
-            if matched is None:
-                continue
-            n_pos, n_neg = matched
+        except Exception as exc:  # noqa: BLE001 - mirror figure5b tolerance
+            print(f"Error loading {key}: {exc}")
+            return key, None
 
-            sel = class_matched_random_indices(y_pool, n_pos, n_neg, rng)
-            stable = _stability_on_subset(
-                X_pool.loc[sel],
-                y_pool.loc[sel],
-                is_split=True,
-                seed=control_seed,
-                n_seeds=n_seeds,
-                threshold=threshold,
-                n_features=n_features,
-                n_candidate_features=n_candidate_features,
-            )
-            if stable is not None:
-                results[key] = stable
-    return results
+        X_pool = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
+        y_pool = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
+
+        concordant = get_concordant_samples(
+            gapmind_predictions, experimental_phenotypes, phenotype
+        )
+        matched = _matched_counts(y_pool, concordant)
+        if matched is None:
+            return key, None
+        n_pos, n_neg = matched
+
+        sel = class_matched_random_indices(
+            y_pool, n_pos, n_neg, _cell_rng(control_seed, key)
+        )
+        stable = _stability_on_subset(
+            X_pool.loc[sel],
+            y_pool.loc[sel],
+            is_split=True,
+            seed=control_seed,
+            n_seeds=n_seeds,
+            threshold=threshold,
+            n_features=n_features,
+            n_candidate_features=n_candidate_features,
+        )
+        return key, stable
+
+    pairs = Parallel(n_jobs=n_jobs, backend="threading")(
+        delayed(_process)(ph, st)
+        for ph, st in tqdm(
+            cells, desc=f"[seed {control_seed}] combined (random)", leave=False
+        )
+    )
+    return {key: stable for key, stable in pairs if stable is not None}
 
 
 def analyze_individual_datasets_random(
     phenotypes: list[str],
     gapmind_predictions: pd.DataFrame,
     experimental_phenotypes: pd.DataFrame,
-    rng: np.random.Generator,
     control_seed: int,
     *,
     n_seeds: int,
     threshold: float,
     n_features: int,
     n_candidate_features: int,
+    n_jobs: int = 1,
 ) -> dict[str, dict[str, list[str]]]:
     """Held-out-alone stable features on size/class-matched random subsets.
 
     Mirrors ``figure5b_data.analyze_individual_datasets`` with random matched
-    subsets in place of concordant ones.
+    subsets in place of concordant ones; (dataset, phenotype) cells run in
+    parallel (threading backend) when ``n_jobs > 1``.
     """
-    results: dict[str, dict[str, list[str]]] = {}
-    for dataset in tqdm(
-        DATASETS, desc=f"[seed {control_seed}] individual (random)", leave=False
-    ):
-        per_dataset: dict[str, list[str]] = {}
-        for phenotype in phenotypes:
-            try:
-                X, y = load_individual_dataset(dataset, phenotype)
-            except Exception as exc:  # noqa: BLE001 - mirror figure5b tolerance
-                print(f"Error loading {dataset}/{phenotype}: {exc}")
-                continue
+    cells = [(dataset, phenotype) for dataset in DATASETS for phenotype in phenotypes]
 
-            concordant = get_concordant_samples(
-                gapmind_predictions, experimental_phenotypes, phenotype
-            )
-            matched = _matched_counts(y, concordant)
-            if matched is None:
-                continue
-            n_pos, n_neg = matched
+    def _process(dataset: str, phenotype: str) -> tuple[str, str, list[str] | None]:
+        key = f"{dataset}_{phenotype}"
+        try:
+            X, y = load_individual_dataset(dataset, phenotype)
+        except Exception as exc:  # noqa: BLE001 - mirror figure5b tolerance
+            print(f"Error loading {dataset}/{phenotype}: {exc}")
+            return dataset, phenotype, None
 
-            sel = class_matched_random_indices(y, n_pos, n_neg, rng)
-            stable = _stability_on_subset(
-                X.loc[sel],
-                y.loc[sel],
-                is_split=False,
-                seed=control_seed,
-                n_seeds=n_seeds,
-                threshold=threshold,
-                n_features=n_features,
-                n_candidate_features=n_candidate_features,
-            )
-            if stable is not None:
-                per_dataset[phenotype] = stable
-        results[dataset] = per_dataset
+        concordant = get_concordant_samples(
+            gapmind_predictions, experimental_phenotypes, phenotype
+        )
+        matched = _matched_counts(y, concordant)
+        if matched is None:
+            return dataset, phenotype, None
+        n_pos, n_neg = matched
+
+        sel = class_matched_random_indices(
+            y, n_pos, n_neg, _cell_rng(control_seed, key)
+        )
+        stable = _stability_on_subset(
+            X.loc[sel],
+            y.loc[sel],
+            is_split=False,
+            seed=control_seed,
+            n_seeds=n_seeds,
+            threshold=threshold,
+            n_features=n_features,
+            n_candidate_features=n_candidate_features,
+        )
+        return dataset, phenotype, stable
+
+    triples = Parallel(n_jobs=n_jobs, backend="threading")(
+        delayed(_process)(ds, ph)
+        for ds, ph in tqdm(
+            cells, desc=f"[seed {control_seed}] individual (random)", leave=False
+        )
+    )
+    results: dict[str, dict[str, list[str]]] = {ds: {} for ds in DATASETS}
+    for dataset, phenotype, stable in triples:
+        if stable is not None:
+            results[dataset][phenotype] = stable
     return results
 
 
@@ -390,7 +426,26 @@ def main() -> None:
         default=300,
         help="CatBoost candidate-screen size, matching Figure 5B (default: 300).",
     )
+    parser.add_argument(
+        "--n-jobs",
+        type=int,
+        default=1,
+        help="Cells to run in parallel (threading backend). 1 = sequential "
+        "(default). On small subsets, parallel cells with a low --thread-count "
+        "is far faster than one all-core fit at a time.",
+    )
+    parser.add_argument(
+        "--thread-count",
+        type=int,
+        default=-1,
+        help="CatBoost/SHAP threads per fit (default -1 = all cores). Set low "
+        "(1-2) when --n-jobs > 1 to avoid oversubscribing the machine.",
+    )
     args = parser.parse_args()
+
+    # Cap per-fit threads so many small-subset cells can run concurrently without
+    # oversubscription (default -1 leaves Figure 5B's own behaviour unchanged).
+    _f5b._THREAD_COUNT = args.thread_count
 
     splits_dir = Path("data/processed/train_test_splits")
     output_dir = Path("data/outputs/figure5/figure5b_random_control")
@@ -420,30 +475,29 @@ def main() -> None:
 
     per_seed_summaries: list[dict[str, float]] = []
     for control_seed in range(args.n_control_seeds):
-        rng = np.random.default_rng(control_seed)
         print(f"\n=== Control replicate {control_seed + 1}/{args.n_control_seeds} ===")
 
         combined = analyze_combined_splits_random(
             splits_dir,
             gapmind_predictions,
             experimental_phenotypes,
-            rng,
             control_seed,
             n_seeds=args.n_seeds,
             threshold=threshold,
             n_features=n_features,
             n_candidate_features=args.n_candidate_features,
+            n_jobs=args.n_jobs,
         )
         individual = analyze_individual_datasets_random(
             common_phenotypes,
             gapmind_predictions,
             experimental_phenotypes,
-            rng,
             control_seed,
             n_seeds=args.n_seeds,
             threshold=threshold,
             n_features=n_features,
             n_candidate_features=args.n_candidate_features,
+            n_jobs=args.n_jobs,
         )
 
         summary_df = compare_features(

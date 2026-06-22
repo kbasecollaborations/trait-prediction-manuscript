@@ -24,6 +24,12 @@ from scripts.io import read_features, read_phenotypes
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
 
+# Thread budget per CatBoost fit / SHAP call. Default -1 (all cores) preserves
+# the original Figure 5B behaviour; downstream drivers (e.g. the random-subset
+# control) lower this so the many small-subset cells can be run in parallel
+# without oversubscribing the machine.
+_THREAD_COUNT = -1
+
 warnings.filterwarnings("ignore")
 
 
@@ -179,7 +185,7 @@ def get_shap_top_features(
     shap_values = model.get_feature_importance(
         data=pool,
         type="ShapValues",
-        thread_count=-1,
+        thread_count=_THREAD_COUNT,
     )
 
     # Drop the base-value column, then mean absolute SHAP per feature.
@@ -216,12 +222,12 @@ def get_screened_feature_names(
     list[str]
         Feature names ranked by CatBoost PredictionValuesChange importance.
     """
-    model = make_classifier("cb_noeval", random_state=random_state)
+    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
     model.fit(X, y, verbose=False)
 
     importances = model.get_feature_importance(
         type="PredictionValuesChange",
-        thread_count=-1,
+        thread_count=_THREAD_COUNT,
     )
     feature_importance = pd.Series(importances, index=X.columns)
     feature_importance.sort_values(ascending=False, inplace=True)
@@ -436,7 +442,7 @@ def train_and_get_top_features_individual(
         X, y, train_size=0.8, stratify=y, random_state=random_state, shuffle=True
     )
 
-    model = make_classifier("cb_noeval", random_state=random_state)
+    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
     model.fit(X_train, y_train, verbose=False)
 
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
@@ -477,7 +483,7 @@ def train_and_get_top_features_split(
         shuffle=True,
     )
 
-    model = make_classifier("cb_noeval", random_state=random_state)
+    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
     model.fit(X_train, y_train, verbose=False)
 
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
