@@ -376,3 +376,36 @@ The $\beta$-ketoadipate pathway is widely distributed in soil and rhizosphere li
 Both the full-data and concordant-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
 Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
+
+\subsection*{Supplementary Text S12: Adding Data Volume Versus Concordance Filtering}
+
+Because our 795 retained genomes fall below the thousand-genome scale at which phylogenetic confounding is reported to recede~\cite{Li2023-up,Yu2025BiasedSampling}, we tested directly whether adding training samples could substitute for concordance-based curation in the cross-dataset setting.
+We trained CatBoost classifiers (KOFAM features) under three strategies and evaluated each on the full labels of a held-out manuscript dataset (leave-one-dataset-out; 13 shared phenotypes, four held-out datasets, five seeds): concordant samples of the other three datasets (C), all samples of the other three datasets (F), and the full other three datasets plus all BacDive genomes (FB).
+The volume arm drew on a BacDive snapshot of 8{,}501 genomes with KOFAM annotations~\cite{Schober2025BacDive}, of which up to approximately 1{,}800 per phenotype entered training after intersecting labels with features and removing any genome sharing a stripped accession with the held-out test.
+% TODO(PROVENANCE): pin the exact BacDive release/access date in the deposited analysis code before submission.
+Because BacDive labels are strongly positive-skewed, all models used balanced class weights, applied uniformly across strategies.
+
+Adding BacDive (FB) significantly improved cross-dataset balanced accuracy over the unfiltered model (F) (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p < 0.001$, 12 of 13 phenotypes), confirming that volume helps when the training data are uncurated.
+However, FB did not significantly exceed concordance filtering of the smaller curated set (C) (0.725 versus 0.706, $p = 0.20$; Matthews correlation coefficient $p = 0.53$; area under the ROC curve $p = 0.99$); the apparent edge reflected higher precision offset by lower recall, so C scored equal or higher on $F_1$ and recall.
+The benefit of added volume was not predicted by the size of the per-phenotype BacDive pool (Spearman $\rho = 0.26$, $p = 0.38$).
+
+Across the five seeds, feature selection became progressively less reproducible as volume was added (Figure~\ref{fig:bacdive_curation}B,C; mean pairwise Jaccard of the top-10 CatBoost-importance features 0.378 for C, 0.316 for F, 0.253 for FB; C versus FB $p < 10^{-8}$), an ordering robust to restricting features to the shared KOFAM space and to an order-sensitive rank-overlap metric.
+Concordant-trained models more consistently selected committed-pathway features (for example, the histidine-utilisation enzyme K01468 appeared in all 20 concordant runs but 6 of 20 under FB), whereas added volume tended to demote these in favour of more variable, dataset-driven features; mannose was an exception, where added volume both improved accuracy and yielded a more coherent transporter and catabolism feature set.
+
+Several caveats bound this exploration: it draws volume from a single external resource with assay-heterogeneous, positive-skewed labels; the manuscript arms use leave-one-dataset-out rather than phylogenetic holdout, so absolute accuracies are in-distribution-leaning; feature stability is assessed by CatBoost importance overlap (top-10) rather than the SHAP redundancy-cluster procedure used in the main figures; and the per-phenotype comparisons rest on 13 phenotypes.
+We therefore read this as evidence that, within our sample-size regime, concordance-based curation matches the cross-dataset accuracy of large-scale added data while remaining more parsimonious and yielding more reproducible, mechanism-aligned features, not as a claim that data volume is without value~\cite{Geirhos2020Shortcut}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figure_s9.pdf}
+\caption{
+\textbf{Concordance filtering versus added data volume under cross-dataset evaluation.}
+CatBoost classifiers (KOFAM features) were trained under three strategies and tested on each held-out manuscript dataset's full labels (leave-one-dataset-out; 13 shared phenotypes, four held-out datasets, five seeds): C, concordant samples of the other three datasets; F, all samples of the other three datasets; FB, the full other three datasets plus all BacDive genomes~\cite{Schober2025BacDive}.
+(\textbf{A}) Cross-dataset balanced accuracy per strategy; the dashed line marks chance (0.5).
+(\textbf{B}) Cross-seed feature stability, the mean pairwise Jaccard of the top-10 CatBoost-importance features across the five seeds; points are individual phenotype--held-out cells.
+(\textbf{C}) Per-strategy cross-dataset balanced accuracy versus feature stability.
+Bars and markers show means; error bars show the standard error of the mean across the 45 phenotype--held-out cells.
+Brackets show paired Wilcoxon tests (n.s., not significant; ${*}{*}{*}$, $p < 0.001$).
+}
+\label{fig:bacdive_curation}
+\end{figure}

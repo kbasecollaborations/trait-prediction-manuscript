@@ -77,6 +77,7 @@ The decomposition explains the dilution: inside the applicability domain the ML 
 The concordant-trained ML advantage over GapMind is therefore real but bounded: visible under random holdout and as the partial rescue of GapMind false negatives in the discordant subset.
 
 Data requirements for the specialist were modest: concordant-model performance plateaued at 50--100 training samples for 13 of 15 phenotypes, with only glucose and galacturonic acid requiring 200 (Supplementary Figures~\ref{fig:sample_size_histidine} and~\ref{fig:all_phenotype_heatmap}).
+Consistent with this, adding a large external resource to the training data (BacDive, over 8000 genomes~\cite{Schober2025BacDive}) did not significantly raise cross-dataset accuracy above concordance filtering of a much smaller curated set and yielded less reproducible feature selection (Supplementary Text~S12, Figure~\ref{fig:bacdive_curation}).
 Concordance filtering, however, removes approximately 30\% of samples and requires a mechanistic predictor available only for well-characterised phenotypes, motivating tests of mechanism-free alternatives that use only phylogenetic agreement and experimental labels.
 
 
