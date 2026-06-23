@@ -101,9 +101,10 @@ Candidates were validated by reverse search against the reference database to re
 Because it scaled with dataset size, the E-value threshold differed across datasets (E~$\approx$~12.46 for ATLeaf and E~$\approx$~4.12 for Marine).
 The integer step scores used here (0--2) and the strict and permissive thresholds applied for the mechanistic baseline are described in the Methods.
 
-We compared CatBoost gradient-boosted tree classifiers against Random Forest classifiers across dataset pairs and feature types.
-CatBoost was selected as the primary classifier because it achieved the best performance in the majority of train--test dataset and feature type combinations (45 out of 64 comparisons for KOFAM features).
-Table~\ref{tab:best_models_counts} shows the ATLeaf--Biolog bidirectional subset of this comparison as an illustrative model-selection summary.
+We explored a range of classifier families on KOFAM features, including gradient-boosted trees (CatBoost, LightGBM, XGBoost), regularised-linear and projection methods (Lasso, Elastic-Net, group Lasso, sparse PLS-DA), Random Forest, and a phylogeny-aware model, across all 15 phenotypes and four evaluation regimes.
+The families clustered within a 0.05 balanced-accuracy band in the great majority of phenotype--regime cells (88\% ties), with the gradient-boosted trees strongest and Random Forest the only consistent under-performer (Table~\ref{tab:best_models_counts}).
+We adopted CatBoost, one of the best-performing models; further per-phenotype hyperparameter tuning did not improve its accuracy, so the curated configuration described in the Methods was retained.
+These comparisons used a single protocol without early stopping for an identical comparison, so absolute values differ by one to three balanced-accuracy points from the early-stopping CatBoost reported elsewhere.
 All models were evaluated using balanced accuracy as the primary reporting metric to account for class imbalance in phenotype data, where the proportion of positive (growth) and negative (no-growth) samples varied substantially across phenotypes and datasets.
 
 The minority-class filter (Methods) prevents balanced-accuracy collapse on test cells with extreme class imbalance.
@@ -134,24 +135,23 @@ The contrast between these tables illustrates that concordant training produces 
 
 \begin{table}[h]
 \centering
-\begin{tabular}{llllr}
+\begin{tabular}{lcccc}
 \hline
-\textbf{Train Dataset} & \textbf{Test Dataset} & \textbf{Feature Type} & \textbf{Best Model} & \textbf{Count} \\
+ & \multicolumn{2}{c}{\textbf{Full data}} & \multicolumn{2}{c}{\textbf{Concordant}} \\
+\textbf{Model} & \textbf{Random} & \textbf{Cross-dataset} & \textbf{Random} & \textbf{Cross-dataset} \\
 \hline
-ATLeaf & Biolog & KOFAM & CatBoost & 13 \\
-ATLeaf & Biolog & KOFAM & Random Forest & 3  \\
-ATLeaf & Biolog & RAST  & CatBoost & 11 \\
-ATLeaf & Biolog & RAST  & Random Forest & 5  \\
-Biolog & ATLeaf & KOFAM & CatBoost & 11 \\
-Biolog & ATLeaf & KOFAM & Random Forest & 5  \\
-Biolog & ATLeaf & RAST  & Random Forest & 9  \\
-Biolog & ATLeaf & RAST  & CatBoost & 7  \\
+CatBoost      & 0.829 & 0.633 & 0.957 & 0.871 \\
+LightGBM      & 0.836 & 0.638 & 0.961 & 0.887 \\
+Elastic-Net   & 0.829 & 0.643 & 0.945 & 0.827 \\
+Random Forest & 0.823 & 0.612 & 0.933 & 0.775 \\
 \hline
 \end{tabular}
-\caption{\textbf{CatBoost vs.\ Random Forest performance comparison for the ATLeaf--Biolog dataset pair.}
-For each combination of training direction and feature type, the table shows how many phenotypes were best predicted by each classifier (measured by balanced accuracy) in this illustrative model-selection subset.
-CatBoost outperformed Random Forest in 45 out of 64 comparisons, consistent with the complete model-selection analysis described in Supplementary Text S3.
-See Methods for classifier hyperparameters and training details.}
+\caption{\textbf{Comparison of model families.}
+Mean balanced accuracy across the 15 shared phenotypes under each evaluation regime (random holdout and leave-one-dataset-out cross-dataset, on the full and GapMind-concordant data subsets).
+The families performed similarly; the gradient-boosted trees (CatBoost, LightGBM) were strongest and Random Forest was the only consistent under-performer.
+Further per-phenotype hyperparameter tuning did not improve CatBoost over the curated configuration shown.
+All models were trained on KOFAM features under a single protocol without early stopping for an identical comparison; per-cell balanced-accuracy standard deviation was approximately 0.05--0.10.
+Additional families (XGBoost, Lasso, group Lasso, sparse PLS-DA, and a phylogeny-aware variant) are described in Supplementary Text~S3 and the deposited model-comparison analysis.}
 \label{tab:best_models_counts}
 \end{table}
 

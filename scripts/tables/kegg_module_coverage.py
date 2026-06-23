@@ -57,7 +57,11 @@ MODULE_NAMES: dict[str, str] = {
 PHENOTYPE_TO_PATHWAY_MAPS: dict[str, tuple[str, ...]] = {
     "Histidine": ("map00340",),
     "Galactose": ("map00052",),
-    "Galacturonic-Acid": ("map00040",),
+    # map00040 carries the isomerase (Ashwell) route; map00053 (Ascorbate and
+    # aldarate metabolism) carries the oxidative galacturonate -> galactarate
+    # route via uronate dehydrogenase (K18981), the stable feature the model
+    # relies on. Bacteria use both routes across lineages.
+    "Galacturonic-Acid": ("map00040", "map00053"),
     "Glucose": ("map00010",),
     "Arginine": ("map00330", "map00220"),
     "Cellobiose": ("map00500",),
@@ -77,6 +81,7 @@ PATHWAY_NAMES: dict[str, str] = {
     "map00040": "Pentose and glucuronate interconversions",
     "map00051": "Fructose and mannose metabolism",
     "map00052": "Galactose metabolism",
+    "map00053": "Ascorbate and aldarate metabolism",
     "map00220": "Arginine biosynthesis",
     "map00250": "Alanine, aspartate and glutamate metabolism",
     "map00260": "Glycine, serine and threonine metabolism",

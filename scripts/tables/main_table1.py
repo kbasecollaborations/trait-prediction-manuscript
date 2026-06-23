@@ -51,31 +51,28 @@ PATHWAY_NAME_WRAPS: dict[str, str] = {
     "map00260": "\\textit{Glycine, serine and} \\\\ \\textit{threonine metabolism}",
 }
 
-# Hand-curated example concordant-stable KOs for the rightmost column.
-# These are biologically representative concordant-stable signals selected
-# from the per-phenotype SHAP-stable feature lists; the automatic
-# "must recur across held-out splits" rule is too strict and leaves most
-# rows empty, so we keep these as authoritative override.
-EXAMPLE_KO_OVERRIDES: dict[str, str] = {
-    "Histidine": "K01468 imidazolonepropionase; K01712 urocanate hydratase",
-    "Galacturonic-Acid": "K18981 uronate dehydrogenase",
-    "Galactose": "K01190 beta-galactosidase",
-    "Glucose": "K01785 aldose 1-epimerase",
-    "Cellobiose": "K05349 beta-glucosidase; K01443 NAG-6-P deacetylase",
-    "Maltose": "K01187 alpha-glucosidase",
-    "Sucrose": "K01187 alpha-glucosidase; K01193 beta-fructofuranosidase",
-    "Fructose": "K00882 1-phosphofructokinase; K02770 PTS fructose IIC",
-    "Mannitol": (
-        "K02027 sugar transport SBP; K10228 mannitol permease; "
-        "K00009 mannitol-1-P 5-dehydrogenase"
-    ),
-    "m-Inositol": "K00010 myo-inositol 2-dehydrogenase; K03335 inosose dehydratase",
-    "Glycerol": "K02440 glycerol uptake facilitator; K02444 DeoR regulator",
+# Display-only short names for the example column. The *selection* of which
+# KOs appear is fully data-driven (see ``_example_cell``); this map only
+# controls how a few KOs are *rendered*, replacing verbose KEGG dictionary
+# names with the concise label used elsewhere in the manuscript. KOs not
+# listed fall back to the KEGG dictionary's descriptive name.
+KO_DISPLAY_NAMES: dict[str, str] = {
+    "K10228": "mannitol permease",
+    "K02770": "PTS fructose IIC",
+    "K00009": "mannitol-1-P 5-dehydrogenase",
+    "K00010": "myo-inositol 2-dehydrogenase",
+    "K02444": "glycerol-3-P regulon repressor",
 }
 
 
-def _short_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
-    """Return a short, human-readable name for a KO identifier.
+def _display_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
+    """Return a readable, LaTeX-safe enzyme name for a KO identifier.
+
+    Selection of which KO to display is data-driven; this helper only governs
+    rendering. ``KO_DISPLAY_NAMES`` supplies concise labels for a few KOs whose
+    KEGG dictionary name is verbose; every other KO falls back to the
+    dictionary's descriptive segment (the part after the gene symbols, with the
+    trailing ``[EC:...]`` bracket removed).
 
     Parameters
     ----------
@@ -87,17 +84,18 @@ def _short_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
     Returns
     -------
     str
-        Short, LaTeX-safe enzyme name (no EC bracket, no trailing semicolons).
+        LaTeX-safe enzyme name.
     """
-    ko_key = f"KO:{ko_id}"
-    term = ko_dict.get("term_hash", {}).get(ko_key)
+    if ko_id in KO_DISPLAY_NAMES:
+        return KO_DISPLAY_NAMES[ko_id]
+    term = ko_dict.get("term_hash", {}).get(f"KO:{ko_id}")
     if not term:
         return ""
     name = term.get("name", "")
-    name = name.split(";")[0].strip()
-    name = re.sub(r"\s*\[EC:[^]]+\]\s*$", "", name).strip()
-    name = name.replace("_", r"\_")
-    return name
+    segments = name.split(";")
+    desc = segments[1] if len(segments) > 1 else segments[0]
+    desc = re.sub(r"\s*\[EC:[^]]+\]\s*$", "", desc).strip()
+    return desc.replace("_", r"\_")
 
 
 def _invert_cluster_mapping(
@@ -252,41 +250,56 @@ def _concordant_shared_kos(
     return shared
 
 
-def _assert_overrides_are_shared_stable(
+def _recurrence(
+    phenotype: str,
+    ko: str,
     conc_combined: dict[str, list[str]],
     conc_individual: dict[str, dict[str, list[str]]],
-) -> None:
-    """Verify each ``EXAMPLE_KO_OVERRIDES`` KO is a genuine concordant shared-stable feature.
+) -> int:
+    """Count held-out datasets in which a KO is concordant shared-stable.
 
-    The example column is hand-curated (see ``EXAMPLE_KO_OVERRIDES``). This guard
-    enforces that every listed KO actually recurs as a shared concordant-stable
-    feature for its phenotype, so the curated examples cannot silently drift away
-    from the data the figure and table report.
+    A higher count means the KO recurs as a stable feature across more
+    held-out comparisons; the example column ranks candidates by this value
+    so the most consistently used features are shown first.
 
     Parameters
     ----------
+    phenotype : str
+        Phenotype to score.
+    ko : str
+        KO identifier to test.
     conc_combined : dict[str, list[str]]
         Concordant combined-of-three stable KO lists.
     conc_individual : dict[str, dict[str, list[str]]]
         Concordant held-out-alone stable KO lists.
 
-    Raises
-    ------
-    ValueError
-        If any override KO is absent from its phenotype's concordant
-        shared-stable set.
+    Returns
+    -------
+    int
+        Number of held-out datasets (0--3) in which ``ko`` appears in both the
+        combined and held-out-alone concordant stable lists.
     """
-    problems: list[str] = []
-    for phenotype, text in EXAMPLE_KO_OVERRIDES.items():
-        shared = _concordant_shared_kos(phenotype, conc_combined, conc_individual)
-        for ko in re.findall(r"K\d{5}", text):
-            if ko not in shared:
-                problems.append(f"{phenotype}:{ko}")
-    if problems:
-        raise ValueError(
-            "EXAMPLE_KO_OVERRIDES contains KOs that are not concordant "
-            "shared-stable features: " + ", ".join(problems)
+    count = 0
+    for ds in HELD_OUT_DATASETS:
+        combined_key = next(
+            (
+                k
+                for k in conc_combined
+                if k.startswith(f"{phenotype}_train(") and k.endswith(f",test({ds})")
+            ),
+            None,
         )
+        if (
+            combined_key is None
+            or ds not in conc_individual
+            or phenotype not in conc_individual[ds]
+        ):
+            continue
+        if ko in set(conc_combined[combined_key]) & set(
+            conc_individual[ds][phenotype]
+        ):
+            count += 1
+    return count
 
 
 def _format_pct(hits: int, denom: int) -> str:
@@ -296,51 +309,180 @@ def _format_pct(hits: int, denom: int) -> str:
     return f"{hits / denom * 100:.0f}\\%"
 
 
-def _filter_example_to_pathway_clusters(
-    example_text: str,
-    ko_to_cluster: dict[str, int] | None,
+def _shared_cluster_representatives(
+    phenotype: str,
+    conc_combined: dict[str, list[str]],
+    conc_individual: dict[str, dict[str, list[str]]],
+    ko_to_cluster: dict[str, int],
     cluster_to_kos: dict[int, set[str]],
     pathway_kos: set[str],
-) -> str:
-    """Drop semicolon-separated KO segments whose cluster is not pathway-resident.
+) -> list[str]:
+    """Return one representative KO per shared concordant-stable cluster.
+
+    Used when the two models share redundancy clusters but no identical KO, so
+    the raw-KO intersection is empty even though the Shared stable clusters count
+    is non-zero. A cluster counts as shared for a held-out comparison when it is
+    present in both the combined-of-three and held-out-alone concordant models
+    (the same cluster-level definition behind the count column). Each shared
+    cluster contributes its highest-recurrence member KO (ties broken by KO id);
+    clusters are ordered pathway-resident first, then by the number of held-out
+    comparisons in which they recur, then by representative KO id.
 
     Parameters
     ----------
-    example_text : str
-        Display-ready example cell value.
-    ko_to_cluster : dict[str, int] | None
-        Cluster mapping for the phenotype.
+    phenotype : str
+        Phenotype to score.
+    conc_combined, conc_individual : dict
+        Concordant combined-of-three and held-out-alone stable KO lists.
+    ko_to_cluster : dict[str, int]
+        SHAP-supervised redundancy-cluster mapping for the phenotype.
     cluster_to_kos : dict[int, set[str]]
         Inverse of ``ko_to_cluster``.
     pathway_kos : set[str]
-        KOs on the assigned KEGG reference pathway map.
+        KOs on the phenotype's assigned KEGG reference pathway map(s).
+
+    Returns
+    -------
+    list[str]
+        Representative KOs, ordered for display (empty when no cluster is shared).
+    """
+    cluster_recurrence: dict[str | int, int] = {}
+    cluster_members: dict[str | int, set[str]] = {}
+    for ds in HELD_OUT_DATASETS:
+        combined_key = next(
+            (
+                k
+                for k in conc_combined
+                if k.startswith(f"{phenotype}_train(") and k.endswith(f",test({ds})")
+            ),
+            None,
+        )
+        if (
+            combined_key is None
+            or ds not in conc_individual
+            or phenotype not in conc_individual[ds]
+        ):
+            continue
+        combined_kos = conc_combined[combined_key]
+        individual_kos = conc_individual[ds][phenotype]
+        combined_clusters = _kos_to_cluster_ids(combined_kos, ko_to_cluster)
+        individual_clusters = _kos_to_cluster_ids(individual_kos, ko_to_cluster)
+        for cid in combined_clusters & individual_clusters:
+            cluster_recurrence[cid] = cluster_recurrence.get(cid, 0) + 1
+            members = cluster_members.setdefault(cid, set())
+            for ko in (*combined_kos, *individual_kos):
+                if ko_to_cluster.get(ko, f"sing:{ko}") == cid:
+                    members.add(ko)
+    if not cluster_recurrence:
+        return []
+
+    def _representative(cid: str | int) -> str:
+        return sorted(
+            cluster_members[cid],
+            key=lambda ko: (
+                -_recurrence(phenotype, ko, conc_combined, conc_individual),
+                ko,
+            ),
+        )[0]
+
+    reps = {cid: _representative(cid) for cid in cluster_recurrence}
+
+    def _resident(cid: str | int) -> bool:
+        return bool(pathway_kos) and _cluster_in_pathway(
+            cid, cluster_to_kos, pathway_kos
+        )
+
+    ordered = sorted(
+        cluster_recurrence,
+        key=lambda cid: (not _resident(cid), -cluster_recurrence[cid], reps[cid]),
+    )
+    return [reps[cid] for cid in ordered]
+
+
+def _example_cell(
+    phenotype: str,
+    conc_combined: dict[str, list[str]],
+    conc_individual: dict[str, dict[str, list[str]]],
+    ko_to_cluster: dict[str, int],
+    cluster_to_kos: dict[int, set[str]],
+    pathway_kos: set[str],
+    ko_dict: dict[str, Any],
+    max_examples: int = 2,
+) -> str:
+    """Build the example column from the data: top shared-stable feature KOs.
+
+    The pool is the concordant shared-stable feature KOs (the features the model
+    actually relied on). Features whose redundancy cluster touches the
+    phenotype's KEGG reference pathway map are preferred, since their biological
+    connection is explicit; off-pathway features (e.g. transporters, regulators)
+    are shown only when no on-pathway feature is stable, so the column still
+    conveys the biology the model uses rather than going blank. Within the
+    chosen pool, features are ranked by recurrence across held-out datasets
+    (ties broken by KO id) and the top ``max_examples`` are rendered.
+
+    When the two models share redundancy clusters but no identical KO (so the
+    raw-KO intersection is empty while the Shared stable clusters count is
+    non-zero), the column falls back to a representative KO per shared cluster
+    via :func:`_shared_cluster_representatives`, keeping the example column
+    consistent with the count column. The descriptive enzyme/transporter/
+    regulator names carry the role; no hand-curation of which KO to show is
+    involved.
+
+    Parameters
+    ----------
+    phenotype : str
+        Phenotype to score.
+    conc_combined, conc_individual : dict
+        Concordant combined-of-three and held-out-alone stable KO lists.
+    ko_to_cluster : dict[str, int]
+        SHAP-supervised redundancy-cluster mapping for the phenotype.
+    cluster_to_kos : dict[int, set[str]]
+        Inverse of ``ko_to_cluster``.
+    pathway_kos : set[str]
+        KOs on the phenotype's assigned KEGG reference pathway map(s).
+    ko_dict : dict[str, Any]
+        KO dictionary loaded from ``KO_dictionary.json``.
+    max_examples : int, optional
+        Maximum number of example KOs to render. Defaults to ``2``.
 
     Returns
     -------
     str
-        Filtered cell value, or ``"---"`` if every segment was dropped.
+        Rendered ``"K..... name; K..... name"`` cell, or ``"---"`` when the
+        phenotype has no shared cluster at all.
     """
-    if not pathway_kos:
-        return example_text
-    segments = [s.strip() for s in example_text.split(";") if s.strip()]
-    keep: list[str] = []
-    for seg in segments:
-        match = re.match(r"^(K\d{5})\b", seg)
-        if not match:
-            continue
-        ko = match.group(1)
-        cid: str | int | None = (
-            ko_to_cluster.get(ko) if ko_to_cluster else None
-        )
-        if cid is None:
-            in_path = ko in pathway_kos
-        else:
-            in_path = _cluster_in_pathway(cid, cluster_to_kos, pathway_kos)
-        if in_path:
-            keep.append(seg)
-    if not keep:
+    features = _concordant_shared_kos(phenotype, conc_combined, conc_individual)
+    if features:
+        def _cluster_touches_pathway(ko: str) -> bool:
+            cid = ko_to_cluster.get(ko)
+            if cid is None:
+                return ko in pathway_kos
+            return _cluster_in_pathway(cid, cluster_to_kos, pathway_kos)
+
+        on_pathway = [
+            ko for ko in features if pathway_kos and _cluster_touches_pathway(ko)
+        ]
+        pool = on_pathway or list(features)
+        chosen = sorted(
+            pool,
+            key=lambda ko: (
+                -_recurrence(phenotype, ko, conc_combined, conc_individual),
+                ko,
+            ),
+        )[:max_examples]
+    else:
+        chosen = _shared_cluster_representatives(
+            phenotype,
+            conc_combined,
+            conc_individual,
+            ko_to_cluster,
+            cluster_to_kos,
+            pathway_kos,
+        )[:max_examples]
+
+    if not chosen:
         return "---"
-    return "; ".join(keep)
+    return "; ".join(f"{ko} {_display_ko_name(ko, ko_dict)}" for ko in chosen)
 
 
 def _pathway_cell(phenotype: str) -> str:
@@ -374,6 +516,7 @@ def build_table(
     cluster_json: Path = Path(
         "data/outputs/clustering/ko_clusters_shap_hclust.json"
     ),
+    ko_dictionary_json: Path = Path("data/external/mapping/KO_dictionary.json"),
     output_path: Path = Path("sections/table_main_feature_comparison.tex"),
     highlight_phenotype: str = "Histidine",
 ) -> None:
@@ -388,6 +531,8 @@ def build_table(
         Same under concordant-only training.
     cluster_json : Path
         SHAP-supervised cluster JSON (per-phenotype KO -> cluster id).
+    ko_dictionary_json : Path
+        KO dictionary JSON used to render enzyme names in the example column.
     output_path : Path
         Destination ``.tex`` file (overwritten).
     highlight_phenotype : str, optional
@@ -404,10 +549,8 @@ def build_table(
         ind_conc: dict[str, dict[str, list[str]]] = json.load(handle)
     with open(cluster_json) as handle:
         cluster_mapping: dict[str, dict[str, int]] = json.load(handle)
-
-    # Guard: every curated example KO must be a genuine concordant shared-stable
-    # feature (the pathway-residency filter alone does not check this).
-    _assert_overrides_are_shared_stable(comb_conc, ind_conc)
+    with open(ko_dictionary_json) as handle:
+        ko_dict: dict[str, Any] = json.load(handle)
 
     def _row_cells(phenotype: str) -> tuple[str, str, str, str, str]:
         ko_to_cluster = cluster_mapping.get(phenotype, {})
@@ -429,9 +572,14 @@ def build_table(
         shared_cell = f"{_fmt(sf_t, sf_h)} $\\rightarrow$ {_fmt(sc_t, sc_h)}"
         unique_cell = f"{_fmt(uf_t, uf_h)} $\\rightarrow$ {_fmt(uc_t, uc_h)}"
 
-        example_override = EXAMPLE_KO_OVERRIDES.get(phenotype, "---")
-        example = _filter_example_to_pathway_clusters(
-            example_override, ko_to_cluster, cluster_to_kos, pathway_kos
+        example = _example_cell(
+            phenotype,
+            comb_conc,
+            ind_conc,
+            ko_to_cluster,
+            cluster_to_kos,
+            pathway_kos,
+            ko_dict,
         )
 
         return (
@@ -457,7 +605,7 @@ def build_table(
         "\\textbf{KEGG pathway map(s)} & "
         "\\makecell{\\textbf{Shared stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
         "\\makecell{\\textbf{Unique stable clusters} \\\\ \\textbf{(\\% in pathway)} \\\\ \\textbf{Full $\\rightarrow$ Conc.}} & "
-        "\\makecell[l]{\\textbf{Example shared concordant-} \\\\ \\textbf{stable KO in pathway}} \\\\"
+        "\\makecell[l]{\\textbf{Example shared concordant-} \\\\ \\textbf{stable feature}} \\\\"
     )
     lines.append("\\hline")
 
