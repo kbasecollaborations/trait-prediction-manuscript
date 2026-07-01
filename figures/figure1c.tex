@@ -1,0 +1,44 @@
+% DRAFT v4 - Figure 1C guide following the manuscript's analysis progression.
+% Column 2 is a balanced accuracy under each row's OWN stated evaluation
+% (random holdout vs cross-dataset), not a single cross-dataset number.
+\documentclass[border=10pt]{standalone}
+
+\usepackage{newtxmath}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[x11names,svgnames,table]{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{colortbl}
+
+\definecolor{keyrow}{HTML}{E6F0E9}
+\definecolor{good}{HTML}{1B7837}
+
+\begin{document}
+\begin{minipage}{16.5cm}
+{\large\bfseries C}\par\vspace{3pt}
+\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.4}
+\small
+
+\begin{tabular}{@{}
+  >{\raggedright\arraybackslash}p{6.0cm}
+  >{\centering\arraybackslash}p{2.4cm}
+  >{\raggedright\arraybackslash}p{6.0cm}@{}}
+\toprule
+\textbf{Analysis} & \textbf{\makecell{Balanced\\accuracy}} & \textbf{What it shows} \\
+\midrule
+\makecell[l]{Random holdout\\{\footnotesize train and test on the same datasets}} & 0.75--0.90 & Strong, but an optimistic within-distribution estimate \\
+\addlinespace[4pt]
+\makecell[l]{Cross-dataset\\{\footnotesize train on three datasets, test on the fourth}} & 0.40--0.84 & Accuracy drops: the model overfit to dataset-specific signal \\
+\addlinespace[4pt]
+\rowcolor{keyrow}
+\makecell[l]{\textbf{Concordance filtering}\\{\footnotesize train only on mechanism-consistent samples}} & \textbf{0.83} & \textcolor{good}{\textbf{Restores cross-dataset transfer and recovers real pathway genes}} \\
+\addlinespace[4pt]
+\makecell[l]{Confidence / agreement filter\\{\footnotesize applied at deployment}} & -- & Flags which predictions to trust on a new genome \\
+\bottomrule
+\end{tabular}
+
+\end{minipage}
+\end{document}

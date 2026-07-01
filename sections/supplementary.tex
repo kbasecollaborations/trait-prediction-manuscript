@@ -379,6 +379,12 @@ Both the full-data and concordant-trained models were overconfident under cross-
 Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
 
+\paragraph{Retaining false negatives versus the specificity tradeoff.}
+Concordance filtering drops both GapMind false positives and false negatives, but these are not equivalent, so we compared three regimes cross-dataset under balanced class weights: \textit{unfiltered} training on every label; \textit{concordance filtering} (dropping both); and \textit{false-positive filtering} (dropping only the false positives and retaining the false negatives, organisms that grow despite an incomplete annotated pathway and so use cryptic or alternative routes GapMind does not score).
+Concordance filtering gave the best cross-dataset balanced accuracy (0.051 above unfiltered).
+Re-adding the false negatives raised recall by 0.033, the highest of any regime and rising in 10 of 15 phenotypes, but lowered specificity by 0.090 and balanced accuracy by 0.029, consistent with recovery of cryptic growers at the cost of a more permissive model, since cryptic routes are heterogeneous and some false negatives are likely mislabels.
+Concordance filtering is therefore preferable for balanced-accuracy deployment and false-positive filtering for recall-critical screening; the per-sample outputs do not let us confirm that the recovered positives are specifically the false-negative cases rather than ordinary growers near the boundary.
+
 \subsection*{Supplementary Text S12: Adding Data Volume Versus Concordance Filtering}
 
 Because our 795 retained genomes fall below the thousand-genome scale at which phylogenetic confounding is reported to recede~\cite{Li2023-up,Yu2025BiasedSampling}, we tested directly whether adding training samples could substitute for concordance-based curation in the cross-dataset setting.
@@ -409,3 +415,19 @@ Brackets show paired Wilcoxon tests (n.s., not significant; ${*}{*}{*}$, $p < 0.
 }
 \label{fig:bacdive_curation}
 \end{figure}
+
+\subsection*{Supplementary Text S13: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
+
+If part of the cross-dataset performance gap reflects label inconsistency rather than reproducible biology, then phylogenetically near-identical strains should disagree on their growth labels more often when measured by different datasets than by the same one.
+Restricting comparisons to genome pairs below a stringent phylogenetic distance ($d \leq 0.01$), near-identical strains conflicted on 31.0\% (81 of 261) of cross-dataset comparisons but only 10.2\% (782 of 7{,}706) of within-dataset comparisons (logistic odds ratio 3.98), an excess that was monotone across stricter thresholds.
+The datasets call positives at different rates (Biolog and Populus more liberally than ATLeaf and Marine), but the excess survived adjustment: a logistic regression of conflict on the cross-dataset indicator, controlling for the base-rate-expected conflict, gave an adjusted odds ratio of 2.85 (95\% confidence interval 2.13 to 3.81, $p = 2.0 \times 10^{-12}$), and a more conservative model conditioning on both datasets' rates remained significant (1.75, $p = 0.014$); base-rate differences account for only about a quarter of the raw gap.
+Several non-exclusive causes are compatible with this pattern and the analysis cannot separate them: assay and readout differences across datasets, genuine ecological and strain-history divergence among near-identical genomes (accessory gene content, regulation, niche), and curation differences, with the base-rate control ruling out only the positive-call-rate artefact.
+Regardless of cause, cross-dataset labels are less self-consistent than within-dataset labels, so concordance filtering preferentially removes the least reproducible samples, supporting the data-coherence interpretation of the main-text cross-dataset gains.
+
+\subsection*{Supplementary Text S14: Enforcing Concordance in the Training Set Versus in the Predictions}
+
+The concordance criterion can be enforced at two points, and the two are nearly equivalent.
+Concordant training enforces it in the training set, retaining only samples where GapMind's pathway-completeness call agrees with the experimental phenotype; the resulting specialist is trained on roughly 70\% of the samples but predicts from genomic features alone.
+Alternatively, a model trained on all samples can be restricted to the predictions that agree with GapMind: on the 71\% of genomes where the two agree it reached cross-dataset balanced accuracy 0.76, recovering much of the concordant specialist's advantage, while the remaining discordant genomes are set aside.
+The two strategies differ mainly in cost: concordant training evaluates GapMind once, when assembling the training set, and discards the discordant samples, whereas filtering the predictions retains all samples but requires a GapMind evaluation for every genome examined and offers no control over how many predictions are kept.
+Because the trained concordant model requires only genomic features, enforcing concordance in the training set is the more economical strategy.
