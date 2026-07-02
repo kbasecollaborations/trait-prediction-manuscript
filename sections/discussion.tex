@@ -21,6 +21,7 @@ The wide phenotype-level range in cross-dataset balanced accuracy is consistent 
 Such experimental artefacts may include differences in growth-assay modality across the source datasets (colony, optical density, respiration), which need not reflect any genomic signal.
 This asymmetry played out in practice: the concordant-trained model recovered cryptic catabolic capacity (growth GapMind failed to predict) at roughly twice the rate at which it corrected present-but-silent pathways (Figure~\ref{fig:concordant_analysis}D).
 Annotation-gap false negatives carry genomic content that the broader KOFAM feature set can recover even when GapMind's curated pathway-completeness rule misses it, while false positives driven by regulation or experimental conditions leave no genomic signature for the model to recover.
+Because these recoveries correspond mostly to annotation gaps rather than novel routes, and much of the unrecovered remainder is probably mislabelled, the quantity of genuinely uncharacterised biology excluded by concordance filtering appears limited.
 Because the rescue rate is non-zero, concordance filtering discards some discordant samples carrying transferable signal.
 
 Previous work concluded that overcoming phylogenetic confounding requires $>$1000 genomes~\cite{Li2023-up,Yu2025BiasedSampling}; within our sample-size regime (795 retained genomes, below this threshold), our findings suggest that the heterogeneity of training samples, rather than their number alone, drives shortcut learning.
