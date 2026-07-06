@@ -292,7 +292,7 @@ def create_misclassification_plots(
         Directory containing GapMind feature files. If None, uses default path.
     """
     if gapmind_data_dir is None:
-        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
+        gapmind_data_dir = Path("data/processed/gapmind_features/all")
 
     phenotype_dict = {
         "alanine": "Alanine",
@@ -509,7 +509,7 @@ def plot_microbe_misclassification_ranking(
         default path used elsewhere in this module.
     """
     if gapmind_data_dir is None:
-        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
+        gapmind_data_dir = Path("data/processed/gapmind_features/all")
 
     phenotype_dict = {
         "alanine": "Alanine",
@@ -625,7 +625,7 @@ def get_problematic_sample_summary(
         problematic-sample categories, and summary metadata.
     """
     if gapmind_data_dir is None:
-        gapmind_data_dir = Path("data/results/new_outline/gapmind_features/all")
+        gapmind_data_dir = Path("data/processed/gapmind_features/all")
 
     phenotype_dict = {
         "alanine": "Alanine",
