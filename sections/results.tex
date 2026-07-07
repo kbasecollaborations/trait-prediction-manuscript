@@ -7,6 +7,7 @@
 To investigate factors governing genotype--phenotype prediction accuracy and generalisation, we harmonised four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, this study) covering phylogenetically and ecologically diverse strains (Figure~\ref{fig:phylogenetic_distribution}) on various carbon sources (819 input genomes, 795 retained after filtering; Methods).
 Genomes were annotated with RAST, KOFAM, and GapMind, and classifiers were trained on the resulting feature matrices (Figure~\ref{fig:dataset_characteristics}A).
 Analyses focused on the 15 shared phenotypes (Figure~\ref{fig:dataset_characteristics}B); Populus was excluded from selected feature-stability comparisons because of small sample size.
+Figure~\ref{fig:dataset_characteristics}C provides a roadmap of the analysis variants that follow, summarising for each what it changes (training data, features, and evaluation), its range of balanced accuracy, and a one-line finding.
 
 
 To establish baseline performance, we evaluated two approaches: GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest neighbour classifier (k=3) that used the phenotypic information of the three closest strains for prediction (Methods).
@@ -25,8 +26,8 @@ Data were aggregated across all four datasets and assessed under four evaluation
 Random holdout test samples were found to be drawn from the same phylogenetic clades as training samples (Figure~\ref{fig:phylogenetic_distance_splits}).
 No genome appears in more than one dataset, and only about 2\% have an identical-feature twin in the pooled data, so the random holdout carries negligible same-label feature leakage (Supplementary Text~S3).
 
-In repeated random holdout evaluations (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and outperformed the GapMind baseline (paired Wilcoxon signed-rank across the 15 shared phenotypes, $p < 0.001$).
-Cross-dataset performance, however, decreased substantially (0.40--0.84; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts~\cite{Pasolli2016MetaAnalysis}.
+In repeated random holdout evaluations (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.70--0.90) and outperformed the GapMind baseline (paired Wilcoxon signed-rank across the 15 shared phenotypes, $p < 0.001$).
+Cross-dataset performance, however, decreased substantially (0.48--0.84; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts~\cite{Pasolli2016MetaAnalysis}.
 The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C); because phylogenetic distance alone does not explain the failure, the cause more likely lies in other differences between datasets, such as taxonomic composition, curation, or assay definition.
 The four datasets also differ along several axes that could affect labels, including growth-assay modality (see Methods), ecological and strain-history divergence, and curation, so closely related strains may receive different labels across datasets.
 Consistent with this, near-identical strains conflict on their growth label far more often across datasets than within a single dataset (31\% versus 10\%), and the gap persists after adjusting for each dataset's positive-call rate (adjusted odds ratio 2.85; Supplementary Text~S13).
