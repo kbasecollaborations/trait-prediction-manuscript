@@ -7,7 +7,7 @@
 To investigate factors governing genotype--phenotype prediction accuracy and generalisation, we harmonised four binary growth datasets (ATLeaf \cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, this study) covering phylogenetically and ecologically diverse strains (Figure~\ref{fig:phylogenetic_distribution}) on various carbon sources (819 input genomes, 795 retained after filtering; Methods).
 Genomes were annotated with RAST, KOFAM, and GapMind, and classifiers were trained on the resulting feature matrices (Figure~\ref{fig:dataset_characteristics}A).
 Analyses focused on the 15 shared phenotypes (Figure~\ref{fig:dataset_characteristics}B); Populus was excluded from selected feature-stability comparisons because of small sample size.
-Figure~\ref{fig:dataset_characteristics}C provides a roadmap of the analysis variants that follow, summarising for each what it changes (training data, features, and evaluation), its range of balanced accuracy, and a one-line finding.
+Figure~\ref{fig:dataset_characteristics}C summarises the analysis variants evaluated below and their balanced-accuracy ranges.
 
 
 To establish baseline performance, we evaluated two approaches: GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest neighbour classifier (k=3) that used the phenotypic information of the three closest strains for prediction (Methods).
@@ -61,7 +61,7 @@ To test the training-data heterogeneity hypothesis, we restricted training to co
 Concordant samples likely overrepresent organisms using conserved pathways already captured in annotation databases, and may also overrepresent well-studied taxa whose genomes the annotation pipeline can score most reliably, so the resulting model is a specialist for mechanistically tractable cases rather than a recoverer of all valid utilisation strategies (a taxonomic confound we return to in the Discussion).
 
 On held-out concordant test data (the easier subset, since discordant cases are excluded; the full held-out test is shown in Figure~\ref{fig:concordant_analysis}C), the concordant-trained model reached per-phenotype balanced accuracy of 0.91--0.99 under random holdout (median 0.95) and median 0.83 under cross-dataset evaluation, with 18 of 44 phenotype--dataset cells above 0.90 (Figure~\ref{fig:concordant_analysis}A).
-Glucose (mean BA 0.51) and serine (0.73) remained low despite shared stable features.
+Glucose (mean BA 0.51) and serine (0.64) remained low despite shared stable features.
 Retraining the same models directly on GapMind confidence features established a pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed lines): the per-phenotype KOFAM-vs-GapMind cross-dataset gap (median BA $0.83$ vs $0.90$; paired Wilcoxon $p = 0.02$) quantifies the mechanistic information lost by replacing GapMind's curated annotations with general KOFAM annotations, with the largest single-phenotype gap on glucose (GapMind 0.77 vs KOFAM 0.51). These are generally due to organism-specific enzyme or transporter annotations that are not as accurate in the KOFAM feature set.
 For most phenotypes the gap was below 0.1 (Supplementary Text~S11).
 

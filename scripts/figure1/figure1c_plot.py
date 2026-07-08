@@ -53,7 +53,8 @@ CAP_COLOR = "#6E8299"
 ORANGE = "#C0561E"
 
 BA_LO, BA_HI = 0.40, 1.00
-X0, X1 = 0.455, 0.645  # BA axis maps into this figure-fraction x-range
+GX = 0.075  # global x-shift centring the table within the full-width canvas
+X0, X1 = 0.455 + GX, 0.645 + GX  # BA axis maps into this figure-fraction x-range
 
 FS_PANEL = 12
 FS_HEAD = 7.6
@@ -67,11 +68,11 @@ FS_RATIO = 6.0
 FS_FIND = 6.7
 FS_NOTE = 6.2
 
-X_LABEL = 0.004
-X_TRAIN = 0.150
-X_FEAT = 0.252
-X_EVAL = 0.358
-X_FIND = 0.680
+X_LABEL = 0.004 + GX
+X_TRAIN = 0.150 + GX
+X_FEAT = 0.252 + GX
+X_EVAL = 0.358 + GX
+X_FIND = 0.680 + GX
 
 CAP_H = 0.045
 VAL_DY = 0.055
@@ -80,7 +81,7 @@ MED_DY = 0.050
 # Table rules and BA-axis positions (figure fraction).
 # RULE_R stops just past the Finding text so the table has no empty ruled
 # column on the right; the panel letter sits above TOP_RULE (see hy below).
-RULE_L, RULE_R = 0.0, 0.850
+RULE_L, RULE_R = 0.0 + GX, 0.850 + GX
 TOP_RULE = 0.925
 MID_RULE = 0.855
 BOT_RULE = 0.020
@@ -129,8 +130,8 @@ ROWS = [
         train=("full", INK, "normal"),
         feat=("combined\n(~17k)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.42, hi=0.85, median=0.63, txt="0.42-0.85",
-        med_txt="med 0.63",
+        kind="range_median", lo=0.55, hi=0.85, median=0.66, txt="0.55-0.85",
+        med_txt="med 0.66",
         finding="Comprehensive features\ndo not generalise better",
     ),
     dict(
@@ -138,9 +139,9 @@ ROWS = [
         train=("full", INK, "normal"),
         feat=("filtered GapMind\n(~32)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.56, hi=0.85, median=0.69, txt="0.56-0.85",
-        med_txt="med 0.69",
-        finding="Avoids overfit (floor up);\nignores other signals",
+        kind="range_median", lo=0.56, hi=0.85, median=0.73, txt="0.56-0.85",
+        med_txt="med 0.73",
+        finding="Curbs overfit; higher\nmedian, capped ceiling",
     ),
 ]
 
@@ -152,7 +153,9 @@ def render(fig) -> None:
     ax.set_ylim(0, 1)
     ax.axis("off")
 
-    ax.text(0.004, 0.995, "C", fontsize=FS_PANEL, fontweight="bold", va="top", ha="left")
+    # Panel letter stays at the far left (aligned with panels A and B); the
+    # table itself is centred via GX.
+    ax.text(0.004, 0.995, "C", fontsize=FS_PANEL, fontweight="normal", va="top", ha="left")
 
     # Table rules (booktabs style): top, header underline, bottom.
     ax.plot([RULE_L, RULE_R], [TOP_RULE, TOP_RULE], color=INK, lw=1.1, zorder=1)
