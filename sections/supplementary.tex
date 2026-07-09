@@ -37,8 +37,8 @@ All 172 genomes that passed annotation quality control were retained for analysi
 This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
 
 \paragraph*{Populus.}
-The Populus source study profiled \textit{Pseudomonas fluorescens} isolates from \textit{Populus deltoides} rhizosphere and endosphere on defined carbon sources~\cite{Timm2015Populus}; the compiled matrix used here recorded growth as optical density in minimal medium and included 58 isolates tested on 191 carbon sources.
-% TODO(CITATION/PROVENANCE): Discuss with Ranjan and create a DOI for the compiled 58-isolate Populus matrix; Timm et al. 2015 supports the Populus-associated phenotyping source but not this exact compiled count.
+The Populus data are a previously unpublished Biolog carbon-source assay of ORNL Plant-Microbe Interfaces bacterial isolates from \textit{Populus deltoides} rhizosphere and endosphere, measured before this work and released here for the first time; the assay recorded growth as optical density in minimal medium for 58 isolates across 191 carbon sources, and the source spreadsheet (\texttt{PMI strain BiologSummary.xlsx}) is provided in the Zenodo deposit.
+% Populus provenance: previously unpublished ORNL Plant-Microbe Interfaces Biolog assay; the source spreadsheet PMI strain BiologSummary.xlsx is included in the Zenodo record (covered by the deposit DOI).
 After filtering, 55 genomes were retained.
 Because of its small sample size and narrow phylogenetic breadth, Populus contributed less statistical power than the other collections in some analyses and was excluded from selected feature-stability comparisons.
 
@@ -379,6 +379,18 @@ Both the full-data and concordant-trained models were overconfident under cross-
 Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
 
+\paragraph{Retaining false negatives versus the specificity tradeoff.}
+Concordance filtering drops both GapMind false positives and false negatives, but these are not equivalent, so we compared three regimes cross-dataset under balanced class weights: \textit{unfiltered} training on every label; \textit{concordance filtering} (dropping both); and \textit{false-positive filtering} (dropping only the false positives and retaining the false negatives, organisms that grow despite an incomplete annotated pathway and so use cryptic or alternative routes GapMind does not score).
+Concordance filtering gave the best cross-dataset balanced accuracy (0.051 above unfiltered).
+Re-adding the false negatives raised recall by 0.030, the highest of any regime and rising in 11 of 15 phenotypes, but lowered specificity by 0.097 and balanced accuracy by 0.033, consistent with recovery of cryptic growers at the cost of a more permissive model, since cryptic routes are heterogeneous and some false negatives are likely mislabels.
+Concordance filtering is therefore preferable for balanced-accuracy deployment and false-positive filtering for recall-critical screening.
+A focused feature-level analysis of the retained false negatives showed that they are disproportionately metabolic generalists.
+Relative to GapMind-negative non-growers, false-negative growers utilised more of the other carbon sources (pooled mean 9.5 versus 5.2 of the remaining 14; Mann-Whitney $p < 10^{-200}$) and encoded larger sugar-transporter repertoires (6.5 versus 4.3 sugar-ABC transport components; $p < 10^{-60}$), with both trends holding in almost every phenotype.
+Consistent with this, the features that the false negatives introduce over concordant training were dominated by broad-specificity carbohydrate transporters and transcriptional regulators of sugar catabolism rather than by alternative catabolic enzymes, and the GapMind step most often absent in false-negative growers was a transporter rather than an enzyme (9 of 15 phenotypes).
+Most of these broad transporters recur across chemically unrelated substrates and are better read as markers of metabolic versatility than as substrate-specific routes: their presence does not establish that they serve the focal substrate, so the model recovers these false negatives by recognising a generalist genomic signature rather than a substrate-specific mechanism, which is also why GapMind, requiring substrate-specific evidence, does not credit them.
+The two clearest substrate-specific exceptions were both routes GapMind does not score: sucrose uptake via a broad multiple-sugar ABC importer (K02025), carried by 58 of the sucrose false negatives, of which 57 lack the canonical sucrose phosphotransferase system, and a divergent altronate dehydratase (K26399)~\cite{Watanabe2019Altronate} in galacturonate-utilising genomes that lack the canonical \textit{uxaA} gene GapMind requires, a candidate alternative isozyme rather than a validated novel route.
+Partitioning the false negatives by the genomic presence of their catabolic machinery separated a recoverable fraction from a larger residual lacking such support; this residual was disproportionately associated with confident agreement between the model and GapMind against the experimental label (odds ratio 3.3), consistent with a component of experimental mislabelling of the kind quantified for near-identical cross-dataset strains in Supplementary Text~S13.
+
 \subsection*{Supplementary Text S12: Adding Data Volume Versus Concordance Filtering}
 
 Because our 795 retained genomes fall below the thousand-genome scale at which phylogenetic confounding is reported to recede~\cite{Li2023-up,Yu2025BiasedSampling}, we tested directly whether adding training samples could substitute for concordance-based curation in the cross-dataset setting.
@@ -409,3 +421,20 @@ Brackets show paired Wilcoxon tests (n.s., not significant; ${*}{*}{*}$, $p < 0.
 }
 \label{fig:bacdive_curation}
 \end{figure}
+
+\subsection*{Supplementary Text S13: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
+
+If part of the cross-dataset performance gap reflects label inconsistency rather than reproducible biology, then phylogenetically near-identical strains should disagree on their growth labels more often when measured by different datasets than by the same one.
+Restricting comparisons to genome pairs below a stringent phylogenetic distance ($d \leq 0.01$), near-identical strains conflicted on 31.0\% (81 of 261) of cross-dataset comparisons but only 10.2\% (782 of 7{,}706) of within-dataset comparisons (logistic odds ratio 3.98), an excess that was monotone across stricter thresholds.
+The datasets call positives at different rates (Biolog and Populus more liberally than ATLeaf and Marine), but the excess survived adjustment: a logistic regression of conflict on the cross-dataset indicator, controlling for the base-rate-expected conflict, gave an adjusted odds ratio of 2.85 (95\% confidence interval 2.13 to 3.81, $p = 2.0 \times 10^{-12}$), and a more conservative model conditioning on both datasets' rates remained significant (1.75, $p = 0.014$); base-rate differences account for only about a quarter of the raw gap.
+Several non-exclusive causes are compatible with this pattern and the analysis cannot separate them: assay and readout differences across datasets, genuine ecological and strain-history divergence among near-identical genomes (accessory gene content, regulation, niche), and curation differences, with the base-rate control ruling out only the positive-call-rate artefact.
+Regardless of cause, cross-dataset labels are less self-consistent than within-dataset labels, so concordance filtering preferentially removes the least reproducible samples, supporting the data-coherence interpretation of the main-text cross-dataset gains.
+Because most near-identical strains nonetheless agree, this inconsistency limits cross-dataset transfer but does not prevent it, and the reproducible samples that concordance filtering retains are those on which transfer is expected to hold.
+
+\subsection*{Supplementary Text S14: Enforcing Concordance in the Training Set Versus in the Predictions}
+
+The concordance criterion can be enforced at two points, and the two are nearly equivalent.
+Concordant training enforces it in the training set, retaining only samples where GapMind's pathway-completeness call agrees with the experimental phenotype; the resulting specialist is trained on roughly 70\% of the samples but predicts from genomic features alone.
+Alternatively, a model trained on all samples can be restricted to the predictions that agree with GapMind: on the 71\% of genomes where the two agree it reached cross-dataset balanced accuracy 0.76, recovering much of the concordant specialist's advantage, while the remaining discordant genomes are set aside.
+The two strategies differ mainly in cost: concordant training evaluates GapMind once, when assembling the training set, and discards the discordant samples, whereas filtering the predictions retains all samples but requires a GapMind evaluation for every genome examined and offers no control over how many predictions are kept.
+Because the trained concordant model requires only genomic features, enforcing concordance in the training set is the more economical strategy.

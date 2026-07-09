@@ -10,7 +10,7 @@ We observed that label--mechanism agreement was a major determinant of generalis
 When we restricted training to samples where predictions from GapMind, a tool that predicts growth from catabolic-pathway completeness, matched experimental measurements, the resulting models acted as focused specialists, recovering known pathway genes as top predictors and rescuing mechanistic false negatives at twice the rate of false positives.
 Because mechanistic predictors are unavailable for most traits, we tested a simpler filter combining phylogenetic neighbour agreement and experimental-label consistency; this filter recovered part of the cross-dataset gain without mechanism-specific information.
 At deployment, model-confidence estimates defined a per-prediction applicability domain; using them to prioritise low-confidence genomes for measurement improved cross-dataset accuracy more than random or diversity-based sampling, with the largest gains for the lowest-performing phenotypes.
-Together, these findings recast generalisation in biological machine learning as a problem of label--mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice, and suggest a deployment workflow of concordant training, confidence-based applicability detection, and confidence-guided experimentation.
+Together, these findings recast generalisation as a problem of label--mechanism agreement and applicability-domain definition rather than data volume alone, and suggest a deployment workflow of concordant training, confidence-based applicability detection, and confidence-guided experimentation.
 }
 \end{abstract}
 
