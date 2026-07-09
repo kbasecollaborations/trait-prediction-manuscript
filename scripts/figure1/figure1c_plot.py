@@ -5,13 +5,14 @@ Five analysis variants sit on a shared balanced-accuracy interval ladder
 (capsules positioned by value on a 0.40-1.00 axis with a dashed chance line at
 0.50; each capsule carries a median tick and value). Plain-text method columns
 (Training data, Features, Evaluation) make explicit what each variant changes,
-and the Mechanistic-features / Generalises columns carry the features axis.
+and a one-line Finding summarises the outcome.
 
-Row 5 (concordance filtering) is evaluated on the concordant subset (its
-applicability domain), labelled accordingly; rows 2-4 are the full cross-dataset
-held-out test. Numbers: rows 1-2 from data/outputs/figure3/ml_results.csv (full
-KOFAM), feature rows from data/outputs/figure6/figure6d_*_results.csv, and
-concordance (concordant subset) from scripts/figure5_diagnostic/ba_table.csv.
+The four cross-dataset variants use the full held-out test; random holdout is
+the in-distribution split. Numbers: rows 1-2 from data/outputs/figure3/ml_results.csv
+(KOFAM), feature rows from data/outputs/figure6/figure6d_*_results.csv, and
+concordance from data/outputs/figure5/figure5d_full_test.tsv
+(balanced_accuracy_full); all cross-dataset aggregates apply the
+<10-minority-test exclusion.
 
 Sized for inclusion at \\textwidth so fonts print near their set size and
 Figure 1 (panels A-C) fits on one page.
@@ -119,9 +120,9 @@ ROWS = [
         y=YS[2], label="Concordance\nfiltering",
         train=("concordant", INK, "normal"),
         feat=("KOFAM", INK, "normal"),
-        evalu=("cross-dataset\n(concordant)", INK, "normal"),
-        kind="range_median", lo=0.51, hi=0.98, median=0.83, txt="0.51-0.98",
-        med_txt="med 0.83",
+        evalu=("cross-dataset", INK, "normal"),
+        kind="range_median", lo=0.51, hi=0.82, median=0.67, txt="0.51-0.82",
+        med_txt="med 0.67",
         key=True,
         finding="Recovers pathway genes;\ntransferable for 12/15",
     ),

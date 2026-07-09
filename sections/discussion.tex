@@ -62,7 +62,7 @@ Additionally, capturing mechanisms beyond curated rules will require external da
 Genome-scale metabolic models could in principle extend concordance filtering beyond GapMind's curated pathways to a much larger set of carbon substrates, though this remains to be tested.
 % TODO(CITATION NEEDED): genome-scale metabolic model tools (ModelSEED, gapseq, CarveMe).
 GapMind was used here because its per-pathway completeness score maps directly onto the shared phenotypes and the gene-level feature space, whereas network-level growth simulation does not decompose into the per-pathway concordance labels this design requires.
-We further note that automatically constructed constraint-based models have been reported to underperform statistical predictors for this task~\cite{Li2023-up}.
+Such an extension would require curated or optimised reconstructions, however, since automatically constructed constraint-based models have been reported to predict carbon utilisation little better than chance for non-model organisms~\cite{Li2023-up}.
 
 In summary, microbial carbon-utilisation prediction models generalised best when training labels agreed with mechanistic predictions and the feature space matched known pathway biology, systematically surpassing the curated baseline's recall by classifying discordant samples. This is consistent with our framing of label--mechanism agreement, operationalised through GapMind concordance, as a diagnosable and partially mitigable driver of shortcut learning alongside sample volume and feature-space choice.
 Reliable phenotype prediction will therefore require curating training data with strong label--mechanism agreement and using applicability-domain signals to flag when models extend beyond curated rules.
