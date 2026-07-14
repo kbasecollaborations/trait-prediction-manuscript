@@ -4,7 +4,7 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of ORNL Plant-Microbe Interfaces isolates released with this work (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
+We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 % TODO(CITATION): Ask Chris Henry for the correct source citation for the Biolog phenotype data
 These contributed 819 input genomes, of which 795 were retained after quality control combining assembly-fragmentation, CheckM2 v1.1.0, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 Carbon source names were standardised and analyses were restricted to the 15 phenotypes shared across all four datasets.
@@ -12,19 +12,19 @@ Carbon source names were standardised and analyses were restricted to the 15 phe
 \subsection*{Genome Annotation}
 
 Each genome was annotated with three tools.
-KofamScan v1.3.0 \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs via profile HMMs from the KEGG database \cite{Kanehisa2000KEGG}.
+KofamScan v1.3.0 \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs (KOs) using KOFAM profile hidden Markov models from the KEGG database \cite{Kanehisa2000KEGG}.
 GapMind for carbon sources~\cite{Price2022GapMindCarbon,Price2020GapMind} predicted carbon-utilisation pathway completeness, scored 0 (incomplete) to 2 (high confidence); GapMind was run from the PaperBLAST suite (commit 1033662) with USEARCH v11.0.667~\cite{Edgar2010} and HMMer v3.3.1~\cite{Eddy2011} (Supplementary Text~S3).
-RAST \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
+Rapid Annotations using Subsystems Technology (RAST) \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
 
 \subsection*{Phylogenetic Tree Construction}
 
-We assigned taxonomy with GTDB-Tk \cite{Chaumeil2022GTDBTk} (GTDB release v220) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using \texttt{classify\_wf}.
+We assigned taxonomy with the Genome Taxonomy Database Toolkit (GTDB-Tk) \cite{Chaumeil2022GTDBTk} (Genome Taxonomy Database (GTDB) release v220) and placed genomes into the GTDB \cite{Parks2018GTDB} reference tree using \texttt{classify\_wf}.
 We extracted the corresponding subtree and computed distances between tips with ETE 3 \cite{HuertaCepas2016ETE3}.
 Genomes lacking species-level assignments were placed at genus or family level.
 
 \subsection*{Baseline Predictors}
 
-GapMind Mechanistic Predictions: We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls: a strict threshold (only ``complete'' pathways positive) and a permissive threshold (``complete'' and ``likely complete'' positive); all other calls were negative (Supplementary Text~S3). Phylogeny-Based Nearest Neighbour: A phylogenetic nearest-neighbour classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives. Null Models: Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
+GapMind Mechanistic Predictions: We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls: a strict threshold (only ``complete'' pathways positive) and a permissive threshold (``complete'' and ``likely complete'' positive); all other calls were negative (Supplementary Text~S3). Phylogeny-Based Nearest Neighbour: A phylogenetic $k$-nearest-neighbour classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives. Null Models: Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
 
 \subsection*{Data Pre-processing and Feature Selection}
 
@@ -78,12 +78,12 @@ Minimum training data requirements were assessed via learning curves: for each p
 
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
-For full-data and concordant-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error.
-Confidence ROC AUC for distinguishing correct from incorrect predictions was computed per phenotype and pooled using \texttt{sklearn.metrics.roc\_auc\_score} \cite{Pedregosa2011Sklearn}.
+For full-data and concordant-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
+The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was computed per phenotype and pooled using \texttt{sklearn.metrics.roc\_auc\_score} \cite{Pedregosa2011Sklearn}.
 Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S9), and label-free aggregates (mean confidence, fraction of high-confidence predictions, feature-space novelty) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
 
 \subsection*{Statistical Analysis}
 
 Paired comparisons of balanced accuracy and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.wilcoxon}); Spearman rank correlations linked per-phenotype label-free aggregates to cross-dataset balanced accuracy (\texttt{scipy.stats.spearmanr}).
-The twelve paired tests reported (ten Wilcoxon, two Spearman) were jointly Benjamini--Hochberg adjusted at FDR $\leq 0.05$ (\texttt{scripts/stats/manuscript\_pvalues.py}); raw $p$-values are reported in the main text with adjusted $q$-values inline for borderline tests.
+The twelve paired tests reported (ten Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg (BH) procedure at a false-discovery rate of $\leq 0.05$ (\texttt{scripts/stats/manuscript\_pvalues.py}); raw $p$-values are reported in the main text with adjusted $q$-values inline for borderline tests.
 Summary statistics are mean $\pm$ standard deviation across folds or repeats unless otherwise noted.
