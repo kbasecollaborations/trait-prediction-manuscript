@@ -4,7 +4,7 @@
 
 Predicting microbial phenotypes from genomic data underpins ecological characterisation, the study of uncultured taxa, and various biotechnological applications.
 However, machine learning models trained on genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
-By integrating four binary growth datasets across 819 bacterial genomes and 242 carbon sources, we identify label--mechanism agreement in the training set as a determinant of cross-dataset generalisation that complements the established roles of sample size and feature-space choice.
+By integrating four binary growth datasets comprising 819 bacterial strain records and 242 carbon sources, we identify label--mechanism agreement in the training set as a determinant of cross-dataset generalisation that complements the established roles of sample size and feature-space choice.
 Models trained on concordant samples behaved as bounded specialists rather than universal models. However, the model's prediction confidence helped guide which additional measurements most improved model performance for the lowest-performing phenotypes.
 These results reframe genome-based phenotype prediction as a problem of training-set curation and applicability-domain definition~\cite{Sambasivan2021DataCascades,Zha2025DataCentric}, alongside the data-volume and algorithm-choice axes.
 
@@ -24,7 +24,7 @@ Because these recovered false negatives are metabolic generalists, what the mode
 Genuinely substrate-specific alternative routes were individually rare and mechanistically heterogeneous, leaving too few examples of any single route for a feature-based classifier to isolate reliably, and some of the unrecovered remainder could be mislabelled.
 Because the rescue rate is non-zero, concordance filtering discards some discordant samples carrying transferable signal.
 
-Previous work concluded that overcoming phylogenetic confounding requires $>$1000 genomes~\cite{Li2023-up,Yu2025BiasedSampling}; within our sample-size regime (795 retained genomes, below this threshold), our findings suggest that the heterogeneity of training samples, rather than their number alone, drives shortcut learning.
+Previous work concluded that overcoming phylogenetic confounding requires $>$1000 genomes~\cite{Li2023-up,Yu2025BiasedSampling}; within our sample-size regime (up to 780 feature-linked strains, below this threshold), our findings suggest that the heterogeneity of training samples, rather than their number alone, drives shortcut learning.
 To test the number axis directly, we added a large literature-curated resource (BacDive, over 8000 genomes~\cite{Schober2025BacDive}) to the full training data and repeated the cross-dataset evaluation (Supplementary Text~S12, Figure~\ref{fig:bacdive_curation}).
 Added volume significantly improved cross-dataset balanced accuracy over the unfiltered model, but did not significantly exceed concordance filtering of a much smaller curated set (0.73 versus 0.71, paired Wilcoxon $p = 0.20$), and it made feature selection markedly less reproducible across seeds.
 Within this regime, curation therefore matches the cross-dataset accuracy of large-scale added data while yielding more reproducible, mechanism-aligned features, indicating that the binding constraint is training-data coherence rather than sample number.

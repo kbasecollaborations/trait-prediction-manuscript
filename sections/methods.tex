@@ -6,7 +6,9 @@
 
 We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 % TODO(CITATION): Ask Chris Henry for the correct source citation for the Biolog phenotype data
-These contributed 819 input genomes, of which 795 were retained after quality control combining assembly-fragmentation, CheckM2 v1.1.0, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
+These contributed 819 input strain records, of which 795 phenotype records were retained after quality control combining assembly-fragmentation, CheckM2 v1.1.0, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
+We then aligned phenotype and genomic-feature identifiers, yielding 780 matched strains eligible for feature-based analyses; sample sizes varied by phenotype because not every strain was measured for every phenotype.
+Fifteen unmatched Marine records were excluded before model fitting.
 Carbon source names were standardised and analyses were restricted to the 15 phenotypes shared across all four datasets.
 
 \subsection*{Genome Annotation}

@@ -16,7 +16,7 @@
 
 We obtained and harmonised four experimental carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacterial communities.
 Each dataset captures growth outcomes (growth vs.\ no-growth) of bacterial strains on various carbon substrates.
-Because of annotation pipeline limitations and incomplete phenotypic data, the number of genomes used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
+Because of annotation pipeline limitations and incomplete phenotypic data, the number of feature-linked strains used in analyses was lower than the original dataset sizes (Table~\ref{tab:dataset_overview}).
 All analyses focused on the 15 shared phenotypes present across all four datasets.
 
 \paragraph*{ATLeaf.}
@@ -33,7 +33,8 @@ The standardised, high-throughput nature of PM plates made this dataset a valuab
 
 \paragraph*{Marine.}
 The Marine dataset~\cite{Gralka2023-ft} contained 175 heterotrophic marine bacteria assessed on 100 carbon substrates using carbon source utilisation assays.
-All 172 genomes that passed annotation quality control were retained for analysis.
+The processed phenotype table retained 172 strain records.
+Of these, 157 had matching processed genomic features and entered feature-based analyses; 15 were excluded during identifier alignment before model fitting.
 This dataset offered taxonomic diversity distinct from the terrestrial datasets, with representation of marine-adapted lineages.
 
 \paragraph*{Populus.}
@@ -47,17 +48,17 @@ Because of its small sample size and narrow phylogenetic breadth, Populus contri
 \small
 \begin{tabularx}{\textwidth}{lrrrrX}
 \hline
-\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Genomes} \\ \textbf{Used}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
+\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 15 & Agar plate \\
 Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
-Marine  & 175 & 100 & 172 & 15 & Liquid culture OD \\
+Marine  & 175 & 100 & 157 & 15 & Liquid culture OD \\
 Populus & 58  & 191 & 55  & 15 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
 ``Original Strains'' and ``Original Substrates'' reflect the published dataset sizes.
-``Genomes Used'' reflects the number of genomes remaining after the annotation pipeline and quality filtering (Supplementary Text S2).
+``Feature-linked Strains'' reflects the number of phenotype records with matching processed genomic features used in feature-based analyses (Supplementary Text S2).
 The 15 shared phenotypes (carbon sources present across all four datasets) were retained for analysis.
 All four datasets were used in the aggregated analyses and leave-one-dataset-out evaluations; Populus was excluded only from selected feature-stability comparisons because of its small sample size.}
 \label{tab:dataset_overview}
@@ -83,12 +84,13 @@ This step identified genomes with anomalous functional profiles that could intro
 As an independent quality metric, we estimated genome completeness based on the presence of species-specific core genes identified from pangenome analyses.
 Core gene detection used MMseqs2 \cite{Steinegger2017MMseqs2} with a minimum sequence identity of 90\%, coverage of 80\%, and E-value threshold of $10^{-3}$.
 Completeness was calculated as the fraction of species core genes detected in each genome (Figure~\ref{fig:pangenome_completeness}).
-The pangenome-completeness audit was run on the 829 genome records available to that workflow and was used as an independent corroborating quality metric; downstream analyses used the 795 phenotype-linked genomes retained after the full quality-control pipeline.
+The pangenome-completeness audit was run on the 829 genome records available to that workflow and was used as an independent corroborating quality metric; downstream feature-based analyses used up to 780 strains with matched phenotype and genomic-feature identifiers.
 The majority of successfully assessed genomes exceeded 90\% pangenome completeness, corroborating the CheckM2-based filtering.
 
 \paragraph*{Overall attrition.}
-Across all datasets, the quality control pipeline retained 795 of 819 input genomes (97.1\%).
+Across all datasets, the quality control pipeline retained phenotype records for 795 of 819 input strains (97.1\%).
 Per-dataset retention rates were: ATLeaf 206/224 (92.0\%), Biolog 362/362 (100.0\%), Marine 172/175 (98.3\%), and Populus 55/58 (94.8\%).
+Of the 795 retained phenotype records, 780 matched processed genomic-feature identifiers and were eligible for feature-based analyses.
 ATLeaf showed the highest absolute attrition, attributable to assembly fragmentation and CheckM2 quality filtering; the Biolog phenotype set passed quality control without further attrition because its constituent strains were curated upstream.
 
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
@@ -393,7 +395,7 @@ Partitioning the false negatives by the genomic presence of their catabolic mach
 
 \subsection*{Supplementary Text S12: Adding Data Volume Versus Concordance Filtering}
 
-Because our 795 retained genomes fall below the thousand-genome scale at which phylogenetic confounding is reported to recede~\cite{Li2023-up,Yu2025BiasedSampling}, we tested directly whether adding training samples could substitute for concordance-based curation in the cross-dataset setting.
+Because our set of up to 780 feature-linked strains falls below the thousand-genome scale at which phylogenetic confounding is reported to recede~\cite{Li2023-up,Yu2025BiasedSampling}, we tested directly whether adding training samples could substitute for concordance-based curation in the cross-dataset setting.
 We trained CatBoost classifiers (KOFAM features) under three strategies and evaluated each on the full labels of a held-out manuscript dataset (leave-one-dataset-out; 13 shared phenotypes, four held-out datasets, five seeds): concordant samples of the other three datasets (C), all samples of the other three datasets (F), and the full other three datasets plus all BacDive genomes (FB).
 The volume arm drew on a BacDive snapshot of 8{,}501 genomes with KOFAM annotations~\cite{Schober2025BacDive}, of which up to approximately 1{,}800 per phenotype entered training after intersecting labels with features and removing any genome sharing a stripped accession with the held-out test.
 % TODO(PROVENANCE): pin the exact BacDive release/access date in the deposited analysis code before submission.
