@@ -483,6 +483,8 @@ cython_debug/
 
 # Misc
 .claude/
+.codex/
+.agents/
 .mcp.json
 .serena/
 CLAUDE.md

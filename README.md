@@ -61,6 +61,7 @@ Supporting diagnostics for Figure 5A underperformers live in
 | Figure S6 | `scripts/figureS6/` | Model performance versus training sample size. |
 | Figure S7 | `scripts/figureS7/` | Learning curves and cross-dataset performance heatmap. |
 | Figure S8 | `scripts/figureS8/` | SHAP beeswarm panels (histidine and galactose). |
+| Figure S9 | `scripts/bacdive/`, `scripts/figureS9/` | BacDive data-volume comparison and feature stability. |
 
 Superseded versions are kept under `scripts/alternate/`,
 `scripts/figureS8_legacy/`, and `scripts/figureS9_legacy/`.
