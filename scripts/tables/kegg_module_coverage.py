@@ -272,7 +272,7 @@ def pathway_coverage_line(
         f"{mid} \\textit{{{MODULE_NAMES.get(mid, mid)}}}" for mid in modules
     )
     return (
-        f"Pathway coverage ({module_label}): "
+        f"Module coverage ({module_label}): "
         f"shared {_fraction_in_module(shared_reps)}; "
         f"unique {_fraction_in_module(unique_reps)}"
     )

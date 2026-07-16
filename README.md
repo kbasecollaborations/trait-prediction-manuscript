@@ -55,16 +55,15 @@ Supporting diagnostics for Figure 5A underperformers live in
 
 | Figure | Folder | Content |
 | --- | --- | --- |
-| Figure S1 | `scripts/figureS1/` | Genome quality filtering (`filter_genomes.py`). |
 | Figure S3 | `scripts/figureS3/` | In-clade vs out-of-clade balanced accuracy. |
+| Figure S4 | `scripts/pangenome_completeness/` | Pangenome-based completeness audit. |
 | Figure S5 | `scripts/figureS5/` | KOFAM features on concordant samples. |
-| Figure S6 | `scripts/figureS6/` | Model performance versus training sample size. |
-| Figure S7 | `scripts/figureS7/` | Learning curves and cross-dataset performance heatmap. |
-| Figure S8 | `scripts/figureS8/` | SHAP beeswarm panels (histidine and galactose). |
-| Figure S9 | `scripts/bacdive/`, `scripts/figureS9/` | BacDive data-volume comparison and feature stability. |
+| Figure S6 | `scripts/figureS6/` | Histidine performance versus training sample size. |
+| Figure S7 | `scripts/bacdive/`, `scripts/figureS9/` | BacDive data-volume comparison and feature stability (asset `figure_s9.pdf`). |
 
-Superseded versions are kept under `scripts/alternate/`,
-`scripts/figureS8_legacy/`, and `scripts/figureS9_legacy/`.
+Unselected or superseded versions are kept under `scripts/alternate/`,
+`scripts/figureS7/`, `scripts/figureS8/`, `scripts/figureS8_legacy/`, and
+`scripts/figureS9_legacy/`.
 
 ## Tables → code
 
@@ -72,8 +71,9 @@ All in `scripts/tables/`:
 
 - `main_table1.py` — main-text Table 1 (concordance vs full feature
   comparison)
-- `table1.py` — Supplementary Table S2 (stable features, full-data analysis)
-- `table2.py` — Supplementary Table S3 (stable features, concordant analysis)
+- `table1.py` — Supplementary Table S3 (stable features under full-data and
+  concordant training)
+- `table2.py` — compatibility entry point for the merged Supplementary Table S3
 - `kegg_module_coverage.py` — KEGG-module pathway coverage
 
 p-values reported in the text are produced by

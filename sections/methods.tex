@@ -6,7 +6,7 @@
 
 We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 % TODO(CITATION): Ask Chris Henry for the correct source citation for the Biolog phenotype data
-These contributed 819 input strain records, of which 795 phenotype records were retained after quality control combining assembly-fragmentation, CheckM2, feature-profile outlier, and pangenome-completeness filters (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
+These contributed 819 input strain records, of which 795 phenotype records were retained after assembly-fragmentation, CheckM2, and feature-profile outlier filtering; pangenome completeness was assessed independently (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 We aligned phenotype and genomic-feature identifiers, yielding 780 matched strains eligible for feature-based analyses; sample sizes varied by phenotype because not every strain was measured for every phenotype.
 Carbon source names were standardised and analyses were restricted to the 15 phenotypes shared across all four datasets.
 
@@ -63,25 +63,26 @@ A pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed 
 \subsection*{Feature Importance Analysis}
 
 Stable predictive features were identified by SHAP (SHapley Additive exPlanations)~\cite{Lundberg2017SHAP} analysis of a fixed 500-iteration CatBoost variant trained without early stopping: for each phenotype--dataset configuration, models were trained across 20 random seeds, the top 10 features by mean absolute SHAP value per run were extracted, and features appearing in $\geq$70\% of runs were designated ``stable''.
-To avoid counting biologically redundant KOs (paralogues, operon-mates, alternative enzymes) as separate features, per-phenotype stable KOs were grouped into SHAP-supervised redundancy clusters (\texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} at distance threshold 0.5; Supplementary Text~S8); this post hoc grouping replaced raw KO identity for intersection and uniqueness counts and did not affect training, predictions, or reported metrics (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}).
-For Table~\ref{tab:main_feature_comparison}, the shared and unique cluster counts of Figure~\ref{fig:concordant_analysis}B are annotated with a pathway-coverage statistic (a cluster is pathway-resident when at least one of its KOs maps to the row's assigned KEGG reference pathway), a uniform metric broader than the catabolism-module filter of Supplementary Tables~\ref{tab:feature_comparison} and~\ref{tab:feature_comparison_concordant}.
+For concordant-training stability analyses, each phenotype--split matrix was first screened to the 300 KOFAM features with highest CatBoost importance before the SHAP recurrence criterion was applied.
+To avoid counting biologically redundant KOs (paralogues, operon-mates, alternative enzymes) as separate features, per-phenotype stable KOs were grouped into SHAP-supervised redundancy clusters (\texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} at distance threshold 0.5; Supplementary Text~S7); this post hoc grouping replaced raw KO identity for intersection and uniqueness counts and did not affect training, predictions, or reported metrics (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Table~\ref{tab:feature_comparison}).
+For Table~\ref{tab:main_feature_comparison}, the shared and unique cluster counts of Figure~\ref{fig:concordant_analysis}B are annotated with a pathway-coverage statistic (a cluster is pathway-resident when at least one of its KOs maps to the row's assigned KEGG reference pathway), a uniform metric broader than the catabolism-module statistic in Supplementary Table~\ref{tab:feature_comparison}.
 
 \subsection*{Data Quality Filtering Strategies}
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering, both applied to training and validation samples only, never to the held-out test set.
 Problematic-sample removal excluded universal non-growers with any GapMind growth prediction and universal growers with incomplete GapMind pathways.
-Confidence-based filtering excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S10).
+Confidence-based filtering excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S9).
 All conditions in Figure~\ref{fig:improvement_strategies}B were evaluated on the same full cross-dataset held-out test set.
 
 \subsection*{Sample Size Requirements}
 
-Minimum training data requirements were assessed via learning curves: for each phenotype, models were trained on stratified subsets of 50, 100, 200, 500, and full training samples (three repeats per configuration) and evaluated across random holdout, cross-dataset, and out-of-clade scenarios on full, concordant, and discordant test subsets.
+For histidine, training-data requirements were assessed by fitting models to stratified subsets of 50, 100, 200, 500, and all available samples (three repeats) under random-holdout, cross-dataset, and out-of-clade evaluation on full, concordant, and discordant test subsets.
 
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
 For full-data and concordance-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
 The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was computed per phenotype and pooled~\cite{Pedregosa2011Sklearn}.
-Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S9), and label-free aggregates (mean confidence, fraction of high-confidence predictions, feature-space novelty) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
+Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S8), and label-free aggregates (mean confidence, fraction of high-confidence predictions, feature-space novelty) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
 
 \subsection*{Statistical Analysis}
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """C vs F vs FB cross-dataset: accuracy gain versus feature-stability cost.
 
-Single composite figure for the BacDive volume question (Supplementary Text S12):
+Single composite figure for the BacDive volume question (Supplementary Text S11):
 does adding large-scale data volume (BacDive) on top of the full manuscript
 training set significantly improve cross-dataset prediction over (a) the full
 manuscript model and (b) concordance-based curation of a much smaller set?

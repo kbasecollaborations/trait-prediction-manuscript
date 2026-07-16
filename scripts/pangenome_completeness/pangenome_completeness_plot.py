@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Plot the supplementary pangenome completeness figure (status, distribution,
-by-species, and core-gene scatter panels)."""
+"""Plot the supplementary pangenome completeness audit figure."""
 
 from __future__ import annotations
 
@@ -12,7 +11,7 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  # Registers the matplotlib styles below.
 import seaborn as sns
 
 from scripts.visualization import configure_plot_style
@@ -265,7 +264,7 @@ def plot_core_genes_scatter(
 
 
 def create_figure(input_path: Path, output_path: Path) -> None:
-    """Build the 2×2 multi-panel figure and save to PDF.
+    """Build the two-panel quality-control figure and save to PDF.
 
     Parameters
     ----------
@@ -277,14 +276,10 @@ def create_figure(input_path: Path, output_path: Path) -> None:
     df = load_completeness_data(input_path)
     df_success = df[df["status"] == "success"]
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-    axes = axes.flatten()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
     plot_status_breakdown(axes[0], df, label="(A)")
     plot_completeness_distribution(axes[1], df_success, label="(B)")
-    plot_completeness_by_species(axes[2], df_success, label="(C)")
-    plot_core_genes_scatter(axes[3], df_success, label="(D)")
-
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
