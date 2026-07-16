@@ -47,7 +47,7 @@ Because of its small sample size and narrow phylogenetic breadth, Populus contri
 \textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 15 & Agar plate \\
-Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colorimetric) \\
+Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colourimetric) \\
 Marine  & 175 & 100 & 157 & 15 & Liquid culture OD \\
 Populus & 58  & 191 & 55  & 15 & Liquid culture OD \\
 \hline
@@ -229,7 +229,7 @@ Because concordant labels are by construction consistent with GapMind's pathway-
 \caption{
 \textbf{Concordant training improves cross-dataset generalisation under KOFAM features.}
 GapMind concordance was used only for sample selection; KOFAM annotations served as the model feature space.
-(\textbf{A}) Parity plot comparing cross-dataset balanced accuracy of concordant-trained vs.\ full-trained models (KOFAM features), evaluated on concordant test samples only.
+(\textbf{A}) Parity plot comparing cross-dataset balanced accuracy of concordance-trained versus full-data models (KOFAM features), evaluated on concordant test samples only.
 Each point represents one phenotype--split combination; points above the diagonal indicate improved performance with concordant training.
 (\textbf{B}) Per-phenotype grouped box plots of cross-dataset balanced accuracy on concordant test samples for full training (grey) and concordant training (blue), both using KOFAM features.
 }
@@ -254,7 +254,8 @@ The 50--100 sample sufficiency reported for histidine is therefore representativ
 Learning curves showing balanced accuracy as a function of training sample size for the histidine phenotype, comparing models trained on all samples with models trained on GapMind-concordant samples only, using KOFAM features.
 Columns represent evaluation scenarios: (left) random holdout, (middle) cross-dataset, and (right) out-of-clade evaluations.
 Rows represent test sample types: full (top), concordant (middle), and discordant (bottom).
-Target subsampling levels were 50, 100, 200, 500, and the full dataset, with targets capped by available eligible training samples. Performance on discordant test samples reflects the bounded value of concordant-trained models: a subset of discordant cases retains genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
+Target subsampling levels were 50, 100, 200, 500, and the full dataset, with targets capped by available eligible training samples.
+Performance on discordant test samples reflects the bounded value of concordance-trained models: a subset of discordant cases retains genome-encoded signal beyond GapMind, whereas lack of saturation with additional training data indicates representational, not statistical, limits.
 }
 \label{fig:sample_size_histidine}
 \end{figure}
@@ -264,16 +265,16 @@ Target subsampling levels were 50, 100, 200, 500, and the full dataset, with tar
 \includegraphics[width=0.85\textwidth]{figure_s7.pdf}
 \caption{
 \textbf{Cross-dataset performance by training sample size across all 15 shared phenotypes.}
-Heatmap of mean balanced accuracy for concordant-trained models (KOFAM features) evaluated on the cross-dataset full test set.
+Heatmap of mean balanced accuracy for concordance-trained models (KOFAM features) evaluated on the cross-dataset full test set.
 Rows are phenotypes; columns are training sample sizes (50, 100, 200, 500, and the full concordant training set).
 Most phenotypes approach their maximum cross-dataset performance by 50--100 samples, with little additional improvement beyond 200 samples.
 }
 \label{fig:all_phenotype_heatmap}
 \end{figure}
 
-\subsection*{Supplementary Text S7: Concordant-Trained Model Performance on the Full Held-Out Test Set}
+\subsection*{Supplementary Text S7: Concordance-Trained Model Performance on the Full Held-Out Test Set}
 
-Figure~\ref{fig:concordant_analysis}A reports concordant-trained model performance on held-out concordant samples; Figure~\ref{fig:concordant_analysis}D decomposes cross-dataset performance into concordant and discordant test-subset balanced accuracy.
+Figure~\ref{fig:concordant_analysis}A reports concordance-trained model performance on held-out concordant samples; Figure~\ref{fig:concordant_analysis}D decomposes cross-dataset performance into concordant and discordant test-subset balanced accuracy.
 The unstratified full held-out test set (with concordant and discordant samples pooled) is shown in Figure~\ref{fig:full_held_out_test} for completeness, together with per-phenotype test-set composition.
 The full-test balanced accuracy (median 0.68 across phenotype--held-out-dataset pairs; range 0.47--0.94) falls between the pair-level concordant-only (median 0.89) and discordant-only (median 0.34) values, as expected from the test-set composition reported in Panel~B; the residual error is dominated by false-positive-discordant samples for most phenotypes.
 
@@ -281,7 +282,7 @@ The full-test balanced accuracy (median 0.68 across phenotype--held-out-dataset 
 \centering
 \includegraphics[width=0.95\textwidth]{figure_s8.pdf}
 \caption{
-\textbf{Concordant-trained model performance on the full held-out cross-dataset test set.}
+\textbf{Concordance-trained model performance on the full held-out cross-dataset test set.}
 (\textbf{A}) Per-phenotype balanced accuracy on the full held-out cross-dataset test set (concordant and discordant pooled), evaluated for each eligible leave-one-dataset-out combination after the minority-class test-set filter.
 The dashed horizontal line indicates random performance (balanced accuracy~$=0.5$).
 (\textbf{B}) Per-phenotype composition of the held-out test set, shown as fractions computed after summing held-out test-set counts across eligible leave-one-dataset-out combinations: GapMind concordant (blue), false-positive discordant (red), and false-negative discordant (orange).
@@ -298,9 +299,9 @@ Clustering was performed on the pooled concordant feature matrix across all four
 The pooled clustering procedure was applied only after stable features had been identified; it did not influence model fitting, held-out predictions, or balanced-accuracy estimates.
 For tractability and to avoid the variance-inflation that the early-stopping schedule introduces into per-feature SHAP attributions across the 20 random seeds, the stability analyses used a fixed 500-iteration CatBoost variant trained without early stopping; the fixed-iteration variant matched the default-classifier performance in internal checks.
 
-For three phenotypes (alanine, mannose, serine), the stable features selected by different concordant-trained models did not reach the target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
+For three phenotypes (alanine, mannose, serine), the stable features selected by different concordance-trained models did not reach the target-redundancy threshold yet remained cross-correlated within the held-out dataset (e.g., for mannose, the ribose- and xylose-uptake transporter ATP-binding proteins K10441 and K10545 with $|r|=0.67$ in the held-out concordant ATLeaf samples).
 Inspection of the underlying KOFAM annotations showed that the stable features comprise a heterogeneous mixture of carbohydrate-utilisation and accessory genes rather than members of a shared mechanistic pathway.
-For alanine, mannose, and serine, the concordant-trained model therefore generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features.
+For alanine, mannose, and serine, the concordance-trained model therefore generalises through co-occurring substrate-utilisation markers characteristic of broad carbohydrate utilisers rather than through convergent mechanistic features.
 This pattern represents a less specific mode of transfer that remains within the applicability domain of organisms sharing expanded carbohydrate-utilisation repertoires.
 
 \subsection*{Supplementary Text S9: Reliability and Experiment-Prioritisation Details}
@@ -359,12 +360,12 @@ The largest KOFAM-vs-GapMind feature gap was glucose, where the GapMind ceiling 
 The GapMind glucose pathway invokes organism-specific transporter and PTS-system identifiers (e.g., \verb|MFS-glucose|, \verb|SSS-glucose|, \verb|ptsG-crr|) that lack direct KOFAM equivalents.
 
 \paragraph{Histidine off-pathway stable features.}
-For histidine on ATLeaf, the full-data unique stable features included $\beta$-ketoadipate-pathway components (K01032 \textit{pcaJ} 3-oxoadipate CoA-transferase $\beta$-subunit; K02623 \textit{pcaR}-type LysR regulator) and a methionine-cycle enzyme (K00547 homocysteine S-methyltransferase), all off-pathway with respect to M00045 (histidine degradation); the concordant-trained unique features were predominantly histidine-pathway paralogues or alternative steps (K01458 N-formylglutamate deformylase, K05603 formimidoylglutamate deiminase, K01745 histidine ammonia-lyase).
+For histidine on ATLeaf, the full-data unique stable features included $\beta$-ketoadipate-pathway components (K01032 \textit{pcaJ} 3-oxoadipate CoA-transferase $\beta$-subunit; K02623 \textit{pcaR}-type LysR regulator) and a methionine-cycle enzyme (K00547 homocysteine S-methyltransferase), all off-pathway with respect to M00045 (histidine degradation); the concordance-trained unique features were predominantly histidine-pathway paralogues or alternative steps (K01458 N-formylglutamate deformylase, K05603 formimidoylglutamate deiminase, K01745 histidine ammonia-lyase).
 The $\beta$-ketoadipate pathway is widely distributed in soil and rhizosphere lineages with broad catabolic repertoires, so the full-data off-pathway features likely reflect phylogenetic co-occurrence with metabolically versatile clades rather than a histidine-specific route.
 
-\paragraph{Calibration and per-phenotype model-confidence detail.}
-Both the full-data and concordant-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
-Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordant model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
+\paragraph{Calibration and per-phenotype prediction-confidence detail.}
+Both the full-data and concordance-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
+Confidence-based abstention raised retained-subset balanced accuracy for phenotypes the models already predict well, but not for those they do not (Figure~\ref{fig:selective_prediction}A): both models remained accurate for m-inositol (balanced accuracy near 0.80 at all coverage levels), the concordance-trained model exceeded the full-data model for histidine, and neither model rose above 0.5 for glucose, whose predictions had collapsed towards a single class.
 On the rescue side, both FN-rescue and FP-rescue rates remained below the model's marginal class-prediction rate, indicating partial anchoring to GapMind's failure mode through shared pathway-linked features; the per-error-type asymmetry rather than the absolute rescue level is therefore the load-bearing finding.
 
 \paragraph{Retaining false negatives versus the specificity tradeoff.}
@@ -392,7 +393,7 @@ However, FB did not significantly exceed concordance filtering of the smaller cu
 The benefit of added volume was not predicted by the size of the per-phenotype BacDive pool (Spearman $\rho = 0.26$, $p = 0.38$).
 
 Across the five seeds, feature selection became progressively less reproducible as volume was added (Figure~\ref{fig:bacdive_curation}B,C; mean pairwise Jaccard of the top-10 CatBoost-importance features 0.378 for C, 0.316 for F, 0.253 for FB; C versus FB $p < 10^{-8}$), an ordering robust to restricting features to the shared KOFAM space and to an order-sensitive rank-overlap metric.
-Concordant-trained models more consistently selected committed-pathway features (for example, the histidine-utilisation enzyme K01468 appeared in all 20 concordant runs but 6 of 20 under FB), whereas added volume tended to demote these in favour of more variable, dataset-driven features; mannose was an exception, where added volume both improved accuracy and yielded a more coherent transporter and catabolism feature set.
+Concordance-trained models more consistently selected committed-pathway features (for example, the histidine-utilisation enzyme K01468 appeared in all 20 concordant runs but 6 of 20 under FB), whereas added volume tended to demote these in favour of more variable, dataset-driven features; mannose was an exception, where added volume both improved accuracy and yielded a more coherent transporter and catabolism feature set.
 We therefore read this as evidence that, within our sample-size regime, concordance-based curation matches the cross-dataset accuracy of large-scale added data while remaining more parsimonious and yielding more reproducible, mechanism-aligned features, not as a claim that data volume is without value~\cite{Geirhos2020Shortcut}.
 
 \begin{figure}[ht]
@@ -425,4 +426,4 @@ The concordance criterion can be enforced at two points, and the two are nearly 
 Concordant training enforces it in the training set, retaining only samples where GapMind's pathway-completeness call agrees with the experimental phenotype; the resulting specialist is trained on roughly 70\% of the samples but predicts from genomic features alone.
 Alternatively, a model trained on all samples can be restricted to the predictions that agree with GapMind: on the 71\% of genomes where the two agree it reached cross-dataset balanced accuracy 0.76, recovering much of the concordant specialist's advantage, while the remaining discordant genomes are set aside.
 The two strategies differ mainly in cost: concordant training evaluates GapMind once when assembling the training set, whereas filtering predictions requires a GapMind evaluation for every genome examined.
-Because the trained concordant model then requires only genomic features, enforcing concordance in the training set is the more economical strategy.
+Because the concordance-trained model then requires only genomic features, enforcing concordance in the training set is the more economical strategy.

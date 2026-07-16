@@ -25,12 +25,15 @@ Genomes lacking species-level assignments were placed at genus or family level.
 
 \subsection*{Baseline Predictors}
 
-We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls, strict (only ``complete'' positive) and permissive (``complete'' and ``likely complete'' positive), with all other calls negative (Supplementary Text~S3). A phylogenetic $k$-nearest-neighbour classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives. Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
+We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls, strict (only ``complete'' positive) and permissive (``complete'' and ``likely complete'' positive), with all other calls negative (Supplementary Text~S3).
+A phylogenetic $k$-nearest-neighbour classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives.
+Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
 
 \subsection*{Data Pre-processing and Feature Selection}
 
 KOFAM and GapMind annotations were converted into binary presence/absence matrices (GapMind pathway scores retained integer values).
-Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, retaining the most connected features). Because both filters are label-free, applying them across the full dataset rather than per split is leakage-free; classifiers were still fitted on training samples only.
+Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, retaining the most connected features).
+Because both filters are label-free, applying them across the full dataset rather than per split is leakage-free; classifiers were still fitted on training samples only.
 KOFAM yielded 4000--5000 features per dataset and GapMind around 1000.
 
 \subsection*{Machine Learning Classifiers}
@@ -66,8 +69,8 @@ For Table~\ref{tab:main_feature_comparison}, the shared and unique cluster count
 \subsection*{Data Quality Filtering Strategies}
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering, both applied to training and validation samples only, never to the held-out test set.
-\emph{Problematic-sample removal} excluded microbes with no growth despite a GapMind growth prediction, and microbes with universal growth despite incomplete GapMind pathways.
-\emph{Confidence-based filtering} excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a \emph{mechanism-free} setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S10).
+Problematic-sample removal excluded universal non-growers with any GapMind growth prediction and universal growers with incomplete GapMind pathways.
+Confidence-based filtering excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S10).
 All conditions in Figure~\ref{fig:improvement_strategies}B were evaluated on the same full cross-dataset held-out test set.
 
 \subsection*{Sample Size Requirements}
@@ -76,7 +79,7 @@ Minimum training data requirements were assessed via learning curves: for each p
 
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
-For full-data and concordant-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
+For full-data and concordance-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
 The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was computed per phenotype and pooled~\cite{Pedregosa2011Sklearn}.
 Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S9), and label-free aggregates (mean confidence, fraction of high-confidence predictions, feature-space novelty) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
 

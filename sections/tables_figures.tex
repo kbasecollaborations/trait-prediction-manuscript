@@ -63,12 +63,12 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \par\medskip
 
 \refstepcounter{figure}\label{fig:concordant_analysis}%
-\noindent\textbf{Figure \arabic{figure}: Concordant-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
+\noindent\textbf{Figure \arabic{figure}: Concordance-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
 (\textbf{A}) Balanced accuracy on held-out concordant samples, the easier subset with discordant cases excluded (panel~C shows the full held-out test), under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
 (\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone.
 Solid bars: shared clusters; patterned bars: held-out-only clusters.
-(\textbf{C}) Concordant-trained ML vs GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
+(\textbf{C}) Concordance-trained ML versus GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
 Green circles: random holdout; blue squares: cross-dataset.
 Dashed diagonal marks parity; points above indicate ML outperforming GapMind.
 Inset: paired Wilcoxon $p$-values across phenotypes.
@@ -95,7 +95,7 @@ The annotation reports split-specific paired Wilcoxon p-values across phenotype 
 
 \refstepcounter{figure}\label{fig:selective_prediction}%
 \noindent\textbf{Figure \arabic{figure}: Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
-(\textbf{A}) Risk--coverage curves for three phenotypes spanning high, intermediate, and low cross-dataset balanced accuracy (m-Inositol, Histidine, Glucose), comparing the full-data model (orange) and the concordant-trained model (blue).
+(\textbf{A}) Risk--coverage curves for three phenotypes spanning high, intermediate, and low cross-dataset balanced accuracy (m-Inositol, Histidine, Glucose), comparing the full-data model (orange) and the concordance-trained model (blue).
 Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
 The grey dashed line marks random performance (balanced accuracy~$=0.5$).
 (\textbf{B}) Reliability diagram for both models on the cross-dataset held-out test set, pooled across phenotypes (10 equal-width probability bins): mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration and the expected calibration error (ECE) is given in the legend.
