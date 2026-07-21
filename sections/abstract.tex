@@ -3,15 +3,15 @@
 \begin{abstract}
 {
 \noindent
-Microbial carbon utilisation is a foundational phenotype for understanding microbial ecology, yet predicting it from genomic data remains challenging despite well-characterised metabolic pathways.
-Machine learning models often achieve high within-dataset accuracy yet fail to generalise across datasets, and whether this reflects algorithmic limits or training data has remained unresolved.
-To distinguish these explanations, we integrated binary growth phenotype records for 819 bacterial strains across 242 carbon sources from four datasets.
-We observed that label--mechanism agreement was a major determinant of generalisation: pooling samples with heterogeneous, often inconsistent genotype--phenotype mechanisms drove models to learn dataset- or phylogeny-correlated shortcuts.
-When we restricted training to samples where GapMind catabolic-pathway predictions matched experimental measurements, the resulting models acted as focused specialists, recovering known pathway genes as top predictors and rescuing mechanistic false negatives at twice the rate of false positives.
-Because mechanistic predictors are unavailable for most traits, we tested a filter combining phylogenetic neighbour agreement and experimental-label consistency; this filter recovered part of the cross-dataset gain without mechanism-specific information.
-At deployment, prediction-confidence estimates defined a per-prediction applicability domain; using them to prioritise low-confidence genomes for measurement improved cross-dataset accuracy more than random or diversity-based sampling, with the largest gains for the lowest-performing phenotypes.
-Together, these findings recast generalisation as a problem of label--mechanism agreement and applicability-domain definition rather than data volume alone, and suggest a deployment workflow of concordant training, confidence-based applicability detection, and confidence-guided experimentation.
+Which carbon sources a bacterium uses shapes its ecological niche, yet this trait resists prediction from genome sequence despite well-characterised catabolic pathways.
+Genome-based models often score well within one study but lose accuracy on others, and whether the algorithm or the data is at fault was unclear.
+We combined grow-or-no-grow records for 819 strains across 242 carbon sources from four studies, focusing on the 15 shared sources; accuracy fell across studies even among close relatives, so phylogeny alone did not explain it.
+Restricting training to strains whose measured growth matched their annotated catabolic pathways, with the model otherwise unchanged, raised the carbon sources with predictors recurring across studies from six to twelve of fifteen, often pathway genes, whereas size-matched random subsets did not.
+A much larger genome collection improved the unfiltered model but did not significantly exceed the smaller agreement-filtered set, whose predictors were more reproducible.
+Because agreement filtering needs a mechanistic tool, a phylogeny-and-label surrogate recovered part of the benefit, not the recall gain.
+Neither filter beat a curated pathway predictor overall; the agreement filter instead recovered growth incomplete annotations miss more often than it overturned pathways lacking growth (44\% versus 19\%), mainly metabolic generalists rather than substrate-specific routes.
+Reliable prediction therefore depends less on strain number than on coherence between growth and annotated pathways: train where the two agree, and prioritise measuring the genomes a model is least sure of, improving transfer over random sampling.
 }
 \end{abstract}
 
-\keywords{Microbial ecology, Comparative genomics, Machine learning, Genotype-phenotype mapping, Cross-dataset generalisation, Active learning, Applicability domain}
+\keywords{Microbial ecology, Comparative genomics, Machine learning, Genotype-phenotype mapping, Cross-dataset generalisation}
