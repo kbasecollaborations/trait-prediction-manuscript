@@ -109,7 +109,7 @@ Distributions in Panels C and D are right-skewed (a small fraction of runs produ
 \refstepcounter{table}\label{tab:main_feature_comparison}%
 \noindent\textbf{Table \arabic{table}: Per-phenotype feature recovery under concordance filtering.}
 For each phenotype, two models are compared: a three-dataset model trained on the three non-held-out source datasets pooled together, and a held-out-alone model trained on the held-out dataset alone.
-This pairwise comparison is repeated with each of the three datasets in turn serving as the held-out one, and counts are summed across these three held-out comparisons (Methods).
+This pairwise comparison is repeated with each of the three datasets in turn serving as the held-out one, and counts are summed across these three held-out comparisons.
 The two columns labelled Full $\rightarrow$ Conc. report the same comparison under two training regimes applied to both models: Full uses all training genomes, while Conc. restricts training to GapMind-concordant samples.
 The shared stable-cluster count comprises SHAP-supervised redundancy clusters present in both the three-dataset and held-out-alone models (the same quantity plotted in Figure~\ref{fig:concordant_analysis}B), summed across the three held-out comparisons.
 The unique stable-cluster count comprises those present only in the held-out-alone model on the same basis.

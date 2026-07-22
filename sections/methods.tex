@@ -4,12 +4,12 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain and substrate counts in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
+We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain, substrate, and growth-assay details in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 % TODO(CITATION): Ask Chris Henry for the correct source citation for the Biolog phenotype data
 These contributed 819 input strain records, of which 795 phenotype records were retained after assembly-fragmentation, CheckM2, and feature-profile outlier filtering; pangenome completeness was assessed independently (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 We aligned phenotype and genomic-feature identifiers, yielding 780 matched strains eligible for feature-based analyses; sample sizes varied by phenotype because not every strain was measured for every phenotype.
 Carbon source names were standardised and analyses were restricted to the 15 phenotypes shared across all four datasets.
-A complementary data-volume comparison additionally drew training samples from a fixed BacDive snapshot~\cite{Schober2025BacDive} (Supplementary Text~S11).
+A complementary data-volume comparison for 13 phenotypes additionally drew training samples from a fixed BacDive snapshot~\cite{Schober2025BacDive} (Supplementary Text~S11).
 
 \subsection*{Genome Annotation}
 
@@ -54,7 +54,7 @@ Phenotype--dataset combinations with fewer than 10 minority-class test samples w
 \subsubsection*{Phylogenetic Partitioning}
 
 We applied the out-of-clade partitioning algorithm of Li et al.~\cite{Li2023-up}, which selects phylogenetically separated test clades (12--18\% of samples).
-For cross-dataset evaluation, test genomes were instead labelled in-clade or out-of-clade according to whether their average-linkage cluster of the phylogenetic distance matrix contained at least two training genomes (Figure~\ref{fig:ml_performance}C).
+For cross-dataset evaluation, an in-clade test subset was instead defined by retaining test genomes whose average-linkage cluster of the phylogenetic distance matrix contained at least two training genomes (Figure~\ref{fig:ml_performance}C).
 
 \subsection*{Concordant and Discordant Sample Analysis}
 
@@ -67,7 +67,7 @@ A pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed 
 Stable predictive features were identified by SHAP (SHapley Additive exPlanations)~\cite{Lundberg2017SHAP} analysis of a fixed 500-iteration CatBoost variant trained without early stopping: for each phenotype--dataset configuration, models were trained across 20 random seeds, the top 10 features by mean absolute SHAP value per run were extracted, and features appearing in $\geq$70\% of runs were designated ``stable''.
 For concordant-training stability analyses, each phenotype--split matrix was first screened to the 300 KOFAM features with highest CatBoost importance before the SHAP recurrence criterion was applied.
 To avoid counting biologically redundant KOs (paralogues, operon-mates, alternative enzymes) as separate features, per-phenotype stable KOs were grouped into SHAP-supervised redundancy clusters (\texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} at distance threshold 0.5; Supplementary Text~S7); this post hoc grouping replaced raw KO identity for intersection and uniqueness counts and did not affect training, predictions, or reported metrics (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Table~\ref{tab:feature_comparison}).
-For Table~\ref{tab:main_feature_comparison}, these cluster counts are additionally annotated with the pathway-coverage statistic defined in the table legend, a uniform metric broader than the catabolism-module statistic in Supplementary Table~\ref{tab:feature_comparison}.
+For Table~\ref{tab:main_feature_comparison}, the cluster counts of Figure~\ref{fig:concordant_analysis}B are additionally annotated with the pathway-coverage statistic defined in the table legend, a uniform metric broader than the catabolism-module statistic in Supplementary Table~\ref{tab:feature_comparison}.
 
 \subsection*{Data Quality Filtering Strategies}
 

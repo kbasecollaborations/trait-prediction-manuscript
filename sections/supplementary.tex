@@ -15,7 +15,6 @@
 \subsection*{Supplementary Text S1: Dataset Descriptions}
 
 We harmonised four experimental carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacteria; analyses used the 15 phenotypes shared across all four datasets (Table~\ref{tab:dataset_overview}).
-After carbon source names were standardised, the union of substrates across the four datasets comprised 242 carbon sources, of which 15 were measured in all four.
 
 \paragraph*{ATLeaf.}
 ATLeaf~\cite{Schafer2023-nk} comprised 224 \textit{Arabidopsis thaliana} leaf-surface isolates tested on 45 carbon substrates using minimal agar medium.
@@ -54,7 +53,7 @@ All datasets entered aggregated and leave-one-dataset-out analyses; Populus was 
 
 \subsection*{Supplementary Text S2: Genome Quality Control}
 
-Assemblies with more than 500 contigs were excluded, after which CheckM2~\cite{Chklovski2023CheckM2} retained genomes with completeness $>$90\% and contamination $<$5\%.
+Assemblies with more than 500 contigs were excluded, after which CheckM2 v1.1.0~\cite{Chklovski2023CheckM2} retained genomes with completeness $>$90\% and contamination $<$5\%.
 Isolation Forest~\cite{Liu2008IsolationForest} screened the KEGG feature matrix for outliers using 100 estimators, contamination 0.05, and random state 42.
 
 \paragraph*{Pangenome-based completeness assessment.}
@@ -232,7 +231,6 @@ The phylogenetic component was the mean experimental label among the $k=3$ neare
 GapMind categories mapped to six numeric levels: complete, 1.0; likely complete, 0.9; steps missing medium, 0.6; steps missing low, 0.3; not present, 0.1; and no evidence or uncategorized, 0.0.
 After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, samples in the inclusive interval $[0.4,0.6]$ were excluded and all others retained.
 The four configurations in Table~\ref{tab:confidence_weight_configs} were applied to training and validation samples only; held-out test samples were unchanged.
-The 95\% confidence interval reported for the mean recall difference between concordance-trained models and GapMind is a fixed-seed percentile bootstrap over the 15 per-phenotype deltas with 10{,}000 resamples (\texttt{scripts/stats/manuscript\_pvalues.py}).
 
 \begin{table}[h]
 \centering
@@ -260,12 +258,13 @@ The largest feature-resolution gap was glucose, for which GapMind-feature and KO
 \paragraph{Calibration, abstention, and rescue.}
 The full-data and concordance-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
 Confidence-based abstention improved retained-subset balanced accuracy for m-inositol and histidine but not glucose, whose predictions approached one class (Figure~\ref{fig:selective_prediction}A).
-Rescue rates are the per-phenotype fractions of GapMind false negatives, and correction rates the fractions of GapMind false positives, that the concordance-trained model classified correctly on the discordant cross-dataset subset.
+Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
 Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
 
 \paragraph{False-negative retention and the specificity tradeoff.}
 Under balanced class weights, concordance filtering improved cross-dataset balanced accuracy by 0.051 over unfiltered training.
 Retaining GapMind false negatives increased recall by 0.030 but reduced specificity by 0.097 and balanced accuracy by 0.033, favouring concordance filtering for balanced-accuracy deployment and false-negative retention only when recall is prioritised.
+The 95\% confidence interval reported for the mean recall difference between concordance-trained models and GapMind is a fixed-seed percentile bootstrap over the 15 per-phenotype deltas with 10{,}000 resamples (\texttt{scripts/stats/manuscript\_pvalues.py}).
 False-negative growers used more other carbon sources than GapMind-negative non-growers (9.5 versus 5.2 of the remaining 14; Mann--Whitney $p<10^{-200}$) and encoded more sugar-ABC transport components (6.5 versus 4.3; $p<10^{-60}$).
 The features introduced by false negatives were dominated by broad carbohydrate transporters and regulators; in 9 of 15 phenotypes, a transporter rather than an enzyme was the GapMind step most often absent, supporting a metabolic-generalist rather than substrate-specific interpretation.
 Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and K26399~\cite{Watanabe2019Altronate} as a divergent altronate dehydratase, but neither establishes a validated alternative route.
@@ -305,7 +304,7 @@ Bars and markers show means, error bars show the standard error across 45 phenot
 \subsection*{Supplementary Text S12: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
 
 At phylogenetic distance $d\leq0.01$, phenotype-specific comparisons between near-identical strains conflicted in 31.0\% of cross-dataset cases (81 of 261) and 10.2\% of within-dataset cases (782 of 7{,}706; odds ratio 3.98), with a monotone excess at stricter thresholds.
-Adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.85, 95\% confidence interval 2.13--3.81, $p=2.0\times10^{-12}$); conditioning on both datasets' rates also remained significant (odds ratio 1.75, $p=0.014$).
+Logistic regression adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.85, 95\% confidence interval 2.13--3.81, $p=2.0\times10^{-12}$); conditioning on both datasets' rates also remained significant (odds ratio 1.75, $p=0.014$).
 The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects; the adjustment addresses only positive-call-rate imbalance.
 Most near-identical comparisons nevertheless agreed, so label inconsistency limits rather than prevents transfer.
 This pattern is compatible with the data-coherence interpretation but does not show that concordance filtering specifically identifies the conflicting pairs.
