@@ -3,14 +3,14 @@
 \begin{abstract}
 {
 \noindent
-Which carbon sources a bacterium uses shapes its ecological niche, yet this trait resists prediction from genome sequence despite well-characterised catabolic pathways.
-Genome-based models often score well within one study but lose accuracy on others, and whether the algorithm or the data is at fault was unclear.
-We combined grow-or-no-grow records for 819 strains across 242 carbon sources from four studies, focusing on the 15 shared sources; accuracy fell across studies even among close relatives, so phylogeny alone did not explain it.
-Restricting training to strains whose measured growth matched their annotated catabolic pathways, with the model otherwise unchanged, raised the carbon sources with predictors recurring across studies from six to twelve of fifteen, often pathway genes, whereas size-matched random subsets did not.
-A much larger genome collection improved the unfiltered model but did not significantly exceed the smaller agreement-filtered set, whose predictors were more reproducible.
-Because agreement filtering needs a mechanistic tool, a phylogeny-and-label surrogate recovered part of the benefit, not the recall gain.
-Neither filter beat a curated pathway predictor overall; the agreement filter instead recovered growth incomplete annotations miss more often than it overturned pathways lacking growth (44\% versus 19\%), mainly metabolic generalists rather than substrate-specific routes.
-Reliable prediction therefore depends less on strain number than on coherence between growth and annotated pathways: train where the two agree, and prioritise measuring the genomes a model is least sure of, improving transfer over random sampling.
+The carbon sources a microorganism can utilise are key determinants of its ecological niche, yet resist prediction from genomes even for well-characterised pathways.
+Machine-learning models often achieve high within-dataset accuracy but generalise poorly across datasets, and whether this reflects the algorithm or the training data remained unresolved.
+We integrated binary growth phenotypes for 819 strains across 242 carbon sources from four datasets, focusing on the 15 shared sources; cross-dataset accuracy declined even among close relatives, so phylogeny alone did not explain it.
+Restricting training to concordant strains (measured growth matching their annotated pathways), under an otherwise identical pipeline, increased the carbon sources with predictive genes recovered across datasets from six to twelve of fifteen, often pathway genes, whereas matched random subsets did not.
+A much larger literature-curated collection improved the unfiltered model but did not significantly exceed this smaller concordant set, whose predictive genes were more reproducible.
+Because concordance filtering requires a mechanistic predictor, a mechanism-free filter based on phylogenetic agreement and experimental labels recovered part of the improvement but not the gain in recall.
+Neither surpassed a curated pathway-based predictor overall; instead, these models recovered growth missed by incomplete annotations more often than they overturned annotated pathways lacking growth (44\% versus 19\%), predominantly among metabolic generalists rather than substrate-specific routes.
+Cross-dataset generalisation therefore depends less on training-set size than on agreement between measured growth and annotated pathways, and prioritising low-confidence genomes for measurement improved it over random selection.
 }
 \end{abstract}
 
