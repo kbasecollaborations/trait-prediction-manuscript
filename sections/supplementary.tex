@@ -35,18 +35,18 @@ Because of its small sample size and narrow phylogenetic breadth, Populus was ex
 \begin{table}[h]
 \centering
 \small
-\begin{tabularx}{\textwidth}{lrrrrX}
+\begin{tabularx}{\textwidth}{lrrrrrX}
 \hline
-\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
+\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
 \hline
-ATLeaf  & 224 & 45  & 206 & 15 & Agar plate \\
-Biolog  & 362 & 64  & 362 & 15 & Biolog PM (colourimetric) \\
-Marine  & 175 & 100 & 157 & 15 & Liquid culture OD \\
-Populus & 58  & 191 & 55  & 15 & Liquid culture OD \\
+ATLeaf  & 224 & 45  & 206 & 206 & 15 & Agar plate \\
+Biolog  & 362 & 64  & 362 & 362 & 15 & Biolog PM (colourimetric) \\
+Marine  & 175 & 100 & 172 & 157 & 15 & Liquid culture OD \\
+Populus & 58  & 191 & 55  & 55  & 15 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
-``Original'' gives the source-dataset size; ``Feature-linked'' gives phenotype records with matching processed genomic features.
+``Original'' gives the source-dataset size; ``Retained Phenotype Records'' gives the records surviving genome quality control (Supplementary Text~S2); ``Feature-linked'' gives phenotype records with matching processed genomic features.
 All datasets entered aggregated and leave-one-dataset-out analyses; Populus was excluded only from selected feature-stability comparisons.}
 \label{tab:dataset_overview}
 \end{table}
@@ -84,6 +84,29 @@ The combined KOFAM matrix contains 822 genome feature profiles, including profil
 Among the 755 profiles entering at least one shared-phenotype split, 17 formed eight exact-duplicate groups.
 Across random-holdout phenotype splits, approximately 1.4\% of test predictions had an identical same-label vector in the training pool and approximately 8\% had a nearest training vector at Jaccard $\geq 0.98$, contributing modest optimism (\texttt{scripts/leakage\_check\_feature\_dup.py}).
 Because each identical-vector group lies within one dataset, leave-one-dataset-out evaluation contained no exact-vector train--test overlap.
+These quantities are collected in Table~\ref{tab:leakage_audit}.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\hline
+\textbf{Quantity} & \textbf{Value} \\
+\hline
+KOFAM genome feature profiles in the combined matrix & 822 \\
+Identical-vector profiles (groups) & 19 (9) \\
+Profiles entering at least one shared-phenotype split & 755 \\
+Exact-duplicate profiles among those (groups) & 17 (8) \\
+Random-holdout test predictions with an identical same-label training vector & $\sim$1.4\% \\
+Random-holdout test predictions with a nearest training vector at Jaccard $\geq 0.98$ & $\sim$8\% \\
+Exact-vector train--test overlap under leave-one-dataset-out & none \\
+\hline
+\end{tabular}
+\caption{\textbf{Replicate-genome and random-holdout overlap audit.}
+Counts of duplicated KOFAM feature profiles and their reach into random-holdout test predictions, as computed by \texttt{scripts/leakage\_check\_feature\_dup.py}.
+Because every identical-vector group is confined to a single source dataset, leave-one-dataset-out evaluation is unaffected.}
+\label{tab:leakage_audit}
+\end{table}
 
 \subsection*{Supplementary Text S4: Histidine Feature Comparison}
 
@@ -123,17 +146,18 @@ All models used KOFAM features and one protocol without early stopping; per-cell
 \centering
 \includegraphics[width=\textwidth]{figure_s1.png}
 \caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
-Of the 819 input strain records, 629 GTDB-placed tips were retained in the pruned Genome Taxonomy Database reference tree~\cite{Parks2018GTDB}, with distances calculated using ETE 3~\cite{HuertaCepas2016ETE3}; outer-ring colours denote Biolog (blue), ATLeaf (orange), Marine (green), and Populus (yellow).
+Of the 819 input strain records, 629 GTDB-placed tips were retained in the pruned Genome Taxonomy Database reference tree~\cite{Parks2018GTDB}, with distances calculated using ETE 3~\cite{HuertaCepas2016ETE3}; outer-ring bands denote dataset membership (see in-figure legend).
 Dataset compositions differ, with Populus showing the narrowest phylogenetic range.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{figure_s2.png}
+\includegraphics[width=\textwidth]{figure_s2.pdf}
 \caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
-Minimum cophenetic distance from each test sample to the training set under random-holdout, in-clade, and out-of-clade splits.
-Out-of-clade splits produce the largest distances, validating the intended separation of the evaluation regimes in Figure~\ref{fig:ml_performance}.}
+Minimum cophenetic distance from each held-out test genome to its training set under random-holdout, in-clade, and out-of-clade splits, pooled across five splits per phenotype for the 15 shared phenotypes.
+Boxes show the median and interquartile range, whiskers extend to 1.5 times the interquartile range, and points are individual test genomes (random $n=8{,}275$; in-clade $n=5{,}515$; out-of-clade $n=6{,}212$).
+Random-holdout and in-clade test genomes lie close to the training set (medians 0.009 and 0.000), whereas out-of-clade splits produce much larger distances (median 1.109), validating the intended separation of the evaluation regimes in Figure~\ref{fig:ml_performance}.}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
 
@@ -142,7 +166,7 @@ Out-of-clade splits produce the largest distances, validating the intended separ
 \includegraphics[width=\textwidth]{figure_s3.pdf}
 \caption{\textbf{In-clade versus out-of-clade performance across the 15 shared phenotypes under full-data training.}
 CatBoost balanced accuracy using KOFAM features across four leave-one-dataset-out combinations.
-Top: test samples sharing a cluster with at least two training samples; bottom: test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
+(\textbf{A}) Test samples sharing a cluster with at least two training samples; (\textbf{B}) test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
 Cells with fewer than 10 test or minority-class samples were excluded (45 of 120, including all Populus-held-out out-of-clade cells).
 Mean out-of-clade balanced accuracy was lower than in-clade accuracy (0.629 versus 0.696).
 Numerals give test-subset sizes.}
@@ -166,7 +190,25 @@ Under the same KOFAM feature space, concordant training improved cross-dataset b
 
 The feature-recovery analysis remains biologically related to the selection rule because GapMind and KOFAM annotate the same genomes, and pathway-coverage percentages therefore partly reflect concordance selection.
 However, GapMind scores curated reference proteins rather than KEGG modules, and SHAP stability across datasets is not entailed by the selection rule; several phenotypes also recovered predominantly off-map features.
-A size- and class-matched random-subset control recovered $0.38 \pm 0.02$ shared clusters (mean $\pm$ SD across three draws), similar to full-data training (0.5) and below concordant training (1.3), indicating that the stability gain was specific to concordance rather than sample count (\texttt{scripts/figure5/figure5b\_random\_control.py}).
+A size- and class-matched random-subset control recovered $0.38 \pm 0.02$ shared clusters (mean $\pm$ SD across three draws), similar to full-data training (0.5) and below concordant training (1.3), indicating that the stability gain was specific to concordance rather than sample count (Table~\ref{tab:subset_control}; \texttt{scripts/figure5/figure5b\_random\_control.py}).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\hline
+\textbf{Training set} & \makecell[r]{\textbf{Mean shared clusters} \\ \textbf{per comparison}} \\
+\hline
+Full data & 0.5 \\
+Concordant & 1.3 \\
+Size- and class-matched random subset & $0.38 \pm 0.02$ \\
+\hline
+\end{tabular}
+\caption{\textbf{Size- and class-matched random-subset control for stable-feature recovery.}
+Shared SHAP-supervised redundancy clusters recovered per cross-dataset comparison under each training set.
+The random-subset value is the mean $\pm$ SD across three draws matched to the concordant subset on size and class balance, showing that reducing sample count alone does not reproduce the concordant gain.}
+\label{tab:subset_control}
+\end{table}
 
 Raw, uncorrelated GapMind features were used for the pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A) and the phenotype-filtered comparison (Figure~\ref{fig:improvement_strategies}D) because the standard 0.95 correlation filter collapses repeated phenotype-prefixed representations of the same gene and can deplete individual pathway feature sets.
 The pipeline ceiling estimates performance when feature resolution matches the rule defining the concordant labels.
@@ -176,8 +218,9 @@ The pipeline ceiling estimates performance when feature resolution matches the r
 \includegraphics[width=0.90\textwidth]{figure_s5.pdf}
 \caption{
 \textbf{Concordant training improves cross-dataset generalisation under KOFAM features.}
-(\textbf{A}) Cross-dataset balanced accuracy of concordance-trained versus full-data KOFAM models on concordant test samples; each point is one phenotype--split combination.
-(\textbf{B}) Per-phenotype distributions for full-data (grey) and concordant (blue) training.
+(\textbf{A}) Cross-dataset balanced accuracy of concordance-trained versus full-data KOFAM models on concordant test samples; each point is one phenotype--split combination ($n = 44$).
+(\textbf{B}) Per-phenotype distributions for full-data (grey) and concordant (blue) training; boxes show the median and interquartile range, whiskers extend to 1.5 times the interquartile range, outliers are not shown, and the dotted line marks the 0.5 chance level.
+Each box summarises the one to four cross-dataset splits available for that phenotype, so boxes for phenotypes with a single split appear as a line.
 }
 \label{fig:kofam_concordant}
 \end{figure}
@@ -270,6 +313,29 @@ The features introduced by false negatives were dominated by broad carbohydrate 
 Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and K26399~\cite{Watanabe2019Altronate} as a divergent altronate dehydratase, but neither establishes a validated alternative route.
 Partitioning false negatives by the genomic presence of their catabolic machinery separated a recoverable fraction from a larger residual lacking such support.
 This residual was enriched for confident model--GapMind agreement against the experimental label (odds ratio 3.3), consistent with, but not proving, a contribution from experimental mislabelling (Supplementary Text~S12).
+Table~\ref{tab:rescue_rates} collects the rescue asymmetry and the accompanying metabolic-generalist comparisons.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrl}
+\hline
+\textbf{Quantity} & \textbf{Value} & \textbf{Comparator} & \textbf{Test} \\
+\hline
+\multicolumn{4}{l}{\textit{Rescue of GapMind errors (discordant cross-dataset subset)}} \\
+Mean false-negative rescue rate & 44\% & 19\% (false positive) & \makecell[l]{paired Wilcoxon $p = 0.02$, \\ BH $q = 0.036$; higher in \\ 12 of 15 phenotypes} \\
+\hline
+\multicolumn{4}{l}{\textit{False-negative growers versus GapMind-negative non-growers}} \\
+Other carbon sources used (of the remaining 14) & 9.5 & 5.2 & Mann--Whitney $p<10^{-200}$ \\
+Sugar-ABC transport components encoded & 6.5 & 4.3 & Mann--Whitney $p<10^{-60}$ \\
+Phenotypes whose most-often-absent step is transport & 9 of 15 & --- & --- \\
+\hline
+\end{tabular}
+\caption{\textbf{GapMind error rescue and the metabolic-generalist signature.}
+Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for false negatives and false positives.
+The lower block contrasts genomes underlying false negatives with GapMind-negative non-growers, supporting a metabolic-generalist rather than substrate-specific interpretation.}
+\label{tab:rescue_rates}
+\end{table}
 
 \subsection*{Supplementary Text S11: Adding Data Volume Versus Concordance Filtering}
 
@@ -308,6 +374,27 @@ Logistic regression adjustment for dataset positive-call rates reduced but did n
 The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects; the adjustment addresses only positive-call-rate imbalance.
 Most near-identical comparisons nevertheless agreed, so label inconsistency limits rather than prevents transfer.
 This pattern is compatible with the data-coherence interpretation but does not show that concordance filtering specifically identifies the conflicting pairs.
+Table~\ref{tab:label_conflict} summarises the conflict rates and the corresponding association estimates.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llr}
+\hline
+\textbf{Quantity} & \textbf{Value} & \textbf{Significance} \\
+\hline
+Cross-dataset conflicting comparisons & 81 of 261 (31.0\%) & --- \\
+Within-dataset conflicting comparisons & 782 of 7{,}706 (10.2\%) & --- \\
+Unadjusted odds ratio & 3.98 & --- \\
+\makecell[l]{Odds ratio adjusted for dataset \\ positive-call rates} & \makecell[l]{2.85 \\ (95\% CI 2.13--3.81)} & $p=2.0\times10^{-12}$ \\
+Odds ratio conditioning on both datasets' rates & 1.75 & $p=0.014$ \\
+\hline
+\end{tabular}
+\caption{\textbf{Cross-dataset label inconsistency among near-identical strains.}
+All quantities are computed at phylogenetic distance $d\leq0.01$ over phenotype-specific comparisons between near-identical strains.
+A monotone excess of cross-dataset conflicts persisted at stricter distance thresholds; the adjustment addresses only positive-call-rate imbalance and cannot separate assay, ecological, or curation effects.}
+\label{tab:label_conflict}
+\end{table}
 
 \subsection*{Supplementary Text S13: Enforcing Concordance in the Training Set Versus in the Predictions}
 

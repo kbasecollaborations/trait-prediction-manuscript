@@ -196,7 +196,7 @@ def plot_confident_samples_performance(
                 f"-{int(concordant_removed.iloc[i])}",
                 ha=concordant_ha,
                 va="bottom",
-                fontsize=6.5,
+                fontsize=10,
                 color="#2E86AB",
                 weight="bold",
             )
@@ -209,7 +209,7 @@ def plot_confident_samples_performance(
                 f"-{int(ysoft_removed.iloc[i])}",
                 ha=ysoft_ha,
                 va="bottom",
-                fontsize=6.5,
+                fontsize=10,
                 color="#06A77D",
                 weight="bold",
             )
@@ -222,7 +222,7 @@ def plot_confident_samples_performance(
                 f"-{int(misclass_removed.iloc[i])}",
                 ha=misclass_ha,
                 va="bottom",
-                fontsize=6.5,
+                fontsize=10,
                 color="#E63946",
                 weight="bold",
             )
@@ -239,7 +239,7 @@ def plot_confident_samples_performance(
         rotation=45,
         ha="right",
         rotation_mode="anchor",
-        fontsize=9,
+        fontsize=10,
     )
     ax.tick_params(axis="x", which="major", pad=1)
     ax.set_xlim(float(x[0] - width * 1.5), float(x[-1] + width * 1.5))

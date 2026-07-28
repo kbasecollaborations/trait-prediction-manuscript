@@ -141,7 +141,7 @@ def plot_figure(output_file: Path) -> None:
     means_a = acc[ORDER].mean()
     sems_a = acc[ORDER].sem()
     ax_a.bar(x, means_a, yerr=sems_a, color=colors, alpha=0.85, capsize=4,
-             edgecolor="black", linewidth=0.6)
+             edgecolor="black", linewidth=0.6, error_kw={"elinewidth": 1.2})
     ax_a.axhline(0.5, ls="--", lw=0.8, color="black", alpha=0.6)
     p_cf_a, p_ffb_a, p_cfb_a = (_paired_p(acc, "C", "F"),
                                 _paired_p(acc, "F", "FB"),
@@ -152,7 +152,7 @@ def plot_figure(output_file: Path) -> None:
     ax_a.set_xticks(x)
     ax_a.set_xticklabels([LABELS[s] for s in ORDER])
     ax_a.set_ylabel("Cross-dataset balanced accuracy")
-    ax_a.set_ylim(0.5, 0.82)
+    ax_a.set_ylim(0, 0.9)
     _panel_letter(ax_a, "A")
 
     # ---- Panel B: cross-seed feature stability ----
@@ -178,14 +178,14 @@ def plot_figure(output_file: Path) -> None:
         ax_c.errorbar(stab[s].mean(), acc[s].mean(),
                       xerr=stab[s].sem(), yerr=acc[s].sem(),
                       marker="o", ms=11, color=COLORS[s], capsize=3,
-                      mec="black", mew=0.5, lw=0, zorder=4)
+                      elinewidth=1.2, mec="black", mew=0.5, lw=0, zorder=4)
     # path C -> F -> FB
     ax_c.plot([stab[s].mean() for s in ORDER], [acc[s].mean() for s in ORDER],
               color="black", lw=0.8, ls=":", alpha=0.6, zorder=0)
     point_labels = {
-        "C": ("Concordant\n(curated)", 0.0, 0.012, "center", "bottom"),
-        "F": ("Full\nmanuscript", 0.0, -0.014, "center", "top"),
-        "FB": ("Full +\nBacDive", 0.004, 0.012, "left", "bottom"),
+        "C": ("Concordant\n(curated)", 0.0, 0.022, "center", "bottom"),
+        "F": ("Full\nmanuscript", 0.0, -0.022, "center", "top"),
+        "FB": ("Full +\nBacDive", 0.0, -0.024, "center", "top"),
     }
     for s, (txt, dx, dy, ha, va) in point_labels.items():
         ax_c.text(stab[s].mean() + dx, acc[s].mean() + dy, txt,
@@ -193,7 +193,7 @@ def plot_figure(output_file: Path) -> None:
     ax_c.set_xlabel("Feature stability (top-10 Jaccard)")
     ax_c.set_ylabel("Cross-dataset balanced accuracy")
     ax_c.set_xlim(0.22, 0.42)
-    ax_c.set_ylim(0.655, 0.745)
+    ax_c.set_ylim(0.645, 0.755)
     _panel_letter(ax_c, "C")
 
     plt.tight_layout()

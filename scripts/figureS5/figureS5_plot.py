@@ -139,7 +139,7 @@ def plot_parity(ax: plt.Axes, df: pd.DataFrame) -> None:
         transform=ax.transAxes,
         ha="right",
         va="bottom",
-        fontsize=9,
+        fontsize=10,
     )
 
 
@@ -216,9 +216,11 @@ def plot_phenotype_boxes(ax: plt.Axes, df: pd.DataFrame) -> None:
             Patch(facecolor=COLOR_CONCORDANT, alpha=0.7),
         ],
         ["Full Training (KOFAM)", "Concordant Training (KOFAM)"],
-        loc="upper right",
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.0),
+        ncol=2,
         frameon=False,
-        fontsize=9,
+        fontsize=10,
     )
     ax.text(-0.08, 1.05, "(B)", transform=ax.transAxes, fontweight="bold", fontsize=14)
 

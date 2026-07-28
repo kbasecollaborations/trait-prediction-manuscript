@@ -46,7 +46,7 @@ CONDITION_COLORS: dict[str, str] = {
 
 METRIC_COLORS: dict[str, str] = {
     "balanced_accuracy": "#1f77b4",
-    "precision": "#9467bd",
+    "precision": "#E69F00",
     "recall": "#d62728",
 }
 METRIC_LABELS: dict[str, str] = {
@@ -210,6 +210,19 @@ def plot_metric_sweep(
                 zorder=2,
             )
 
+    # Rule-based reference: mean GapMind balanced accuracy over the same
+    # minority-filtered phenotypes quoted in the Results text.
+    gm = _gapmind_baseline(phenotypes)
+    ax.axhline(
+        float(gm.groupby("phenotype")["balanced_accuracy"].mean().mean()),
+        linestyle=":",
+        linewidth=1.2,
+        color=METRIC_COLORS["balanced_accuracy"],
+        alpha=0.8,
+        zorder=1,
+        label="GapMind (balanced accuracy)",
+    )
+
     for metric, color in METRIC_COLORS.items():
         sweep_means = []
         sweep_sems = []
@@ -285,12 +298,12 @@ def plot_metric_sweep(
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, fontsize=8)
     ax.set_xlim(ref_full_x - 0.6, ref_conc_x + 0.6)
-    ax.set_ylim(0.45, 1.0)
+    ax.set_ylim(0.2, 1.0)
     ax.grid(axis="y", alpha=0.18, linewidth=0.5)
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.12),
-        ncol=3,
+        ncol=4,
         frameon=False,
         fontsize=9,
     )

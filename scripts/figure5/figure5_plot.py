@@ -343,7 +343,7 @@ def plot_dataset_split_performance(
         bbox_to_anchor=(0.5, 1.15),
         ncol=len(legend_handles),
         frameon=False,
-        fontsize=9,
+        fontsize=10,
     )
 
 
@@ -455,10 +455,10 @@ def create_feature_comparison_plot(
         dataset_display_names,
         title="Dataset",
         loc="upper left",
-        bbox_to_anchor=(0.0, 1.235),
+        bbox_to_anchor=(0.0, 1.30),
         ncol=len(datasets),
         frameon=False,
-        fontsize=8,
+        fontsize=10,
     )
     ax.add_artist(legend1)
 
@@ -466,10 +466,10 @@ def create_feature_comparison_plot(
         handles=feature_handles,
         title="Stable feature clusters",
         loc="upper right",
-        bbox_to_anchor=(1.0, 1.235),
+        bbox_to_anchor=(1.0, 1.30),
         ncol=2,
         frameon=False,
-        fontsize=8,
+        fontsize=10,
     )
 
     ax.set_ylabel("Stable feature clusters (n)", fontsize=10)
@@ -624,7 +624,7 @@ def plot_ml_vs_gapmind_full_test(
         transform=ax.transAxes,
         ha="left",
         va="top",
-        fontsize=8.5,
+        fontsize=10,
         bbox=dict(
             boxstyle="round,pad=0.25",
             facecolor="white",
@@ -635,7 +635,7 @@ def plot_ml_vs_gapmind_full_test(
 
     ax.legend(
         loc="lower right",
-        fontsize=9,
+        fontsize=10,
         frameon=True,
         framealpha=0.9,
         edgecolor="none",
@@ -739,7 +739,7 @@ def plot_ml_vs_gapmind_test_subsets(
         transform=ax.transAxes,
         ha="left",
         va="top",
-        fontsize=8.5,
+        fontsize=10,
         bbox=dict(
             boxstyle="round,pad=0.25",
             facecolor="white",
@@ -750,7 +750,7 @@ def plot_ml_vs_gapmind_test_subsets(
 
     ax.legend(
         loc="lower right",
-        fontsize=8.5,
+        fontsize=10,
         frameon=True,
         framealpha=0.9,
         edgecolor="none",

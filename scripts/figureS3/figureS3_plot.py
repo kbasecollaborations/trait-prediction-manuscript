@@ -117,9 +117,14 @@ def plot_panel(
                         f"{int(row['n_test'])}",
                         (x_pos, row["balanced_accuracy"]),
                         textcoords="offset points",
-                        xytext=(0, 5),
+                        # Alternate the label height between adjacent datasets:
+                        # where two strips sit at nearly the same accuracy their
+                        # labels would otherwise collide horizontally.
+                        xytext=(0, 6 if ds_idx % 2 == 0 else 15),
                         ha="center",
-                        fontsize=5,
+                        # The figure is 11.8 in wide but included at \textwidth
+                        # (scale ~0.55), so this prints at roughly 4.5 pt.
+                        fontsize=8,
                         color="dimgray",
                         zorder=3,
                     )

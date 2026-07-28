@@ -127,7 +127,7 @@ def _add_pvalue_text(
         transform=ax.transAxes,
         ha="left",
         va="top",
-        fontsize=8,
+        fontsize=10,
     )
 
 
@@ -236,7 +236,7 @@ def plot_split_comparison(
             f"Combined: ~{int(combined_n_features)} features",
             transform=ax.transAxes,
             verticalalignment="top",
-            fontsize=8,
+            fontsize=10,
             color="#2E86AB",
             bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
         )
@@ -247,7 +247,7 @@ def plot_split_comparison(
             f"Filtered: ~{int(filtered_n_features)} features (avg)",
             transform=ax.transAxes,
             verticalalignment="top",
-            fontsize=8,
+            fontsize=10,
             color="#E63946",
             bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
         )
@@ -331,7 +331,7 @@ def plot_balanced_accuracy_scatter(
     ax.legend(
         loc="lower right",
         frameon=True,
-        fontsize=8,
+        fontsize=10,
         labelspacing=0.6,
         markerscale=0.7,
     )
@@ -402,7 +402,7 @@ def plot_precision_recall_scatter_by_feature_type(
     ax.set_ylabel("Precision")
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0, 1.05)
-    ax.legend(loc="lower right", frameon=True, fontsize=7, labelspacing=1.2)
+    ax.legend(loc="lower right", frameon=True, fontsize=10, labelspacing=1.2)
     ax.set_aspect("equal")
 
 

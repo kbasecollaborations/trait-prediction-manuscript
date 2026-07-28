@@ -11,6 +11,7 @@ import pandas as pd
 import scienceplots  # noqa: F401  (matplotlib style registration)
 import seaborn as sns
 from matplotlib.axes import Axes
+from sklearn.metrics import roc_auc_score
 
 from scripts.visualization import configure_plot_style
 
@@ -22,6 +23,10 @@ DATA_DIR = Path("data/outputs/figure7")
 RISK_FILE = DATA_DIR / "figure7_risk_coverage_by_phenotype.tsv"
 CALIB_FILE = DATA_DIR / "figure7_calibration.tsv"
 PRIOR_FILE = DATA_DIR / "figure7_prioritization.tsv"
+PER_SAMPLE_FILES = {
+    "concordant": DATA_DIR / "figure7_per_sample.tsv",
+    "full_data": DATA_DIR / "figure7_per_sample_fulldata.tsv",
+}
 OUTPUT_FILE = Path("figures/figure7.pdf")
 
 # Colour palette: seaborn ``colorblind`` (matches ``visualization.get_dataset_colors``).
@@ -98,7 +103,7 @@ def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
             )
         ax.set_title(phen, fontsize=12)
         ax.set_xlim(0, 1.02)
-        ax.set_ylim(0.40, 1.0)
+        ax.set_ylim(0.35, 1.0)
         ax.set_xlabel("Coverage")
     axes[0].set_ylabel("Balanced accuracy\n(retained subset)")
     axes[1].legend(
@@ -106,8 +111,29 @@ def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
         bbox_to_anchor=(0.5, 1.22),
         ncol=2,
         frameon=False,
-        fontsize=9,
+        fontsize=10,
     )
+
+
+def pooled_confidence_auc() -> dict[str, float]:
+    """
+    Compute the pooled ROC AUC of confidence discriminating correct predictions.
+
+    Confidence is used as the ranking score and the label is whether the
+    prediction was correct, pooled across phenotypes on the cross-dataset test
+    set (as described in the Methods).
+
+    Returns
+    -------
+    dict[str, float]
+        ROC AUC keyed by model name (``"concordant"``, ``"full_data"``).
+    """
+    aucs: dict[str, float] = {}
+    for model, path in PER_SAMPLE_FILES.items():
+        df = pd.read_csv(path, sep="\t")
+        correct = (df.y_true == df.y_pred).astype(int)
+        aucs[model] = float(roc_auc_score(correct, df.confidence))
+    return aucs
 
 
 def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
@@ -122,6 +148,7 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
         Contents of ``figure7_calibration.tsv``.
     """
     ax.plot([0, 1], [0, 1], ls="--", color="gray", lw=0.8, alpha=0.7, label="Perfect")
+    aucs = pooled_confidence_auc()
     for model in ("concordant", "full_data"):
         sub = calib[calib.model == model].sort_values("mean_pred")
         ece = float(sub["ece"].iloc[0])
@@ -132,14 +159,17 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
             ms=4,
             lw=1.5,
             color=MODEL_COLORS[model],
-            label=f"{MODEL_LABELS[model]} (ECE = {ece:.2f})",
+            label=(
+                f"{MODEL_LABELS[model]}\n"
+                f"(ECE = {ece:.2f}, AUC = {aucs[model]:.2f})"
+            ),
             zorder=3,
         )
     ax.set_xlabel("Mean predicted P(growth)")
     ax.set_ylabel("Observed growth fraction")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.legend(frameon=False, fontsize=10, loc="lower right")
     _panel_label(ax, "B", x=-0.22)
 
 
@@ -284,7 +314,7 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
         )
         for _strat, label, color in strategies
     ]
-    ax.legend(handles=legend_handles, frameon=False, fontsize=8, loc="upper left")
+    ax.legend(handles=legend_handles, frameon=False, fontsize=10, loc="upper left")
     _panel_label(ax, "D")
 
 
