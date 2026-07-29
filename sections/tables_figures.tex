@@ -45,13 +45,16 @@ The dashed segment over each phenotype indicates that phenotype's mean GapMind p
 Colors represent different test datasets.
 The dashed segment over each phenotype indicates that phenotype's GapMind permissive-threshold balanced accuracy (same threshold as panel A).
 (C) Difference plot comparing model performance between regular cross-dataset splits and phylogenetically constrained in-clade cross-dataset splits.
+Colours denote the held-out test dataset as in panel B, and the black dashed line marks the mean difference across phenotypes and splits.
+Grey dashed horizontal lines mark chance performance (0.5) in panels A and B and zero difference in panel C.
 
-\noindent\textbf{Alt text:} Panel A shows box plots of random holdout balanced accuracy per phenotype clustering between 0.7 and 0.9, above a dashed GapMind baseline. Panel B is a dot plot of cross-dataset accuracy coloured by held-out test set, scattered around the GapMind line. Panel C plots full minus in-clade accuracy differences centred near zero (mean minus 0.024).
+\noindent\textbf{Alt text:} Panel A shows box plots of random holdout balanced accuracy per phenotype clustering between 0.7 and 0.9, above a dashed GapMind baseline for all but two phenotypes. Panel B is a dot plot of cross-dataset accuracy coloured by held-out test set, scattered around the GapMind line. Panel C plots full minus in-clade accuracy differences centred near zero (mean minus 0.024).
 \par\medskip
 
 \refstepcounter{figure}\label{fig:misclassification_diagnosis}%
 \noindent\textbf{Figure \arabic{figure}: Diagnosing GapMind misclassifications and ML generalisation failures.}
-(A) Conceptual framework outlining potential causes of concordant samples (where GapMind matches experiment) and discordant samples (where GapMind contradicts experiment).
+(A) Conceptual framework contrasting concordant samples (where GapMind matches experiment) with discordant samples (where GapMind contradicts experiment).
+The concordant quadrants (a, true positive; d, true negative) give the underlying biological state and its interpretation, whereas the discordant quadrants (b, false negative; c, false positive) list possible causes colour-coded by category (annotation, biology, measurement, media, and regulation).
 (B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
 Each bar displays counts of true positives, true negatives, false positives (GapMind predicts ``complete pathway'' but no growth is observed), and false negatives (GapMind predicts ``incomplete pathway'' but growth is observed).
 (C) Feature importance stability analysis using SHAP.
@@ -60,7 +63,7 @@ Top panel: number of stable feature clusters across cross validation runs when t
 Bottom panel: cross-dataset cluster stability comparing the stable feature clusters from the model trained on the held-out dataset alone to those from the model trained on the three other datasets combined.
 Solid bars represent clusters shared between the held-out-alone and combined-of-three models; patterned bars represent clusters present only in the held-out-alone model.
 
-\noindent\textbf{Alt text:} Three-panel diagnostic figure. (A) Two-by-two conceptual matrix mapping GapMind predictions against experimental outcomes, listing biological causes for true positives, false negatives, false positives, and true negatives. (B) Stacked bar plots of TP, TN, FP, FN counts across fifteen phenotypes and four datasets. (C) Bar plots showing stable SHAP feature cluster counts per phenotype, combined and split by dataset, with shared and unique clusters.
+\noindent\textbf{Alt text:} Three-panel diagnostic figure. (A) Two-by-two conceptual matrix mapping GapMind predictions against experimental outcomes, giving the biological state and interpretation for the concordant true-positive and true-negative quadrants and colour-coded possible causes for the discordant false-negative and false-positive quadrants. (B) Stacked bar plots of TP, TN, FP, FN counts across fifteen phenotypes and four datasets. (C) Bar plots showing stable SHAP feature cluster counts per phenotype, combined and split by dataset, with shared and unique clusters.
 \par\medskip
 
 \refstepcounter{figure}\label{fig:concordant_analysis}%
@@ -68,14 +71,17 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
 (\textbf{A}) Balanced accuracy on held-out concordant samples, the easier subset with discordant cases excluded (panel~C shows the full held-out test), under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
 Boxes show the median and interquartile range with whiskers extending to 1.5 times the interquartile range across the three or four leave-one-dataset-out splits retained per phenotype, so each box summarises three to four splits; outliers are not shown.
+Annotation: paired Wilcoxon $p$-value comparing the KOFAM and GapMind-feature phenotype means across phenotypes.
 (\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone.
+Each phenotype carries one bar per held-out dataset (AtLeaf, blue; Biolog, orange; Marine, green).
 Solid bars: shared clusters; patterned bars: held-out-only clusters.
 (\textbf{C}) Concordance-trained ML versus GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
 Green circles: random holdout; blue squares: cross-dataset.
 Dashed diagonal marks parity; points above indicate ML outperforming GapMind.
-Inset: paired Wilcoxon $p$-values across phenotypes.
+Annotation: paired Wilcoxon $p$-values across phenotypes, reported separately for the random holdout and cross-dataset series.
 (\textbf{D}) As panel C, with the cross-dataset test set decomposed into GapMind-concordant (purple circles) and discordant (orange squares) subsets.
 GapMind balanced accuracy is fixed at 1 on the concordant subset and 0 on the discordant subset by construction, so each series forms a vertical strip.
+Annotation: median ML balanced accuracy on each subset.
 
 \noindent\textbf{Alt text:} Four-panel figure. (A) Box plots of balanced accuracy across fifteen phenotypes comparing dataset-split KOFAM models against random-split and GapMind reference lines. (B) Stacked bars per phenotype showing common and unique stable feature clusters across AtLeaf, Biolog, and Marine datasets. (C) Scatter of concordant-ML versus GapMind balanced accuracy with random and cross-dataset markers near the diagonal. (D) Same scatter split into concordant points clustered at x equals one and discordant points at x equals zero.
 \par\medskip
@@ -88,7 +94,7 @@ Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees
 Large markers show the mean across the 15 phenotype-level values, error bars show the standard error of the mean across those values, the small dots are the per-phenotype values jittered horizontally to expose the distribution, and the mean train+val sample size per phenotype-split is annotated below each tick.
 The $w_{\mathrm{gap}} = 0$ setting is the mechanism-free configuration; all conditions are evaluated on the same full held-out cross-dataset test set.
 The dotted horizontal line marks the GapMind permissive-threshold rule-based baseline on the same test set.
-The y-axis does not extend to zero because the comparison of interest is between conditions and against the 0.5 chance level of balanced accuracy; all per-phenotype values contribute to the plotted means and standard errors.
+The y-axis does not extend to zero because the comparison of interest is between conditions and against the 0.5 chance level of balanced accuracy; all per-phenotype values contribute to the plotted means and standard errors, and no plotted point falls outside the axis range.
 (C) Per-phenotype $\Delta$ recall (ML minus GapMind) on the same test set for ML models trained on concordance-filtered (blue) and mechanism-free filter (light green); phenotypes are sorted by concordant-ML $\Delta$ recall, and mean train+val sample sizes are given in the legend.
 Annotation: count of phenotypes with positive $\Delta$ and paired Wilcoxon $p$-value.
 (D) Balanced-accuracy scatter under random holdout and cross-dataset evaluation comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (GapMind-only) features; points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
@@ -103,12 +109,12 @@ Both axes are truncated below rather than extended to zero because balanced accu
 (\textbf{A}) Risk--coverage curves for three phenotypes spanning high, intermediate, and low cross-dataset balanced accuracy (m-Inositol, Histidine, Glucose), comparing the full-data model (orange) and the concordance-trained model (blue).
 Balanced accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first; retention is stratified by predicted class so both predicted classes are represented at every coverage level.
 The grey dashed line marks random performance (balanced accuracy~$=0.5$); the y-axes are truncated below rather than extended to zero because the curves are read against this 0.5 chance level.
-(\textbf{B}) Reliability diagram for both models on the cross-dataset held-out test set, pooled across phenotypes (10 equal-width probability bins): mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration, and the expected calibration error (ECE) and the pooled ROC AUC for each model are given in the legend.
+(\textbf{B}) Reliability diagram for both models on the cross-dataset held-out test set, pooled across phenotypes (10 equal-width probability bins): mean predicted probability of growth against the observed growth fraction within each confidence bin; the dashed diagonal marks perfect calibration, and the expected calibration error (ECE) and the pooled ROC AUC for confidence-based discrimination of correct from incorrect predictions are given in the legend.
 (\textbf{C}) Change in cross-dataset balanced accuracy after adding 25 held-out genome labels to the concordant training set, by label-free selection strategy (low confidence, diversity, random, high feature-novelty); violins show the distribution across 68 valid phenotype--held-out-dataset--seed runs (horizontal bar, median; vertical line, full range; six phenotypes, up to four held-out datasets and three seeds per phenotype), and overlaid points show individual runs.
 (\textbf{D}) Per-phenotype gain from 25 randomly versus low-confidence-selected added labels, for the three Panel-A phenotypes; boxes show the median and interquartile range, whiskers extend to the most extreme run within 1.5 times the interquartile range, overlaid points show individual runs, and thin grey lines connect matched (held-out dataset, seed) runs across the two strategies ($n=12$ for m-Inositol, $n=12$ for Histidine, and $n=9$ for Glucose).
 Distributions in Panels C and D are right-skewed (a small fraction of runs produce large positive gains), so the per-strategy means reported in the main text are larger than the medians shown in the figure.
 
-\noindent\textbf{Alt text:} Four-panel figure. Panel A: three risk-coverage line plots for m-Inositol, Histidine, and Glucose, showing balanced accuracy declining or flat as coverage rises, comparing concordant and full-data models. Panel B: reliability diagram with both models tracking near diagonal. Panel C: violins with overlaid jittered points across four selection strategies. Panel D: side-by-side box plots per phenotype for random and low-confidence strategies, with thin grey lines connecting matched paired runs.
+\noindent\textbf{Alt text:} Four-panel figure. Panel A: three risk-coverage line plots for m-Inositol, Histidine, and Glucose, showing balanced accuracy that declines or stays flat as coverage rises for m-Inositol and Histidine and rises slightly for Glucose, comparing concordant and full-data models. Panel B: reliability diagram in which both curves are flatter than the diagonal, lying above it at low predicted probabilities and below it at high predicted probabilities, indicating overconfidence. Panel C: violins with overlaid jittered points across four selection strategies. Panel D: side-by-side box plots per phenotype for random and low-confidence strategies, with thin grey lines connecting matched paired runs.
 \par\medskip
 
 \refstepcounter{table}\label{tab:main_feature_comparison}%

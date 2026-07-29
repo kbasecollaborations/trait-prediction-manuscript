@@ -4,7 +4,7 @@
 
 Machine learning models that predict microbial phenotypes from genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
 Across four binary growth datasets (819 bacterial strain records, 242 carbon sources), we identify label--mechanism agreement in the training set as a determinant of cross-dataset generalisation that complements the established roles of sample size and feature-space choice.
-Models trained on concordant samples behaved as bounded specialists, and their prediction confidence helped prioritise which additional measurements most improved the lowest-performing phenotypes.
+Models trained on concordant samples behaved as bounded specialists, and their prediction confidence helped prioritise which additional measurements most improved the lowest-performing phenotype.
 These results reframe genome-based phenotype prediction as a problem of training-set curation and applicability-domain definition~\cite{Sambasivan2021DataCascades,Zha2025DataCentric}, alongside the data-volume and algorithm-choice axes.
 
 \subsection*{Label--Mechanism Agreement Governs Cross-Dataset Transfer}
@@ -19,7 +19,7 @@ Concordance filtering implicitly defines an applicability domain, and the concor
 The wide phenotype-level range in cross-dataset balanced accuracy is consistent with multiple coexisting causes of discordance~\cite{Galperin1998Sources,Bernstein2021Uncertainty}: false negatives (GapMind--/Experiment+) may reflect annotation gaps or unknown alternative pathways, whereas false positives (GapMind+/Experiment--) may reflect regulatory repression or experimental artefacts that static genomic features cannot capture.
 Such experimental artefacts may include differences in growth-assay modality across the source datasets which need not reflect any genomic signal.
 This asymmetry is genomically grounded: annotation-gap false negatives carry genomic content the broader KOFAM feature set can recover even when GapMind's pathway-completeness rule misses it, whereas false positives driven by regulation or experimental conditions leave no genomic signature to recover.
-Because these recovered false negatives are metabolic generalists, the model recovers chiefly a generalist genomic signature correlated with growth rather than a substrate-specific mechanism: a broad transporter's presence does not establish that it serves the focal substrate, which is why GapMind excludes such genes.
+Because recovered false negatives are disproportionately metabolic generalists, the model recovers chiefly a generalist genomic signature correlated with growth rather than a substrate-specific mechanism: a broad transporter's presence does not establish that it serves the focal substrate, which is why GapMind excludes such genes.
 This recovery rests on the same lifestyle-correlated signal that drives shortcut learning elsewhere, here aiding recall without transferable mechanism.
 Because the rescue rate is non-zero, concordance filtering discards some discordant samples carrying transferable signal.
 
