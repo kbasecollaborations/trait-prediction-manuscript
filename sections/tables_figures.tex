@@ -21,6 +21,7 @@ The bar plot displays sample counts and class distributions for each phenotype.
 Solid bars indicate growth (positive) samples, and patterned bars indicate no-growth (negative) samples.
 Class distributions varied across phenotypes and datasets.
 (C) Summary of the analysis variants evaluated in this study, showing for each its training data, feature set, evaluation, per-phenotype balanced-accuracy range with the median marked, and a one-line finding.
+The combined feature set concatenates the binarised RAST subsystem, KOFAM, and GapMind matrices, of which RAST subsystem terms contribute the majority of the approximately 17,000 features.
 
 \noindent\textbf{Alt text:} Panel A shows a workflow schematic linking microbes and carbon sources to a growth/no-growth matrix, genome annotation via KOFAM, GapMind, RAST, and classifier training, with a table listing genome and phenotype counts for ATLeaf, Biolog, Marine, and Populus datasets. Panel B presents a stacked bar plot of positive and negative sample counts per phenotype across the four datasets. Panel C is a table of five analysis variants, each with its training data, feature set, evaluation, and a balanced-accuracy interval on a common axis (0.4 to 1.0, with a dashed line at 0.5) with the median marked: random holdout (0.70-0.90, median 0.85); cross-dataset full-data (0.48-0.84, median 0.62); concordance filtering (0.51-0.82, median 0.67); feature combination (0.55-0.85, median 0.66); and feature filtering (0.56-0.85, median 0.73). A final column gives a one-line finding for each variant.
 \par\medskip
@@ -59,7 +60,7 @@ The concordant quadrants (a, true positive; d, true negative) give the underlyin
 Each bar displays counts of true positives, true negatives, false positives (GapMind predicts ``complete pathway'' but no growth is observed), and false negatives (GapMind predicts ``incomplete pathway'' but growth is observed).
 (C) Feature importance stability analysis using SHAP.
 Stable features are KOs appearing in $\geq$70\% of model runs across 20 random seeds; these are then grouped into stable feature clusters so that paralogues and pathway-mates representing the same biological signal are counted as one cluster (Methods).
-Top panel: number of stable feature clusters across cross validation runs when the model is trained on all four datasets combined.
+Top panel: number of stable feature clusters across the 20 random-seed runs when the model is trained on all four datasets combined.
 Bottom panel: cross-dataset cluster stability comparing the stable feature clusters from the model trained on the held-out dataset alone to those from the model trained on the three other datasets combined.
 Solid bars represent clusters shared between the held-out-alone and combined-of-three models; patterned bars represent clusters present only in the held-out-alone model.
 
@@ -70,10 +71,10 @@ Solid bars represent clusters shared between the held-out-alone and combined-of-
 \noindent\textbf{Figure \arabic{figure}: Concordance-trained models learn mechanistic features, outperform GapMind under random evaluation, and define an applicability domain under cross-dataset evaluation.}
 All panels show models trained on GapMind-concordant samples with KOFAM features (Methods).
 (\textbf{A}) Balanced accuracy on held-out concordant samples, the easier subset with discordant cases excluded (panel~C shows the full held-out test), under random holdout (green line) and cross-dataset evaluation (blue boxes); red dashed lines mark the pipeline-ceiling reference obtained by retraining and predicting using GapMind step features (Methods).
-Boxes show the median and interquartile range with whiskers extending to 1.5 times the interquartile range across the three or four leave-one-dataset-out splits retained per phenotype, so each box summarises three to four splits; outliers are not shown.
+Boxes show the median and interquartile range with whiskers extending to 1.5 times the interquartile range across the one to four leave-one-dataset-out splits retained per phenotype, so each box summarises one to four splits; outliers are not shown.
 Annotation: paired Wilcoxon $p$-value comparing the KOFAM and GapMind-feature phenotype means across phenotypes.
 (\textbf{B}) Cross-dataset stability of SHAP-supervised redundancy clusters between models trained on the three non-held-out datasets and on the held-out dataset alone.
-Each phenotype carries one bar per held-out dataset (AtLeaf, blue; Biolog, orange; Marine, green).
+Each phenotype carries one bar per held-out dataset (ATLeaf, blue; Biolog, orange; Marine, green).
 Solid bars: shared clusters; patterned bars: held-out-only clusters.
 (\textbf{C}) Concordance-trained ML versus GapMind balanced accuracy on the full sample held-out test set, one point per phenotype mean.
 Green circles: random holdout; blue squares: cross-dataset.
@@ -83,7 +84,7 @@ Annotation: paired Wilcoxon $p$-values across phenotypes, reported separately fo
 GapMind balanced accuracy is fixed at 1 on the concordant subset and 0 on the discordant subset by construction, so each series forms a vertical strip.
 Annotation: median ML balanced accuracy on each subset.
 
-\noindent\textbf{Alt text:} Four-panel figure. (A) Box plots of balanced accuracy across fifteen phenotypes comparing dataset-split KOFAM models against random-split and GapMind reference lines. (B) Stacked bars per phenotype showing common and unique stable feature clusters across AtLeaf, Biolog, and Marine datasets. (C) Scatter of concordant-ML versus GapMind balanced accuracy with random and cross-dataset markers near the diagonal. (D) Same scatter split into concordant points clustered at x equals one and discordant points at x equals zero.
+\noindent\textbf{Alt text:} Four-panel figure. (A) Box plots of balanced accuracy across fifteen phenotypes comparing dataset-split KOFAM models against random-split and GapMind reference lines. (B) Stacked bars per phenotype showing common and unique stable feature clusters across ATLeaf, Biolog, and Marine datasets. (C) Scatter of concordant-ML versus GapMind balanced accuracy with random and cross-dataset markers near the diagonal. (D) Same scatter split into concordant points clustered at x equals one and discordant points at x equals zero.
 \par\medskip
 
 \refstepcounter{figure}\label{fig:improvement_strategies}%
@@ -97,7 +98,7 @@ The dotted horizontal line marks the GapMind permissive-threshold rule-based bas
 The y-axis does not extend to zero because the comparison of interest is between conditions and against the 0.5 chance level of balanced accuracy; all per-phenotype values contribute to the plotted means and standard errors, and no plotted point falls outside the axis range.
 (C) Per-phenotype $\Delta$ recall (ML minus GapMind) on the same test set for ML models trained on concordance-filtered (blue) and mechanism-free filter (light green); phenotypes are sorted by concordant-ML $\Delta$ recall, and mean train+val sample sizes are given in the legend.
 Annotation: count of phenotypes with positive $\Delta$ and paired Wilcoxon $p$-value.
-(D) Balanced-accuracy scatter under random holdout and cross-dataset evaluation comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (GapMind-only) features; points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
+(D) Balanced-accuracy scatter under random holdout and cross-dataset evaluation comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (the focal phenotype's GapMind columns only) features; points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
 The annotation reports split-specific paired Wilcoxon p-values across phenotype means.
 Both axes are truncated below rather than extended to zero because balanced accuracy is read against the 0.5 chance level, and no plotted point falls outside the axis range.
 
@@ -120,7 +121,7 @@ Distributions in Panels C and D are right-skewed (a small fraction of runs produ
 \refstepcounter{table}\label{tab:main_feature_comparison}%
 \noindent\textbf{Table \arabic{table}: Per-phenotype feature recovery under concordance filtering.}
 For each phenotype, two models are compared: a three-dataset model trained on the three non-held-out source datasets pooled together, and a held-out-alone model trained on the held-out dataset alone.
-This pairwise comparison is repeated with each of the three datasets in turn serving as the held-out one, and counts are summed across these three held-out comparisons.
+This pairwise comparison is repeated with each dataset in turn serving as the held-out one, and counts are summed across the retained held-out comparisons.
 The two columns labelled Full $\rightarrow$ Conc. report the same comparison under two training regimes applied to both models: Full uses all training genomes, while Conc. restricts training to GapMind-concordant samples.
 The shared stable-cluster count comprises SHAP-supervised redundancy clusters present in both the three-dataset and held-out-alone models (the same quantity plotted in Figure~\ref{fig:concordant_analysis}B), summed across the three held-out comparisons.
 The unique stable-cluster count comprises those present only in the held-out-alone model on the same basis.

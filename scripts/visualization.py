@@ -68,7 +68,7 @@ def get_dataset_display_names():
         Dictionary mapping dataset names to display names.
     """
     return {
-        "atleaf": "AtLeaf",
+        "atleaf": "ATLeaf",
         "marine": "Marine",
         "lit": "Biolog",
         "pmi": "Populus",

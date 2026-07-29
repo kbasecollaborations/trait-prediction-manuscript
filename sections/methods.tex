@@ -32,10 +32,10 @@ Null baselines comprised an identity model (predicting the most common training 
 
 \subsection*{Data Pre-processing and Feature Selection}
 
-KOFAM and GapMind annotations were converted into binary presence/absence matrices (GapMind pathway scores retained integer values).
+KOFAM, GapMind, and RAST annotations were converted into binary presence/absence matrices (GapMind pathway scores retained integer values).
 Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, removing the most connected features).
 Because both filters are label-free, applying them across the full dataset rather than per split is leakage-free; classifiers were still fitted on training samples only.
-KOFAM yielded 4000--5000 features per dataset and GapMind around 1000.
+KOFAM yielded around 5500 retained features and GapMind around 1000.
 
 \subsection*{Machine Learning Classifiers}
 

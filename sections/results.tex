@@ -12,14 +12,14 @@ We evaluated the analysis variants and balanced-accuracy ranges summarised in th
 
 To establish baselines, we evaluated GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest-neighbour classifier ($k=3$; Methods).
 GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $0.65 \pm 0.04$; permissive: $0.70 \pm 0.08$; Figure~\ref{fig:baseline_predictions}A).
-The phylogeny-based approach performed well in random holdout (0.75--0.85) but poorly on phylogenetically distant samples (out-of-clade: 0.55--0.65; Figure~\ref{fig:baseline_predictions}B), approaching null-model levels and indicating that phylogenetic relatedness alone is insufficient across diverse lineages~\cite{Langille2013-fh,Martiny2013-ob,Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
+The phylogeny-based approach performed well in random holdout (0.68--0.87) but poorly on phylogenetically distant samples (out-of-clade: 0.46--0.63; Figure~\ref{fig:baseline_predictions}B), approaching null-model levels and indicating that phylogenetic relatedness alone is insufficient across diverse lineages~\cite{Langille2013-fh,Martiny2013-ob,Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
 
 
 \FloatBarrier{}
 
 \subsection*{Machine learning models predict accurately within but not across datasets}
 
-To test whether genome-derived features could surpass these baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$4000--5000 features per genome after correlation filtering; Methods), evaluating all models with balanced accuracy.
+To test whether genome-derived features could surpass these baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$5500 features after correlation filtering; Methods), evaluating all models with balanced accuracy.
 
 Data were aggregated across all four datasets and assessed under four evaluation scenarios that progressively test generalisation: repeated random holdout, cross-dataset (leave-one-dataset-out), and in-clade and out-of-clade phylogenetic splits (Methods).
 Random holdout test samples were drawn from the same phylogenetic clades as training samples (Supplementary Figure~\ref{fig:phylogenetic_distance_splits}); identical same-label feature vectors affected only about 1.4\% of test predictions, and all identical-vector groups were confined to one source dataset, so leave-one-dataset-out evaluation contained no exact-vector train--test overlap (Supplementary Table~\ref{tab:leakage_audit}).
@@ -28,7 +28,7 @@ In repeated random holdout evaluations (Figure~\ref{fig:ml_performance}A), the M
 Cross-dataset performance, however, decreased substantially (0.48--0.84; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts~\cite{Pasolli2016MetaAnalysis}.
 The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.02; Figure~\ref{fig:ml_performance}C), so phylogenetic distance alone does not explain the failure; the cause more likely lies in other dataset differences, such as growth-assay modality (Methods), ecology and strain history, and curation.
 Consistent with this, near-identical strains conflict on their growth label far more often across datasets than within a single dataset (31\% versus 10\%), and the gap persists after adjusting for each dataset's positive-call rate (adjusted odds ratio 2.85; Supplementary Table~\ref{tab:label_conflict}); this inconsistency limits cross-dataset transfer but does not prevent it, since most near-identical strains still agree.
-Out-of-clade splits showed similar trends (0.50--0.80; Supplementary Figure~\ref{fig:in_clade_out_clade_performance}), consistent with prior observations that random holdout overestimates cross-context generalisation \cite{Roberts2017CrossValidation,Li2023-up}.
+Out-of-clade counterparts showed similar trends (0.50--0.80; Supplementary Figure~\ref{fig:in_clade_out_clade_performance}), consistent with prior observations that random holdout overestimates cross-context generalisation \cite{Roberts2017CrossValidation,Li2023-up}.
 
 
 \FloatBarrier{}
@@ -65,14 +65,14 @@ This concentration on pathway genes indicates that concordance-trained models re
 This map-based metric undercounts recovery when KEGG separates regulators or transporters from the catabolic map: for glycerol, all off-pathway shared clusters are glp-regulon components despite 0\% formal residency (Table~\ref{tab:main_feature_comparison}).
 For alanine, mannose, and serine, concordant cross-dataset accuracy was instead driven by broader carbohydrate-utilisation markers, a less specific but still in-domain mode of transfer; for alanine in particular, GapMind's pathway definition encodes only transport, so concordance reflects uptake rather than catabolic coverage (Table~\ref{tab:main_feature_comparison}; Supplementary Text~S7).
 
-To quantify what the concordance-trained KOFAM model adds over GapMind, we decomposed the full held-out test set by GapMind-concordance status (Figure~\ref{fig:concordant_analysis}C,D).
+To quantify what the concordance-trained KOFAM model adds over GapMind, we evaluated the full held-out test set (Figure~\ref{fig:concordant_analysis}C) and decomposed its cross-dataset portion by concordance status (Figure~\ref{fig:concordant_analysis}D).
 Under random holdout the ML model exceeded GapMind on 14 of 15 phenotypes (paired Wilcoxon $p < 0.001$; mean $+0.06$), but under cross-dataset evaluation the mean shift was undetectable across 15 phenotypes (paired Wilcoxon $p = 0.98$, BH-adjusted $q = 0.98$), because per-phenotype gains were offset by losses where the model lost signal relative to the mechanistic call (Figure~\ref{fig:concordant_analysis}C).
 The decomposition explains the dilution: inside the applicability domain the ML model reached median balanced accuracy 0.83 (largely due to the residual KOFAM-vs-GapMind feature-resolution gap), rather than a gain over GapMind, which sits at $x = 1$ by construction (Figure~\ref{fig:concordant_analysis}D).
 Outside this domain, the ML model still reached 0.34, recovering cryptic catabolic capacity (growth despite an incomplete annotated pathway) about twice as often as it corrected present-but-silent pathways (per-phenotype 44\% versus 19\%, paired Wilcoxon $p = 0.02$, BH-adjusted $q = 0.036$, higher in 12 of 15 phenotypes; Figure~\ref{fig:concordant_analysis}D; Supplementary Table~\ref{tab:rescue_rates}).
 The concordance-trained ML advantage over GapMind is therefore real but bounded: false-negative rescue disproportionately involved metabolic generalists distinguished from GapMind-negative non-growers by broad-specificity carbohydrate transporters and sugar-catabolism regulators rather than substrate-specific catabolic enzymes; transport was the step GapMind most often could not place (9 of 15 phenotypes; Supplementary Table~\ref{tab:rescue_rates}).
 
 For histidine, mean concordance-trained KOFAM performance with 50 samples reached at least 90\% of the all-available-sample value under random-holdout, cross-dataset, and out-of-clade evaluation (Supplementary Figure~\ref{fig:sample_size_histidine}); broader phenotype-specific requirements remain to be established.
-As a complementary data-volume test, adding BacDive (over 8000 genomes~\cite{Schober2025BacDive}) did not significantly exceed concordance filtering of a much smaller curated set (Supplementary Text~S11; Supplementary Figure~\ref{fig:bacdive_curation}).
+As a complementary data-volume test, adding BacDive (over 8000 genomes~\cite{Schober2025BacDive}) did not significantly exceed concordance filtering of a much smaller curated set and gave less reproducible feature selection (Supplementary Text~S11; Supplementary Figure~\ref{fig:bacdive_curation}).
 Concordance filtering, however, removes approximately 30\% of samples and requires a mechanistic predictor available only for well-characterised phenotypes, motivating tests of mechanism-free alternatives that use only phylogenetic agreement and experimental labels (Figure~\ref{fig:improvement_strategies}B; Supplementary Text~S9).
 
 
@@ -103,5 +103,5 @@ At the phenotype level, the confidence-derived summaries did not predict which p
 Because per-phenotype reliability cannot be certified in advance, we asked instead which additional measurements would most improve the concordance-trained model.
 In a retrospective simulation, 25 held-out genome labels were added to the concordant training set and the model retrained (Figure~\ref{fig:selective_prediction}C; Supplementary Text~S8).
 Selecting the least-confident genomes improved transfer the most, exceeding random selection (mean $\Delta$ balanced accuracy $0.09$ vs $0.07$; paired Wilcoxon $p = 0.001$), whereas selecting the most novel or diverse genomes did not beat random~\cite{Vasanthakumari2024ActiveLearning}.
-The advantage concentrated on glucose, the lowest performer among the three phenotypes evaluated, where low-confidence selection roughly doubled the gain from random labelling ($0.24$ vs $0.13$), while the already-reliable m-inositol and histidine gained little from either strategy (Figure~\ref{fig:selective_prediction}D).
+The advantage concentrated on glucose, the lowest performer of the three shown, where low-confidence selection roughly doubled the gain from random labelling ($0.24$ vs $0.13$), while the already-reliable m-inositol and histidine gained little from either strategy (Figure~\ref{fig:selective_prediction}D).
 Prediction confidence therefore provides a deployment-oriented ranking signal for selective reporting and prioritising experiments.
