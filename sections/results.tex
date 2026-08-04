@@ -87,7 +87,6 @@ Concordant training reached the highest mean balanced accuracy ($0.68$, $71\%$ r
 Because GapMind's pathway-completeness rule is conservative and biased towards false negatives, recall most directly reflects the value added by the ML filters over the curated baseline; per-phenotype (Figure~\ref{fig:improvement_strategies}C), concordance-trained ML exceeded GapMind recall on 12 of 15 phenotypes (mean $\Delta$ recall $+0.056$, 95\% confidence interval $[+0.007, +0.101]$; paired Wilcoxon $p = 0.030$, BH-adjusted $q = 0.052$), a small but direction-consistent advantage, while the mechanism-free filter showed no such trend ($p = 0.72$), and both filters lost recall on glycerol and galacturonic acid.
 
 As a complementary test, phenotype-filtered GapMind features (without correlation filtering; Supplementary Text~S5) matched combined GapMind, KOFAM, and RAST features under random holdout but improved cross-dataset balanced accuracy (paired Wilcoxon $p=0.004$, BH-adjusted $q=0.01$), consistent with prior reports that biologically relevant features outperform comprehensive sets for generalisation~\cite{Li2023-up} (Figure~\ref{fig:improvement_strategies}D).
-Deploying any of these specialists on a new genome, however, still requires a per-prediction signal of when the model is operating within its applicability domain.
 
 
 \FloatBarrier{}
