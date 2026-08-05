@@ -414,15 +414,16 @@ def plot_gapmind_delta_forest(
     n_sig_better = n_sig_worse = None
     mcnemar_file = Path("data/outputs/stats/per_phenotype_mcnemar.tsv")
     if metric == "recall" and mcnemar_file.exists():
-        mcnemar_q = (
+        mcnemar = (
             pd.read_csv(mcnemar_file, sep="\t")
             .query("metric == 'sensitivity'")
-            .set_index("phenotype")["q_value_BH"]
+            .set_index("phenotype")
         )
         n_sig_better = n_sig_worse = 0
         for y, phenotype in zip(y_positions, delta_df.index):
-            q = mcnemar_q.get(phenotype)
-            if q is None or q >= 0.05:
+            if phenotype not in mcnemar.index:
+                continue
+            if mcnemar.at[phenotype, "q_value_BH"] >= 0.05:
                 continue
             value = delta_df.loc[phenotype, "concordant"]
             offset = 0.018 if value >= 0 else -0.018
@@ -435,7 +436,12 @@ def plot_gapmind_delta_forest(
                 fontsize=9,
                 zorder=4,
             )
-            if value > 0:
+            # Tally by the McNemar direction, not by the plotted macro-averaged
+            # bar. The legend describes this count as the number of phenotypes
+            # "significantly higher or lower under the per-phenotype test", and
+            # the two can disagree in sign when the effect is near zero: the bar
+            # is a mean of per-split recalls, while McNemar pools genomes.
+            if mcnemar.at[phenotype, "delta"] > 0:
                 n_sig_better += 1
             else:
                 n_sig_worse += 1
