@@ -24,6 +24,8 @@ Run with:
 
 from __future__ import annotations
 
+import ast
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -185,7 +187,46 @@ def load_rungs() -> dict[str, dict[str, float | str]]:
     }
 
 
+def gapmind_selection_enrichment() -> float:
+    """How strongly the combined-feature model over-selects curated GapMind features.
+
+    Given all three annotation types the model reaches disproportionately for the
+    small curated GapMind block, which is why adding comprehensive RAST bulk does
+    not improve transfer. Computed rather than hard-coded so the Finding text
+    cannot go stale when the feature matrix or results are regenerated.
+
+    Returns
+    -------
+    float
+        Share of top-10 selected features that are GapMind terms, divided by the
+        GapMind share of the combined feature matrix.
+    """
+    matrix = pd.read_csv(
+        "data/processed/features_reduced/combined_datasets/gapmind_kofam_rast.tsv",
+        sep="\t",
+        index_col=0,
+        nrows=1,
+    )
+    is_gapmind = [
+        not (re.fullmatch(r"K\d{5}", c) or c.startswith("SSO:")) for c in matrix.columns
+    ]
+    matrix_share = sum(is_gapmind) / len(is_gapmind)
+
+    results = pd.read_csv(OUTPUTS / "figure6/figure6d_combined_features_results.csv")
+    results = results[results.split_type == "dataset_split"]
+    picked = [
+        feature
+        for row in results.features.dropna()
+        for feature in ast.literal_eval(row)
+    ]
+    picked_share = sum(
+        not (re.fullmatch(r"K\d{5}", f) or f.startswith("SSO:")) for f in picked
+    ) / len(picked)
+    return picked_share / matrix_share
+
+
 RUNGS = load_rungs()
+GAPMIND_ENRICHMENT = gapmind_selection_enrichment()
 
 ROWS = [
     dict(
@@ -219,7 +260,7 @@ ROWS = [
         feat=("combined\n(~17k)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
         kind="range_median", **RUNGS["combined"],
-        finding="Comprehensive features\nadd little (+0.01)",
+        finding=f"Favours curated ({GAPMIND_ENRICHMENT:.1f}$\\times$), yet\nloses to curated alone",
     ),
     dict(
         y=YS[4], label="Feature\nfiltering",

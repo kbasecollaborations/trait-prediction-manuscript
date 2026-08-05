@@ -213,6 +213,12 @@ The random-subset value is the mean $\pm$ SD across ten draws matched to the con
 Raw, uncorrelated GapMind features were used for the pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A) and the phenotype-filtered comparison (Figure~\ref{fig:improvement_strategies}D) because the standard 0.95 correlation filter collapses repeated phenotype-prefixed representations of the same gene and can deplete individual pathway feature sets.
 The pipeline ceiling estimates performance when feature resolution matches the rule defining the concordant labels.
 
+Feature selection within the combined matrix indicates why concatenating annotation types did not improve transfer (Figure~\ref{fig:dataset_characteristics}C).
+Of its 17,152 correlation-filtered features, RAST subsystem terms contribute 62.6\%, KOFAM 31.8\%, and GapMind only 5.7\%.
+Among the top ten features by mean absolute SHAP value across the cross-dataset splits, however, GapMind terms account for 43.0\% of selections, a 7.6-fold enrichment over their share of the matrix, while RAST terms account for 26.8\%, a 0.4-fold depletion, and KOFAM terms are selected in proportion to their share (1.0-fold).
+Given all three annotation types the models therefore concentrate on the small curated block and largely disregard the comprehensive RAST bulk.
+The comprehensive set consequently inherits the same dependence on curation as the phenotype-filtered set without its accuracy: the roughly 32 curated features of a single phenotype outperformed all 17,152 combined features under cross-dataset evaluation (Figure~\ref{fig:improvement_strategies}D), so the additional annotation adds feature-space cost rather than transferable signal.
+
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.90\textwidth]{figure_s5.pdf}
