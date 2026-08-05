@@ -57,6 +57,7 @@ from tqdm import tqdm
 
 from scripts.figure5 import figure5b_data as _f5b
 from scripts.figure5.figure5b_data import (
+    _kos_to_clusters,
     compare_features,
     get_concordant_samples,
     get_consistent_features,
@@ -144,10 +145,10 @@ def _matched_counts(y: pd.Series, concordant_genomes: set[str]) -> tuple[int, in
     tuple[int, int] | None
         Concordant per-class counts, or None if the cell would be skipped.
     """
-    concordant_in_data = list(set(y.index) & concordant_genomes)
-    if len(concordant_in_data) < MIN_SUBSET:
+    concordant_mask = y.index.isin(concordant_genomes)
+    if concordant_mask.sum() < MIN_SUBSET:
         return None
-    y_conc = y.loc[concordant_in_data]
+    y_conc = y.loc[concordant_mask]
     if len(y_conc.unique()) != 2:
         return None
     counts = y_conc.value_counts()
@@ -405,9 +406,112 @@ def summarise_control(
     }
 
 
+def reaggregate_clusters(
+    output_dir: Path,
+    ko_clusters_by_phenotype: dict[str, dict[str, int]],
+) -> pd.DataFrame:
+    """Recompute the cluster-level columns from the retained KO lists, no refitting.
+
+    The per-seed comparison CSVs store the KO membership of every comparison as
+    ``intersection``, ``unique_to_individual`` and ``unique_to_combined``, so the
+    combined and individual KO sets are recoverable exactly
+    (``combined = intersection | unique_to_combined``, and likewise for
+    individual). Only the cluster columns depend on
+    ``ko_clusters_shap_hclust.json``, so a change to the cluster map can be
+    propagated by re-deriving those five columns instead of repeating the
+    multi-hour SHAP refit.
+
+    Parameters
+    ----------
+    output_dir : Path
+        Directory holding ``random_control_comparison_seed*.csv``.
+    ko_clusters_by_phenotype : dict[str, dict[str, int]]
+        Current per-phenotype KO-to-cluster mapping.
+
+    Returns
+    -------
+    pd.DataFrame
+        Rebuilt per-seed summary (the contents of ``random_control_summary.csv``).
+
+    Raises
+    ------
+    FileNotFoundError
+        If no per-seed comparison CSVs are present.
+    ValueError
+        If a row's KO lists do not reproduce its stored KO-level counts, which
+        would mean the lists are not a faithful record of the fitted sets.
+    """
+    paths = sorted(
+        output_dir.glob("random_control_comparison_seed*.csv"),
+        key=lambda p: int(p.stem.rsplit("seed", 1)[1]),
+    )
+    if not paths:
+        raise FileNotFoundError(
+            f"no per-seed comparison CSVs in {output_dir}; run the full control first"
+        )
+
+    def kos(cell: object) -> list[str]:
+        if cell is None or (isinstance(cell, float) and pd.isna(cell)) or cell == "":
+            return []
+        return str(cell).split(";")
+
+    per_seed: list[dict[str, float]] = []
+    for path in paths:
+        seed = int(path.stem.rsplit("seed", 1)[1])
+        df = pd.read_csv(path)
+        for position, row in df.iterrows():
+            intersection = kos(row["intersection"])
+            combined = intersection + kos(row["unique_to_combined"])
+            individual = intersection + kos(row["unique_to_individual"])
+            if (
+                len(combined) != int(row["n_combined_features"])
+                or len(individual) != int(row["n_individual_features"])
+            ):
+                raise ValueError(
+                    f"{path.name}: KO lists for {row['comparison']} do not "
+                    "reproduce the stored feature counts; reaggregation would "
+                    "not be faithful"
+                )
+            ko_to_cluster = ko_clusters_by_phenotype.get(row["phenotype"])
+            combined_clusters = _kos_to_clusters(combined, ko_to_cluster)
+            individual_clusters = _kos_to_clusters(individual, ko_to_cluster)
+            df.loc[position, "n_intersection_clusters"] = len(
+                combined_clusters & individual_clusters
+            )
+            df.loc[position, "n_unique_to_individual_clusters"] = len(
+                individual_clusters - combined_clusters
+            )
+            df.loc[position, "n_unique_to_combined_clusters"] = len(
+                combined_clusters - individual_clusters
+            )
+            df.loc[position, "n_combined_clusters"] = len(combined_clusters)
+            df.loc[position, "n_individual_clusters"] = len(individual_clusters)
+        df.to_csv(path, index=False)
+        stats = summarise_control(df)
+        stats["control_seed"] = seed
+        per_seed.append(stats)
+        print(
+            f"  seed {seed}: mean shared clusters = "
+            f"{stats['mean_shared_clusters']:.3f}; phenotypes sharing >=1 = "
+            f"{stats['n_phenotypes_sharing']:.0f}"
+        )
+
+    summary = pd.DataFrame(per_seed)
+    summary.to_csv(output_dir / "random_control_summary.csv", index=False)
+    return summary
+
+
 def main() -> None:
     """Run the size/class-matched random-subset control and write a summary."""
     parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument(
+        "--reaggregate-only",
+        action="store_true",
+        help="Skip all model fitting: recompute only the cluster-level columns "
+        "of the existing per-seed CSVs against the current cluster map, then "
+        "rebuild the summary. Use after regenerating "
+        "ko_clusters_shap_hclust.json when the KO-level results are current.",
+    )
     parser.add_argument(
         "--n-control-seeds",
         type=int,
@@ -473,6 +577,16 @@ def main() -> None:
     else:
         print(f"WARNING: cluster mapping missing at {cluster_file}; cluster counts skipped.")
 
+    if args.reaggregate_only:
+        if ko_clusters_by_phenotype is None:
+            raise FileNotFoundError(
+                f"--reaggregate-only needs the cluster mapping at {cluster_file}"
+            )
+        print("Reaggregating cluster columns from retained KO lists (no fitting)...")
+        summary = reaggregate_clusters(output_dir, ko_clusters_by_phenotype)
+        _report_control(summary, output_dir)
+        return
+
     per_seed_summaries: list[dict[str, float]] = []
     for control_seed in range(args.n_control_seeds):
         print(f"\n=== Control replicate {control_seed + 1}/{args.n_control_seeds} ===")
@@ -517,7 +631,11 @@ def main() -> None:
 
     summary = pd.DataFrame(per_seed_summaries)
     summary.to_csv(output_dir / "random_control_summary.csv", index=False)
+    _report_control(summary, output_dir)
 
+
+def _report_control(summary: pd.DataFrame, output_dir: Path) -> None:
+    """Print the control-vs-baseline comparison for a per-seed summary table."""
     print("\n" + "=" * 70)
     print("Random-subset control vs concordant baseline (Figure 5B / Table 1)")
     print("=" * 70)

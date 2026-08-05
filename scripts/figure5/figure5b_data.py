@@ -562,12 +562,14 @@ def analyze_combined_splits(
             if len(concordant_genomes) == 0:
                 continue
 
-            concordant_in_data = set(X_combined.index) & concordant_genomes
-            if len(concordant_in_data) < 20:
+            # Mask, not list(set(...)): set order is per-process salted, so
+            # listing it reorders rows and makes the fits irreproducible.
+            concordant_mask = X_combined.index.isin(concordant_genomes)
+            if concordant_mask.sum() < 20:
                 continue
 
-            X_concordant = X_combined.loc[list(concordant_in_data)]
-            y_concordant = y_combined.loc[list(concordant_in_data)]
+            X_concordant = X_combined.loc[concordant_mask]
+            y_concordant = y_combined.loc[concordant_mask]
 
             if len(y_concordant.unique()) != 2:
                 continue
@@ -671,12 +673,13 @@ def analyze_individual_datasets(
                 if len(concordant_genomes) == 0:
                     continue
 
-                concordant_in_data = set(X.index) & concordant_genomes
-                if len(concordant_in_data) < 20:
+                # Mask, not list(set(...)): see the note above.
+                concordant_mask = X.index.isin(concordant_genomes)
+                if concordant_mask.sum() < 20:
                     continue
 
-                X_concordant = X.loc[list(concordant_in_data)]
-                y_concordant = y.loc[list(concordant_in_data)]
+                X_concordant = X.loc[concordant_mask]
+                y_concordant = y.loc[concordant_mask]
 
                 if len(y_concordant.unique()) != 2:
                     continue
@@ -773,12 +776,13 @@ def analyze_all_datasets_combined(
             if len(concordant_genomes) == 0:
                 continue
 
-            concordant_in_data = set(X.index) & concordant_genomes
-            if len(concordant_in_data) < 20:
+            # Mask, not list(set(...)): see the note above.
+            concordant_mask = X.index.isin(concordant_genomes)
+            if concordant_mask.sum() < 20:
                 continue
 
-            X_concordant = X.loc[list(concordant_in_data)]
-            y_concordant = y.loc[list(concordant_in_data)]
+            X_concordant = X.loc[concordant_mask]
+            y_concordant = y.loc[concordant_mask]
 
             if len(y_concordant.unique()) != 2:
                 continue

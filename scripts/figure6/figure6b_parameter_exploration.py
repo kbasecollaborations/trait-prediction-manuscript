@@ -19,6 +19,7 @@ from scripts.figure6.figure6b_data import (
     load_phenotype_data,
     load_phylogenetic_data,
 )
+from scripts.io import cache_is_fresh
 
 
 def phylo_knn_confidence(
@@ -63,6 +64,11 @@ CONFIDENCE_THRESHOLD_HIGH = 0.6
 OUTPUT_DIR = Path("data/outputs/figure6")
 CACHE_FILE = OUTPUT_DIR / "phase1_inputs_cache.pkl"
 
+PHENOTYPE_DIR = Path("data/processed/phenotypes")
+"""Experimental labels the cached ``y_exp`` and phylogenetic k-NN confidence
+derive from. Tracked for cache freshness: a label correction must invalidate the
+cache, otherwise the sweep silently trains on superseded soft labels."""
+
 
 @dataclass(frozen=True)
 class WeightConfig:
@@ -106,8 +112,17 @@ CONFIGS: list[WeightConfig] = [
 ]
 
 
-def build_inputs() -> dict[str, dict[str, pd.Series]]:
+def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
     """Compute ``conf_phylo``, ``conf_mech``, and ``y_exp`` once per phenotype.
+
+    The result is cached in ``CACHE_FILE``. Because the cache is derived from the
+    experimental labels, it is reused only when it post-dates
+    ``PHENOTYPE_DIR``; a stale cache is rebuilt rather than silently returned.
+
+    Parameters
+    ----------
+    fresh : bool, optional
+        Ignore any existing cache and recompute, default ``False``.
 
     Returns
     -------
@@ -116,10 +131,15 @@ def build_inputs() -> dict[str, dict[str, pd.Series]]:
         ``conf_mech``, ``y_exp`` and ``gapmind_pred`` (binary GapMind call used
         to define the concordant set).
     """
-    if CACHE_FILE.exists():
+    if not fresh and cache_is_fresh(CACHE_FILE, PHENOTYPE_DIR):
         print(f"Loading cached Phase 1 inputs from {CACHE_FILE} ...")
         with open(CACHE_FILE, "rb") as f:
             return cast(dict[str, dict[str, pd.Series]], pickle.load(f))
+    if CACHE_FILE.exists():
+        print(
+            f"Cache {CACHE_FILE} predates {PHENOTYPE_DIR}; rebuilding from "
+            "current labels."
+        )
 
     print("Building Phase 1 inputs (slow: phylogenetic k-NN per phenotype) ...")
     _tree, distance_df = load_phylogenetic_data()
@@ -273,10 +293,16 @@ def pairwise_jaccard_filtered_out(
     return pd.DataFrame(mat, index=names, columns=names)
 
 
-def main() -> None:
-    """Run Phase 1 sweep and write diagnostic CSVs."""
+def main(fresh: bool = False) -> None:
+    """Run Phase 1 sweep and write diagnostic CSVs.
+
+    Parameters
+    ----------
+    fresh : bool, optional
+        Recompute the Phase 1 input cache even if it is up to date.
+    """
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    inputs = build_inputs()
+    inputs = build_inputs(fresh=fresh)
 
     all_rows: list[pd.DataFrame] = []
     filtered_out_sets: dict[str, set[str]] = {}
@@ -364,4 +390,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Recompute the Phase 1 input cache even if it is up to date.",
+    )
+    main(fresh=parser.parse_args().fresh)

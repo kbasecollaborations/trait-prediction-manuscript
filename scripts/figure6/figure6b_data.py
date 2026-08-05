@@ -525,13 +525,15 @@ def main() -> None:
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Compute y_soft, or reuse a cached copy if one is available. Recomputing
-    # y_soft does not depend on the filter change in this PR, so the cached
-    # values are equivalent to a fresh recomputation.
+    # Compute y_soft, or reuse a cached copy when it post-dates the experimental
+    # labels it derives from. Existence alone is not a safe test: y_soft is a
+    # weighted function of those labels, so a label correction must invalidate it.
     import pickle
 
+    from scripts.io import cache_is_fresh
+
     y_soft_file = OUTPUT_DIR / "y_soft.pkl"
-    if y_soft_file.exists():
+    if cache_is_fresh(y_soft_file, Path("data/processed/phenotypes")):
         print(f"\nLoading cached y_soft from {y_soft_file} ...")
         with open(y_soft_file, "rb") as f:
             y_soft = pickle.load(f)

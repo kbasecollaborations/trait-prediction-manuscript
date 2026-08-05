@@ -59,6 +59,43 @@ def get_scores(model: Any, X: pd.DataFrame, y: pd.Series) -> dict[str, float | s
     return result
 
 
+def fit_nearest_neighbor(
+    classifier: NearestNeighborClassifier,
+    tree: Tree,
+    distance_df: pd.DataFrame,
+    train_y: pd.Series,
+    k: int,
+) -> None:
+    """Fit a :class:`NearestNeighborClassifier` against a precomputed distance matrix.
+
+    Assigns the attributes ``predict`` reads, exactly as the library's ``fit``
+    would, but reuses ``distance_df`` instead of rebuilding it. The installed
+    ``trait_prediction`` version calls ``Tree(tree)`` on its ``tree`` keyword and
+    then recomputes every pairwise distance with ``tree.get_distance``, ignoring
+    the ``distances`` keyword; that both rejects an already-parsed ``Tree`` and
+    would cost a full O(leaves^2) traversal per split. The same bypass is used by
+    ``scripts.figure6.figure6b_parameter_exploration.phylo_knn_confidence``.
+
+    Parameters
+    ----------
+    classifier : NearestNeighborClassifier
+        Unfitted classifier; mutated in place.
+    tree : Tree
+        Parsed phylogenetic tree.
+    distance_df : pd.DataFrame
+        Square pairwise distance matrix with an infinite diagonal.
+    train_y : pd.Series
+        Training labels indexed by genome ID.
+    k : int
+        Number of nearest neighbours used by ``predict``.
+    """
+    columns = distance_df.index.intersection(train_y.index)
+    classifier.tree = tree
+    classifier.k = k
+    classifier.distances = distance_df.loc[:, columns]
+    classifier.y = train_y.loc[columns]
+
+
 def perform_ml(
     data: dict[str, dict[str, pd.DataFrame | pd.Series]],
     tree: Tree,
@@ -114,7 +151,9 @@ def perform_ml(
         )
 
         bernoulli_classifier.fit(train_X, train_y)
-        nearest_neighbor_classifier.fit(train_X, train_y)
+        fit_nearest_neighbor(
+            nearest_neighbor_classifier, tree, distance_df, train_y, k=3
+        )
         identity_classifier.fit(train_X, train_y)
 
         bernoulli_scores = get_scores(bernoulli_classifier, test_X, test_y)

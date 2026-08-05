@@ -134,8 +134,11 @@ def filter_split_to_concordant(
 
     for key in ["X_train", "y_train", "X_val", "y_val", "X_test", "y_test"]:
         data = split_data[key]
-        concordant_in_data = set(data.index) & concordant_genomes
-        filtered = data.loc[list(concordant_in_data)]
+        # Select by boolean mask rather than by listing a set: set iteration
+        # order for strings is salted per process, so indexing with
+        # ``list(set(...) & ...)`` reorders the rows differently on every run and
+        # makes the fitted models irreproducible. A mask keeps the source order.
+        filtered = data.loc[data.index.isin(concordant_genomes)]
         filtered_data[key] = filtered
 
     n_train = len(filtered_data["X_train"])

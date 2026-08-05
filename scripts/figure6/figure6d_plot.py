@@ -13,11 +13,34 @@ from matplotlib.axes import Axes
 from scipy.stats import wilcoxon
 
 from scripts.create_data_splits import COMMON_PHENOTYPES
+from scripts.minority_filter import filter_by_minority, full_test_minority_counts
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
+
+
+def load_results(data_file: Path) -> pd.DataFrame:
+    """Load the Figure 6D results table with the manuscript's reporting filter applied.
+
+    Figure 6D evaluates on the full held-out test set, so the minority-class rule
+    stated in ``sections/methods.tex`` applies: ``dataset_split`` cells whose
+    held-out test set carries fewer than ten minority-class samples are not
+    reported. Both the standalone panel and the combined Figure 6 composer read
+    through here so the plotted panel and its statistical test cannot diverge.
+
+    Parameters
+    ----------
+    data_file : Path
+        Path to the CSV written by ``figure6d_data.py``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Results table with sub-threshold ``dataset_split`` rows removed.
+    """
+    return filter_by_minority(pd.read_csv(data_file), full_test_minority_counts())
 
 
 def _format_p_value(p_value: float | None) -> str:
@@ -424,17 +447,7 @@ def create_figure(
     phenotype_order : list[str] | None
         Order of phenotypes for x-axis. If None, uses alphabetical order.
     """
-    df = pd.read_csv(data_file)
-
-    # Apply the manuscript's minority-class-in-test filter (Methods). Fig 6D
-    # evaluates on the full held-out test set; dataset_split rows whose
-    # held-out test minority count falls below the threshold are dropped.
-    from scripts.minority_filter import (
-        filter_by_minority,
-        full_test_minority_counts,
-    )
-
-    df = filter_by_minority(df, full_test_minority_counts())
+    df = load_results(data_file)
 
     if phenotype_order is None:
         phenotypes = sorted(df["phenotype"].unique())

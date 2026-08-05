@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import os
-import pickle
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,8 +15,8 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from scripts.figure6.figure6b_parameter_exploration import (
-    CACHE_FILE as PHASE1_CACHE_FILE,
     WeightConfig,
+    build_inputs,
 )
 from scripts.ml_splits import load_split_data, perform_split_ml
 
@@ -298,14 +297,9 @@ def main(n_jobs: int = 4, thread_count: int = 3) -> None:
     print(f"Loading splits from {SPLITS_DIR} ...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
 
-    if not PHASE1_CACHE_FILE.exists():
-        raise FileNotFoundError(
-            f"Phase 1 input cache not found at {PHASE1_CACHE_FILE}; "
-            "run figure6b_parameter_exploration.py first."
-        )
-    print(f"Loading Phase 1 inputs from {PHASE1_CACHE_FILE} ...")
-    with open(PHASE1_CACHE_FILE, "rb") as f:
-        inputs = cast(dict[str, dict[str, pd.Series]], pickle.load(f))
+    # Routed through build_inputs() rather than unpickling the cache directly, so
+    # the freshness check against the phenotype labels applies here too.
+    inputs = build_inputs()
 
     all_results: list[pd.DataFrame] = []
     for config in PHASE2_CONFIGS:

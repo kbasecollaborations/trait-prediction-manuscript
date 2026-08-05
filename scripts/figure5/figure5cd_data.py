@@ -136,8 +136,10 @@ def filter_split_for_training(
 
     for key in ["X_train", "y_train", "X_val", "y_val"]:
         data = split_data[key]
-        concordant_in_data = set(data.index) & concordant_genomes
-        filtered = data.loc[list(concordant_in_data)]
+        # Boolean mask, not list(set(...)): set iteration order is salted per
+        # process, so listing it reorders the rows on every run and makes the
+        # fitted models irreproducible.
+        filtered = data.loc[data.index.isin(concordant_genomes)]
         filtered_data[key] = filtered
 
     # Test set is left full.
@@ -184,12 +186,12 @@ def create_discordant_test_split(
     X_test = split_data["X_test"]
     y_test = split_data["y_test"]
 
-    discordant_in_test = set(X_test.index) & discordant_genomes
-    if len(discordant_in_test) == 0:
+    discordant_mask = X_test.index.isin(discordant_genomes)
+    if not discordant_mask.any():
         return None
 
-    filtered_data["X_test"] = X_test.loc[list(discordant_in_test)]
-    filtered_data["y_test"] = y_test.loc[list(discordant_in_test)]
+    filtered_data["X_test"] = X_test.loc[discordant_mask]
+    filtered_data["y_test"] = y_test.loc[discordant_mask]
 
     return filtered_data
 

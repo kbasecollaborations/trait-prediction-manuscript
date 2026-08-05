@@ -18,7 +18,10 @@ from scripts.figure6.figure6b_aggregate_plot import (
     plot_gapmind_delta_forest,
     plot_metric_sweep,
 )
-from scripts.figure6.figure6d_plot import plot_balanced_accuracy_scatter
+from scripts.figure6.figure6d_plot import (
+    load_results,
+    plot_balanced_accuracy_scatter,
+)
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
@@ -39,7 +42,7 @@ def create_figure6(output_file: Path) -> None:
     print("Loading data files...")
     sweep_df = pd.read_csv(data_dir / "figure6b_weight_sweep_combined.csv")
     df_7c = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
-    df_7d = pd.read_csv(data_dir / "figure6d_all_results.csv")
+    df_7d = load_results(data_dir / "figure6d_all_results.csv")
 
     phenotypes_sweep = set(
         sweep_df[sweep_df["split_type"] == "dataset_split"]["phenotype"].unique()

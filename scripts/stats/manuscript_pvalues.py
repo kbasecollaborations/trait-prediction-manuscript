@@ -214,18 +214,26 @@ def test_fig7c_low_conf_vs_random() -> tuple[float, int]:
     return float(res.pvalue), len(pivot)
 
 
-def _figure6_recall_means() -> tuple[pd.Series, pd.Series, pd.Series]:
-    """Per-phenotype mean cross-dataset recall for the Figure 6C comparison.
+def _figure6_metric_means(
+    metric: str = "recall",
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Per-phenotype mean cross-dataset metric for the Figure 6B/6C comparisons.
 
-    Mirrors the Figure 6C panel computation in
+    Mirrors the Figure 6 panel computation in
     ``scripts.figure6.figure6b_aggregate_plot`` (same data sources and minority
-    filtering) so the recomputed p-values match the plotted panel.
+    filtering) so the recomputed p-values match the plotted panels.
+
+    Parameters
+    ----------
+    metric : str, optional
+        Metric column to average, default ``"recall"`` (the Figure 6C panel
+        metric). Pass ``"balanced_accuracy"`` for the Figure 6B comparison.
 
     Returns
     -------
     tuple[pd.Series, pd.Series, pd.Series]
-        ``(concordant_recall, mechanism_free_recall, gapmind_recall)``, each a
-        per-phenotype mean recall indexed by phenotype.
+        ``(concordant, mechanism_free, gapmind)``, each a per-phenotype mean of
+        ``metric`` indexed by phenotype.
     """
     from scripts.figure6.figure6b_aggregate_plot import (
         _gapmind_baseline,
@@ -234,11 +242,22 @@ def _figure6_recall_means() -> tuple[pd.Series, pd.Series, pd.Series]:
 
     phenotypes = list(COMMON_PHENOTYPES)
     long_df = _load_long_form(Path("data/outputs/figure6"), phenotypes)
-    ml_recall = (
-        long_df.groupby(["phenotype", "config"])["recall"].mean().unstack("config")
+    ml_means = (
+        long_df.groupby(["phenotype", "config"])[metric].mean().unstack("config")
     )
-    gm_recall = _gapmind_baseline(phenotypes).groupby("phenotype")["recall"].mean()
-    return ml_recall["concordant"], ml_recall["free_balanced"], gm_recall
+    gm_means = _gapmind_baseline(phenotypes).groupby("phenotype")[metric].mean()
+    return ml_means["concordant"], ml_means["free_balanced"], gm_means
+
+
+def _figure6_recall_means() -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Per-phenotype mean cross-dataset recall for the Figure 6C comparison."""
+    return _figure6_metric_means("recall")
+
+
+def test_fig6b_concordant_vs_mechfree_ba() -> tuple[float, int]:
+    """Figure 6B: concordant vs mechanism-free filter balanced accuracy (cross-dataset)."""
+    concordant, mech_free, _gapmind = _figure6_metric_means("balanced_accuracy")
+    return _paired_wilcoxon(concordant, mech_free)
 
 
 def test_fig6c_concordant_recall_vs_gapmind() -> tuple[float, int]:
@@ -294,7 +313,9 @@ def fig6c_concordant_recall_delta_ci(
 
 def test_fig6d_combined_vs_filtered(split: str) -> tuple[float, int]:
     """Figure 6D: combined features vs phenotype-filtered features (per phenotype)."""
-    df = pd.read_csv("data/outputs/figure6/figure6d_all_results.csv")
+    from scripts.figure6.figure6d_plot import load_results
+
+    df = load_results(Path("data/outputs/figure6/figure6d_all_results.csv"))
     df = df[df["split_type"] == split]
     summary = (
         df.groupby(["phenotype", "experiment"])["balanced_accuracy"]
@@ -403,7 +424,19 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
 
-    def add(label: str, where: str, result: tuple[float, int] | None) -> None:
+    def add(
+        label: str,
+        where: str,
+        result: tuple[float, int] | None,
+        adjust: bool = True,
+    ) -> None:
+        """Record one test. ``adjust=False`` keeps it out of the BH family.
+
+        The BH family is the twelve primary tests described in
+        ``sections/methods.tex``; every other comparison the manuscript prints is
+        reported unadjusted, so it is computed here but excluded from the
+        correction rather than enlarging the family.
+        """
         if result is None:
             return
         p, n = result
@@ -413,6 +446,7 @@ def main() -> None:
                 "manuscript_location": where,
                 "p_value": p,
                 "n_paired": n,
+                "bh_family": adjust,
             }
         )
 
@@ -462,6 +496,12 @@ def main() -> None:
         test_fig7c_low_conf_vs_random(),
     )
     add(
+        "T11_fig6b_concordant_vs_mechfree_ba",
+        "Results §86 / Fig 6B",
+        test_fig6b_concordant_vs_mechfree_ba(),
+        adjust=False,
+    )
+    add(
         "T9_fig6c_concordant_recall_vs_gapmind",
         "Results §90 / Fig 6C",
         test_fig6c_concordant_recall_vs_gapmind(),
@@ -483,7 +523,11 @@ def main() -> None:
     )
 
     df = pd.DataFrame(rows)
-    df["q_value_BH"] = benjamini_hochberg(df["p_value"].tolist())
+    family = df["bh_family"]
+    df["q_value_BH"] = np.nan
+    df.loc[family, "q_value_BH"] = benjamini_hochberg(
+        df.loc[family, "p_value"].tolist()
+    )
     df = df.sort_values("p_value").reset_index(drop=True)
     df.to_csv(OUTPUT_FILE, sep="\t", index=False, float_format="%.6g")
     print(df.to_string(index=False))
