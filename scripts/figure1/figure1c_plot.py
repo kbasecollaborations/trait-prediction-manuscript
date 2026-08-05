@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Figure 1C: levers for cross-dataset generalisation.
 
-Five analysis variants sit on a shared balanced-accuracy interval ladder
-(capsules positioned by value on a 0.40-1.00 axis with a dashed chance line at
-0.50; each capsule carries a median tick and value). Plain-text method columns
+Five analysis variants sit on a shared balanced-accuracy ladder (capsules span
+the per-phenotype interquartile range on a 0.40-1.00 axis with a dashed chance
+line at 0.50; each capsule carries a median tick and the per-phenotype values
+as a strip). Plain-text method columns
 (Training data, Features, Evaluation) make explicit what each variant changes,
 and a one-line Finding summarises the outcome.
 
@@ -54,6 +55,7 @@ INK = "#1A1A1A"
 # label and finding: green = concordance (the win), orange = cross-dataset
 # full-data (the collapse), ink = neutral.
 CAP_COLOR = "#6E8299"
+DOT_COLOR = "#3F5A78"  # per-phenotype strip, darkened so it reads over the capsule
 ORANGE = "#C0561E"
 
 BA_LO, BA_HI = 0.40, 1.00
@@ -79,8 +81,10 @@ X_EVAL = 0.358 + GX
 X_FIND = 0.680 + GX
 
 CAP_H = 0.045
-VAL_DY = 0.055
-MED_DY = 0.050
+# Both labels hug the capsule: with a median value above and the IQR below,
+# loose offsets let one row's lower label crowd the next row's upper label.
+VAL_DY = 0.046
+MED_DY = 0.042
 
 # Table rules and BA-axis positions (figure fraction).
 # RULE_R stops just past the Finding text so the table has no empty ruled
@@ -103,39 +107,49 @@ def bax(ba: float) -> float:
 OUTPUTS = Path("data/outputs")
 
 
-def _rung(frame: pd.DataFrame, minority_filtered: bool = True) -> dict[str, float | str]:
-    """Summarise one ladder rung as a per-phenotype balanced-accuracy range.
+def _rung(
+    frame: pd.DataFrame, test_dataset_column: str | None = None
+) -> dict[str, float | str]:
+    """Summarise one ladder rung as a per-phenotype balanced-accuracy distribution.
+
+    The capsule spans the interquartile range rather than the min-max range:
+    min-max is set by two extreme phenotypes and ordered the rungs opposite to
+    their medians, which read as a spurious ranking.
 
     Parameters
     ----------
     frame
         Result rows carrying ``phenotype`` and ``balanced_accuracy`` columns.
-    minority_filtered
-        Whether to apply the <10-minority-test exclusion before aggregating.
-        The concordant configuration is already restricted upstream.
+    test_dataset_column
+        Column naming the held-out dataset. When ``None`` it is parsed from the
+        ``key`` column. Every rung gets the <10-minority-test exclusion, so the
+        rungs stay comparable.
 
     Returns
     -------
     dict[str, float | str]
-        ``lo``, ``hi``, ``median`` and the pre-rounded ``txt`` and ``med_txt`` labels.
+        ``q1``, ``q3``, ``median``, the per-phenotype ``values`` for the strip,
+        and the pre-rounded ``txt`` and ``med_txt`` labels.
 
     Raises
     ------
     ValueError
         If the frame yields no phenotypes, which would silently blank a rung.
     """
-    if minority_filtered:
-        frame = filter_by_minority(frame, full_test_minority_counts())
+    frame = filter_by_minority(
+        frame, full_test_minority_counts(), test_dataset_column=test_dataset_column
+    )
     per_phenotype = frame.groupby("phenotype")["balanced_accuracy"].mean()
     if per_phenotype.empty:
         raise ValueError("no phenotypes survived aggregation for this rung")
-    lo, hi, med = per_phenotype.min(), per_phenotype.max(), per_phenotype.median()
+    q1, med, q3 = per_phenotype.quantile([0.25, 0.5, 0.75])
     return {
-        "lo": lo,
-        "hi": hi,
+        "q1": q1,
+        "q3": q3,
         "median": med,
-        "txt": f"{lo:.2f}-{hi:.2f}",
-        "med_txt": f"med {med:.2f}",
+        "values": per_phenotype.to_numpy(),
+        "txt": f"med {med:.2f}",
+        "med_txt": f"IQR {q1:.2f}-{q3:.2f}",
     }
 
 
@@ -154,7 +168,9 @@ def load_rungs() -> dict[str, dict[str, float | str]]:
     # Concordant-trained models evaluated on the FULL held-out test, so the rung is
     # comparable with the other cross-dataset rows. Previously this rung was read from
     # figure6/panel_b_all_six_long.csv, an orphaned artefact that no script writes and
-    # that had gone stale.
+    # that had gone stale. Under the minority exclusion the two sources agree to
+    # within 0.03 per phenotype and give the same mean (0.682 vs 0.680), which is
+    # the 0.68 reported in results.tex.
     concordant = pd.read_csv(OUTPUTS / "figure5/figure5d_full_test.tsv", sep="\t").rename(
         columns={"balanced_accuracy_full": "balanced_accuracy"}
     )
@@ -163,7 +179,7 @@ def load_rungs() -> dict[str, dict[str, float | str]]:
     return {
         "random": _rung(ml[ml.split_type == "random_split"]),
         "cross_dataset": _rung(ml[ml.split_type == "dataset_split"]),
-        "concordant": _rung(concordant, minority_filtered=False),
+        "concordant": _rung(concordant, test_dataset_column="held_out_dataset"),
         "combined": _rung(combined[combined.split_type == "dataset_split"]),
         "filtered": _rung(filtered[filtered.split_type == "dataset_split"]),
     }
@@ -203,7 +219,7 @@ ROWS = [
         feat=("combined\n(~17k)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
         kind="range_median", **RUNGS["combined"],
-        finding="Comprehensive features\ndo not generalise better",
+        finding="Comprehensive features\nadd little (+0.01)",
     ),
     dict(
         y=YS[4], label="Feature\nfiltering",
@@ -211,7 +227,7 @@ ROWS = [
         feat=("filtered GapMind\n(~32)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
         kind="range_median", **RUNGS["filtered"],
-        finding="Curbs overfit; higher\nmedian, capped ceiling",
+        finding="Highest median, but capped\nby the curated pathway",
     ),
 ]
 
@@ -280,18 +296,24 @@ def render(fig) -> None:
                 ax.text(xc, yy, line, fontsize=FS_COL, color=col, fontweight=weight,
                         ha="center", va="center")
 
-        x_lo, x_hi = bax(r["lo"]), bax(r["hi"])
+        # Capsule spans the interquartile range; the per-phenotype values are
+        # drawn on top as a strip so the full spread stays visible without
+        # letting two extreme phenotypes set the capsule width.
+        x_lo, x_hi = bax(r["q1"]), bax(r["q3"])
         ax.add_patch(FancyBboxPatch(
             (x_lo, y - CAP_H / 2), x_hi - x_lo, CAP_H,
             boxstyle="round,pad=0,rounding_size=0.010",
             facecolor=CAP_COLOR, edgecolor="none",
-            alpha=(0.95 if key else 0.9), zorder=2))
-        ax.text((x_lo + x_hi) / 2, y + VAL_DY, r["txt"], fontsize=FS_VAL,
+            alpha=(0.45 if key else 0.36), zorder=2))
+        ax.plot([bax(v) for v in r["values"]], [y] * len(r["values"]), ls="none",
+                marker="o", ms=2.8, mfc=DOT_COLOR, mec="white", mew=0.4,
+                alpha=0.9, zorder=3)
+        xm = bax(r["median"])
+        ax.plot([xm, xm], [y - CAP_H / 2, y + CAP_H / 2], color=INK, lw=1.5, zorder=4)
+        ax.text(xm, y + VAL_DY, r["txt"], fontsize=FS_VAL,
                 fontweight="bold", color="#555",
                 ha="center", va="center", zorder=3)
-        xm = bax(r["median"])
-        ax.plot([xm, xm], [y - CAP_H / 2, y + CAP_H / 2], color="white", lw=1.6, zorder=3)
-        ax.text(xm, y - MED_DY, r["med_txt"], fontsize=FS_MED,
+        ax.text((x_lo + x_hi) / 2, y - MED_DY, r["med_txt"], fontsize=FS_MED,
                 fontweight="normal", color="#777", ha="center", va="center", zorder=3)
 
         ax.text(X_FIND, y, r["finding"], fontsize=FS_FIND,

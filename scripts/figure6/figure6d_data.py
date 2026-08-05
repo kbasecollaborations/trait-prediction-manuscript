@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+from scripts.create_data_splits import COMMON_PHENOTYPES
 from scripts.ml_splits import load_split_data
 
 
@@ -255,23 +256,11 @@ def main() -> None:
 
     SPLIT_TYPES = ["random_split", "dataset_split"]
 
-    # Common phenotypes (from figure3ab_data.py and figure6c_data.py).
-    PHENOTYPES = [
-        "Alanine",
-        "Arginine",
-        "Histidine",
-        "Serine",
-        "Fructose",
-        "Galactose",
-        "Maltose",
-        "Mannose",
-        "Sucrose",
-        "m-Inositol",
-        "Mannitol",
-        "Glycerol",
-        "Galacturonic-Acid",
-        "Cellobiose",
-    ]
+    # Common phenotypes: taken from the split-generation module rather than a
+    # local copy, which had silently dropped Glucose and so excluded it from the
+    # phenotype-filtered experiment (the combined experiment reads the splits
+    # directory directly and was unaffected).
+    PHENOTYPES = list(COMMON_PHENOTYPES)
 
     print("=" * 80)
     print("Figure 6D: Comparing combined vs phenotype-filtered features")

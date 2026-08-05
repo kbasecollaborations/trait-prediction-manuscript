@@ -12,6 +12,7 @@ import seaborn as sns
 from matplotlib.axes import Axes
 from scipy.stats import wilcoxon
 
+from scripts.create_data_splits import COMMON_PHENOTYPES
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
@@ -519,22 +520,9 @@ if __name__ == "__main__":
     output_file = Path("figures/figure6d.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Phenotype order matches the common phenotypes from figure3.
-    phenotype_order = [
-        "Alanine",
-        "Arginine",
-        "Histidine",
-        "Serine",
-        "Fructose",
-        "Galactose",
-        "Maltose",
-        "Mannose",
-        "Sucrose",
-        "m-Inositol",
-        "Mannitol",
-        "Glycerol",
-        "Galacturonic-Acid",
-        "Cellobiose",
-    ]
+    # Phenotype order matches the common phenotypes from figure3; taken from the
+    # split-generation module so it cannot drift out of sync (a local copy here
+    # had dropped Glucose).
+    phenotype_order = list(COMMON_PHENOTYPES)
 
     create_figure(data_file, output_file, phenotype_order)
