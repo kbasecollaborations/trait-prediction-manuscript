@@ -311,6 +311,61 @@ def plot_metric_sweep(
     return ph_means
 
 
+MCNEMAR_FILES: dict[str, Path] = {
+    "concordant": Path("data/outputs/stats/per_phenotype_mcnemar.tsv"),
+    "mech_free": Path("data/outputs/stats/per_phenotype_mcnemar_mechfree.tsv"),
+}
+"""Per-phenotype sensitivity tests for the two Figure 6C arms, both scored on the
+same held-out genomes by ``scripts/stats/manuscript_pvalues.py``."""
+
+
+def _mcnemar_sensitivity(arm: str) -> pd.DataFrame | None:
+    """Per-phenotype pooled sensitivity test for one Figure 6C arm.
+
+    Parameters
+    ----------
+    arm : str
+        ``"concordant"`` or ``"mech_free"``.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        Frame indexed by phenotype with ``delta`` (ML minus GapMind sensitivity,
+        pooled over genomes) and ``q_value_BH``, or ``None`` if the table is
+        absent.
+    """
+    path = MCNEMAR_FILES[arm]
+    if not path.exists():
+        return None
+    frame = pd.read_csv(path, sep="\t")
+    frame = frame[frame["metric"] == "sensitivity"].set_index("phenotype")
+    return frame[["delta", "q_value_BH"]]
+
+
+def _pooled_sensitivity_deltas() -> pd.DataFrame | None:
+    """Pooled sensitivity deltas and q-values for both arms, aligned by phenotype.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        Columns ``concordant``, ``mech_free``, ``q_concordant``, ``q_mech_free``,
+        or ``None`` when either arm's test table is missing.
+    """
+    conc = _mcnemar_sensitivity("concordant")
+    free = _mcnemar_sensitivity("mech_free")
+    if conc is None or free is None:
+        return None
+    common = conc.index.intersection(free.index)
+    return pd.DataFrame(
+        {
+            "concordant": conc.loc[common, "delta"],
+            "mech_free": free.loc[common, "delta"],
+            "q_concordant": conc.loc[common, "q_value_BH"],
+            "q_mech_free": free.loc[common, "q_value_BH"],
+        }
+    )
+
+
 def plot_gapmind_delta_forest(
     ax: Axes,
     data_dir: Path,
@@ -335,7 +390,7 @@ def plot_gapmind_delta_forest(
     pd.DataFrame
         Per-phenotype delta values for both filters.
     """
-    from scipy.stats import wilcoxon
+    # (phenotype-level Wilcoxon tests live in scripts/stats/manuscript_pvalues.py)
 
     long_df = _load_long_form(data_dir, phenotypes)
     long_df = long_df.assign(trainval=long_df["n_train"] + long_df["n_val"])
@@ -348,15 +403,27 @@ def plot_gapmind_delta_forest(
         .unstack("config")
     )
 
-    delta_concordant = (ml_means["concordant"] - gm_means).dropna()
-    delta_mechfree = (ml_means["free_balanced"] - gm_means).dropna()
-    common = delta_concordant.index.intersection(delta_mechfree.index)
-    delta_df = pd.DataFrame(
-        {
-            "concordant": delta_concordant.loc[common],
-            "mech_free": delta_mechfree.loc[common],
-        }
-    ).sort_values("concordant")
+    # Plot the quantity that is actually tested. The per-phenotype McNemar test
+    # pools genomes, whereas averaging the per-split values weights a 33-genome
+    # split like a 235-genome one; the two can disagree in sign and in ordering,
+    # which made the significance markers look unrelated to bar length. Reading
+    # the deltas from the McNemar tables keeps bars, markers and counts on one
+    # quantity. Falls back to the per-split means if those tables are absent.
+    pooled = _pooled_sensitivity_deltas()
+    if pooled is not None and metric == "recall":
+        delta_df = pooled.sort_values("concordant")
+        pooled_source = True
+    else:
+        delta_concordant = (ml_means["concordant"] - gm_means).dropna()
+        delta_mechfree = (ml_means["free_balanced"] - gm_means).dropna()
+        common = delta_concordant.index.intersection(delta_mechfree.index)
+        delta_df = pd.DataFrame(
+            {
+                "concordant": delta_concordant.loc[common],
+                "mech_free": delta_mechfree.loc[common],
+            }
+        ).sort_values("concordant")
+        pooled_source = False
 
     n_conc = int(round(float(long_df[long_df["config"] == "concordant"]["trainval"].mean())))
     n_mech = int(round(float(long_df[long_df["config"] == "free_balanced"]["trainval"].mean())))
@@ -399,82 +466,113 @@ def plot_gapmind_delta_forest(
     ax.set_xlabel(f"$\\Delta$ {metric_label} (ML $-$ GapMind)")
     ax.set_xlim(-0.5, 0.5)
     ax.grid(axis="x", alpha=0.18, linewidth=0.5)
-    ax.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.10),
-        ncol=2,
-        frameon=False,
-        fontsize=8,
-    )
 
-    # Per-phenotype significance for the concordant bars. The aggregate paired
-    # test over 15 phenotype means averages a bimodal distribution; the
-    # sample-level McNemar test says which individual phenotypes actually move.
-    # Only meaningful for the recall panel, whose metric is sensitivity.
+    # Per-phenotype significance markers for BOTH arms. Now that the bars are
+    # the pooled per-genome deltas, a marker sits on the bar whose test produced
+    # it, and marker presence tracks bar length instead of contradicting it.
     n_sig_better = n_sig_worse = None
-    mcnemar_file = Path("data/outputs/stats/per_phenotype_mcnemar.tsv")
-    if metric == "recall" and mcnemar_file.exists():
-        mcnemar = (
-            pd.read_csv(mcnemar_file, sep="\t")
-            .query("metric == 'sensitivity'")
-            .set_index("phenotype")
-        )
+    n_sig_better_mech = n_sig_worse_mech = None
+    if pooled_source:
         n_sig_better = n_sig_worse = 0
-        for y, phenotype in zip(y_positions, delta_df.index):
-            if phenotype not in mcnemar.index:
-                continue
-            if mcnemar.at[phenotype, "q_value_BH"] >= 0.05:
-                continue
-            value = delta_df.loc[phenotype, "concordant"]
-            offset = 0.018 if value >= 0 else -0.018
-            ax.text(
-                value + offset,
-                y - bar_height / 2,
-                "*",
-                va="center",
-                ha="left" if value >= 0 else "right",
-                fontsize=9,
-                zorder=4,
-            )
-            # Tally by the McNemar direction, not by the plotted macro-averaged
-            # bar. The legend describes this count as the number of phenotypes
-            # "significantly higher or lower under the per-phenotype test", and
-            # the two can disagree in sign when the effect is near zero: the bar
-            # is a mean of per-split recalls, while McNemar pools genomes.
-            if mcnemar.at[phenotype, "delta"] > 0:
-                n_sig_better += 1
-            else:
-                n_sig_worse += 1
+        n_sig_better_mech = n_sig_worse_mech = 0
+        for arm, q_col, offset_sign, counters in (
+            ("concordant", "q_concordant", -1, "conc"),
+            ("mech_free", "q_mech_free", +1, "mech"),
+        ):
+            for y, phenotype in zip(y_positions, delta_df.index):
+                if delta_df.loc[phenotype, q_col] >= 0.05:
+                    continue
+                value = delta_df.loc[phenotype, arm]
+                offset = 0.022 if value >= 0 else -0.022
+                # Marker, not a text asterisk: the "*" glyph's ink sits high in
+                # its text box, so va="center" centres the box and leaves the
+                # mark visibly above the bar. A marker centres on the data point.
+                ax.plot(
+                    value + offset,
+                    y + offset_sign * bar_height / 2,
+                    marker=(6, 2, 0),
+                    markersize=3.6,
+                    markeredgewidth=0.7,
+                    color="black",
+                    linestyle="none",
+                    zorder=4,
+                )
+                if counters == "conc":
+                    if value > 0:
+                        n_sig_better += 1
+                    else:
+                        n_sig_worse += 1
+                else:
+                    if value > 0:
+                        n_sig_better_mech += 1
+                    else:
+                        n_sig_worse_mech += 1
+
+        # Mark the borders of the region containing no significant result, so
+        # significance can be read off the axis rather than hunted marker by
+        # marker. Drawn only when the significant and non-significant effects
+        # genuinely separate; the borders are descriptive of this data, not a
+        # critical value, because McNemar power also depends on n and on the
+        # discordant-pair counts.
+        magnitudes = pd.concat(
+            [
+                delta_df[["concordant", "q_concordant"]].rename(
+                    columns={"concordant": "d", "q_concordant": "q"}
+                ),
+                delta_df[["mech_free", "q_mech_free"]].rename(
+                    columns={"mech_free": "d", "q_mech_free": "q"}
+                ),
+            ]
+        )
+        magnitudes["absd"] = magnitudes["d"].abs()
+        sig_min = magnitudes.loc[magnitudes["q"] < 0.05, "absd"].min()
+        ns_max = magnitudes.loc[magnitudes["q"] >= 0.05, "absd"].max()
+        if pd.notna(sig_min) and pd.notna(ns_max) and ns_max < sig_min:
+            edge = float((sig_min + ns_max) / 2.0)
+            for position, label in (
+                (-edge, f"$|\\Delta|<{edge:.2f}$: no $q<0.05$"),
+                (edge, None),
+            ):
+                ax.axvline(
+                    position,
+                    color="grey",
+                    linestyle=":",
+                    linewidth=0.9,
+                    alpha=0.75,
+                    zorder=1,
+                    label=label,
+                )
 
     n_pos_conc = int((delta_df["concordant"] > 0).sum())
     n_pos_mech = int((delta_df["mech_free"] > 0).sum())
     n_total = len(delta_df)
-    _, p_conc = wilcoxon(
-        ml_means.loc[common, "concordant"],
-        gm_means.loc[common],
-        alternative="two-sided",
-    )
-    _, p_mech = wilcoxon(
-        ml_means.loc[common, "free_balanced"],
-        gm_means.loc[common],
-        alternative="two-sided",
-    )
+
+    # Single-purpose annotation: how many phenotypes each filter significantly
+    # beats GapMind on. The phenotype-level Wilcoxon tests remain in
+    # data/outputs/stats/manuscript_pvalues.tsv and are cited in the text.
     if n_sig_better is None:
         annotation = (
-            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
-            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
+            f"$\\Delta>0$: {n_pos_conc}/{n_total} conc., {n_pos_mech}/{n_total} free"
         )
     else:
-        # Kept narrow: the box is bottom-right anchored and the lowest rows carry
-        # long negative bars whose significance markers sit on the left.
         annotation = (
-            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
-            f"* $q<0.05$: {n_sig_better} up, {n_sig_worse} down\n"
-            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
+            f"Significant vs GapMind:\n"
+            f"  concordant {n_sig_better} better, {n_sig_worse} worse\n"
+            f"  mech-free {n_sig_better_mech} better, {n_sig_worse_mech} worse"
         )
+    # Legend drawn here, after the band, so the band is included in it.
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.12),
+        ncol=3,
+        frameon=False,
+        fontsize=7,
+    )
+    # Bottom-right: rows are sorted ascending, so the lowest rows carry the long
+    # negative bars and the positive half of those rows is clear.
     ax.text(
         0.98,
-        0.04,
+        0.03,
         annotation,
         transform=ax.transAxes,
         va="bottom",

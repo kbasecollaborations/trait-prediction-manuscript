@@ -25,6 +25,13 @@ OUTPUT_FILE = OUTPUT_DIR / "manuscript_pvalues.tsv"
 PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar.tsv"
 PER_SAMPLE_FILE = Path("data/outputs/figure7/figure7_per_sample.tsv")
 
+MECHFREE_PER_SAMPLE_FILE = Path(
+    "data/outputs/figure6/figure6c_mechfree_per_sample.tsv"
+)
+"""Mechanism-free arm of Figure 6C, produced on the concordant arm's terms by
+``scripts/figure6/figure6c_mechfree_per_sample.py``."""
+MECHFREE_PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar_mechfree.tsv"
+
 COMMON_PHENOTYPES: tuple[str, ...] = (
     "Alanine",
     "Arginine",
@@ -353,8 +360,11 @@ def benjamini_hochberg(pvals: Iterable[float]) -> list[float]:
     return out.tolist()
 
 
-def per_phenotype_mcnemar() -> pd.DataFrame:
-    """Per-phenotype McNemar tests of concordant-trained ML against GapMind.
+def per_phenotype_mcnemar(
+    per_sample_file: Path = PER_SAMPLE_FILE,
+    restrict_to: set[tuple[str, str]] | None = None,
+) -> pd.DataFrame:
+    """Per-phenotype McNemar tests of an ML arm against GapMind.
 
     The aggregate paired tests treat each phenotype as one observation (n = 15),
     which averages a bimodal distribution and is underpowered. Here each
@@ -364,6 +374,18 @@ def per_phenotype_mcnemar() -> pd.DataFrame:
 
     Sensitivity (true positives) and specificity (true negatives) are tested
     separately; together they decompose the balanced-accuracy comparison.
+
+    Parameters
+    ----------
+    per_sample_file : Path, optional
+        Per-genome prediction table. Defaults to the concordance-trained arm;
+        pass the mechanism-free table to test that arm on identical terms.
+    restrict_to : set[tuple[str, str]] | None, optional
+        ``(phenotype, genome)`` pairs to keep. Use this to match two arms on the
+        same evaluation set: a filter that discards more training data can leave
+        a split unfittable, so one arm may cover fewer held-out genomes than the
+        other, and comparing their unmatched means would credit the difference in
+        coverage rather than in the models.
 
     Returns
     -------
@@ -379,13 +401,19 @@ def per_phenotype_mcnemar() -> pd.DataFrame:
     """
     from statsmodels.stats.contingency_tables import mcnemar
 
-    if not PER_SAMPLE_FILE.exists():
-        raise FileNotFoundError(f"per-sample predictions not found: {PER_SAMPLE_FILE}")
+    if not per_sample_file.exists():
+        raise FileNotFoundError(f"per-sample predictions not found: {per_sample_file}")
     per_sample = filter_by_minority(
-        pd.read_csv(PER_SAMPLE_FILE, sep="\t"),
+        pd.read_csv(per_sample_file, sep="\t"),
         full_test_minority_counts(),
         test_dataset_column="held_out_dataset",
     )
+    if restrict_to is not None:
+        keep = [
+            (p, g) in restrict_to
+            for p, g in zip(per_sample["phenotype"], per_sample["genome"])
+        ]
+        per_sample = per_sample.loc[keep]
 
     frames: list[pd.DataFrame] = []
     for cls, metric in ((1, "sensitivity"), (0, "specificity")):
@@ -559,6 +587,47 @@ def main() -> None:
         per_phenotype.pivot(index="phenotype", columns="metric", values="delta")
         .mean(axis=1)
     )
+    # Same test for the mechanism-free arm, so both Figure 6C series carry a
+    # per-phenotype significance call rather than only the concordant one.
+    if MECHFREE_PER_SAMPLE_FILE.exists():
+        # Match the mechanism-free arm to the concordant arm's evaluation set.
+        # Concordance filtering can leave a split unfittable (Alanine/ATLeaf), so
+        # the mechanism-free arm covers more genomes there; scoring it on the
+        # union would credit the extra split rather than the filter. The
+        # concordant set is the smaller one, so its own table is unaffected.
+        concordant_rows = filter_by_minority(
+            pd.read_csv(PER_SAMPLE_FILE, sep="\t"),
+            full_test_minority_counts(),
+            test_dataset_column="held_out_dataset",
+        )
+        concordant_pairs = set(
+            concordant_rows[["phenotype", "genome"]].itertuples(
+                index=False, name=None
+            )
+        )
+        mechfree = per_phenotype_mcnemar(
+            MECHFREE_PER_SAMPLE_FILE, restrict_to=concordant_pairs
+        )
+        mechfree.to_csv(
+            MECHFREE_PER_PHENOTYPE_FILE, sep="\t", index=False, float_format="%.6g"
+        )
+        print(
+            "\nPer-phenotype McNemar (mechanism-free ML vs GapMind) -> "
+            f"{MECHFREE_PER_PHENOTYPE_FILE}"
+        )
+        for metric, frame in mechfree.groupby("metric"):
+            better = int(((frame["delta"] > 0) & (frame["q_value_BH"] < 0.05)).sum())
+            worse = int(((frame["delta"] < 0) & (frame["q_value_BH"] < 0.05)).sum())
+            print(
+                f"  {metric}: ML better on {better}/{len(frame)}, "
+                f"worse on {worse}/{len(frame)} (BH q < 0.05)"
+            )
+    else:
+        print(
+            f"\nMechanism-free per-sample table absent ({MECHFREE_PER_SAMPLE_FILE}); "
+            "skipping its McNemar tests"
+        )
+
     print(
         f"  implied balanced-accuracy shift: mean {balanced.mean():+.3f}, "
         f"positive for {int((balanced > 0).sum())}/{len(balanced)} phenotypes"
