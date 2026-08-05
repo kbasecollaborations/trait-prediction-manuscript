@@ -26,7 +26,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.patches import FancyBboxPatch, Rectangle
+
+from scripts.minority_filter import filter_by_minority, full_test_minority_counts
 
 try:
     import scienceplots  # noqa: F401
@@ -97,14 +100,84 @@ def bax(ba: float) -> float:
     return X0 + (ba - BA_LO) / (BA_HI - BA_LO) * (X1 - X0)
 
 
+OUTPUTS = Path("data/outputs")
+
+
+def _rung(frame: pd.DataFrame, minority_filtered: bool = True) -> dict[str, float | str]:
+    """Summarise one ladder rung as a per-phenotype balanced-accuracy range.
+
+    Parameters
+    ----------
+    frame
+        Result rows carrying ``phenotype`` and ``balanced_accuracy`` columns.
+    minority_filtered
+        Whether to apply the <10-minority-test exclusion before aggregating.
+        The concordant configuration is already restricted upstream.
+
+    Returns
+    -------
+    dict[str, float | str]
+        ``lo``, ``hi``, ``median`` and the pre-rounded ``txt`` and ``med_txt`` labels.
+
+    Raises
+    ------
+    ValueError
+        If the frame yields no phenotypes, which would silently blank a rung.
+    """
+    if minority_filtered:
+        frame = filter_by_minority(frame, full_test_minority_counts())
+    per_phenotype = frame.groupby("phenotype")["balanced_accuracy"].mean()
+    if per_phenotype.empty:
+        raise ValueError("no phenotypes survived aggregation for this rung")
+    lo, hi, med = per_phenotype.min(), per_phenotype.max(), per_phenotype.median()
+    return {
+        "lo": lo,
+        "hi": hi,
+        "median": med,
+        "txt": f"{lo:.2f}-{hi:.2f}",
+        "med_txt": f"med {med:.2f}",
+    }
+
+
+def load_rungs() -> dict[str, dict[str, float | str]]:
+    """Derive all five ladder rungs from the current result files.
+
+    Previously these were hard-coded, which silently went stale whenever the
+    underlying labels or models changed.
+
+    Returns
+    -------
+    dict[str, dict[str, float | str]]
+        Keyed ``random``, ``cross_dataset``, ``concordant``, ``combined``, ``filtered``.
+    """
+    ml = pd.read_csv(OUTPUTS / "figure3/ml_results.csv")
+    # Concordant-trained models evaluated on the FULL held-out test, so the rung is
+    # comparable with the other cross-dataset rows. Previously this rung was read from
+    # figure6/panel_b_all_six_long.csv, an orphaned artefact that no script writes and
+    # that had gone stale.
+    concordant = pd.read_csv(OUTPUTS / "figure5/figure5d_full_test.tsv", sep="\t").rename(
+        columns={"balanced_accuracy_full": "balanced_accuracy"}
+    )
+    combined = pd.read_csv(OUTPUTS / "figure6/figure6d_combined_features_results.csv")
+    filtered = pd.read_csv(OUTPUTS / "figure6/figure6d_phenotype_filtered_results.csv")
+    return {
+        "random": _rung(ml[ml.split_type == "random_split"]),
+        "cross_dataset": _rung(ml[ml.split_type == "dataset_split"]),
+        "concordant": _rung(concordant, minority_filtered=False),
+        "combined": _rung(combined[combined.split_type == "dataset_split"]),
+        "filtered": _rung(filtered[filtered.split_type == "dataset_split"]),
+    }
+
+
+RUNGS = load_rungs()
+
 ROWS = [
     dict(
         y=YS[0], label="Random\nholdout",
         train=("full", INK, "normal"),
         feat=("KOFAM", INK, "normal"),
         evalu=("in-distribution", INK, "normal"),
-        kind="range_median", lo=0.70, hi=0.90, median=0.85, txt="0.70-0.90",
-        med_txt="med 0.85",
+        kind="range_median", **RUNGS["random"],
         finding="Optimistic; inflated by\nrelated genomes in test",
     ),
     dict(
@@ -112,8 +185,7 @@ ROWS = [
         train=("full", INK, "normal"),
         feat=("KOFAM", INK, "normal"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.48, hi=0.84, median=0.62, txt="0.48-0.84",
-        med_txt="med 0.62", neg=True,
+        kind="range_median", **RUNGS["cross_dataset"], neg=True,
         finding="Overfits; transferable\nfeatures for only 6/15",
     ),
     dict(
@@ -121,8 +193,7 @@ ROWS = [
         train=("concordant", INK, "normal"),
         feat=("KOFAM", INK, "normal"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.51, hi=0.82, median=0.67, txt="0.51-0.82",
-        med_txt="med 0.67",
+        kind="range_median", **RUNGS["concordant"],
         key=True,
         finding="Recovers pathway genes;\ntransferable for 12/15",
     ),
@@ -131,8 +202,7 @@ ROWS = [
         train=("full", INK, "normal"),
         feat=("combined\n(~17k)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.55, hi=0.85, median=0.66, txt="0.55-0.85",
-        med_txt="med 0.66",
+        kind="range_median", **RUNGS["combined"],
         finding="Comprehensive features\ndo not generalise better",
     ),
     dict(
@@ -140,8 +210,7 @@ ROWS = [
         train=("full", INK, "normal"),
         feat=("filtered GapMind\n(~32)", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
-        kind="range_median", lo=0.56, hi=0.85, median=0.73, txt="0.56-0.85",
-        med_txt="med 0.73",
+        kind="range_median", **RUNGS["filtered"],
         finding="Curbs overfit; higher\nmedian, capped ceiling",
     ),
 ]

@@ -24,7 +24,7 @@ published Figure 5 pipeline module; it reuses their loaders and the shared
 
 Run with::
 
-    uv run python -m scripts.figure5_diagnostic.fp_only_filter [options]
+    uv run python -m scripts.alternate.figure5_diagnostic.fp_only_filter [options]
 """
 
 from __future__ import annotations

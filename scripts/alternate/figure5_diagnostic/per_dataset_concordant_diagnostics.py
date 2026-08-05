@@ -104,11 +104,11 @@ def genome_overlap() -> pd.DataFrame:
 def load_taxonomy() -> dict[str, str]:
     """Return a ``genomeID -> GTDB class`` lookup that spans all four datasets.
 
-    Reuses the project's :func:`scripts.figureS9.figureS9_data.build_genome_to_class`
+    Reuses the project's :func:`scripts.alternate.figureS9_legacy.figureS9_data.build_genome_to_class`
     and :func:`assign_classes`, which already bridge marine short codes and
     IMG-named PMI genomes via a strain map plus genus-based fallback.
     """
-    from scripts.figureS9.figureS9_data import (
+    from scripts.alternate.figureS9_legacy.figureS9_data import (
         assign_classes,
         build_genome_to_class,
     )

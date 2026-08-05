@@ -82,3 +82,42 @@ def read_phenotypes(phenotype_files: Iterable[Path]) -> PhenotypeSet:
         phenotype_inputs.append(pinput)
     phenotype_set = PhenotypeSet.read_data(phenotype_inputs)
     return phenotype_set
+
+
+def cache_is_fresh(cache: Path, *inputs: Path) -> bool:
+    """Return whether a cached artefact is newer than every input it derives from.
+
+    Several analysis scripts skip expensive recomputation when their output file
+    already exists. Existence alone is not a safe test: if the inputs change, the
+    stale cache is silently reused. This compares modification times instead.
+
+    Parameters
+    ----------
+    cache
+        Path to the cached artefact.
+    *inputs
+        Files or directories the cache derives from. Directories are searched
+        recursively. Missing inputs are ignored.
+
+    Returns
+    -------
+    bool
+        ``True`` when the cache exists and post-dates every input, otherwise
+        ``False`` (meaning the caller should recompute).
+    """
+    if not cache.exists():
+        return False
+    cache_mtime = cache.stat().st_mtime
+    for source in inputs:
+        if not source.exists():
+            continue
+        if source.is_dir():
+            newest = max(
+                (f.stat().st_mtime for f in source.rglob("*") if f.is_file()),
+                default=0.0,
+            )
+        else:
+            newest = source.stat().st_mtime
+        if newest > cache_mtime:
+            return False
+    return True

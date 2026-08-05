@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate Supplementary Figure S9 (learning curves)."""
 
-from scripts.supplementary_figure_learning_curves import (
+from scripts.alternate.supplementary_figure_learning_curves import (
     ensure_output_dir,
     load_plot_data,
     plot_learning_curves,

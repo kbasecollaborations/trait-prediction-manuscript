@@ -35,7 +35,7 @@ pipeline module and writes only to ``data/outputs/figure5_fn_mechanism/``.
 
 Run with::
 
-    uv run python -m scripts.figure5_diagnostic.fn_mechanism_shap [options]
+    uv run python -m scripts.alternate.figure5_diagnostic.fn_mechanism_shap [options]
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ from scripts.figure5.figure5cd_data import (
     load_experimental_phenotypes,
     load_gapmind_predictions,
 )
-from scripts.figure5_diagnostic.fp_only_filter import build_filter_masks, filter_train_val
+from scripts.alternate.figure5_diagnostic.fp_only_filter import build_filter_masks, filter_train_val
 from scripts.ml_splits import load_split_data, perform_split_ml_with_model
 
 try:  # KEGG reference-map KO sets (secondary, broad canonical reference).

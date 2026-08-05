@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate SHAP-based feature importance data for Figure 4C."""
 
+import argparse
 import json
 import warnings
 from collections import Counter
@@ -15,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from trait_prediction.main import DataSet
 
-from scripts.io import read_features, read_phenotypes
+from scripts.io import cache_is_fresh, read_features, read_phenotypes
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
 
@@ -643,8 +644,18 @@ def compare_features(
 
 
 def main() -> None:
-    """Generate Figure 4C data."""
+    """Generate Figure 4C data.
+
+    SHAP results are cached as JSON. The cache is reused only when it post-dates the
+    phenotype labels and splits it derives from; pass ``--fresh`` to ignore it.
+    """
+    parser = argparse.ArgumentParser(description="Figure 4C SHAP feature analysis")
+    parser.add_argument("--fresh", action="store_true",
+                        help="ignore cached SHAP JSONs and recompute from scratch")
+    args = parser.parse_args()
+
     SPLITS_DIR = Path("data/processed/train_test_splits")
+    PHENOTYPE_DIR = Path("data/processed/phenotypes")
     OUTPUT_DIR = Path("data/outputs/figure4")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -667,7 +678,7 @@ def main() -> None:
     # Step 1 & 2: Analyze combined train-test splits
     combined_file = OUTPUT_DIR / "combined_splits_shap_features.json"
 
-    if combined_file.exists():
+    if not args.fresh and cache_is_fresh(combined_file, PHENOTYPE_DIR, SPLITS_DIR):
         print("\nStep 1-2: Loading existing combined splits results...")
         with open(combined_file, "r") as f:
             combined_results_filtered = json.load(f)
@@ -701,7 +712,7 @@ def main() -> None:
     # Step 3 & 4: Analyze individual datasets
     individual_file = OUTPUT_DIR / "individual_datasets_shap_features.json"
 
-    if individual_file.exists():
+    if not args.fresh and cache_is_fresh(individual_file, PHENOTYPE_DIR, SPLITS_DIR):
         print("\nStep 3-4: Loading existing individual datasets results...")
         with open(individual_file, "r") as f:
             individual_results = json.load(f)
@@ -737,7 +748,7 @@ def main() -> None:
     all_combined_file = OUTPUT_DIR / "all_datasets_combined_shap_features.json"
     ALL_DATASETS = ["atleaf", "lit", "marine", "pmi"]
 
-    if all_combined_file.exists():
+    if not args.fresh and cache_is_fresh(all_combined_file, PHENOTYPE_DIR, SPLITS_DIR):
         print("\nStep 3.5: Loading existing all datasets combined results...")
         with open(all_combined_file, "r") as f:
             all_combined_results = json.load(f)

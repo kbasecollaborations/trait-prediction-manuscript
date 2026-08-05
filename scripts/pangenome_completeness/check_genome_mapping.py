@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from pangenome_completeness import (
+from scripts.pangenome_completeness.pangenome_completeness import (
     extract_genome_name,
     get_core_genes_path,
 )

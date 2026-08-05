@@ -6,6 +6,7 @@ samples. Each phenotype/split is screened to a broad CatBoost-important
 candidate set before seeded SHAP stability analysis.
 """
 
+import argparse
 import json
 import warnings
 from collections import Counter
@@ -20,7 +21,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from trait_prediction.main import DataSet
 
-from scripts.io import read_features, read_phenotypes
+from scripts.io import cache_is_fresh, read_features, read_phenotypes
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
 
@@ -948,7 +949,16 @@ def compare_features(
 
 
 def main() -> None:
-    """Generate Figure 5B data (concordant samples only)."""
+    """Generate Figure 5B data (concordant samples only).
+
+    SHAP results are cached as JSON. The cache is reused only when it post-dates the
+    phenotype labels and splits it derives from; pass ``--fresh`` to ignore it.
+    """
+    parser = argparse.ArgumentParser(description="Figure 5B concordant SHAP analysis")
+    parser.add_argument("--fresh", action="store_true",
+                        help="ignore cached SHAP JSONs and recompute from scratch")
+    args = parser.parse_args()
+
     SPLITS_DIR = Path("data/processed/train_test_splits")
     OUTPUT_DIR = Path("data/outputs/figure5")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -982,7 +992,7 @@ def main() -> None:
 
     combined_file = OUTPUT_DIR / "figure5b_combined_splits_shap_features.json"
 
-    if combined_file.exists():
+    if not args.fresh and cache_is_fresh(combined_file, PHENOTYPE_DIR, SPLITS_DIR):
         print("\nStep 1: Loading existing combined splits results (concordant)...")
         with open(combined_file, "r") as f:
             combined_results_filtered = json.load(f)
@@ -1020,7 +1030,7 @@ def main() -> None:
 
     individual_file = OUTPUT_DIR / "figure5b_individual_datasets_shap_features.json"
 
-    if individual_file.exists():
+    if not args.fresh and cache_is_fresh(individual_file, PHENOTYPE_DIR, SPLITS_DIR):
         print("\nStep 2: Loading existing individual datasets results (concordant)...")
         with open(individual_file, "r") as f:
             individual_results = json.load(f)

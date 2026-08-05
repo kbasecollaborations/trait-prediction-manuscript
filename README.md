@@ -49,7 +49,7 @@ produces.
 | Figure 7 | `scripts/figure7/` | Selective prediction / deployment: risk–coverage, calibration, and active learning (`applicability.py`, `figure7d_active_learning.py`). |
 
 Supporting diagnostics for Figure 5A underperformers live in
-`scripts/figure5_diagnostic/`.
+`scripts/alternate/figure5_diagnostic/`.
 
 ## Supplementary figures → code
 
@@ -59,11 +59,12 @@ Supporting diagnostics for Figure 5A underperformers live in
 | Figure S4 | `scripts/pangenome_completeness/` | Pangenome-based completeness audit. |
 | Figure S5 | `scripts/figureS5/` | KOFAM features on concordant samples. |
 | Figure S6 | `scripts/figureS6/` | Histidine performance versus training sample size. |
-| Figure S7 | `scripts/bacdive/`, `scripts/figureS9/` | BacDive data-volume comparison and feature stability (asset `figure_s9.pdf`). |
+| Figure S7 | `scripts/bacdive/`, `scripts/figureS7/` | BacDive data-volume comparison and feature stability (asset `figure_s7.pdf`). |
 
-Unselected or superseded versions are kept under `scripts/alternate/`,
-`scripts/figureS7/`, `scripts/figureS8/`, `scripts/figureS8_legacy/`, and
-`scripts/figureS9_legacy/`.
+Unselected, superseded, and exploratory code is kept under `scripts/alternate/`
+(including `figureS7_legacy/`, `figureS8/`, `figureS8_legacy/`, `figureS9_legacy/`,
+and `figure5_diagnostic/`). Supplementary Figures S7 and S8 were removed from the
+manuscript; the BacDive figure was renumbered S9 -> S7.
 
 ## Tables → code
 

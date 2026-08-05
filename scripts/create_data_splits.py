@@ -334,10 +334,10 @@ def create_phylogeny_splits(
                     single_clades=None,
                     n_max_clade=2,
                     prefer_small_clade=False,
-                    growth_data=None,
+                    phenotype_data=None,
                     min_zeros=0,
                     min_ones=0,
-                    time_out_iter=None,
+                    timeout_iterations=None,
                 )
             else:
                 raise ValueError(f"Unknown split type: {split_type}")

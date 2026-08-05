@@ -22,7 +22,7 @@ fn_mislabel_analysis.csv``. Not wired into any manuscript pipeline.
 
 Run with::
 
-    uv run python -m scripts.figure5_diagnostic.fn_mislabel_analysis
+    uv run python -m scripts.alternate.figure5_diagnostic.fn_mislabel_analysis
 """
 
 from __future__ import annotations

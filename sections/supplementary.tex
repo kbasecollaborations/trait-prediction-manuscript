@@ -167,7 +167,7 @@ Random-holdout and in-clade test genomes lie close to the training set (medians 
 CatBoost balanced accuracy using KOFAM features across four leave-one-dataset-out combinations.
 (\textbf{A}) Test samples sharing a cluster with at least two training samples; (\textbf{B}) test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
 Cells with fewer than 10 test or minority-class samples were excluded (45 of 120, including all Populus-held-out out-of-clade cells).
-Mean out-of-clade balanced accuracy was lower than in-clade accuracy (0.629 versus 0.696).
+Mean out-of-clade balanced accuracy was lower than in-clade accuracy (0.627 versus 0.699).
 Numerals give test-subset sizes.}
 \label{fig:in_clade_out_clade_performance}
 \end{figure}
@@ -189,7 +189,7 @@ Under the same KOFAM feature space, concordant training improved cross-dataset b
 
 The feature-recovery analysis remains biologically related to the selection rule because GapMind and KOFAM annotate the same genomes, and pathway-coverage percentages therefore partly reflect concordance selection.
 However, GapMind scores curated reference proteins rather than KEGG modules, and SHAP stability across datasets is not entailed by the selection rule; several phenotypes also recovered predominantly off-map features.
-A size- and class-matched random-subset control recovered $0.38 \pm 0.02$ shared clusters (mean $\pm$ SD across three draws), similar to full-data training (0.5) and below concordant training (1.3), indicating that the stability gain was specific to concordance rather than sample count (Table~\ref{tab:subset_control}; \texttt{scripts/figure5/figure5b\_random\_control.py}).
+A size- and class-matched random-subset control recovered $0.38 \pm 0.03$ shared clusters (mean $\pm$ SD across ten draws), similar to full-data training (0.5) and below concordant training (1.2), indicating that the stability gain was specific to concordance rather than sample count (Table~\ref{tab:subset_control}; \texttt{scripts/figure5/figure5b\_random\_control.py}).
 
 \begin{table}[h]
 \centering
@@ -199,13 +199,13 @@ A size- and class-matched random-subset control recovered $0.38 \pm 0.02$ shared
 \textbf{Training set} & \makecell[r]{\textbf{Mean shared clusters} \\ \textbf{per comparison}} \\
 \hline
 Full data & 0.5 \\
-Concordant & 1.3 \\
-Size- and class-matched random subset & $0.38 \pm 0.02$ \\
+Concordant & 1.2 \\
+Size- and class-matched random subset & $0.38 \pm 0.03$ \\
 \hline
 \end{tabular}
 \caption{\textbf{Size- and class-matched random-subset control for stable-feature recovery.}
 Shared SHAP-supervised redundancy clusters recovered per cross-dataset comparison under each training set.
-The random-subset value is the mean $\pm$ SD across three draws matched to the concordant subset on size and class balance, showing that reducing sample count alone does not reproduce the concordant gain.}
+The random-subset value is the mean $\pm$ SD across ten draws matched to the concordant subset on size and class balance, showing that reducing sample count alone does not reproduce the concordant gain.}
 \label{tab:subset_control}
 \end{table}
 
@@ -353,7 +353,7 @@ Thus, added BacDive data improved unfiltered training, while the FB--C compariso
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figure_s9.pdf}
+\includegraphics[width=\textwidth]{figure_s7.pdf}
 \caption{
 \textbf{Concordance filtering versus added data volume under cross-dataset evaluation.}
 CatBoost classifiers using KOFAM features were tested on each held-out manuscript dataset under C (concordant), F (full manuscript), and FB (full manuscript plus BacDive~\cite{Schober2025BacDive}) training.
@@ -402,3 +402,14 @@ Concordant training retains roughly 70\% of training samples and then predicts f
 Alternatively, a full-data model can retain only predictions agreeing with GapMind; this retained 71\% of pooled held-out predictions and yielded cross-dataset balanced accuracy 0.76 on that subset, while abstaining on the remainder.
 Because this value is conditional on abstention, it is not directly comparable with performance on a full evaluation set.
 Prediction-time agreement therefore recovers a higher-accuracy subset but requires GapMind for every genome, whereas concordant training requires it only when assembling the training set.
+
+\subsection*{Supplementary Data 1: Substrate Identities for the Shared Phenotypes}
+
+Generic carbon-source names such as ``glucose'' or ``serine'' do not specify stereochemistry, and the four datasets did not always assay the same isomer under the same name.
+\texttt{substrate\_identity\_common15.csv} in the Zenodo deposit~\cite{ZenodoDeposit} records, for each of the 15 shared phenotypes and each dataset, the substrate as the originating study specified it, the source column it was taken from, and the Biolog plate well where applicable.
+Identities were verified against primary sources: Table~S1 of Sch\"afer et al.~\cite{Schafer2023-nk} for ATLeaf, Supplementary Table~2 of Gralka et al.~\cite{Gralka2023-ft} for Marine, and the Biolog PM1 and PM2A plate maps for the Biolog and Populus assays.
+A companion table covering all 241 substrates across the four datasets, including the substrates assayed by only some datasets, is deposited alongside it.
+
+Two identity issues are worth stating explicitly.
+The Marine \emph{alanine} well contained DL-alanine, whereas the other three datasets assayed L-alanine; a racemate well scores positive if either enantiomer is utilised, so the Marine column is a union trait rather than a different trait.
+For alpha- and beta-D-glucose the anomeric distinction is not meaningful in solution, because the free sugar interconverts by mutarotation; for methyl glucosides and methyl galactosides it is meaningful, because the anomeric carbon is locked as an acetal and the two forms are taken up by different systems.

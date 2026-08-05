@@ -28,7 +28,7 @@ comparative genomics).
 
 Run with::
 
-    uv run python -m scripts.figure5_diagnostic.fn_feature_discovery [options]
+    uv run python -m scripts.alternate.figure5_diagnostic.fn_feature_discovery [options]
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ from scripts.figure5.figure5cd_data import (
     load_experimental_phenotypes,
     load_gapmind_predictions,
 )
-from scripts.figure5_diagnostic.fn_mechanism_shap import (
+from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
     build_symbol_to_ko,
     canonical_ko_set,
     load_ko_descriptions,
