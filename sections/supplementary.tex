@@ -167,7 +167,7 @@ Random-holdout and in-clade test genomes lie close to the training set (medians 
 \caption{\textbf{In-clade versus out-of-clade performance across the 15 shared phenotypes under full-data training.}
 CatBoost balanced accuracy using KOFAM features across four leave-one-dataset-out combinations.
 (\textbf{A}) Test samples sharing a cluster with at least two training samples; (\textbf{B}) test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
-Cells with fewer than 10 test or minority-class samples were excluded (45 of 120, including all Populus-held-out out-of-clade cells).
+Cells with fewer than 10 test or minority-class samples were excluded (44 of 120, including all Populus-held-out out-of-clade cells).
 Mean out-of-clade balanced accuracy was lower than in-clade accuracy (0.627 versus 0.699).
 Numerals give test-subset sizes.}
 \label{fig:in_clade_out_clade_performance}
@@ -305,11 +305,11 @@ The inclusive ambiguity interval $y_{\mathrm{soft}} \in [0.4,0.6]$ was unchanged
 
 \paragraph{GapMind-feature ceiling and glucose.}
 GapMind-feature models did not reach the random-holdout ceiling in every cross-dataset cell because held-out concordant subsets could be minority-class sparse and because step identifiers present in a held-out dataset could be absent from training and zero-imputed.
-The largest feature-resolution gap was glucose, for which GapMind-feature and KOFAM cross-dataset balanced accuracy were 0.77 and 0.51, respectively; GapMind uses organism-specific identifiers such as \verb|MFS-glucose|, \verb|SSS-glucose|, and \verb|ptsG-crr| that lack direct KOFAM equivalents.
+The largest feature-resolution gap was glucose, for which GapMind-feature and KOFAM cross-dataset balanced accuracy were 0.77 and 0.50, respectively; GapMind uses organism-specific identifiers such as \verb|MFS-glucose|, \verb|SSS-glucose|, and \verb|ptsG-crr| that lack direct KOFAM equivalents.
 
 \paragraph{Calibration, abstention, and rescue.}
 The full-data and concordance-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
-Confidence-based abstention improved retained-subset balanced accuracy for m-inositol and histidine but not glucose, whose predictions approached one class (Figure~\ref{fig:selective_prediction}A).
+Confidence-based abstention improved retained-subset balanced accuracy for m-inositol and histidine. For glucose the model's predictions approach one class, so the retained subset at low coverage contains almost no negatives and balanced accuracy degenerates towards plain accuracy; the resulting rise is therefore an artefact of the retention rule rather than improved discrimination (Figure~\ref{fig:selective_prediction}A).
 In the experiment-prioritisation simulation the advantage of low-confidence selection concentrated on glucose, where it roughly doubled the gain from random labelling ($0.24$ versus $0.13$).
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
 Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
