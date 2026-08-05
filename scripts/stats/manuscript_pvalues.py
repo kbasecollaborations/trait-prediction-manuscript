@@ -22,6 +22,8 @@ from scripts.minority_filter import (
 
 OUTPUT_DIR = Path("data/outputs/stats")
 OUTPUT_FILE = OUTPUT_DIR / "manuscript_pvalues.tsv"
+PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar.tsv"
+PER_SAMPLE_FILE = Path("data/outputs/figure7/figure7_per_sample.tsv")
 
 COMMON_PHENOTYPES: tuple[str, ...] = (
     "Alanine",
@@ -330,6 +332,73 @@ def benjamini_hochberg(pvals: Iterable[float]) -> list[float]:
     return out.tolist()
 
 
+def per_phenotype_mcnemar() -> pd.DataFrame:
+    """Per-phenotype McNemar tests of concordant-trained ML against GapMind.
+
+    The aggregate paired tests treat each phenotype as one observation (n = 15),
+    which averages a bimodal distribution and is underpowered. Here each
+    phenotype is tested separately at the sample level. Under leave-one-dataset-out
+    every genome appears in exactly one held-out test set, so pooling the four
+    splits yields one prediction pair per genome and no pseudo-replication.
+
+    Sensitivity (true positives) and specificity (true negatives) are tested
+    separately; together they decompose the balanced-accuracy comparison.
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per (phenotype, metric) with ``n``, ``ml``, ``gapmind``,
+        ``delta``, McNemar exact ``p_value`` and BH ``q_value`` computed within
+        each metric.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the per-sample prediction table is absent.
+    """
+    from statsmodels.stats.contingency_tables import mcnemar
+
+    if not PER_SAMPLE_FILE.exists():
+        raise FileNotFoundError(f"per-sample predictions not found: {PER_SAMPLE_FILE}")
+    per_sample = filter_by_minority(
+        pd.read_csv(PER_SAMPLE_FILE, sep="\t"),
+        full_test_minority_counts(),
+        test_dataset_column="held_out_dataset",
+    )
+
+    frames: list[pd.DataFrame] = []
+    for cls, metric in ((1, "sensitivity"), (0, "specificity")):
+        rows: list[dict[str, object]] = []
+        for phenotype, group in per_sample[per_sample["y_true"] == cls].groupby(
+            "phenotype"
+        ):
+            ml_ok = group["y_pred"] == cls
+            gm_ok = group["gapmind_pred"] == cls
+            both = int((ml_ok & gm_ok).sum())
+            ml_only = int((ml_ok & ~gm_ok).sum())
+            gm_only = int((~ml_ok & gm_ok).sum())
+            neither = int((~ml_ok & ~gm_ok).sum())
+            rows.append(
+                {
+                    "phenotype": phenotype,
+                    "metric": metric,
+                    "n": len(group),
+                    "ml": float(ml_ok.mean()),
+                    "gapmind": float(gm_ok.mean()),
+                    "delta": float(ml_ok.mean() - gm_ok.mean()),
+                    "ml_only": ml_only,
+                    "gapmind_only": gm_only,
+                    "p_value": float(
+                        mcnemar([[both, ml_only], [gm_only, neither]], exact=True).pvalue
+                    ),
+                }
+            )
+        frame = pd.DataFrame(rows)
+        frame["q_value_BH"] = benjamini_hochberg(frame["p_value"].tolist())
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True)
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, object]] = []
@@ -426,6 +495,29 @@ def main() -> None:
         f"mean={ci['mean_delta']:.3f}, 95% CI "
         f"[{ci['ci_low']:.3f}, {ci['ci_high']:.3f}], "
         f"{ci['n_positive']}/{ci['n']} phenotypes favour ML"
+    )
+
+    per_phenotype = per_phenotype_mcnemar()
+    per_phenotype.to_csv(
+        PER_PHENOTYPE_FILE, sep="\t", index=False, float_format="%.6g"
+    )
+    print(f"\nPer-phenotype McNemar (concordant ML vs GapMind) -> {PER_PHENOTYPE_FILE}")
+    for metric, frame in per_phenotype.groupby("metric"):
+        better = int(((frame["delta"] > 0) & (frame["q_value_BH"] < 0.05)).sum())
+        worse = int(((frame["delta"] < 0) & (frame["q_value_BH"] < 0.05)).sum())
+        print(
+            f"  {metric}: ML better on {better}/{len(frame)}, "
+            f"worse on {worse}/{len(frame)} (BH q < 0.05)"
+        )
+    # Sensitivity and specificity average to balanced accuracy, so their sum
+    # quantifies the cancellation behind the null cross-dataset shift.
+    balanced = (
+        per_phenotype.pivot(index="phenotype", columns="metric", values="delta")
+        .mean(axis=1)
+    )
+    print(
+        f"  implied balanced-accuracy shift: mean {balanced.mean():+.3f}, "
+        f"positive for {int((balanced > 0).sum())}/{len(balanced)} phenotypes"
     )
 
 

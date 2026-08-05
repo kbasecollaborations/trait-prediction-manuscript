@@ -109,6 +109,7 @@ Because every identical-vector group is confined to a single source dataset, lea
 
 \subsection*{Supplementary Text S4: Histidine Feature Comparison}
 
+Under full-data training, core histidine enzymes other than K01712 appeared among dataset-specific stable features but not in the aggregated dataset, likely reflecting annotation gaps or alternative pathways.
 Table~\ref{tab:feature_comparison} gives the histidine worked example under full-data and concordant training; stable features ranked among the top 10 by mean absolute SHAP value in at least 70\% of 20 runs, with cluster labels denoting SHAP-supervised redundancy groups (Methods).
 
 % ============================================================
@@ -250,6 +251,7 @@ The stability analyses used the confirmed \texttt{cb\_noeval} default of 500 ite
 
 For alanine, mannose, and serine, stable features from different concordance-trained models did not enter the same cluster but remained correlated within some held-out datasets; for mannose, transporters K10441 and K10545 had $|r|=0.67$ in concordant ATLeaf samples.
 These features were heterogeneous carbohydrate-utilisation and accessory genes rather than one shared pathway, indicating a broader, less substrate-specific mode of transfer.
+For alanine in particular, GapMind's pathway definition encodes only transport, so concordance reflects uptake rather than catabolic coverage.
 
 \subsection*{Supplementary Text S8: Reliability and Experiment-Prioritisation Details}
 
@@ -259,6 +261,7 @@ Risk--coverage curves retained the same fraction within each predicted class, ra
 Feature-space novelty was the mean Jaccard distance from a held-out genome to its five nearest training genomes in KOFAM space.
 The high-novelty strategy selected the candidates ranked highest on this measure, whereas the diversity strategy selected candidates evenly spaced along the same ranking.
 Predictions with confidence of at least 0.8 were counted as high-confidence when computing the per-phenotype fraction of high-confidence predictions.
+Neither summary predicted per-phenotype cross-dataset balanced accuracy across the 15 phenotypes (Spearman $\rho$ between $-0.17$ and $0.05$, both $p > 0.3$).
 For experiment prioritisation, each eligible held-out dataset was split approximately 50:50 into candidate and evaluation pools, stratified when possible; 25 candidate labels were added to the concordant training set and evaluated across three seeds and four held-out datasets.
 The random baseline therefore includes the benefit of initial exposure to the held-out dataset, while other strategies are credited only for improvement beyond that baseline.
 This computational pilot used 120 CatBoost iterations, depth 4, and learning rate 0.05 without evaluation-set early stopping.
@@ -273,6 +276,7 @@ The phylogenetic component was the mean experimental label among the $k=3$ neare
 GapMind categories mapped to six numeric levels: complete, 1.0; likely complete, 0.9; steps missing medium, 0.6; steps missing low, 0.3; not present, 0.1; and no evidence or uncategorized, 0.0.
 After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, samples in the inclusive interval $[0.4,0.6]$ were excluded and all others retained.
 The four configurations in Table~\ref{tab:confidence_weight_configs} were applied to training and validation samples only; held-out test samples were unchanged.
+Data cost differed little between the two filters: concordant training retained $71\%$ of samples ($n\approx 383$) and the mechanism-free filter $74\%$ ($n\approx 396$), against $n\approx 534$ with no filter.
 
 \begin{table}[h]
 \centering
@@ -300,13 +304,13 @@ The largest feature-resolution gap was glucose, for which GapMind-feature and KO
 \paragraph{Calibration, abstention, and rescue.}
 The full-data and concordance-trained models were overconfident under cross-dataset shift, with expected calibration error 0.12 and 0.18, respectively (Figure~\ref{fig:selective_prediction}B).
 Confidence-based abstention improved retained-subset balanced accuracy for m-inositol and histidine but not glucose, whose predictions approached one class (Figure~\ref{fig:selective_prediction}A).
+In the experiment-prioritisation simulation the advantage of low-confidence selection concentrated on glucose, where it roughly doubled the gain from random labelling ($0.24$ versus $0.13$).
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
 Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
 
 \paragraph{False-negative retention and the specificity tradeoff.}
 Under balanced class weights, concordance filtering improved cross-dataset balanced accuracy by 0.051 over unfiltered training.
 Retaining GapMind false negatives increased recall by 0.030 but reduced specificity by 0.097 and balanced accuracy by 0.033, favouring concordance filtering for balanced-accuracy deployment and false-negative retention only when recall is prioritised.
-The 95\% confidence interval reported for the mean recall difference between concordance-trained models and GapMind is a fixed-seed percentile bootstrap over the 15 per-phenotype deltas with 10{,}000 resamples (\texttt{scripts/stats/manuscript\_pvalues.py}).
 False-negative growers used more other carbon sources than GapMind-negative non-growers (9.5 versus 5.2 of the remaining 14; Mann--Whitney $p<10^{-200}$) and encoded more sugar-ABC transport components (6.5 versus 4.3; $p<10^{-60}$).
 The features introduced by false negatives were dominated by broad carbohydrate transporters and regulators; in 9 of 15 phenotypes, a transporter rather than an enzyme was the GapMind step most often absent, supporting a metabolic-generalist rather than substrate-specific interpretation.
 Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and K26399~\cite{Watanabe2019Altronate} as a divergent altronate dehydratase, but neither establishes a validated alternative route.
@@ -334,6 +338,47 @@ Phenotypes whose most-often-absent step is transport & 9 of 15 & --- & --- \\
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for false negatives and false positives.
 The lower block contrasts genomes underlying false negatives with GapMind-negative non-growers, supporting a metabolic-generalist rather than substrate-specific interpretation.}
 \label{tab:rescue_rates}
+\end{table}
+
+\paragraph{Per-phenotype comparison against GapMind.}
+The paired tests over 15 phenotype means treat each phenotype as a single observation and average opposing effects, so we also compared the concordance-trained model with GapMind separately within each phenotype.
+Under leave-one-dataset-out evaluation each genome enters exactly one held-out test set, so pooling the four splits yields one prediction pair per genome and permits a paired sample-level test without repeated measurements.
+Sensitivity (true-positive genomes) and specificity (true-negative genomes) were tested separately with the exact McNemar test and Benjamini--Hochberg adjustment within each metric across the 15 phenotypes (Table~\ref{tab:per_phenotype_mcnemar}).
+Because genomes within a dataset are phylogenetically related rather than independent, these $p$-values should be read as descriptive of where the two predictors differ rather than as exact error rates.
+The two metrics move in opposite directions: the model was significantly more sensitive than GapMind for 9 of 15 phenotypes and significantly less specific for 8 of 15, which accounts for the absence of a mean balanced-accuracy shift under cross-dataset evaluation (mean implied shift $-0.025$, positive for 7 of 15 phenotypes).
+Glucose is the extreme case, its specificity loss ($-0.62$) outweighing the sensitivity gain ($+0.11$), consistent with a model that predicts growth almost universally for a substrate most isolates use.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\hline
+& \multicolumn{3}{c}{\textbf{Sensitivity}} & \multicolumn{3}{c}{\textbf{Specificity}} \\
+\textbf{Phenotype} & $n^{+}$ & $\Delta$ & $q$ & $n^{-}$ & $\Delta$ & $q$ \\
+\hline
+Mannose & 456 & $+0.167$ & $<0.001$ & 228 & $-0.167$ & $<0.001$ \\
+\textit{myo}-inositol & 322 & $+0.149$ & $<0.001$ & 415 & $-0.012$ & 0.144 \\
+Glucose & 543 & $+0.110$ & $<0.001$ & 143 & $-0.622$ & $<0.001$ \\
+Fructose & 476 & $+0.109$ & $<0.001$ & 208 & $-0.062$ & 0.144 \\
+Galactose & 475 & $+0.099$ & $<0.001$ & 211 & $-0.071$ & 0.003 \\
+Histidine & 329 & $+0.076$ & $<0.001$ & 400 & $-0.065$ & 0.002 \\
+Mannitol & 417 & $+0.058$ & $<0.001$ & 258 & $-0.035$ & 0.007 \\
+Cellobiose & 434 & $+0.048$ & $<0.001$ & 290 & $-0.110$ & $<0.001$ \\
+Maltose & 442 & $+0.045$ & 0.008 & 295 & $-0.031$ & 0.360 \\
+Sucrose & 445 & $+0.036$ & 0.073 & 284 & $-0.060$ & 0.019 \\
+Alanine & 349 & $+0.034$ & 0.134 & 182 & $+0.137$ & $<0.001$ \\
+Arginine & 341 & $-0.094$ & $<0.001$ & 362 & $-0.072$ & 0.016 \\
+Serine & 344 & $-0.145$ & $<0.001$ & 389 & $-0.010$ & 0.794 \\
+Glycerol & 319 & $-0.185$ & $<0.001$ & 151 & $+0.106$ & 0.007 \\
+Galacturonic acid & 237 & $-0.232$ & $<0.001$ & 501 & $+0.044$ & 0.003 \\
+\hline
+\end{tabular}
+\caption{\textbf{Per-phenotype comparison of the concordance-trained model against GapMind under cross-dataset evaluation.}
+$\Delta$ is the concordance-trained model minus GapMind, computed over the genomes of the indicated true class pooled across the four leave-one-dataset-out test sets, in which each genome appears exactly once.
+$n^{+}$ and $n^{-}$ are the numbers of true-positive and true-negative genomes contributing to each comparison.
+$q$ values are exact McNemar tests adjusted by Benjamini--Hochberg within each metric across the 15 phenotypes; rows are ordered by the sensitivity difference.
+Phenotype--dataset cells with fewer than ten minority-class samples in the held-out test set are excluded, as elsewhere.}
+\label{tab:per_phenotype_mcnemar}
 \end{table}
 
 \subsection*{Supplementary Text S11: Adding Data Volume Versus Concordance Filtering}
@@ -406,6 +451,7 @@ Prediction-time agreement therefore recovers a higher-accuracy subset but requir
 \subsection*{Supplementary Data 1: Substrate Identities for the Shared Phenotypes}
 
 Generic carbon-source names such as ``glucose'' or ``serine'' do not specify stereochemistry, and the four datasets did not always assay the same isomer under the same name.
+Each phenotype was therefore bound to one explicit source substrate, retaining the physiologically utilised isomer where a dataset assayed more than one.
 \texttt{substrate\_identity\_common15.csv} in the Zenodo deposit~\cite{ZenodoDeposit} records, for each of the 15 shared phenotypes and each dataset, the substrate as the originating study specified it, the source column it was taken from, and the Biolog plate well where applicable.
 Identities were verified against primary sources: Table~S1 of Sch\"afer et al.~\cite{Schafer2023-nk} for ATLeaf, Supplementary Table~2 of Gralka et al.~\cite{Gralka2023-ft} for Marine, and the Biolog PM1 and PM2A plate maps for the Biolog and Populus assays.
 A companion table covering all 241 substrates across the four datasets, including the substrates assayed by only some datasets, is deposited alongside it.

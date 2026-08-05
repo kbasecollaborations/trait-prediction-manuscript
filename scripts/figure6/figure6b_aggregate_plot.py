@@ -407,6 +407,39 @@ def plot_gapmind_delta_forest(
         fontsize=8,
     )
 
+    # Per-phenotype significance for the concordant bars. The aggregate paired
+    # test over 15 phenotype means averages a bimodal distribution; the
+    # sample-level McNemar test says which individual phenotypes actually move.
+    # Only meaningful for the recall panel, whose metric is sensitivity.
+    n_sig_better = n_sig_worse = None
+    mcnemar_file = Path("data/outputs/stats/per_phenotype_mcnemar.tsv")
+    if metric == "recall" and mcnemar_file.exists():
+        mcnemar_q = (
+            pd.read_csv(mcnemar_file, sep="\t")
+            .query("metric == 'sensitivity'")
+            .set_index("phenotype")["q_value_BH"]
+        )
+        n_sig_better = n_sig_worse = 0
+        for y, phenotype in zip(y_positions, delta_df.index):
+            q = mcnemar_q.get(phenotype)
+            if q is None or q >= 0.05:
+                continue
+            value = delta_df.loc[phenotype, "concordant"]
+            offset = 0.018 if value >= 0 else -0.018
+            ax.text(
+                value + offset,
+                y - bar_height / 2,
+                "*",
+                va="center",
+                ha="left" if value >= 0 else "right",
+                fontsize=9,
+                zorder=4,
+            )
+            if value > 0:
+                n_sig_better += 1
+            else:
+                n_sig_worse += 1
+
     n_pos_conc = int((delta_df["concordant"] > 0).sum())
     n_pos_mech = int((delta_df["mech_free"] > 0).sum())
     n_total = len(delta_df)
@@ -420,17 +453,27 @@ def plot_gapmind_delta_forest(
         gm_means.loc[common],
         alternative="two-sided",
     )
+    if n_sig_better is None:
+        annotation = (
+            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
+            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
+        )
+    else:
+        # Kept narrow: the box is bottom-right anchored and the lowest rows carry
+        # long negative bars whose significance markers sit on the left.
+        annotation = (
+            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
+            f"* $q<0.05$: {n_sig_better} up, {n_sig_worse} down\n"
+            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
+        )
     ax.text(
         0.98,
         0.04,
-        (
-            f"Concordant: {n_pos_conc}/{n_total}, $p$={p_conc:.3f}\n"
-            f"Mech-free: {n_pos_mech}/{n_total}, $p$={p_mech:.2f}"
-        ),
+        annotation,
         transform=ax.transAxes,
         va="bottom",
         ha="right",
-        fontsize=8,
+        fontsize=7,
         bbox=dict(facecolor="white", edgecolor="none", alpha=0.85, pad=2.0),
     )
 
