@@ -3,14 +3,16 @@
 \begin{abstract}
 {
 \noindent
-The carbon sources a microorganism can utilise shape its ecological niche, yet remain difficult to predict from genomes even for well-characterised pathways.
-Machine-learning models often achieve high within-dataset accuracy but generalise poorly across datasets, a failure usually attributed to training-set size and taxonomic bias.
-To explore this, we integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets, focusing on the 15 shared sources.
-We observed that while intra-dataset accuracy was high, cross-dataset accuracy was poor and declined even among close relatives, so phylogeny alone did not explain failure.
-Growth may follow a conserved pathway, an uncharacterised alternative, or fail despite a complete one. An aggregated training sets pool mechanistically distinct genotype-phenotype relationships, so a model fitted to that pool has a higher chance of learning dataset-specific correlations in place of transferable mechanism.
-Restricting training to concordant strains (growth matching annotated pathways), improved cross-dataset performance and doubled the carbon sources with predictive pathway genes recovered across datasets, from six to twelve of fifteen, whereas matched random subsets did not.
-Increasing data volume by adding over 8000 literature-curated BacDive genomes to the training data did not significantly improve cross-dataset performance over the smaller concordant set.
-Though concordance-trained models do not incorporate the full set of diverse mechanisms present in the full dataset, they instead act as bounded specialists that recovered growth missed by incomplete annotations more often than they overturned annotated pathways lacking growth (44\% versus 19\%), predominantly metabolic generalists.
+Microbial carbon utilisation is a foundational ecological phenotype, yet remains difficult to predict from genomes despite well-characterised pathways.
+Machine-learning models often generalise poorly across datasets, a failure usually attributed to training-set size and taxonomic bias.
+To test this, we integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets.
+Balanced accuracy fell from 0.75--0.90 within datasets to 0.52--0.84 across them, and restricting tests to close relatives recovered only 0.03, so aggregating mechanistically inconsistent genotype-phenotype relationships drove models towards dataset-correlated shortcuts.
+Restricting training to concordant samples, where GapMind predictions matched experiment, doubled the carbon sources recovering known pathway genes across datasets, from six to twelve of fifteen, whereas matched random subsets did not.
+Coherence mattered more than volume: adding over 8000 literature-curated genomes did not significantly exceed the concordant set.
+These models were bounded specialists, rescuing mechanistic false negatives twice as often as false positives (44\% versus 19\%), mostly metabolic generalists.
+A mechanism-free filter using phylogenetic agreement and experimental labels, where no mechanistic predictor exists, recovered part of the gain but not the recall advantage.
+Model confidence defined a per-prediction applicability domain, and prioritising low-confidence genomes improved cross-dataset accuracy more than random or diversity-based sampling, especially for the weakest phenotype.
+These findings recast generalisation in biological machine learning as a problem of label-mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice, and suggest a workflow of concordant training, applicability detection, and confidence-guided experimentation.
 }
 \end{abstract}
 
