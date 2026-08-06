@@ -120,9 +120,7 @@ def _paired_panel_pvalue(
 def _add_pvalue_text(
     ax: Axes,
     random_p_value: float | None,
-    random_n: int,
     dataset_p_value: float | None,
-    dataset_n: int,
 ) -> None:
     """Add compact paired-test annotations for split-specific comparisons.
 
@@ -132,12 +130,8 @@ def _add_pvalue_text(
         Matplotlib axes to annotate.
     random_p_value : float | None
         Paired Wilcoxon p-value for random split comparisons.
-    random_n : int
-        Number of random split phenotype pairs.
     dataset_p_value : float | None
         Paired Wilcoxon p-value for dataset split comparisons.
-    dataset_n : int
-        Number of dataset split phenotype pairs.
     """
     ax.text(
         0.03,
@@ -145,8 +139,7 @@ def _add_pvalue_text(
         (
             "Wilcoxon p: "
             f"random={_format_p_value(random_p_value)}; "
-            f"dataset={_format_p_value(dataset_p_value)} "
-            f"(n={min(random_n, dataset_n)})"
+            f"dataset={_format_p_value(dataset_p_value)}"
         ),
         transform=ax.transAxes,
         ha="left",
@@ -302,9 +295,7 @@ def plot_balanced_accuracy_scatter(
     markers = {"random_split": "o", "dataset_split": "s"}
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
     random_p_value = None
-    random_n = 0
     dataset_p_value = None
-    dataset_n = 0
 
     for split_type in ["random_split", "dataset_split"]:
         split_data = summary[summary["split_type"] == split_type]
@@ -334,13 +325,11 @@ def plot_balanced_accuracy_scatter(
             zorder=3,
         )
 
-        p_value, n_pairs = _paired_panel_pvalue(combined, filtered, common)
+        p_value, _ = _paired_panel_pvalue(combined, filtered, common)
         if split_type == "random_split":
             random_p_value = p_value
-            random_n = n_pairs
         else:
             dataset_p_value = p_value
-            dataset_n = n_pairs
 
     ax.plot([0, 1], [0, 1], "k--", alpha=0.3, linewidth=1, zorder=1)
 
@@ -356,7 +345,7 @@ def plot_balanced_accuracy_scatter(
         markerscale=0.7,
     )
     ax.set_aspect("equal")
-    _add_pvalue_text(ax, random_p_value, random_n, dataset_p_value, dataset_n)
+    _add_pvalue_text(ax, random_p_value, dataset_p_value)
 
 
 def plot_precision_recall_scatter_by_feature_type(
