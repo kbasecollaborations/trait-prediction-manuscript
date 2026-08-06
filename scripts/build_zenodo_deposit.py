@@ -24,19 +24,32 @@ REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 DEPOSIT_DIR: Final[Path] = REPO_ROOT / "data/zenodo"
 ARCHIVE_NAME: Final[str] = "trait-prediction-data.zip"
 
-#: Inputs the pipeline consumes but does not generate.
+#: Inputs the pipeline consumes but does not generate. Entries cover what the published
+#: figures, tables, and reported numbers need, plus the complete annotation matrices
+#: (KOFAM, RAST, GapMind), which are deposited for reuse even where no published panel
+#: reads them.
 INPUTS: Final[tuple[str, ...]] = (
+    # Source phenotype tables, including the legacy name map the harmonisation reads.
     "data/raw/phenotypes",
+    # BacDive phenotypes for the data-volume comparison (Figure S7).
     "data/raw/bacdive_dataset/metabolic_phenotypes.tsv",
+    # KEGG reference mappings behind the feature-annotation tables (Figure 4, Table S4).
     "data/external/mapping/KO_dictionary.json",
     "data/external/mapping/pathway-ko-membership.tsv",
     "data/external/mapping/module-definitions.tsv",
+    # Unfiltered per-dataset annotation matrices, the marine identifier map, and the
+    # BacDive matrices.
     "data/interim/features",
     "data/interim/gapmind",
+    # Pruned GTDB tree and distance matrix (Figures 2B, S1, S2, phylogeny splits).
     "data/processed/phylogeny",
-    "data/processed/pangenome",
+    # Species assignments for the pangenome completeness audit (Figure S4).
+    "data/processed/pangenome/assignments.ani.merged_mmseqs90.tsv",
+    "data/processed/pangenome/gtdb_species_clade_id.value_counts.with_pangenome_mmseqs90.tsv",
+    # GapMind category calls behind Figure 6A, and the per-phenotype feature files.
     "data/processed/gapmind/heatmap_csvs",
     "data/processed/gapmind_features",
+    # Filtered feature matrices the models train on.
     "data/processed/features_reduced",
     "data/processed/phenotypes",
     "data/processed/substrate_identity.csv",
@@ -59,6 +72,8 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
         "figureS3",
         "figureS5",
         "figureS6",
+        "figure5_fp_only",
+        "figure5_fn_discovery",
         "bacdive",
         "clustering",
         "agreement_analysis",
@@ -69,7 +84,7 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
     )
 ) + ("data/outputs/leakage_feature_dup_per_split.csv",)
 
-#: Trained CatBoost checkpoints (105 models).
+#: Trained CatBoost checkpoints: 30 deployment models plus the 75 concordant folds.
 MODELS: Final[tuple[str, ...]] = (
     "data/outputs/full_data_models",
     "data/outputs/concordant_full_models",
@@ -86,6 +101,8 @@ EXCLUDED: Final[dict[str, str]] = {
     "data/processed/train_test_splits_backup_pre_enantiomer_fix": "rollback copy",
     "data/outputs/figureS7": "retired learning-curve figure; the current Figure S7 is drawn from data/outputs/bacdive",
     "data/outputs/concordance_meta": "exploratory meta-classifier; no figure, table, or reported value uses it",
+    "data/processed/unique_core_faas": "pangenome core-gene FASTAs; regenerable from the proteomes",
+    "data/processed/pangenome/old": "superseded pre-mmseqs90 assignments",
 }
 
 #: Working artefacts skipped inside archived directories.

@@ -1,0 +1,35 @@
+Companion data deposit for the manuscript "Data coherence over data volume drives generalisable genome-based prediction of microbial carbon utilisation".
+
+This record contains the phenotype labels, genome feature matrices, train/test splits, trained model checkpoints, predicted proteomes, and figure and table source data underlying every script-generated display item in the manuscript and its supplementary material. The code that consumes it is on GitHub (links below); this record contains data only.
+
+CONTENTS
+
+- trait-prediction-data.zip (56 MB, 425 MB unpacked). All derived data: KOFAM, RAST and GapMind feature matrices, harmonised phenotype tables, train/test splits for the random, leave-one-dataset-out and phylogeny-based evaluations, the pruned GTDB tree and distance matrix, KEGG reference mappings, source data for every main-text and supplementary figure and table, and 105 trained CatBoost checkpoints. Unpacks to a data/ tree that mirrors the analysis repository.
+- proteomes_all_seqs.zip (766 MB, 1.4 GB unpacked). Predicted-protein FASTA files for the 822 selected genome records, the input to the KOFAM and GapMind annotation.
+- Per-dataset phenotype matrices and genome tables, provided loose so they can be read without downloading an archive: atleaf (206 genomes x 44 substrates), biolog (362 x 59), marine (172 x 100) and populus (55 x 176).
+- genome_accessions.tsv, mapping all 822 genome records to NCBI, BV-BRC or JGI IMG accessions.
+- substrate_identity_common15.csv and substrate_identity_all.csv, binding every phenotype column to the exact compound the originating study assayed, with the Biolog plate well where known.
+- Populus_carbon_source_results.xlsx, the ORNL Plant-Microbe Interfaces Biolog assay as measured by Leah Hochanadel and Dale A. Pelletier, released publicly for the first time with this work and separately deposited at ORNL/OSTI doi:10.25983/PMI/3399550.
+- README.md with the full file-by-file description, dataset provenance, and reproduction instructions. MD5SUMS.txt for verification.
+
+SCOPE
+
+Four carbon-source utilisation datasets were harmonised: ATLeaf (Arabidopsis thaliana leaf isolates), Biolog (a compilation of published studies), Marine (heterotrophic marine bacteria) and Populus (Populus deltoides root isolates). Analyses focus on the 15 carbon sources shared by all four, drawn from 240 carbon sources in total. Carbon source names are bound explicitly to single compounds rather than harmonised by stripping stereochemical descriptors, so distinct isomers are never merged.
+
+REUSE
+
+The deployment checkpoints in data/outputs/full_data_models/ and data/outputs/concordant_full_models/ give one CatBoost model per phenotype, trained on all labelled genomes and on the GapMind-concordant subset respectively. Each ships with metadata, feature importances and its selected-feature list, so a phenotype can be predicted for a new genome from its KOFAM presence/absence vector without retraining. The complete annotation matrices are included for independent reuse, including features no published panel required.
+
+SOURCES AND CITATION
+
+Phenotype data originate with the studies that generated them. Cite those alongside this record: ATLeaf, Schaefer et al. 2023, Science; Marine, Gralka et al. 2023, Nature Microbiology; Populus, ORNL/OSTI doi:10.25983/PMI/3399550; the associated Biolog genome set, KBase/OSTI doi:10.25982/149351.18/3374972. Genome assemblies are not re-hosted and remain available from NCBI, JGI IMG and BV-BRC under the deposited accessions.
+
+Analysis and manuscript code: https://github.com/kbasecollaborations/trait-prediction-manuscript
+
+Machine learning pipeline and library: https://github.com/kbasecollaborations/trait-prediction
+
+Corresponding author: Paramvir S. Dehal (psdehal@lbl.gov)
+
+Licensed CC-BY-4.0. Third-party phenotype and genome data remain subject to their original licences.
+
+Funded by the U.S. Department of Energy through the Systems Biology Knowledgebase (KBase) and the Biological and Environmental Research Plant-Microbe Interfaces Science Focus Area at Oak Ridge National Laboratory, under contracts DE-AC02-05CH11231, DE-AC02-06CH11357, DE-AC05-00OR22725, DE-AC02-98CH10886 and DE-SC0025510.
