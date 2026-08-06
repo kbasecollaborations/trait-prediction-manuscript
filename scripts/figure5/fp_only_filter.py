@@ -18,13 +18,14 @@ three modes are scored on identical evaluation data. Each mode is run with and
 without CatBoost balanced class weights because dropping false positives skews
 the train-set label balance.
 
-This is an exploratory diagnostic script. It intentionally does NOT modify any
-published Figure 5 pipeline module; it reuses their loaders and the shared
-``scripts.ml_splits.perform_split_ml`` evaluator.
+Its output backs the false-negative-retention numbers reported in Supplementary
+Text S10, so it is part of the published pipeline rather than an exploratory
+aside. It modifies no other Figure 5 module: it reuses their loaders and the
+shared ``scripts.ml_splits.perform_split_ml`` evaluator.
 
 Run with::
 
-    uv run python -m scripts.alternate.figure5_diagnostic.fp_only_filter [options]
+    uv run python -m scripts.figure5.fp_only_filter [options]
 """
 
 from __future__ import annotations

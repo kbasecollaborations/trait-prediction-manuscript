@@ -55,7 +55,7 @@ from scripts.figure5.figure5cd_data import (
     load_experimental_phenotypes,
     load_gapmind_predictions,
 )
-from scripts.alternate.figure5_diagnostic.fp_only_filter import build_filter_masks, filter_train_val
+from scripts.figure5.fp_only_filter import build_filter_masks, filter_train_val
 from scripts.ml_splits import load_split_data, perform_split_ml_with_model
 
 try:  # KEGG reference-map KO sets (secondary, broad canonical reference).

@@ -28,7 +28,7 @@ Biolog Phenotype MicroArrays measured utilisation by a colourimetric tetrazolium
 Marine~\cite{Gralka2023-ft} comprised 175 heterotrophic marine bacteria assessed on 100 substrates; phenotypic processing retained 172 records, of which 157 matched processed genomic features and 15 were lost during identifier alignment.
 
 \paragraph*{Populus.}
-Populus~\cite{PopulusDatasetCitation} is a previously unpublished Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in minimal medium for 58 isolates across 191 carbon sources.
+Populus~\cite{PopulusDatasetCitation} is a previously unpublished Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in minimal medium for 58 isolates across 190 carbon sources.
 Because of its small sample size and narrow phylogenetic breadth, Populus was excluded from selected feature-stability comparisons.
 
 \begin{table}[h]
@@ -41,7 +41,7 @@ Because of its small sample size and narrow phylogenetic breadth, Populus was ex
 ATLeaf  & 224 & 45  & 206 & 206 & 15 & Agar plate \\
 Biolog  & 362 & 64  & 362 & 362 & 15 & Biolog PM (colourimetric) \\
 Marine  & 175 & 100 & 172 & 157 & 15 & Liquid culture OD \\
-Populus & 58  & 191 & 55  & 55  & 15 & Liquid culture OD \\
+Populus & 58  & 190 & 55  & 55  & 15 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
@@ -315,8 +315,9 @@ Rescue rates are the per-phenotype fractions of GapMind errors on the discordant
 Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
 
 \paragraph{False-negative retention and the specificity tradeoff.}
-Under balanced class weights, concordance filtering improved cross-dataset balanced accuracy by 0.051 over unfiltered training.
-Retaining GapMind false negatives increased recall by 0.030 but reduced specificity by 0.097 and balanced accuracy by 0.033, favouring concordance filtering for balanced-accuracy deployment and false-negative retention only when recall is prioritised.
+Under balanced class weights, concordance filtering improved cross-dataset balanced accuracy by 0.042 over unfiltered training.
+Retaining GapMind false negatives increased recall by 0.030 but reduced specificity by 0.088 and balanced accuracy by 0.029, favouring concordance filtering for balanced-accuracy deployment and false-negative retention only when recall is prioritised.
+All four quantities are per-phenotype means over minority-class-filtered cross-dataset cells (\texttt{scripts/figure5/fp\_only\_filter.py}).
 False-negative growers used more other carbon sources than GapMind-negative non-growers (9.5 versus 5.2 of the remaining 14; Mann--Whitney $p<10^{-200}$) and encoded more sugar-ABC transport components (6.5 versus 4.3; $p<10^{-60}$).
 The features introduced by false negatives were dominated by broad carbohydrate transporters and regulators; in 9 of 15 phenotypes, a transporter rather than an enzyme was the GapMind step most often absent, supporting a metabolic-generalist rather than substrate-specific interpretation.
 Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and K26399~\cite{Watanabe2019Altronate} as a divergent altronate dehydratase, but neither establishes a validated alternative route.
@@ -460,7 +461,7 @@ Generic carbon-source names such as ``glucose'' or ``serine'' do not specify ste
 Each phenotype was therefore bound to one explicit source substrate, retaining the physiologically utilised isomer where a dataset assayed more than one.
 \texttt{substrate\_identity\_common15.csv} in the Zenodo deposit~\cite{ZenodoDeposit} records, for each of the 15 shared phenotypes and each dataset, the substrate as the originating study specified it, the source column it was taken from, and the Biolog plate well where applicable.
 Identities were verified against primary sources: Table~S1 of Sch\"afer et al.~\cite{Schafer2023-nk} for ATLeaf, Supplementary Table~2 of Gralka et al.~\cite{Gralka2023-ft} for Marine, and the Biolog PM1 and PM2A plate maps for the Biolog and Populus assays.
-A companion table covering all 241 substrates across the four datasets, including the substrates assayed by only some datasets, is deposited alongside it.
+A companion table covering all 240 carbon sources plus the Populus negative control across the four datasets, including the substrates assayed by only some datasets, is deposited alongside it.
 
 Two identity issues are worth stating explicitly.
 The Marine \emph{alanine} well contained DL-alanine, whereas the other three datasets assayed L-alanine; a racemate well scores positive if either enantiomer is utilised, so the Marine column is a union trait rather than a different trait.

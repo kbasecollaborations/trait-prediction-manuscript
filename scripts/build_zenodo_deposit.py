@@ -16,8 +16,9 @@ Deliberately omitted from the archive, with reasons:
     retrievable from the accessions in ``genome_accessions.tsv``.
 ``*_backup_pre_enantiomer_fix/``, ``_stale_*``
     Working copies kept for rollback during the 2026-08 substrate identity correction.
-``*.log``, ``*.pkl``
-    Run logs and cached intermediates; both are rebuilt from the archived inputs.
+``*.log``, ``*.pkl``, ``*_checkpoint.csv``
+    Run logs, cached intermediates, and resume checkpoints superseded by the final table;
+    all are rebuilt from the archived inputs.
 
 Run with ``uv run python -m scripts.build_zenodo_deposit`` (add ``--dry-run`` to preview).
 """
@@ -26,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import shutil
 import zipfile
 from pathlib import Path
 from typing import Final
@@ -63,7 +63,7 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
     for name in (
         "figure1", "figure2", "figure3", "figure4", "figure5", "figure6", "figure7",
         "figureS2", "figureS3", "figureS5", "figureS6",
-        "bacdive", "clustering", "agreement_analysis",
+        "bacdive", "clustering", "agreement_analysis", "ml_comparison",
         "stats", "pangenome_completeness", "measurement_reliability",
     )
 ) + ("data/outputs/leakage_feature_dup_per_split.csv",)
@@ -89,6 +89,22 @@ EXCLUDED: Final[dict[str, str]] = {
 
 #: Working artefacts skipped inside archived directories.
 SKIP_SUFFIXES: Final[tuple[str, ...]] = (".log", ".pkl")
+
+
+def ships(path: Path) -> bool:
+    """Return ``True`` when a file belongs in the deposit.
+
+    Parameters
+    ----------
+    path
+        Candidate file inside an archived directory.
+
+    Returns
+    -------
+    bool
+        ``False`` for run logs, pickle caches, and resume checkpoints.
+    """
+    return path.suffix not in SKIP_SUFFIXES and not path.stem.endswith("_checkpoint")
 
 #: Per-dataset phenotype matrices published loose alongside the archive.
 PHENOTYPE_TABLES: Final[dict[str, str]] = {
@@ -182,7 +198,7 @@ def build_archive(dry_run: bool) -> int:
     for label, group in (("inputs", INPUTS), ("figure data", FIGURE_DATA), ("models", MODELS)):
         group_total = 0
         for entry in group:
-            files = [f for f in iter_files(entry) if f.suffix not in SKIP_SUFFIXES]
+            files = [f for f in iter_files(entry) if ships(f)]
             if not files:
                 print(f"  MISSING  {entry}")
                 continue

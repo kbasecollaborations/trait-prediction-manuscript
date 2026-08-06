@@ -80,7 +80,9 @@ All in `scripts/tables/`:
 - `kegg_module_coverage.py` — KEGG-module pathway coverage
 
 p-values reported in the text are produced by
-`scripts/stats/manuscript_pvalues.py`.
+`scripts/stats/manuscript_pvalues.py`. Supplementary Table S9 (cross-dataset
+label conflicts, Supplementary Text S12) is produced by
+`scripts/measurement_reliability/label_conflict.py`.
 
 ## Shared pipeline and utilities
 

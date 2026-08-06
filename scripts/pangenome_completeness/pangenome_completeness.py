@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 # Default paths and thresholds
-DEFAULT_MAPPING_PATH = Path("data/processed/pangenome/assignments.ani.merged.tsv")
+DEFAULT_MAPPING_PATH = Path("data/processed/pangenome/assignments.ani.merged_mmseqs90.tsv")
 DEFAULT_OUTPUT_PATH = Path("completeness_results.tsv")
 # TODO: Consider lowering to 0.80 if completeness is underestimated. Standard pangenome
 # tools (PPanGGOLiN, PATO) use 80% identity. Higher thresholds may miss divergent homologs.
