@@ -1,14 +1,12 @@
 """Rewrite existing train/test split labels from the corrected phenotype files.
 
-Only the label values change; every sample keeps its train/val/test assignment. This
-isolates the effect of the substrate identity corrections from the effect of drawing new
-splits, which matters because :func:`scripts.create_data_splits.create_phylogeny_splits`
-calls ``splitter.split()`` without a seed and therefore does not reproduce.
+Only the label values change; every sample keeps its train/val/test assignment, which
+matters because :func:`scripts.create_data_splits.create_phylogeny_splits` calls
+``splitter.split()`` without a seed and therefore does not reproduce.
 
 Use this after :mod:`scripts.harmonize_phenotypes` changes any label, then retrain. A
 full ``create_data_splits`` regeneration is only needed if the split structure itself
-should change (the random split clusters on the label matrix, so a clean rerun would
-redraw it).
+should change (the random split clusters on the label matrix, so a rerun redraws it).
 
 Run with ``uv run python -m scripts.relabel_splits --phenotypes Glucose Galacturonic-Acid``.
 """
@@ -81,7 +79,9 @@ def relabel(phenotype: str, dry_run: bool) -> tuple[int, int]:
         column = frame.columns[0]
         missing = [g for g in frame.index if g not in labels.index]
         if missing:
-            raise KeyError(f"{path}: {len(missing)} genomes absent from corrected labels, e.g. {missing[:3]}")
+            raise KeyError(
+                f"{path}: {len(missing)} genomes absent from corrected labels, e.g. {missing[:3]}"
+            )
         old = pd.to_numeric(frame[column], errors="coerce")
         new = labels.reindex(frame.index)
         changed = int((old != new).sum())
@@ -96,7 +96,9 @@ def relabel(phenotype: str, dry_run: bool) -> tuple[int, int]:
 def main() -> None:
     """Relabel splits for the requested phenotypes."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--phenotypes", nargs="+", required=True, help="phenotype names to relabel")
+    parser.add_argument(
+        "--phenotypes", nargs="+", required=True, help="phenotype names to relabel"
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 

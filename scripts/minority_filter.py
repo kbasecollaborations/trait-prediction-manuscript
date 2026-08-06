@@ -37,9 +37,7 @@ def extract_test_dataset(key: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _load_labels(
-    phenotype_dir: Path, dataset: str, phenotype: str
-) -> pd.Series | None:
+def _load_labels(phenotype_dir: Path, dataset: str, phenotype: str) -> pd.Series | None:
     """Load the experimental label series for one (dataset, phenotype) pair."""
     path = phenotype_dir / dataset / f"{phenotype}.tsv"
     if not path.exists():
@@ -77,9 +75,7 @@ def concordant_minority_counts(
         Mapping from ``(phenotype, dataset)`` to minority-class concordant
         sample count.
     """
-    gapmind = pd.read_csv(
-        gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    gapmind = pd.read_csv(gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str})
     minority: dict[tuple[str, str], int] = {}
     for dataset in datasets:
         dataset_dir = phenotype_dir / dataset
@@ -114,9 +110,7 @@ def discordant_minority_counts(
     label). Used for Figure 5C, whose held-out test set is the discordant
     subset of the held-out dataset.
     """
-    gapmind = pd.read_csv(
-        gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    gapmind = pd.read_csv(gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str})
     minority: dict[tuple[str, str], int] = {}
     for dataset in datasets:
         dataset_dir = phenotype_dir / dataset

@@ -146,11 +146,9 @@ def main() -> None:
     print(f"    Shape: {rast_features.shape}")
 
     print("\nFinding common genomes across all feature matrices...")
-    common_genomes = (
-        gapmind_features.index.intersection(kofam_features.index).intersection(
-            rast_features.index
-        )
-    )
+    common_genomes = gapmind_features.index.intersection(
+        kofam_features.index
+    ).intersection(rast_features.index)
     print(f"  Common genomes: {len(common_genomes)}")
     print(f"    GapMind: {len(gapmind_features)}")
     print(f"    KOFAM: {len(kofam_features)}")
@@ -190,7 +188,9 @@ def main() -> None:
         method="spearman",
     )
 
-    print(f"\nFound {len(kofam_gapmind_correlated)} KOFAM features correlated with GapMind")
+    print(
+        f"\nFound {len(kofam_gapmind_correlated)} KOFAM features correlated with GapMind"
+    )
     kofam_features_filtered = kofam_features.drop(
         columns=list(kofam_gapmind_correlated.keys())
     )
@@ -227,7 +227,8 @@ def main() -> None:
             feature: corr_with for feature, corr_with in rast_kofam_correlated.items()
         },
         "kofam_gapmind_correlated": {
-            feature: corr_with for feature, corr_with in kofam_gapmind_correlated.items()
+            feature: corr_with
+            for feature, corr_with in kofam_gapmind_correlated.items()
         },
         "summary": {
             "correlation_threshold": CORRELATION_THRESHOLD,
@@ -252,9 +253,7 @@ def main() -> None:
     print("\n" + "=" * 80)
     print("Summary")
     print("=" * 80)
-    print(
-        f"Removed {len(rast_kofam_correlated)} RAST features (correlated with KOFAM)"
-    )
+    print(f"Removed {len(rast_kofam_correlated)} RAST features (correlated with KOFAM)")
     print(
         f"Removed {len(kofam_gapmind_correlated)} KOFAM features (correlated with GapMind)"
     )

@@ -1,46 +1,20 @@
 #!/usr/bin/env python3
-"""Size- and class-matched random-subset control for the concordance feature-recovery claim.
+"""Size- and class-matched random-subset control for Figure 5B / Table 1.
 
-This is a robustness control for Figure 5B / Table 1. The main analysis reports
-that cross-dataset SHAP feature stability roughly doubles (mean shared cluster
-count 0.5 -> 1.3; phenotypes sharing >=1 cluster 6 -> 12) when training is
-restricted to GapMind-concordant samples. A skeptical reading is that *any*
-equal-size subset of the training pool, not concordance specifically, would
-concentrate stable features. This script answers that by re-running the exact
-Figure 5B stability pipeline on **random** subsets that are matched, per
-phenotype and per data partition, to the concordant subset's size and class
-balance, then comparing the resulting cluster-stability statistics against the
-concordant values.
+Reuses the Figure 5B cluster-stability pipeline from
+``scripts.figure5.figure5b_data`` (CatBoost candidate screen, 20-seed SHAP
+top-10, >=70% recurrence, SHAP-supervised redundancy clustering, combined-of-
+three vs held-out-alone cluster intersection), changing only the
+sample-selection rule from concordant to random. Matching is on training-sample
+count and class balance per phenotype and data partition; the KOFAM feature
+space is identical to the concordant and full-data analyses.
 
-The pipeline (screen to a broad CatBoost candidate set, 20-seed SHAP top-10,
->=70% recurrence -> "stable", SHAP-supervised redundancy clustering, then
-combined-of-three vs held-out-alone cluster intersection) is reused verbatim
-from ``scripts.figure5.figure5b_data``; only the sample-selection rule changes
-from "concordant" to "random, size- and class-matched".
-
-Important: matching is on the number of TRAINING SAMPLES (rows), not on the
-number of features (columns). The KOFAM feature space is held fixed and is
-identical to the concordant and full-data analyses; concordance filtering does
-not change the feature space, it removes about 30% of the training samples, so
-the relevant confound to control for is sample count and composition, not
-feature-space size. This control therefore varies only the sample-selection rule
-(concordant vs random) at matched sample count and class balance.
-
-Interpretation
---------------
-If concordant training yields higher shared-cluster counts and/or higher
-pathway concentration than the size- and class-matched random control, the
-feature-stability doubling is specific to concordance rather than a generic
-consequence of subsetting. If the random control matches the concordant value,
-the doubling is a subsetting artefact and the recovery claim must be softened.
+Writes to ``data/outputs/figure5/figure5b_random_control/``. Each control seed
+re-runs the full 20-seed stability sweep over all phenotypes x splits.
 
 Run with::
 
     uv run python -m scripts.figure5.figure5b_random_control --n-control-seeds 10
-
-This is compute-heavy (each control seed re-runs the full 20-seed stability
-sweep over all phenotypes x splits). It does not retrain any published model and
-writes only to ``data/outputs/figure5/figure5b_random_control/``.
 """
 
 from __future__ import annotations
@@ -63,7 +37,6 @@ from scripts.figure5.figure5b_data import (
     get_consistent_features,
     get_screened_feature_names,
     get_screened_split_data,
-    load_all_datasets_combined,
     load_experimental_phenotypes,
     load_gapmind_predictions,
     load_individual_dataset,
@@ -74,17 +47,17 @@ from scripts.ml_splits import load_single_split_data
 
 
 def _cell_rng(control_seed: int, key: str) -> np.random.Generator:
-    """Deterministic, thread-safe per-cell RNG.
+    """Deterministic per-cell RNG.
 
     Each (control_seed, cell) pair gets its own generator so cells can run in
-    parallel without sharing a single mutable RNG. Equivalent in distribution to
-    drawing one matched random subset per cell.
+    parallel without sharing a single mutable RNG.
     """
     cell_hash = zlib.crc32(key.encode()) & 0xFFFFFFFF
     return np.random.default_rng(np.random.SeedSequence([control_seed, cell_hash]))
 
-# Match the concordant pipeline's eligibility gates so the control runs on the
-# same (phenotype, split) cells as Figure 5B.
+
+# Eligibility gates matching the concordant Figure 5B pipeline, so the control
+# runs on the same (phenotype, split) cells.
 MIN_SUBSET = 20
 MIN_PER_CLASS = 10
 DATASETS = ("atleaf", "lit", "marine")
@@ -126,7 +99,9 @@ def class_matched_random_indices(
     return chosen.tolist()
 
 
-def _matched_counts(y: pd.Series, concordant_genomes: set[str]) -> tuple[int, int] | None:
+def _matched_counts(
+    y: pd.Series, concordant_genomes: set[str]
+) -> tuple[int, int] | None:
     """Return ``(n_pos, n_neg)`` of the concordant subset of ``y``, or None if ineligible.
 
     Applies the same gates as the concordant Figure 5B pipeline (at least
@@ -197,8 +172,6 @@ def _stability_on_subset(
         return None
 
     if is_split:
-        # Mirror the concordant combined path: 80/20 train/val re-split, screen,
-        # then seeded stability.
         from sklearn.model_selection import train_test_split
 
         X_tr, X_val, y_tr, y_val = train_test_split(
@@ -214,7 +187,9 @@ def _stability_on_subset(
             n_candidate_features=n_candidate_features,
         )
         feature_lists = [
-            train_and_get_top_features_split(screened, random_state=s, n_features=n_features)
+            train_and_get_top_features_split(
+                screened, random_state=s, n_features=n_features
+            )
             for s in range(n_seeds)
         ]
     else:
@@ -392,10 +367,9 @@ def summarise_control(
     Returns
     -------
     dict[str, float]
-        ``mean_shared_clusters`` (per-comparison mean, comparable to the
-        manuscript's 0.5/1.3) and ``n_phenotypes_sharing`` (phenotypes with at
-        least one shared cluster, summed over held-out comparisons, comparable
-        to the manuscript's 6/12).
+        ``mean_shared_clusters`` (per-comparison mean) and
+        ``n_phenotypes_sharing`` (phenotypes with at least one shared cluster,
+        summed over held-out comparisons).
     """
     if summary_df.empty or "n_intersection_clusters" not in summary_df.columns:
         return {"mean_shared_clusters": float("nan"), "n_phenotypes_sharing": 0.0}
@@ -412,14 +386,10 @@ def reaggregate_clusters(
 ) -> pd.DataFrame:
     """Recompute the cluster-level columns from the retained KO lists, no refitting.
 
-    The per-seed comparison CSVs store the KO membership of every comparison as
-    ``intersection``, ``unique_to_individual`` and ``unique_to_combined``, so the
-    combined and individual KO sets are recoverable exactly
-    (``combined = intersection | unique_to_combined``, and likewise for
-    individual). Only the cluster columns depend on
-    ``ko_clusters_shap_hclust.json``, so a change to the cluster map can be
-    propagated by re-deriving those five columns instead of repeating the
-    multi-hour SHAP refit.
+    The combined and individual KO sets are recovered from the per-seed
+    comparison CSVs (``combined = intersection | unique_to_combined``, likewise
+    for individual), so a change to ``ko_clusters_shap_hclust.json`` can be
+    propagated without repeating the SHAP refit.
 
     Parameters
     ----------
@@ -463,10 +433,9 @@ def reaggregate_clusters(
             intersection = kos(row["intersection"])
             combined = intersection + kos(row["unique_to_combined"])
             individual = intersection + kos(row["unique_to_individual"])
-            if (
-                len(combined) != int(row["n_combined_features"])
-                or len(individual) != int(row["n_individual_features"])
-            ):
+            if len(combined) != int(row["n_combined_features"]) or len(
+                individual
+            ) != int(row["n_individual_features"]):
                 raise ValueError(
                     f"{path.name}: KO lists for {row['comparison']} do not "
                     "reproduce the stored feature counts; reaggregation would "
@@ -547,8 +516,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Cap per-fit threads so many small-subset cells can run concurrently without
-    # oversubscription (default -1 leaves Figure 5B's own behaviour unchanged).
+    # Cap per-fit threads so concurrent cells do not oversubscribe the machine;
+    # the default -1 leaves Figure 5B's own behaviour unchanged.
     _f5b._THREAD_COUNT = args.thread_count
 
     splits_dir = Path("data/processed/train_test_splits")
@@ -575,7 +544,9 @@ def main() -> None:
         with open(cluster_file) as handle:
             ko_clusters_by_phenotype = json.load(handle)
     else:
-        print(f"WARNING: cluster mapping missing at {cluster_file}; cluster counts skipped.")
+        print(
+            f"WARNING: cluster mapping missing at {cluster_file}; cluster counts skipped."
+        )
 
     if args.reaggregate_only:
         if ko_clusters_by_phenotype is None:

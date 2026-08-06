@@ -5,7 +5,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 
 from scripts.visualization import configure_plot_style
@@ -15,17 +15,15 @@ sns.set_context("paper")
 configure_plot_style()
 
 
-# Feature type to use: "gapmind", "kofam", or "rast"
-# Change this line to match the feature type used in figure_s6_data.py
+# "gapmind", "kofam", or "rast"; must match the feature type used in
+# figure_s6_data.py.
 FEATURE_TYPE = "kofam"
 
 # Sample sizes used in figure_s6_data.py
 SAMPLE_SIZES = [50, 100, 200, 500, "full"]
 
-# Manuscript figure routing: only the Histidine combined-test grid appears in
-# the manuscript (as figure_s6.pdf). All other variants — the Full/Concordant/
-# Discordant test-subset 2x3 grids and the Galactose combined-test grid — go to
-# figures/alternate/ to keep the manuscript figures directory uncluttered.
+# Only the Histidine combined-test grid appears in the manuscript (as
+# figure_s6.pdf); all other variants go to figures/alternate/.
 MANUSCRIPT_PHENOTYPE = "Histidine"
 MANUSCRIPT_FIGURE_NAME = "figure_s6.pdf"
 
@@ -46,7 +44,6 @@ def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     plot_data = df.copy()
 
-    # Map split types to readable names
     plot_data["split_type"] = plot_data["split_type"].map(
         {
             "random_split": "Random Split",
@@ -55,7 +52,6 @@ def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
         }
     )
 
-    # Map training types to readable names
     plot_data["training_type"] = plot_data["training_type"].map(
         {
             "concordant": "Concordant",
@@ -63,7 +59,6 @@ def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
         }
     )
 
-    # Map test subsets to readable names
     plot_data["test_subset"] = plot_data["test_subset"].map(
         {
             "full": "Full Test",
@@ -108,7 +103,6 @@ def plot_performance_vs_sample_size(
         sharey=True,
     )
 
-    # Get unique sample sizes for x-axis labeling
     raw_sizes = plot_data["sample_size"].unique()
     unique_sample_sizes = sorted(
         raw_sizes,
@@ -144,19 +138,16 @@ def plot_performance_vs_sample_size(
                 if len(train_subset) == 0:
                     continue
 
-                # Get unique (key, repeat) combinations for line connections
                 train_subset["key_repeat"] = (
                     train_subset["key"] + "_" + train_subset["repeat"].astype(str)
                 )
                 unique_key_repeats = train_subset["key_repeat"].unique()
 
-                # Plot lines connecting points with the same key and repeat
                 for key_repeat in unique_key_repeats:
                     line_data = train_subset[
                         train_subset["key_repeat"] == key_repeat
                     ].copy()
 
-                    # Sort by n_train_samples for proper line connection
                     line_data = line_data.sort_values("n_train_samples")
 
                     ax.plot(
@@ -168,7 +159,6 @@ def plot_performance_vs_sample_size(
                         alpha=0.4,
                     )
 
-                # Plot all points (only add label once for legend)
                 ax.scatter(
                     train_subset["n_train_samples"],
                     train_subset["balanced_accuracy"],
@@ -176,9 +166,7 @@ def plot_performance_vs_sample_size(
                     marker=markers[training_type],
                     alpha=0.7,
                     s=40,
-                    label=training_type
-                    if row_idx == 0 and col_idx == 0
-                    else None,
+                    label=training_type if row_idx == 0 and col_idx == 0 else None,
                     edgecolors="black",
                     linewidths=0.5,
                 )
@@ -191,7 +179,6 @@ def plot_performance_vs_sample_size(
             if row_idx == 0:
                 ax.set_title(split_type, fontweight="bold")
 
-            # Add phenotype label on the left
             if col_idx == 0:
                 ax.text(
                     -0.3,
@@ -206,7 +193,6 @@ def plot_performance_vs_sample_size(
 
             ax.set_ylim(0, 1.05)
 
-            # Set x-axis ticks to match sample sizes
             x_ticks = []
             x_labels = []
             for sample_size in unique_sample_sizes:
@@ -224,7 +210,6 @@ def plot_performance_vs_sample_size(
 
             ax.tick_params(axis="both", which="both")
 
-    # Add figure-level legend at the top in one row
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(
         handles,
@@ -271,9 +256,8 @@ def plot_combined_test_subsets(
 
     Creates one combined-test-subset grid per phenotype. The
     ``MANUSCRIPT_PHENOTYPE`` grid is saved as ``manuscript_dir /
-    MANUSCRIPT_FIGURE_NAME`` (the manuscript Figure 7); the remaining
-    phenotypes are saved under ``alternate_dir`` to keep the manuscript
-    figures directory uncluttered.
+    MANUSCRIPT_FIGURE_NAME``; the remaining phenotypes are saved under
+    ``alternate_dir``.
 
     Parameters
     ----------
@@ -288,7 +272,6 @@ def plot_combined_test_subsets(
     split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
     test_subsets = ["Full Test", "Concordant Test", "Discordant Test"]
 
-    # Get unique sample sizes for x-axis labeling
     raw_sizes = df["sample_size"].unique()
     unique_sample_sizes = sorted(
         raw_sizes,
@@ -336,19 +319,16 @@ def plot_combined_test_subsets(
                     if len(train_subset) == 0:
                         continue
 
-                    # Get unique (key, repeat) combinations for line connections
                     train_subset["key_repeat"] = (
                         train_subset["key"] + "_" + train_subset["repeat"].astype(str)
                     )
                     unique_key_repeats = train_subset["key_repeat"].unique()
 
-                    # Plot lines connecting points with the same key and repeat
                     for key_repeat in unique_key_repeats:
                         line_data = train_subset[
                             train_subset["key_repeat"] == key_repeat
                         ].copy()
 
-                        # Sort by n_train_samples for proper line connection
                         line_data = line_data.sort_values("n_train_samples")
 
                         ax.plot(
@@ -360,7 +340,6 @@ def plot_combined_test_subsets(
                             alpha=0.4,
                         )
 
-                    # Plot all points (only add label once for legend)
                     ax.scatter(
                         train_subset["n_train_samples"],
                         train_subset["balanced_accuracy"],
@@ -368,9 +347,7 @@ def plot_combined_test_subsets(
                         marker=markers[training_type],
                         alpha=0.7,
                         s=40,
-                        label=training_type
-                        if row_idx == 0 and col_idx == 0
-                        else None,
+                        label=training_type if row_idx == 0 and col_idx == 0 else None,
                         edgecolors="black",
                         linewidths=0.5,
                     )
@@ -383,7 +360,6 @@ def plot_combined_test_subsets(
                 if row_idx == 0:
                     ax.set_title(split_type, fontweight="bold")
 
-                # Add test subset label on the left
                 if col_idx == 0:
                     ax.text(
                         -0.3,
@@ -396,10 +372,8 @@ def plot_combined_test_subsets(
                         fontweight="bold",
                     )
 
-                # Set y-axis limits
                 ax.set_ylim(0, 1.05)
 
-                # Set x-axis ticks to match sample sizes
                 x_ticks = []
                 x_labels = []
                 for sample_size in unique_sample_sizes:
@@ -417,7 +391,6 @@ def plot_combined_test_subsets(
 
                 ax.tick_params(axis="both", which="both")
 
-        # Add figure-level legend at the top in one row
         handles, labels = axes[0, 0].get_legend_handles_labels()
         fig.legend(
             handles,
@@ -498,8 +471,8 @@ def main() -> None:
 
     plot_data = prepare_plot_data(df)
 
-    # Create output directories. The manuscript figure (figure_s6.pdf) lives in
-    # figures/; all other variants are routed to figures/alternate/.
+    # The manuscript figure (figure_s6.pdf) lives in figures/; all other
+    # variants go to figures/alternate/.
     output_dir = Path("figures")
     alternate_dir = output_dir / "alternate"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -507,18 +480,16 @@ def main() -> None:
 
     print("\nGenerating plots...")
 
-    # Auxiliary main plot (Full Test only, 2x3 grid for both phenotypes): alternate.
     print("  Creating auxiliary Full Test plot (alternate)...")
     plot_performance_vs_sample_size(
-        plot_data, alternate_dir / "figure_s6_full_test_2x3.pdf", test_subset="Full Test"
+        plot_data,
+        alternate_dir / "figure_s6_full_test_2x3.pdf",
+        test_subset="Full Test",
     )
 
-    # Per-test-subset plots: alternate.
     print("  Creating per-test-subset plots (alternate)...")
     plot_all_test_subsets(plot_data, alternate_dir)
 
-    # Combined-test-subset plots per phenotype. The MANUSCRIPT_PHENOTYPE goes to
-    # figures/figure_s6.pdf; the rest land in figures/alternate/.
     print("  Creating combined-test-subset plots per phenotype...")
     plot_combined_test_subsets(
         plot_data,

@@ -1,10 +1,7 @@
-"""
-Utilities for managing data collections during machine learning
-"""
+"""Utilities for managing data collections during machine learning."""
 
-from collections.abc import MutableMapping
+from collections.abc import Iterable, MutableMapping
 from dataclasses import dataclass
-from typing import Iterable
 
 import pandas as pd
 from trait_prediction.main import FeatureIndex, PhenotypeIndex

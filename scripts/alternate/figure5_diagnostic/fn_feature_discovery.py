@@ -1,30 +1,23 @@
 #!/usr/bin/env python3
-"""What features do retained false negatives introduce, and are any novel?
+"""Stable features introduced by GapMind false negatives, per phenotype.
 
-Three-way stable-feature comparison across train-set filter regimes, using the
-SAME multi-seed SHAP stable-feature pipeline as Figure 5B / Tables S3-S4 so the
-three lists are directly comparable:
+Three train-set regimes run through the multi-seed SHAP stable-feature pipeline
+of Figure 5B / Tables S3-S4, differing only in which samples are selected:
 
 * ``full``           : all training samples (Figure 4 / Table S3 regime).
 * ``concordant``     : GapMind-concordant samples only (Figure 5B / Table S4).
-* ``concordant_fn``  : concordant samples PLUS GapMind false negatives
-  (GapMind = 0, experiment = 1). Differs from ``concordant`` by EXACTLY the
-  false-negative genomes, so any stable feature present here but absent from
-  ``concordant`` is attributable to the false negatives.
+* ``concordant_fn``  : concordant samples plus GapMind false negatives
+  (GapMind = 0, experiment = 1).
 
 For every phenotype and leave-one-dataset-out split the pipeline re-splits the
 selected samples 80/20, screens to the top 300 KOFAM features, then over 20
 seeds fits ``cb_noeval`` and keeps the top-10 mean-|SHAP| features; features
-appearing in >= 70% of seeds are "stable". The regimes differ ONLY in which
-samples are selected.
+appearing in >= 70% of seeds are stable.
 
-The comparison then isolates FN-introduced features (stable in ``concordant_fn``,
-not in ``concordant``), records whether ``full`` also surfaces them, and flags
-each as canonical/non-canonical (GapMind step KO set union KEGG reference map)
-and as functionally uncharacterised (hypothetical / putative / unknown-function
-KOs). These are candidate ML-recoverable novel genes for the phenotype; digging
-into the uncharacterised ones is a downstream, annotation-only step (no
-comparative genomics).
+Features stable in ``concordant_fn`` but not in ``concordant`` are written to
+``fn_introduced_features.csv`` with whether ``full`` also surfaces them, a
+canonical/non-canonical flag (GapMind step KO set union KEGG reference map) and
+an uncharacterised flag (hypothetical / putative / unknown-function KOs).
 
 Run with::
 
@@ -40,9 +33,15 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 import scripts.figure5.figure5b_data as f5b
+from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
+    build_symbol_to_ko,
+    canonical_ko_set,
+    load_ko_descriptions,
+)
 from scripts.figure5.figure5b_data import (
     get_consistent_features,
     get_screened_split_data,
@@ -52,13 +51,7 @@ from scripts.figure5.figure5cd_data import (
     load_experimental_phenotypes,
     load_gapmind_predictions,
 )
-from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
-    build_symbol_to_ko,
-    canonical_ko_set,
-    load_ko_descriptions,
-)
 from scripts.ml_splits import load_single_split_data
-from sklearn.model_selection import train_test_split
 
 THREADS: int = 4
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
@@ -170,8 +163,8 @@ def stable_features_for_selection(
 ) -> list[str] | None:
     """Compute stable top SHAP features for a selected sample set.
 
-    Mirrors ``figure5b_data.analyze_combined_splits`` exactly: guard sizes,
-    80/20 re-split, screen to ``N_CANDIDATE`` features, then a ``N_SEEDS`` SHAP
+    Mirrors ``figure5b_data.analyze_combined_splits``: size guards, 80/20
+    re-split, screen to ``N_CANDIDATE`` features, then a ``N_SEEDS`` SHAP
     top-``N_FEATURES`` loop kept at ``THRESHOLD`` consistency.
 
     Parameters
@@ -254,14 +247,18 @@ def run_sweep(
         for split_type in [d.name for d in phenotype_dir.iterdir() if d.is_dir()]:
             key = f"{phenotype}_{split_type}"
             try:
-                split_data = load_single_split_data(phenotype_dir / split_type, feature_data)
+                split_data = load_single_split_data(
+                    phenotype_dir / split_type, feature_data
+                )
             except Exception as exc:  # noqa: BLE001
                 print(f"  load {key} failed: {exc}", flush=True)
                 continue
             x_combined = pd.concat([split_data["X_train"], split_data["X_val"]], axis=0)
             y_combined = pd.concat([split_data["y_train"], split_data["y_val"]], axis=0)
             for regime in REGIMES:
-                ids = select_samples(x_combined.index, regime, concordant, false_negative)
+                ids = select_samples(
+                    x_combined.index, regime, concordant, false_negative
+                )
                 stable = stable_features_for_selection(x_combined, y_combined, ids)
                 if stable is not None:
                     results[regime][key] = stable
@@ -327,7 +324,6 @@ def build_comparison(
     for phenotype, keys in keys_by_pheno.items():
         canonical = canonical_by_phenotype.get(phenotype, set())
         gapmind_kos = gapmind_by_phenotype.get(phenotype, set())
-        # Aggregate stable features across the phenotype's held-out folds.
         cfn_counter: Counter[str] = Counter()
         conc_all: set[str] = set()
         full_all: set[str] = set()
@@ -354,8 +350,7 @@ def build_comparison(
     frame = pd.DataFrame(rows)
     if frame.empty:
         return frame
-    # Candidate priority: uncharacterised & non-canonical & FN-specific first,
-    # then by fold recurrence.
+    # Candidate priority: uncharacterised and FN-specific first, then recurrence.
     frame["fn_specific"] = ~frame["in_full"]
     frame = frame.sort_values(
         ["is_uncharacterized", "fn_specific", "n_folds_fn", "phenotype"],
@@ -414,7 +409,9 @@ def main() -> None:
     gapmind_by_phenotype: dict[str, set[str]] = {}
     all_phenos = {phenotype_of(k) for k in results["concordant_fn"]}
     for phenotype in all_phenos:
-        canonical, gapmind_kos, _ = canonical_ko_set(phenotype, step_columns, symbol_to_ko)
+        canonical, gapmind_kos, _ = canonical_ko_set(
+            phenotype, step_columns, symbol_to_ko
+        )
         canonical_by_phenotype[phenotype] = canonical
         gapmind_by_phenotype[phenotype] = gapmind_kos
 
@@ -423,7 +420,9 @@ def main() -> None:
     )
     comp_path = args.out_dir / "fn_introduced_features.csv"
     comparison.to_csv(comp_path, index=False)
-    print(f"\nFN-introduced features (in concordant_fn, not in concordant): {len(comparison)}")
+    print(
+        f"\nFN-introduced features (in concordant_fn, not in concordant): {len(comparison)}"
+    )
     print(f"Wrote {comp_path}")
 
     if not comparison.empty:

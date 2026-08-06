@@ -1,27 +1,19 @@
 #!/usr/bin/env python3
-"""Standalone experiment: false-positive-only GapMind train-set filtering.
+"""Compare false-positive-only GapMind train-set filtering with symmetric filtering.
 
-Tests Chris's suggestion that filtering out only GapMind *false positives*
-(GapMind=1, experiment=0) from the training set, while keeping GapMind false
-negatives, recovers most of the gain of symmetric concordance filtering without
-discarding the informative false-negative genomes.
+Three leave-one-dataset-out train-set filter modes per phenotype:
 
-Three leave-one-dataset-out train-set filter modes are compared per phenotype:
-
-1. ``no_filter``  : all training samples (published baseline behaviour).
+1. ``no_filter``  : all training samples.
 2. ``concordant`` : keep only GapMind-concordant samples (drop FP and FN).
 3. ``fp_only``    : drop only false positives (GapMind=1 & experiment=0),
    keeping concordant samples plus false negatives.
 
-In every mode the held-out test set is left FULL and UNFILTERED so that the
-three modes are scored on identical evaluation data. Each mode is run with and
-without CatBoost balanced class weights because dropping false positives skews
-the train-set label balance.
+The held-out test set is left full and unfiltered in every mode, so all modes
+are scored on identical evaluation data. Each mode is run with and without
+CatBoost balanced class weights. Backs the false-negative-retention numbers in
+Supplementary Text S10.
 
-Its output backs the false-negative-retention numbers reported in Supplementary
-Text S10, so it is part of the published pipeline rather than an exploratory
-aside. It modifies no other Figure 5 module: it reuses their loaders and the
-shared ``scripts.ml_splits.perform_split_ml`` evaluator.
+Writes data/outputs/figure5_fp_only/fp_only_comparison.csv.
 
 Run with::
 
@@ -45,8 +37,7 @@ from scripts.figure5.figure5cd_data import (
 )
 from scripts.ml_splits import load_split_data, perform_split_ml
 
-# Thread cap (critical): every CatBoost fit is constrained to this many threads
-# so a backgrounded full sweep does not saturate the machine.
+# Thread cap applied to every CatBoost fit.
 THREADS: int = int(os.environ.get("EXPERIMENT_THREADS", "4"))
 
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
@@ -72,7 +63,7 @@ CLASS_WEIGHT_VALUES: dict[ClassWeight, str | None] = {
     "balanced": "Balanced",
 }
 
-# Metrics pulled from the shared scorer (subset of get_scores defaults).
+# Subset of the shared scorer's default metrics.
 SCORING: list[str] = [
     "balanced_accuracy",
     "recall",
@@ -113,8 +104,7 @@ def build_filter_masks(
     A genome is counted only when it has both a non-NaN GapMind call and a
     non-NaN experimental label for ``phenotype``. False positive means
     GapMind=1 while experiment=0; false negative means GapMind=0 while
-    experiment=1. The ``keep_fp_only`` set is the complement of the false
-    positives (concordant genomes plus false negatives).
+    experiment=1.
 
     Parameters
     ----------
@@ -165,9 +155,9 @@ def build_filter_masks(
         "concordant": concordant,
         "false_positive": false_positive,
         "false_negative": false_negative,
-        # Keep everything except false positives. Genomes with no GapMind/exp
-        # call (not in any of the above) are kept too, matching no_filter
-        # behaviour for samples GapMind cannot speak to.
+        # Keep everything except false positives. Genomes with no GapMind or
+        # experimental call are kept too, matching no_filter behaviour for
+        # samples GapMind cannot speak to.
         "keep_fp_only": false_positive,
     }
 
@@ -179,9 +169,9 @@ def filter_train_val(
 ) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series] | None:
     """Apply a train-set filter mode to the train and validation sets.
 
-    The held-out test set is intentionally not touched here; the caller scores
-    on the full unfiltered test set. Train and validation sets receive the same
-    filter so early stopping sees the same population as training.
+    The held-out test set is not touched; the caller scores on the full
+    unfiltered test set. Train and validation sets receive the same filter so
+    early stopping sees the same population as training.
 
     Parameters
     ----------
@@ -301,8 +291,8 @@ def evaluate_combination(
         "recall": float(scores["recall"]),
         "precision": float(scores["precision"]),
         "specificity": float(scores["specificity"]),
-        "n_train": int(len(x_train)),
-        "n_test": int(len(x_test)),
+        "n_train": len(x_train),
+        "n_test": len(x_test),
     }
     return record
 

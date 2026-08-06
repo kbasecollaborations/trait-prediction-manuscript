@@ -2,8 +2,8 @@
 Utilities for reading data from files
 """
 
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from trait_prediction.main import (
     FeatureIndex,
@@ -87,9 +87,8 @@ def read_phenotypes(phenotype_files: Iterable[Path]) -> PhenotypeSet:
 def cache_is_fresh(cache: Path, *inputs: Path) -> bool:
     """Return whether a cached artefact is newer than every input it derives from.
 
-    Several analysis scripts skip expensive recomputation when their output file
-    already exists. Existence alone is not a safe test: if the inputs change, the
-    stale cache is silently reused. This compares modification times instead.
+    Compares modification times, since existence alone would silently reuse a
+    cache whose inputs have changed.
 
     Parameters
     ----------

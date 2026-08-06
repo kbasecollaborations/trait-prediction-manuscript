@@ -6,7 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 
 from scripts.visualization import (
@@ -92,7 +92,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
     else:
         marine_ids_map = {}
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -182,7 +182,6 @@ def get_genomeid_dataset_map() -> dict[str, str]:
     dict[str, str]
         Mapping of genome ID to dataset name.
     """
-    from scripts.io import read_phenotypes
 
     phenotype_files_all = Path("data/processed/phenotypes").glob("**/*.tsv")
     dataset_genome_name_map = defaultdict(set)
@@ -220,7 +219,6 @@ def identify_microbe_categories(
         Lists of genome IDs for: (1) no exp growth but GapMind predicts growth,
         (2) all exp growth but GapMind incomplete, (3) top 20 most misclassified.
     """
-    # Category 1: no experimental growth but GapMind predicts growth
     microbes_no_exp_growth = phenotypes_combined.index[
         phenotypes_combined.apply(lambda x: (x.dropna() == 0).all(), axis=1)
     ].to_list()
@@ -231,7 +229,6 @@ def identify_microbe_categories(
             if (gapmind_data_pheno.loc[microbe] == 1).any():
                 microbes_gapmind_predicts_growth.append(microbe)
 
-    # Category 2: All experimental growth but GapMind incomplete
     microbes_all_exp_growth = phenotypes_combined.index[
         phenotypes_combined.apply(lambda x: (x.dropna() == 1).all(), axis=1)
     ].to_list()
@@ -242,7 +239,6 @@ def identify_microbe_categories(
             if not (gapmind_data_pheno.loc[microbe] == 1).all():
                 microbes_gapmind_missing_predictions.append(microbe)
 
-    # Category 3: Top 20 most frequently misclassified
     misclassifications = dict()
     phenotype_names = phenotypes_combined.columns
 
@@ -359,7 +355,6 @@ def create_misclassification_plots(
     datasets = ["atleaf", "lit", "pmi", "marine"]
     dataset_colors = get_dataset_colors()
 
-    # Subplot 1: no growth but GapMind predicts growth
     cat1_data = pd.DataFrame({"count": [cat1_counts.get(d, 0) for d in datasets]})
     bars1 = ax1.bar(
         range(len(datasets)),
@@ -382,7 +377,6 @@ def create_misclassification_plots(
         0, max(cat1_data["count"]) * 1.1 if cat1_data["count"].max() > 0 else 1
     )
 
-    # Subplot 2: all growth but GapMind incomplete
     cat2_data = pd.DataFrame({"count": [cat2_counts.get(d, 0) for d in datasets]})
     bars2 = ax2.bar(
         range(len(datasets)),
@@ -405,7 +399,6 @@ def create_misclassification_plots(
         0, max(cat2_data["count"]) * 1.1 if cat2_data["count"].max() > 0 else 1
     )
 
-    # Subplot 3: top 20 most frequently misclassified genomes
     cat1_set = set(cat1_microbes)
     cat2_set = set(cat2_microbes)
 
@@ -416,13 +409,13 @@ def create_misclassification_plots(
 
         if in_cat1:
             category = "No Growth"
-            color = "#e377c2"  # Pink
+            color = "#e377c2"
         elif in_cat2:
             category = "All Growth"
-            color = "#17becf"  # Cyan
+            color = "#17becf"
         else:
             category = "Neither"
-            color = "#7f7f7f"  # Gray
+            color = "#7f7f7f"
 
         top_20_data.append(
             {
@@ -445,16 +438,11 @@ def create_misclassification_plots(
     )
     ax3.set_xlabel("Number of Misclassifications", fontsize=12)
     ax3.set_ylabel("Microbe ID", fontsize=12)
-    # ax3.set_title(
-    #     "Top 20 Most Frequently Misclassified Microbes",
-    #     fontsize=12,
-    #     pad=20,
-    # )
     ax3.set_yticks(range(len(top_20_df)))
     short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
     ax3.set_yticklabels(short_labels, fontsize=8)
     ax3.invert_yaxis()
-    ax3.tick_params(axis='y', which='major', pad=2)
+    ax3.tick_params(axis="y", which="major", pad=2)
 
     max_count = top_20_df["count"].max()
     ax3.set_xlim(0, max_count * 1.1)
@@ -484,7 +472,7 @@ def create_misclassification_plots(
     overlap_23 = cat2_set.intersection(cat3_set)
     overlap_123 = cat1_set.intersection(cat2_set).intersection(cat3_set)
 
-    print(f"\n=== Figure 6A Summary ===")
+    print("\n=== Figure 6A Summary ===")
     print(f"Category 1 (No growth, GM predicts growth): {len(cat1_microbes)} genomes")
     print(f"Category 2 (All growth, GM incomplete): {len(cat2_microbes)} genomes")
     print(f"Category 3 (Top 20 misclassified): {len(cat3_microbes)} genomes")
@@ -498,7 +486,7 @@ def plot_microbe_misclassification_ranking(
     ax: plt.Axes,
     gapmind_data_dir: Path | None = None,
 ) -> None:
-    """Plot the ranked top-20 microbe misclassification diagnostic.
+    """Plot the top-20 most frequently misclassified genomes as a ranked bar chart.
 
     Parameters
     ----------
@@ -506,7 +494,7 @@ def plot_microbe_misclassification_ranking(
         Axes on which to draw the ranked horizontal bar chart.
     gapmind_data_dir : Path | None
         Directory containing GapMind feature files. If ``None``, uses the
-        default path used elsewhere in this module.
+        default path.
     """
     if gapmind_data_dir is None:
         gapmind_data_dir = Path("data/processed/gapmind_features/all")
@@ -563,9 +551,7 @@ def plot_microbe_misclassification_ranking(
             color = "#17becf"
         else:
             color = "#7f7f7f"
-        top_20_data.append(
-            {"genome_id": genome_id, "count": count, "color": color}
-        )
+        top_20_data.append({"genome_id": genome_id, "count": count, "color": color})
 
     top_20_df = pd.DataFrame(top_20_data)
 
@@ -610,19 +596,19 @@ def plot_microbe_misclassification_ranking(
 def get_problematic_sample_summary(
     gapmind_data_dir: Path | None = None,
 ) -> tuple[pd.DataFrame, dict[str, int]]:
-    """Summarize problematic-sample categories retained in the redesigned panel.
+    """Summarize the two problematic-sample categories shown in Figure 6A.
 
     Parameters
     ----------
     gapmind_data_dir : Path | None
         Directory containing GapMind feature files. If None, uses the default
-        path used elsewhere in this module.
+        path.
 
     Returns
     -------
     tuple[pd.DataFrame, dict[str, int]]
-        A dataframe with per-dataset counts and totals for the two retained
-        problematic-sample categories, and summary metadata.
+        Per-dataset counts and totals for the two categories, and the category
+        totals and overlap as metadata.
     """
     if gapmind_data_dir is None:
         gapmind_data_dir = Path("data/processed/gapmind_features/all")
@@ -679,7 +665,7 @@ def plot_problematic_sample_summary(
     ax: plt.Axes,
     gapmind_data_dir: Path | None = None,
 ) -> None:
-    """Plot the condensed problematic-sample summary used in Figure 6A.
+    """Plot the problematic-sample summary as a per-dataset stacked bar chart.
 
     Parameters
     ----------
@@ -687,7 +673,7 @@ def plot_problematic_sample_summary(
         Axes on which to draw the summary.
     gapmind_data_dir : Path | None
         Directory containing GapMind feature files. If None, uses the default
-        path used elsewhere in this module.
+        path.
     """
     summary_df, _ = get_problematic_sample_summary(gapmind_data_dir)
     datasets = ["atleaf", "lit", "pmi", "marine"]
@@ -753,10 +739,10 @@ def create_figure6a(
     fig = plt.figure(figsize=(14, 10))
     gs = GridSpec(2, 2, figure=fig, height_ratios=[1, 1.2], hspace=0.3, wspace=0.3)
 
-    ax1 = fig.add_subplot(gs[0, 0])  # Top left
-    ax2 = fig.add_subplot(gs[0, 1])  # Top right
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
 
-    # Create a nested gridspec for the bottom row to center and narrow the third plot
+    # Nested gridspec narrows and centres the bottom-row panel.
     bottom_gs = GridSpec(
         1,
         3,
@@ -768,7 +754,7 @@ def create_figure6a(
         bottom=gs[1, :].get_position(fig).y0,
         top=gs[1, :].get_position(fig).y1,
     )
-    ax3 = fig.add_subplot(bottom_gs[0, 1])  # Center column only
+    ax3 = fig.add_subplot(bottom_gs[0, 1])
 
     create_misclassification_plots(ax1, ax2, ax3, gapmind_data_dir)
 

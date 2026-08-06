@@ -292,7 +292,6 @@ def get_test_dataset_from_key(key: str) -> str | None:
     str | None
         Test dataset name (atleaf, lit, marine, or pmi), or None if not a dataset_split
     """
-    # Example key: "Alanine_train(atleaf+lit+marine),test(pmi)"
     if "test(" not in key:
         return None
 
@@ -650,8 +649,11 @@ def main() -> None:
     phenotype labels and splits it derives from; pass ``--fresh`` to ignore it.
     """
     parser = argparse.ArgumentParser(description="Figure 4C SHAP feature analysis")
-    parser.add_argument("--fresh", action="store_true",
-                        help="ignore cached SHAP JSONs and recompute from scratch")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="ignore cached SHAP JSONs and recompute from scratch",
+    )
     args = parser.parse_args()
 
     SPLITS_DIR = Path("data/processed/train_test_splits")
@@ -675,7 +677,6 @@ def main() -> None:
     print(f"\nCommon phenotypes to analyze: {len(COMMON_PHENOTYPES)}")
     print(f"  {', '.join(COMMON_PHENOTYPES[:5])}...")
 
-    # Step 1 & 2: Analyze combined train-test splits
     combined_file = OUTPUT_DIR / "combined_splits_shap_features.json"
 
     if not args.fresh and cache_is_fresh(combined_file, PHENOTYPE_DIR, SPLITS_DIR):
@@ -709,7 +710,6 @@ def main() -> None:
             json.dump(combined_results_filtered, f, indent=2)
         print(f"Saved combined results to: {combined_file}")
 
-    # Step 3 & 4: Analyze individual datasets
     individual_file = OUTPUT_DIR / "individual_datasets_shap_features.json"
 
     if not args.fresh and cache_is_fresh(individual_file, PHENOTYPE_DIR, SPLITS_DIR):
@@ -736,7 +736,7 @@ def main() -> None:
             n_features=N_FEATURES,
         )
 
-        print(f"\nCompleted analysis for individual datasets:")
+        print("\nCompleted analysis for individual datasets:")
         for dataset, phenotypes in individual_results.items():
             print(f"  - {dataset}: {len(phenotypes)} phenotypes")
 
@@ -744,7 +744,6 @@ def main() -> None:
             json.dump(individual_results, f, indent=2)
         print(f"Saved individual results to: {individual_file}")
 
-    # Step 3.5: Analyze all datasets combined
     all_combined_file = OUTPUT_DIR / "all_datasets_combined_shap_features.json"
     ALL_DATASETS = ["atleaf", "lit", "marine", "pmi"]
 
@@ -778,9 +777,8 @@ def main() -> None:
             json.dump(all_combined_results, f, indent=2)
         print(f"Saved all combined results to: {all_combined_file}")
 
-    # Step 5: Compare features
-    # Always re-run the comparison step (cheap), so that updates to the
-    # cluster mapping or the SHAP JSONs propagate without manual cache busts.
+    # The comparison step is never cached, so updates to the cluster mapping or
+    # the SHAP JSONs propagate without a manual cache bust.
     comparison_file = OUTPUT_DIR / "feature_comparison.json"
     summary_file = OUTPUT_DIR / "feature_comparison_summary.csv"
 
@@ -788,10 +786,14 @@ def main() -> None:
     if cluster_file.exists():
         with open(cluster_file, "r") as f:
             ko_clusters_by_phenotype = json.load(f)
-        print(f"\nStep 5: Loaded cluster mapping for {len(ko_clusters_by_phenotype)} phenotypes")
+        print(
+            f"\nStep 5: Loaded cluster mapping for {len(ko_clusters_by_phenotype)} phenotypes"
+        )
     else:
         ko_clusters_by_phenotype = None
-        print(f"\nStep 5: cluster mapping not found at {cluster_file}; skipping cluster columns")
+        print(
+            f"\nStep 5: cluster mapping not found at {cluster_file}; skipping cluster columns"
+        )
 
     print("\nStep 5: Comparing features between combined and individual models...")
     comparisons = compare_features(

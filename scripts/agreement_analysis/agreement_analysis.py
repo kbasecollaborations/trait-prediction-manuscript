@@ -1,17 +1,13 @@
 """ML-GapMind agreement as a label-free applicability signal, with singleton and ensemble baselines.
 
-This module evaluates, for both the concordant-trained and full-data CatBoost
-models, the cross-dataset (leave-one-dataset-out) behaviour of:
+Covers singleton baselines (ML alone, GapMind alone), agreement as an abstention
+signal, voting and stacked ensembles, and a matched-coverage comparison of ML
+confidence against ML-GapMind agreement, for both the concordant-trained and
+full-data CatBoost models under the cross-dataset (leave-one-dataset-out)
+protocol.
 
-1. Singleton baselines (ML alone, GapMind alone).
-2. ML-vs-GapMind agreement as a selective / abstention signal.
-3. Simple voting and stacked ensembles as predictors.
-4. A head-to-head comparison of three label-free abstention signals at matched
-   coverage: ML confidence, ML-GapMind agreement, and (where available) the
-   concordance meta-classifier.
-
-All metrics are computed on existing per-sample predictions; no models are
-trained here.
+Reads the per-sample prediction tables in data/outputs/figure7/; no models are
+trained here. Writes the a1_*.csv tables to data/outputs/agreement_analysis/.
 """
 
 from __future__ import annotations
@@ -42,7 +38,7 @@ def _ba(y_true: pd.Series, y_pred: pd.Series) -> float:
     -------
     float
         Balanced accuracy, or ``np.nan`` if fewer than two true classes are
-        present (balanced accuracy is undefined for a single class).
+        present.
     """
     if y_true.nunique() < 2:
         return float("nan")
@@ -50,20 +46,7 @@ def _ba(y_true: pd.Series, y_pred: pd.Series) -> float:
 
 
 def _acc(y_true: pd.Series, y_pred: pd.Series) -> float:
-    """Plain accuracy.
-
-    Parameters
-    ----------
-    y_true : pd.Series
-        Ground-truth binary labels.
-    y_pred : pd.Series
-        Predicted binary labels.
-
-    Returns
-    -------
-    float
-        Accuracy on the slice.
-    """
+    """Plain accuracy of ``y_pred`` against ``y_true``."""
     return float(accuracy_score(y_true, y_pred))
 
 
@@ -88,15 +71,13 @@ def load_predictions(path: Path) -> pd.DataFrame:
     df["gapmind_pred"] = df["gapmind_pred"].astype(int)
     df["agree"] = df["y_pred"] == df["gapmind_pred"]
 
-    # Ensemble rules (all label-free at deployment).
-    # 1. Trust agreement, else fall back to GapMind.
-    df["ens_agree_else_gapmind"] = np.where(df["agree"], df["y_pred"], df["gapmind_pred"])
-    # 2. Trust agreement, else fall back to ML.
+    # Ensemble rules, all label-free at deployment.
+    df["ens_agree_else_gapmind"] = np.where(
+        df["agree"], df["y_pred"], df["gapmind_pred"]
+    )
     df["ens_agree_else_ml"] = np.where(df["agree"], df["y_pred"], df["y_pred"])
-    # 3. Soft average of ML proba and GapMind hard call, threshold 0.5.
     df["soft_avg"] = 0.5 * df["proba"] + 0.5 * df["gapmind_pred"]
     df["ens_soft_avg"] = (df["soft_avg"] >= 0.5).astype(int)
-    # 4. Logical OR / AND of the two positive calls.
     df["ens_or"] = ((df["y_pred"] == 1) | (df["gapmind_pred"] == 1)).astype(int)
     df["ens_and"] = ((df["y_pred"] == 1) & (df["gapmind_pred"] == 1)).astype(int)
     return df
@@ -250,7 +231,7 @@ def ensemble_table(df: pd.DataFrame, model: str) -> pd.DataFrame:
 
 
 def ensemble_win_summary(ens: pd.DataFrame) -> pd.DataFrame:
-    """Count phenotypes where each ensemble beats BOTH singletons on BA.
+    """Count phenotypes where each ensemble beats both singletons on BA.
 
     Parameters
     ----------
@@ -282,7 +263,9 @@ def ensemble_win_summary(ens: pd.DataFrame) -> pd.DataFrame:
                 "model": ens["model"].iloc[0],
                 "ensemble": name,
                 "pooled_ba": float(pooled.loc[name, "balanced_accuracy"]),
-                "pooled_ba_ml_alone": float(pooled.loc["ml_alone", "balanced_accuracy"]),
+                "pooled_ba_ml_alone": float(
+                    pooled.loc["ml_alone", "balanced_accuracy"]
+                ),
                 "pooled_ba_gapmind_alone": float(
                     pooled.loc["gapmind_alone", "balanced_accuracy"]
                 ),
@@ -298,10 +281,9 @@ def retained_ba_at_coverage(
 ) -> tuple[float, float, float]:
     """BA on the retained subset when keeping ``target_coverage`` by a signal.
 
-    For the confidence signal, samples are ranked by ``confidence`` (descending)
-    and the top fraction is retained. For the agreement signal, agreeing samples
-    are retained first (they are the natural "kept" set); ties among the
-    discarded set are broken by confidence to hit exactly the target coverage.
+    The confidence signal ranks samples by ``confidence`` (descending) and keeps
+    the top fraction. The agreement signal keeps agreeing samples first and
+    breaks ties by confidence to hit exactly the target coverage.
 
     Parameters
     ----------
@@ -324,8 +306,6 @@ def retained_ba_at_coverage(
         order = df.sort_values("confidence", ascending=False)
         kept = order.iloc[:k]
     elif signal == "agreement":
-        # Agree first (descending confidence within), then most-confident
-        # disagreers to fill to target coverage.
         df2 = df.assign(rank_key=df["agree"].astype(int))
         order = df2.sort_values(["rank_key", "confidence"], ascending=[False, False])
         kept = order.iloc[:k]
@@ -341,11 +321,10 @@ def retained_ba_at_coverage(
 def trust_head_to_head(df: pd.DataFrame, model: str) -> pd.DataFrame:
     """Head-to-head abstention signals at matched coverage.
 
-    Compares ML confidence vs ML-GapMind agreement at (i) the coverage that
+    Compares ML confidence against ML-GapMind agreement at (i) the coverage that
     agreement naturally yields and (ii) 0.5 coverage, on the same pooled test
-    set. The concordance meta-classifier is not included because the saved
-    artefact contains only AUC/AUPRC summaries, not per-sample P(concordant)
-    scores, so it cannot be applied at matched coverage here.
+    set. The concordance meta-classifier is excluded because its saved artefact
+    holds only AUC/AUPRC summaries, not per-sample P(concordant) scores.
 
     Parameters
     ----------
@@ -380,13 +359,7 @@ def trust_head_to_head(df: pd.DataFrame, model: str) -> pd.DataFrame:
 
 
 def main() -> None:
-    """Run the full A1 analysis and persist all tables.
-
-    Returns
-    -------
-    None
-        Writes CSV tables to :data:`OUT_DIR` and prints a key-numbers summary.
-    """
+    """Build every table, write the a1_*.csv files to ``OUT_DIR``, and print a summary."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     models = {"concordant": CONCORDANT_FILE, "fulldata": FULLDATA_FILE}
 

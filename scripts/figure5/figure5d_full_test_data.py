@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import balanced_accuracy_score
 from tqdm import tqdm
+from trait_prediction.pipeline import align_columns
 
 from scripts.figure5.figure5cd_data import (
     get_concordant_and_discordant_samples,
@@ -22,8 +23,6 @@ from scripts.figure5.figure5cd_data import (
 )
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_split_data
-from trait_prediction.pipeline import align_columns
-
 
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
 OUTPUT_DIR: Path = Path("data/outputs/figure5")
@@ -303,7 +302,9 @@ def build_full_test_table(
                 ("balanced_accuracy_FP_subset", "fp_discordant"),
                 ("balanced_accuracy_FN_subset", "fn_discordant"),
             ]:
-                subset_ids = [g for g in categories[subset_key] if g in predictions.index]
+                subset_ids = [
+                    g for g in categories[subset_key] if g in predictions.index
+                ]
                 if len(subset_ids) >= MIN_TEST_SAMPLES:
                     record[subset_name] = safe_balanced_accuracy(
                         y_test.loc[subset_ids], predictions.loc[subset_ids]
@@ -366,9 +367,7 @@ def main() -> None:
         experimental_phenotypes=experimental_phenotypes,
     )
 
-    table = table.sort_values(["phenotype", "held_out_dataset"]).reset_index(
-        drop=True
-    )
+    table = table.sort_values(["phenotype", "held_out_dataset"]).reset_index(drop=True)
 
     from scripts.minority_filter import (
         annotate_minority_test,
@@ -389,9 +388,7 @@ def main() -> None:
     print(f"  held-out datasets: {sorted(table['held_out_dataset'].unique())}")
 
     median_full = float(np.nanmedian(table["balanced_accuracy_full"]))
-    median_conc = float(
-        np.nanmedian(table["balanced_accuracy_concordant_subset"])
-    )
+    median_conc = float(np.nanmedian(table["balanced_accuracy_concordant_subset"]))
     median_fp = float(np.nanmedian(table["balanced_accuracy_FP_subset"]))
     median_fn = float(np.nanmedian(table["balanced_accuracy_FN_subset"]))
     print("\nMedian balanced accuracy:")

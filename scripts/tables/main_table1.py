@@ -17,11 +17,10 @@ from scripts.tables.kegg_module_coverage import (
     pathway_kos_for_phenotype,
 )
 
-
 HELD_OUT_DATASETS: tuple[str, ...] = ("atleaf", "lit", "marine")
 
-# Phenotype display order: by canonical pathway map for natural grouping
-# (carbohydrates first, then amino acids), Histidine first as worked example.
+# Ordered by canonical pathway map (carbohydrates, then amino acids), with
+# Histidine first as the worked example.
 PHENOTYPE_ORDER: tuple[str, ...] = (
     "Histidine",
     "Galactose",
@@ -40,22 +39,16 @@ PHENOTYPE_ORDER: tuple[str, ...] = (
     "Arginine",
 )
 
-# Manual two-line italic splits for KEGG pathway names that are too long to
-# fit on a single line of the wrapped "KEGG pathway map" column. Keys are
-# KEGG pathway IDs; values are the full LaTeX render with an explicit \\
-# break between two italic spans. Names not listed render as a single
-# italic line via the canonical PATHWAY_NAMES entry.
+# Two-line LaTeX renders for pathway names too long for the "KEGG pathway map"
+# column; names not listed render as a single italic line from PATHWAY_NAMES.
 PATHWAY_NAME_WRAPS: dict[str, str] = {
     "map00040": "\\textit{Pentose and glucuronate} \\\\ \\textit{interconversions}",
     "map00250": "\\textit{Alanine, aspartate and} \\\\ \\textit{glutamate metabolism}",
     "map00260": "\\textit{Glycine, serine and} \\\\ \\textit{threonine metabolism}",
 }
 
-# Display-only short names for the example column. The *selection* of which
-# KOs appear is fully data-driven (see ``_example_cell``); this map only
-# controls how a few KOs are *rendered*, replacing verbose KEGG dictionary
-# names with the concise label used elsewhere in the manuscript. KOs not
-# listed fall back to the KEGG dictionary's descriptive name.
+# Short display names for the example column, replacing verbose KEGG dictionary
+# names. KOs not listed fall back to the KEGG dictionary's descriptive name.
 KO_DISPLAY_NAMES: dict[str, str] = {
     "K10228": "mannitol permease",
     "K02770": "PTS fructose IIC",
@@ -68,11 +61,9 @@ KO_DISPLAY_NAMES: dict[str, str] = {
 def _display_ko_name(ko_id: str, ko_dict: dict[str, Any]) -> str:
     """Return a readable, LaTeX-safe enzyme name for a KO identifier.
 
-    Selection of which KO to display is data-driven; this helper only governs
-    rendering. ``KO_DISPLAY_NAMES`` supplies concise labels for a few KOs whose
-    KEGG dictionary name is verbose; every other KO falls back to the
-    dictionary's descriptive segment (the part after the gene symbols, with the
-    trailing ``[EC:...]`` bracket removed).
+    KOs absent from ``KO_DISPLAY_NAMES`` fall back to the dictionary's
+    descriptive segment (the part after the gene symbols, with the trailing
+    ``[EC:...]`` bracket removed).
 
     Parameters
     ----------
@@ -244,9 +235,7 @@ def _concordant_shared_kos(
             or phenotype not in conc_individual[ds]
         ):
             continue
-        shared |= set(conc_combined[combined_key]) & set(
-            conc_individual[ds][phenotype]
-        )
+        shared |= set(conc_combined[combined_key]) & set(conc_individual[ds][phenotype])
     return shared
 
 
@@ -257,10 +246,6 @@ def _recurrence(
     conc_individual: dict[str, dict[str, list[str]]],
 ) -> int:
     """Count held-out datasets in which a KO is concordant shared-stable.
-
-    A higher count means the KO recurs as a stable feature across more
-    held-out comparisons; the example column ranks candidates by this value
-    so the most consistently used features are shown first.
 
     Parameters
     ----------
@@ -295,9 +280,7 @@ def _recurrence(
             or phenotype not in conc_individual[ds]
         ):
             continue
-        if ko in set(conc_combined[combined_key]) & set(
-            conc_individual[ds][phenotype]
-        ):
+        if ko in set(conc_combined[combined_key]) & set(conc_individual[ds][phenotype]):
             count += 1
     return count
 
@@ -319,11 +302,8 @@ def _shared_cluster_representatives(
 ) -> list[str]:
     """Return one representative KO per shared concordant-stable cluster.
 
-    Used when the two models share redundancy clusters but no identical KO, so
-    the raw-KO intersection is empty even though the Shared stable clusters count
-    is non-zero. A cluster counts as shared for a held-out comparison when it is
-    present in both the combined-of-three and held-out-alone concordant models
-    (the same cluster-level definition behind the count column). Each shared
+    A cluster counts as shared for a held-out comparison when it is present in
+    both the combined-of-three and held-out-alone concordant models. Each shared
     cluster contributes its highest-recurrence member KO (ties broken by KO id);
     clusters are ordered pathway-resident first, then by the number of held-out
     comparisons in which they recur, then by representative KO id.
@@ -409,24 +389,15 @@ def _example_cell(
     ko_dict: dict[str, Any],
     max_examples: int = 2,
 ) -> str:
-    """Build the example column from the data: top shared-stable feature KOs.
+    """Build the example column from the concordant shared-stable feature KOs.
 
-    The pool is the concordant shared-stable feature KOs (the features the model
-    actually relied on). Features whose redundancy cluster touches the
-    phenotype's KEGG reference pathway map are preferred, since their biological
-    connection is explicit; off-pathway features (e.g. transporters, regulators)
-    are shown only when no on-pathway feature is stable, so the column still
-    conveys the biology the model uses rather than going blank. Within the
-    chosen pool, features are ranked by recurrence across held-out datasets
-    (ties broken by KO id) and the top ``max_examples`` are rendered.
-
-    When the two models share redundancy clusters but no identical KO (so the
-    raw-KO intersection is empty while the Shared stable clusters count is
-    non-zero), the column falls back to a representative KO per shared cluster
-    via :func:`_shared_cluster_representatives`, keeping the example column
-    consistent with the count column. The descriptive enzyme/transporter/
-    regulator names carry the role; no hand-curation of which KO to show is
-    involved.
+    Features whose redundancy cluster touches the phenotype's KEGG reference
+    pathway map are preferred; off-pathway features are used only when no
+    on-pathway feature is stable. Within the chosen pool, features are ranked by
+    recurrence across held-out datasets (ties broken by KO id) and the top
+    ``max_examples`` are rendered. When the raw-KO intersection is empty but
+    clusters are shared, the column falls back to a representative KO per shared
+    cluster via :func:`_shared_cluster_representatives`.
 
     Parameters
     ----------
@@ -453,6 +424,7 @@ def _example_cell(
     """
     features = _concordant_shared_kos(phenotype, conc_combined, conc_individual)
     if features:
+
         def _cluster_touches_pathway(ko: str) -> bool:
             cid = ko_to_cluster.get(ko)
             if cid is None:
@@ -513,9 +485,7 @@ def build_table(
     conc_individual_json: Path = Path(
         "data/outputs/figure5/figure5b_individual_datasets_shap_features.json"
     ),
-    cluster_json: Path = Path(
-        "data/outputs/clustering/ko_clusters_shap_hclust.json"
-    ),
+    cluster_json: Path = Path("data/outputs/clustering/ko_clusters_shap_hclust.json"),
     ko_dictionary_json: Path = Path("data/external/mapping/KO_dictionary.json"),
     output_path: Path = Path("sections/table_main_feature_comparison.tex"),
     highlight_phenotype: str = "Histidine",
@@ -611,7 +581,6 @@ def build_table(
 
     def _emit_row(phenotype: str) -> None:
         ph, pathway_cell, shared_cell, pct_cell, example = _row_cells(phenotype)
-        # Use bold-text emphasis on the headline numeric cells only.
         if phenotype == highlight_phenotype:
             shared_render = f"\\textbf{{{shared_cell}}}"
             pct_render = f"\\textbf{{{pct_cell}}}"
@@ -619,8 +588,7 @@ def build_table(
             shared_render = shared_cell
             pct_render = pct_cell
         lines.append(
-            f"{ph} & {pathway_cell} & {shared_render} & {pct_render} & "
-            f"{example} \\\\"
+            f"{ph} & {pathway_cell} & {shared_render} & {pct_render} & {example} \\\\"
         )
         lines.append("\\hline")
 

@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import balanced_accuracy_score
 from tqdm import tqdm
+from trait_prediction.pipeline import align_columns
 
 from scripts.figure5.figure5cd_data import (
     get_concordant_and_discordant_samples,
@@ -23,7 +24,6 @@ from scripts.figure7.applicability import (
 )
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_split_data
-from trait_prediction.pipeline import align_columns
 
 SPLITS_DIR: Path = Path("data/processed/train_test_splits")
 OUTPUT_DIR: Path = Path("data/outputs/figure7")
@@ -154,8 +154,11 @@ def fit_full_data_model_and_predict_proba(
     X_val_aligned = align_columns(X_train, X_val)
     X_test_aligned = align_columns(X_train, X_test)
     model.fit(
-        X_train, y_train, eval_set=(X_val_aligned, y_val),
-        use_best_model=True, verbose=False,
+        X_train,
+        y_train,
+        eval_set=(X_val_aligned, y_val),
+        use_best_model=True,
+        verbose=False,
     )
     proba = np.asarray(model.predict_proba(X_test_aligned))[:, 1]
     return pd.DataFrame(
@@ -202,9 +205,7 @@ def collect_per_sample_predictions(
         if len(concordant_genomes) == 0:
             continue
 
-        predictions = fit_concordant_model_and_predict_proba(
-            split, concordant_genomes
-        )
+        predictions = fit_concordant_model_and_predict_proba(split, concordant_genomes)
         if predictions is None:
             continue
 
@@ -262,7 +263,8 @@ def collect_full_data_per_sample(
         y_test = split["y_test"]
         gm_col = (
             gapmind_predictions[phenotype]
-            if phenotype in gapmind_predictions.columns else None
+            if phenotype in gapmind_predictions.columns
+            else None
         )
         for genome in predictions.index:
             y_true = y_test.loc[genome]
@@ -270,13 +272,24 @@ def collect_full_data_per_sample(
                 continue
             proba = float(predictions.loc[genome, "proba"])
             gm_pred: float | int = np.nan
-            if gm_col is not None and genome in gm_col.index and not pd.isna(gm_col.loc[genome]):
+            if (
+                gm_col is not None
+                and genome in gm_col.index
+                and not pd.isna(gm_col.loc[genome])
+            ):
                 gm_pred = int(gm_col.loc[genome])
-            records.append({
-                "phenotype": phenotype, "held_out_dataset": held_out, "genome": genome,
-                "y_true": int(y_true), "y_pred": int(predictions.loc[genome, "y_pred"]),
-                "proba": proba, "confidence": max(proba, 1.0 - proba), "gapmind_pred": gm_pred,
-            })
+            records.append(
+                {
+                    "phenotype": phenotype,
+                    "held_out_dataset": held_out,
+                    "genome": genome,
+                    "y_true": int(y_true),
+                    "y_pred": int(predictions.loc[genome, "y_pred"]),
+                    "proba": proba,
+                    "confidence": max(proba, 1.0 - proba),
+                    "gapmind_pred": gm_pred,
+                }
+            )
     return pd.DataFrame.from_records(records)
 
 
@@ -334,9 +347,7 @@ def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
                 "coverage": float(coverage),
                 "n_retained": k,
                 "confidence_threshold": float(ordered["confidence"].iloc[k - 1]),
-                "balanced_accuracy": safe_balanced_accuracy(
-                    y_true[:k], y_pred[:k]
-                ),
+                "balanced_accuracy": safe_balanced_accuracy(y_true[:k], y_pred[:k]),
                 "accuracy": float((y_true[:k] == y_pred[:k]).mean()),
             }
         )
@@ -347,10 +358,9 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
     """
     Compute per-phenotype risk-coverage curves using class-stratified confidence.
 
-    Retaining the top-confidence fraction *within each predicted class* keeps both
-    predicted classes represented at every coverage level, so balanced accuracy
-    stays well-defined. Raw ``max(p, 1 - p)`` abstention is degenerate on
-    class-skewed per-phenotype subsets.
+    Coverage is applied within each predicted class, so both classes stay
+    represented and balanced accuracy stays well-defined; raw ``max(p, 1 - p)``
+    abstention is degenerate on class-skewed per-phenotype subsets.
 
     Parameters
     ----------
@@ -454,7 +464,10 @@ def main() -> None:
     print(f"  full-data per-sample genomes: {len(full_per_sample)}")
 
     calib_rows = []
-    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+    for model_name, frame in [
+        ("concordant", per_sample),
+        ("full_data", full_per_sample),
+    ]:
         ct = calibration_table(frame, n_bins=10)
         ct.insert(0, "model", model_name)
         ct["ece"] = expected_calibration_error(
@@ -466,7 +479,10 @@ def main() -> None:
     )
 
     rc_rows = []
-    for model_name, frame in [("concordant", per_sample), ("full_data", full_per_sample)]:
+    for model_name, frame in [
+        ("concordant", per_sample),
+        ("full_data", full_per_sample),
+    ]:
         rc = build_risk_coverage_by_phenotype(frame)
         rc.insert(0, "model", model_name)
         rc_rows.append(rc)
@@ -478,9 +494,7 @@ def main() -> None:
     print(f"  pooled held-out test genomes: {len(per_sample)}")
     full = risk_coverage[risk_coverage["coverage"] == 1.0].iloc[0]
     half = risk_coverage.iloc[(risk_coverage["coverage"] - 0.5).abs().argmin()]
-    print(
-        f"  balanced accuracy @ coverage 1.00: {full['balanced_accuracy']:.3f}"
-    )
+    print(f"  balanced accuracy @ coverage 1.00: {full['balanced_accuracy']:.3f}")
     print(
         f"  balanced accuracy @ coverage {half['coverage']:.2f}: "
         f"{half['balanced_accuracy']:.3f}"

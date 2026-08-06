@@ -1,29 +1,15 @@
 #!/usr/bin/env python3
 """Characterise GapMind false negatives as a diagnostic of the rule's blind spots.
 
-Reframes the retained-false-negative signal away from novel-mechanism discovery
-(which the feature analyses found no robust support for) toward what the false
-negatives robustly DO reveal: where GapMind's canonical-pathway completeness rule
-fails, and whether that failure is recoverable.
-
-For each phenotype every GapMind step (columns of the GapMind step-score matrix,
-values -1/0/1/2, present := score >= 1) is classified as a TRANSPORTER or an
-ENZYME/other step by a name lexicon. Per genome we then compute an enzyme-step
-completeness and a transporter-step completeness. Three analyses follow, all
-restricted to GapMind-NEGATIVE genomes (the pathway GapMind scored incomplete),
-split into false negatives (FN, experiment = grow) and true negatives (TN, no
-growth):
-
-1. Transport-gap map: do FN growers have the enzymatic machinery present while
-   the transporter step is what is missing (relative to TN and to concordant
-   positives)?
-2. Rescue heuristic: among GapMind negatives, how well does enzyme-step
-   completeness (and, independently, KOFAM enzyme-gene presence) recover the
-   false negatives (AUROC + an operating point recall/precision)?
-3. Mysterious-FN split: partition FN into "explained" (enzyme machinery present,
-   a transport/annotation gap) versus an "unexplained residual" (enzymes also
-   absent) that is the candidate pool for genuine novelty or experimental
-   mislabels.
+Each GapMind step (columns of the step-score matrix, values -1/0/1/2, present :=
+score >= 1) is classified as a transporter or an enzyme step by a name lexicon,
+giving every genome an enzyme-step and a transporter-step completeness. Three
+analyses run over the GapMind-negative genomes, split into false negatives (FN,
+experiment = grow) and true negatives (TN, no growth): a transport-gap map of FN
+against TN and concordant positives; a rescue heuristic scoring how well enzyme
+completeness and KOFAM enzyme-gene presence recover the FNs (AUROC plus one
+operating point); and a split of FN into transport-gap explained versus
+unexplained residual.
 
 Compute-only diagnostic; writes to ``data/outputs/figure5_fn_discovery/``.
 
@@ -41,13 +27,13 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from scripts.figure5.figure5cd_data import (
-    load_experimental_phenotypes,
-    load_gapmind_predictions,
-)
 from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
     build_symbol_to_ko,
     load_ko_descriptions,
+)
+from scripts.figure5.figure5cd_data import (
+    load_experimental_phenotypes,
+    load_gapmind_predictions,
 )
 
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
@@ -110,7 +96,7 @@ def load_kofam_presence() -> pd.DataFrame:
 def enzyme_step_kos(
     enzyme_steps: list[str], symbol_to_ko: dict[str, set[str]]
 ) -> set[str]:
-    """Map enzyme step symbols to KOFAM KO ids (best effort).
+    """Map enzyme step symbols to KOFAM KO ids.
 
     Parameters
     ----------
@@ -122,7 +108,7 @@ def enzyme_step_kos(
     Returns
     -------
     set[str]
-        KO ids backing the enzyme steps.
+        KO ids backing the enzyme steps; symbols with no match are skipped.
     """
     kos: set[str] = set()
     for step in enzyme_steps:
@@ -173,10 +159,9 @@ def analyse(
             continue
         e_steps = [c.split("-", 1)[1] for c in e_cols]
 
-        common = (
-            gapmind_predictions.index.intersection(experimental_phenotypes.index)
-            .intersection(step_matrix.index)
-        )
+        common = gapmind_predictions.index.intersection(
+            experimental_phenotypes.index
+        ).intersection(step_matrix.index)
         gm = gapmind_predictions.loc[common, phenotype]
         exp = experimental_phenotypes.loc[common, phenotype]
         valid = gm.notna() & exp.notna()
@@ -240,7 +225,9 @@ def analyse(
                 else np.nan,
                 "fn_transport_score": round(float(transport_score.loc[fn].mean()), 3),
                 "tn_transport_score": round(float(transport_score.loc[tn].mean()), 3),
-                "cpos_transport_score": round(float(transport_score.loc[cpos].mean()), 3)
+                "cpos_transport_score": round(
+                    float(transport_score.loc[cpos].mean()), 3
+                )
                 if len(cpos)
                 else np.nan,
                 "auroc_enzyme_rescue": round(float(auroc_e), 3),
@@ -291,15 +278,22 @@ def main() -> None:
     pd.set_option("display.max_columns", 40)
     print("=== Per-phenotype transport-gap / rescue / split ===")
     show = [
-        "phenotype", "n_fn", "n_tn",
-        "fn_enzyme_score", "tn_enzyme_score", "fn_transport_score", "tn_transport_score",
-        "auroc_enzyme_rescue", "auroc_kofam_enzyme",
-        "rescue_recall_fn", "rescue_precision",
-        "fn_explained_transportgap", "fn_residual_unexplained",
+        "phenotype",
+        "n_fn",
+        "n_tn",
+        "fn_enzyme_score",
+        "tn_enzyme_score",
+        "fn_transport_score",
+        "tn_transport_score",
+        "auroc_enzyme_rescue",
+        "auroc_kofam_enzyme",
+        "rescue_recall_fn",
+        "rescue_precision",
+        "fn_explained_transportgap",
+        "fn_residual_unexplained",
     ]
     print(summary[show].to_string(index=False))
 
-    # Pooled rescue metrics.
     y = (pooled["grow"] == 1).astype(int).values
     auroc_pool = roc_auc_score(y, pooled["enzyme_score"].values)
     total_fn = int((pooled["grow"] == 1).sum())
@@ -311,15 +305,17 @@ def main() -> None:
     print(f"  AUROC enzyme-completeness -> growth among negatives: {auroc_pool:.3f}")
     print(
         f"  Transport-gap 'explained' FN: {exp_fn}/{total_fn} "
-        f"({exp_fn / max(total_fn,1):.1%}); unexplained residual: {total_fn - exp_fn}"
+        f"({exp_fn / max(total_fn, 1):.1%}); unexplained residual: {total_fn - exp_fn}"
     )
     print(
         f"  Rescue heuristic (enzyme complete -> predict grow): "
-        f"recall_FN={exp_fn / max(total_fn,1):.3f}, "
-        f"precision={exp_fn / max(exp_fn + exp_tn,1):.3f} "
+        f"recall_FN={exp_fn / max(total_fn, 1):.3f}, "
+        f"precision={exp_fn / max(exp_fn + exp_tn, 1):.3f} "
         f"(false alarms on TN={exp_tn}/{total_tn})"
     )
-    print(f"\nWrote {OUT_DIR}/fn_transport_gap_summary.csv and fn_negatives_genome_scores.csv")
+    print(
+        f"\nWrote {OUT_DIR}/fn_transport_gap_summary.csv and fn_negatives_genome_scores.csv"
+    )
 
 
 if __name__ == "__main__":

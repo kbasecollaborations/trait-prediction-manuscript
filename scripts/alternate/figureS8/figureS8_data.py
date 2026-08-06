@@ -108,9 +108,7 @@ def load_concordant_train_test(
     return X_train, y_train, X_test, y_test
 
 
-def compute_shap_values(
-    model: CatBoostClassifier, X: pd.DataFrame
-) -> np.ndarray:
+def compute_shap_values(model: CatBoostClassifier, X: pd.DataFrame) -> np.ndarray:
     """Compute per-sample SHAP values for a fitted CatBoost classifier.
 
     Parameters
@@ -252,7 +250,9 @@ def main() -> None:
     feature_data = pd.read_csv(
         FEATURE_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
-    print(f"  Loaded {feature_data.shape[0]} genomes x {feature_data.shape[1]} features")
+    print(
+        f"  Loaded {feature_data.shape[0]} genomes x {feature_data.shape[1]} features"
+    )
 
     print("Loading GapMind predictions (loose)...")
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)

@@ -10,16 +10,14 @@ from sklearn.model_selection import train_test_split
 
 from scripts.splitter import InCladeSplitter, LargeTreeTraverseOOCSplitter
 
-# Constants
 RANDOM_STATE = 42
 OUTPUT_DIR = Path("data/processed/train_test_splits")
 PHENOTYPE_DIR = Path("data/processed/phenotypes")
 PHYLOGENY_DIR = Path("data/processed/phylogeny")
 
-# All four datasets
 DATASET_SUBSET = ["atleaf", "lit", "marine", "pmi"]
 
-# All common phenotypes across all 4 datasets (15 total)
+# Phenotypes shared by all four datasets (15 total).
 COMMON_PHENOTYPES = [
     "Alanine",
     "Arginine",
@@ -62,8 +60,6 @@ def create_sample_map() -> dict[str, str]:
     return sample_map
 
 
-
-
 def load_phenotype_data() -> dict[str, pd.DataFrame]:
     """Load phenotype data for all common phenotypes.
 
@@ -74,9 +70,7 @@ def load_phenotype_data() -> dict[str, pd.DataFrame]:
     """
     phenotype_data_dict = {}
     for phenotype_name in COMMON_PHENOTYPES:
-        # Combine phenotype data from all datasets
         phenotype_dfs = []
-        # Combine phenotype data from all datasets.
         for dataset_name in DATASET_SUBSET:
             phenotype_file = PHENOTYPE_DIR / dataset_name / f"{phenotype_name}.tsv"
             if phenotype_file.exists():
@@ -92,7 +86,7 @@ def load_phenotype_data() -> dict[str, pd.DataFrame]:
 
 
 def create_y_data(
-    phenotype_data_dict: dict[str, pd.DataFrame]
+    phenotype_data_dict: dict[str, pd.DataFrame],
 ) -> dict[str, pd.DataFrame]:
     """Create y data for each phenotype.
 

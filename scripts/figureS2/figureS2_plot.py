@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""
-Generate Supplementary Figure S2 (phylogenetic distance splits).
+"""Generate Supplementary Figure S2 (phylogenetic distance splits).
 
 Per-phenotype boxplots of the minimum cophenetic distance from each test genome
 to the training set, grouped by split type (random, in-clade, out-of-clade).
-Out-of-clade splits produce the largest test-to-train distances, validating the
-separation of evaluation regimes.
 
-Reads the table produced by ``figureS2_data.py`` and writes
+Reads ``data/outputs/figureS2/figureS2_data.tsv`` and writes
 ``figures/figure_s2.pdf``.
 
 Run with::
@@ -33,7 +30,6 @@ configure_plot_style()
 DATA_FILE = Path("data/outputs/figureS2/figureS2_data.tsv")
 OUTPUT_FILE = Path("figures/figure_s2.pdf")
 
-# Order and display labels for the three split types.
 SPLIT_ORDER = ["random", "in-clade", "out-of-clade"]
 SPLIT_LABELS = {
     "random": "Random",
@@ -41,10 +37,10 @@ SPLIT_LABELS = {
     "out-of-clade": "Out-of-clade",
 }
 
-# Colour-blind-safe palette (Okabe-Ito) for the split types.
+# Okabe-Ito colour-blind-safe palette.
 SPLIT_COLORS = {
-    "random": "#0072B2",       # blue
-    "in-clade": "#E69F00",     # orange
+    "random": "#0072B2",  # blue
+    "in-clade": "#E69F00",  # orange
     "out-of-clade": "#009E73",  # green
 }
 
@@ -59,7 +55,6 @@ def main() -> None:
 
     fig, ax = plt.subplots(figsize=(14, 6))
 
-    # Alternating background shading for readability.
     for i in range(0, len(phenotypes), 2):
         ax.axvspan(i - 0.5, i + 0.5, color="grey", alpha=0.06, zorder=0)
 
@@ -94,10 +89,11 @@ def main() -> None:
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.margins(x=0.01)
 
-    # Single-row split-type legend placed above the axes (stripplot would
-    # otherwise add a duplicate set of handles).
+    # Handles are rebuilt because the stripplot adds a duplicate set.
     ax.legend(
-        handles=[Patch(facecolor=SPLIT_COLORS[s], label=SPLIT_LABELS[s]) for s in SPLIT_ORDER],
+        handles=[
+            Patch(facecolor=SPLIT_COLORS[s], label=SPLIT_LABELS[s]) for s in SPLIT_ORDER
+        ],
         title="Split type",
         loc="lower center",
         bbox_to_anchor=(0.5, 1.0),

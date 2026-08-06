@@ -5,7 +5,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 

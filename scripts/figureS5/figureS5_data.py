@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
-"""
-Generate data for Supplementary Figure S5: KOFAM features on concordant samples.
+"""Generate data for Supplementary Figure S5: KOFAM features on concordant samples.
 
-GapMind concordance is used *only* to select training samples; KOFAM
-annotations provide the model feature space. The comparison isolates the effect
-of concordant training under the same KOFAM feature representation.
+GapMind concordance selects training samples only; KOFAM annotations provide the
+feature space. Concordant training and full training are compared across
+random_split, dataset_split and phylo_ooc, on the full, concordant and
+discordant test subsets.
 
-Comparisons
------------
-- Concordant training + KOFAM features  vs  Full training + KOFAM features
-- Evaluated across: random_split, dataset_split, phylo_ooc
-- Test subsets: full, concordant, discordant
+Writes data/outputs/figureS5/figureS5_kofam_concordant_results.csv.
 """
 
 import json
@@ -23,8 +19,6 @@ from tqdm import tqdm
 
 from scripts.ml import _get_scores, make_classifier
 
-
-# ── Analysis parameters ──────────────────────────────────────────────────────
 COMMON_PHENOTYPES = [
     "Alanine",
     "Arginine",
@@ -59,8 +53,7 @@ SCORING = [
 
 
 def load_gapmind_predictions() -> pd.DataFrame:
-    """
-    Load GapMind predictions and convert to binary concordance labels.
+    """Load GapMind predictions and convert to binary concordance labels.
 
     Returns
     -------
@@ -127,8 +120,7 @@ def load_gapmind_predictions() -> pd.DataFrame:
 def load_split_files(
     base_dir: Path,
 ) -> dict[str, dict[str, dict[str, pd.Series]]]:
-    """
-    Load train/val/test split label files for all 15 shared phenotypes.
+    """Load train/val/test split label files for all 15 shared phenotypes.
 
     Parameters
     ----------
@@ -147,7 +139,6 @@ def load_split_files(
             :, 0
         ]
 
-    # Random splits
     if "random_split" in SPLIT_TYPES:
         rdir = base_dir / "random_split"
         data: dict[str, dict[str, pd.Series]] = {}
@@ -166,7 +157,6 @@ def load_split_files(
                     }
         result["random_split"] = data
 
-    # Dataset splits
     if "dataset_split" in SPLIT_TYPES:
         ddir = base_dir / "dataset_split"
         data = {}
@@ -185,7 +175,6 @@ def load_split_files(
                     }
         result["dataset_split"] = data
 
-    # Phylogeny out-of-clade splits
     if "phylo_ooc" in SPLIT_TYPES:
         phylo_dir = base_dir / "phylogeny_split"
         data = {}
@@ -215,12 +204,11 @@ def run_kofam_concordant_analysis(
     feature_data: pd.DataFrame,
     gapmind_data: pd.DataFrame,
 ) -> pd.DataFrame:
-    """
-    Train models on full vs concordant samples using KOFAM features.
+    """Train models on full vs concordant samples using KOFAM features.
 
     For each split, trains two models (full training set, concordant-only
-    training set) using KOFAM features, then evaluates on full, concordant,
-    and discordant test subsets.
+    training set), then evaluates on the full, concordant and discordant test
+    subsets.
 
     Parameters
     ----------
@@ -250,7 +238,6 @@ def run_kofam_concordant_analysis(
                 y_val = split["y_val"]
                 y_test = split["y_test"]
 
-                # Intersect with feature matrix
                 train_idx = y_train.index.intersection(feature_data.index)
                 val_idx = y_val.index.intersection(feature_data.index)
                 test_idx = y_test.index.intersection(feature_data.index)
@@ -266,7 +253,7 @@ def run_kofam_concordant_analysis(
                     pbar.update(2)
                     continue
 
-                # Identify concordant / discordant in each partition
+                # Concordant = experimental label equals the GapMind call.
                 gm_train = gapmind_data.loc[
                     train_idx.intersection(gapmind_data.index), phenotype
                 ]
@@ -299,7 +286,6 @@ def run_kofam_concordant_analysis(
                     X_vl = feature_data.loc[vi]
                     y_vl = y_val_full.loc[vi]
 
-                    # Skip degenerate cases
                     if (
                         len(X_tr) < 10
                         or len(X_vl) < 5
@@ -310,7 +296,7 @@ def run_kofam_concordant_analysis(
 
                     model = make_classifier("cb", random_state=RANDOM_STATE)
 
-                    # Align columns
+                    # Align to the training columns.
                     X_vl_aligned = X_vl.reindex(columns=X_tr.columns, fill_value=0)
                     X_test_aligned = X_test.reindex(columns=X_tr.columns, fill_value=0)
 
@@ -322,11 +308,18 @@ def run_kofam_concordant_analysis(
                         verbose=False,
                     )
 
-                    # Evaluate on three test subsets
                     test_subsets = [
                         ("full", test_idx, y_test_sub),
-                        ("concordant", conc_test, y_test_sub.loc[conc_test] if len(conc_test) >= 5 else None),
-                        ("discordant", disc_test, y_test_sub.loc[disc_test] if len(disc_test) >= 5 else None),
+                        (
+                            "concordant",
+                            conc_test,
+                            y_test_sub.loc[conc_test] if len(conc_test) >= 5 else None,
+                        ),
+                        (
+                            "discordant",
+                            disc_test,
+                            y_test_sub.loc[disc_test] if len(disc_test) >= 5 else None,
+                        ),
                     ]
                     for subset_name, subset_idx, y_sub in test_subsets:
                         if y_sub is None or len(y_sub) < 5:
@@ -358,9 +351,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("Loading KOFAM features...")
-    features = pd.read_csv(
-        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    features = pd.read_csv(feature_file, sep="\t", index_col=0, dtype={"genomeID": str})
     print(f"  Shape: {features.shape}")
 
     print("Loading GapMind predictions...")

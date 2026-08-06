@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Train and save full-data CatBoost deployment models (one per phenotype).
 
-Unlike ``run_concordant_models`` (which trains on GapMind-concordant subsets of
-each random split), this trains a single CatBoost classifier per phenotype on
-*all* available labelled genomes using the reduced KOFAM feature matrix. The
-resulting checkpoints are meant for deployment: predicting a phenotype for a new
-genome from its KOFAM presence/absence vector without retraining.
+Trains one CatBoost classifier per phenotype on all available labelled genomes
+using the reduced KOFAM feature matrix. The saved checkpoints predict a
+phenotype for a new genome from its KOFAM presence/absence vector without
+retraining.
 
 Outputs (under ``data/outputs/full_data_models/<Phenotype>/``):
 ``<Phenotype>.cbm``, ``<Phenotype>_metadata.json``,
@@ -94,8 +93,7 @@ def _save_model_artifacts(
 
     features = importances.index.tolist()
     with open(out_dir / f"{phenotype}_selected_features.txt", "w") as fh:
-        for feat in features:
-            fh.write(f"{feat}\n")
+        fh.writelines(f"{feat}\n" for feat in features)
 
     metadata: dict[str, int | str] = {
         "model_name": phenotype,
@@ -134,17 +132,23 @@ def main() -> None:
         y = y.loc[common]
         n_pos, n_neg = int(y.sum()), int((y == 0).sum())
         if min(n_pos, n_neg) < MIN_MINORITY:
-            print(f"  Skipping {phenotype}: minority class < {MIN_MINORITY} (pos={n_pos}, neg={n_neg})")
+            print(
+                f"  Skipping {phenotype}: minority class < {MIN_MINORITY} (pos={n_pos}, neg={n_neg})"
+            )
             continue
 
         X_pheno = X.loc[common]
         model = make_classifier(MODEL_TYPE, random_state=RANDOM_STATE)
         model.fit(X_pheno, y)
-        meta = _save_model_artifacts(OUTPUT_BASE / phenotype, phenotype, model, X_pheno, n_pos, n_neg)
+        meta = _save_model_artifacts(
+            OUTPUT_BASE / phenotype, phenotype, model, X_pheno, n_pos, n_neg
+        )
         summary.append(meta)
 
     if summary:
-        pd.DataFrame(summary).to_csv(OUTPUT_BASE / "full_data_models_summary.csv", index=False)
+        pd.DataFrame(summary).to_csv(
+            OUTPUT_BASE / "full_data_models_summary.csv", index=False
+        )
     print(f"\nSaved {len(summary)} full-data models under {OUTPUT_BASE}")
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 
 from scripts.visualization import configure_plot_style
@@ -163,9 +163,7 @@ def plot_gapmind_vs_ml(ax: plt.Axes, gapmind_data_dir: Path, ml_data_dir: Path) 
     )
 
 
-def create_figure(
-    gapmind_data_dir: Path, ml_data_dir: Path, output_file: Path
-) -> None:
+def create_figure(gapmind_data_dir: Path, ml_data_dir: Path, output_file: Path) -> None:
     """Create figure comparing GapMind vs ML performance.
 
     Parameters

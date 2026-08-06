@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 """
-Generate data for Supplementary Figure S7: Learning curves for all 15 phenotypes.
+Generate data for Supplementary Figure S7: learning curves for all 15 shared phenotypes.
 
-Extends the supplementary sample-size analysis (Histidine and Galactose only)
-to all 15 shared phenotypes, providing the evidence needed to characterise the
-distribution of saturation points rather than relying on a single best-case
-example.
-
-Design mirrors figureS6_data.py exactly, differing only in:
-  - PHENOTYPES_TO_ANALYZE: all 15 instead of 2
-  - Output directory: data/outputs/figureS7/
+Mirrors scripts/figureS6/figureS6_data.py (Histidine and Galactose only) and writes
+to data/outputs/figureS7/.
 """
 
 import json
@@ -22,8 +16,6 @@ from tqdm import tqdm
 
 from scripts.ml import _get_scores, make_classifier
 
-
-# ── Analysis parameters ──────────────────────────────────────────────────────
 COMMON_PHENOTYPES = [
     "Alanine",
     "Arginine",
@@ -146,9 +138,7 @@ def load_split_files(
     result: dict[str, dict[str, dict[str, pd.Series]]] = {}
 
     def _read_y(p: Path) -> pd.Series:
-        return pd.read_csv(p, sep="\t", index_col=0, dtype={"genomeID": str}).iloc[
-            :, 0
-        ]
+        return pd.read_csv(p, sep="\t", index_col=0, dtype={"genomeID": str}).iloc[:, 0]
 
     if "random_split" in SPLIT_TYPES:
         rdir = base_dir / "random_split"
@@ -243,7 +233,9 @@ def subsample_indices(
         return indices
 
     if y_sub.nunique() == 1:
-        return pd.Index(y_sub.sample(n=n_samples, replace=False, random_state=random_state).index)
+        return pd.Index(
+            y_sub.sample(n=n_samples, replace=False, random_state=random_state).index
+        )
 
     test_size = len(y_sub) - n_samples
     if test_size >= y_sub.nunique():
@@ -271,10 +263,7 @@ def run_learning_curve_analysis(
 
     For each split × phenotype × training type × sample size × repeat,
     trains a CatBoost model and evaluates on full / concordant / discordant
-    test subsets. If ``chunk_dir`` is provided, results for each
-    (split_type, key, training_type) combination are written to a per-chunk
-    CSV inside that directory, and chunks already present on disk are
-    skipped on a subsequent run (resume support).
+    test subsets.
 
     Parameters
     ----------
@@ -285,9 +274,9 @@ def run_learning_curve_analysis(
     gapmind_data : pd.DataFrame
         Binary GapMind predictions.
     chunk_dir : Path, optional
-        Directory to write/read per-chunk checkpoint CSVs. When ``None``,
-        all results are accumulated in memory and no checkpoints are
-        written.
+        Directory holding one checkpoint CSV per (split_type, key,
+        training_type); existing chunks are reused so a run can resume. When
+        ``None``, results are accumulated in memory and nothing is written.
 
     Returns
     -------
@@ -297,8 +286,7 @@ def run_learning_curve_analysis(
     results: list[dict] = []
 
     total = sum(
-        len(keys) * 2 * len(SAMPLE_SIZES) * N_REPEATS
-        for keys in split_data.values()
+        len(keys) * 2 * len(SAMPLE_SIZES) * N_REPEATS for keys in split_data.values()
     )
 
     with tqdm(total=total, desc="Learning curves (all phenotypes)") as pbar:
@@ -326,7 +314,6 @@ def run_learning_curve_analysis(
                     pbar.update(2 * len(SAMPLE_SIZES) * N_REPEATS)
                     continue
 
-                # Concordant masks
                 gm_tr = gapmind_data.loc[
                     train_idx.intersection(gapmind_data.index), phenotype
                 ]
@@ -350,9 +337,10 @@ def run_learning_curve_analysis(
 
                     chunk_file: Path | None = None
                     if chunk_dir is not None:
-                        chunk_file = chunk_dir / f"{split_type}__{key}__{training_type}.csv"
+                        chunk_file = (
+                            chunk_dir / f"{split_type}__{key}__{training_type}.csv"
+                        )
                         if chunk_file.exists():
-                            # Resume: load cached chunk and skip recomputation.
                             try:
                                 cached = pd.read_csv(chunk_file).to_dict("records")
                                 results.extend(cached)
@@ -437,8 +425,8 @@ def run_learning_curve_analysis(
                                 results.append(scores)
 
                     if chunk_file is not None:
-                        # Always write the chunk file (even if empty) so a
-                        # resumed run does not redo this combination.
+                        # Written even when empty so a resumed run does not
+                        # redo this combination.
                         pd.DataFrame(chunk_results).to_csv(chunk_file, index=False)
 
     return pd.DataFrame(results)
@@ -456,9 +444,7 @@ def main() -> None:
     chunk_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading {FEATURE_TYPE.upper()} features...")
-    features = pd.read_csv(
-        feature_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    features = pd.read_csv(feature_file, sep="\t", index_col=0, dtype={"genomeID": str})
     print(f"  Shape: {features.shape}")
 
     print("Loading GapMind predictions...")
@@ -482,7 +468,9 @@ def main() -> None:
     print(f"\nSaved {len(results)} rows to {out_file}")
 
     if len(results) > 0:
-        print("\nMean balanced accuracy by phenotype (concordant, dataset_split, full test):")
+        print(
+            "\nMean balanced accuracy by phenotype (concordant, dataset_split, full test):"
+        )
         sub = results[
             (results["training_type"] == "concordant")
             & (results["split_type"] == "dataset_split")

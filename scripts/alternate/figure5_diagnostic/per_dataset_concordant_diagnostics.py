@@ -52,9 +52,16 @@ def concordant_summary(gapmind: pd.DataFrame) -> pd.DataFrame:
             labels = load_dataset_labels(ds, phen)
             if labels is None or phen not in gapmind.columns:
                 rows.append(
-                    dict(phenotype=phen, dataset=ds, n_total=0, n_conc=0,
-                         n_conc_pos=0, n_conc_neg=0, pos_frac=np.nan,
-                         minority=0)
+                    dict(
+                        phenotype=phen,
+                        dataset=ds,
+                        n_total=0,
+                        n_conc=0,
+                        n_conc_pos=0,
+                        n_conc_neg=0,
+                        pos_frac=np.nan,
+                        minority=0,
+                    )
                 )
                 continue
             common = labels.index.intersection(gapmind.index)
@@ -81,12 +88,7 @@ def concordant_summary(gapmind: pd.DataFrame) -> pd.DataFrame:
 
 
 def genome_overlap() -> pd.DataFrame:
-    """Pairwise genomeID overlap counts between the four source datasets.
-
-    Uses Glucose as a representative phenotype to enumerate genomeIDs assayed
-    per dataset; the genome set per dataset is essentially the same across
-    phenotypes because phenotype TSVs share the dataset's genome list.
-    """
+    """Pairwise genomeID overlap counts between the four source datasets."""
     sets: dict[str, set[str]] = {}
     for ds in DATASETS:
         ids: set[str] = set()
@@ -104,9 +106,8 @@ def genome_overlap() -> pd.DataFrame:
 def load_taxonomy() -> dict[str, str]:
     """Return a ``genomeID -> GTDB class`` lookup that spans all four datasets.
 
-    Reuses the project's :func:`scripts.alternate.figureS9_legacy.figureS9_data.build_genome_to_class`
-    and :func:`assign_classes`, which already bridge marine short codes and
-    IMG-named PMI genomes via a strain map plus genus-based fallback.
+    Marine short codes and IMG-named PMI genomes are bridged by the Figure S9
+    helpers via a strain map plus genus-based fallback.
     """
     from scripts.alternate.figureS9_legacy.figureS9_data import (
         assign_classes,
@@ -114,7 +115,6 @@ def load_taxonomy() -> dict[str, str]:
     )
 
     lookup, genus_to_class = build_genome_to_class()
-    # Collect every genome that appears in any dataset's phenotype TSV
     all_genomes: set[str] = set()
     for ds in DATASETS:
         for path in (PHENOTYPE_DIR / ds).glob("*.tsv"):
@@ -141,9 +141,7 @@ def js_divergence(p: pd.Series, q: pd.Series) -> float:
     return 0.5 * kl(pp, m) + 0.5 * kl(qq, m)
 
 
-def phylum_composition(
-    gapmind: pd.DataFrame, taxonomy: dict[str, str]
-) -> pd.DataFrame:
+def phylum_composition(gapmind: pd.DataFrame, taxonomy: dict[str, str]) -> pd.DataFrame:
     """For each held-out dataset, top-5 GTDB classes (concordant subset) and JSD vs train pool."""
     rows = []
     for phen in POOR:
@@ -163,7 +161,6 @@ def phylum_composition(
             classes = [taxonomy.get(g, "Unassigned") for g in ds_genomes[ds]]
             ds_dist[ds] = pd.Series(Counter(classes))
 
-        # For each held-out dataset, compute JSD against the training pool.
         for held in DATASETS:
             train_ds = [d for d in DATASETS if d != held]
             train_counts = pd.Series(dtype=float)
@@ -172,15 +169,23 @@ def phylum_composition(
             test_counts = ds_dist[held]
             tr_total = train_counts.sum()
             te_total = test_counts.sum()
-            jsd = js_divergence(train_counts, test_counts) if te_total and tr_total else np.nan
+            jsd = (
+                js_divergence(train_counts, test_counts)
+                if te_total and tr_total
+                else np.nan
+            )
             top_train = train_counts.sort_values(ascending=False).head(4)
             top_test = test_counts.sort_values(ascending=False).head(4)
-            top_train_str = ", ".join(
-                f"{p}={c/tr_total:.0%}" for p, c in top_train.items()
-            ) if tr_total else "(none)"
-            top_test_str = ", ".join(
-                f"{p}={c/te_total:.0%}" for p, c in top_test.items()
-            ) if te_total else "(none)"
+            top_train_str = (
+                ", ".join(f"{p}={c / tr_total:.0%}" for p, c in top_train.items())
+                if tr_total
+                else "(none)"
+            )
+            top_test_str = (
+                ", ".join(f"{p}={c / te_total:.0%}" for p, c in top_test.items())
+                if te_total
+                else "(none)"
+            )
             rows.append(
                 dict(
                     phenotype=phen,
@@ -208,7 +213,6 @@ def per_fold_breakdown(gapmind: pd.DataFrame) -> pd.DataFrame:
         m = re.search(r"train\(([^)]+)\)", str(key))
         return m.group(1).split("+") if m else []
 
-    # Cache concordant pos/neg counts per (phenotype, dataset).
     cache: dict[tuple[str, str], tuple[int, int]] = {}
 
     def conc_counts(phen: str, ds: str) -> tuple[int, int]:
@@ -228,8 +232,7 @@ def per_fold_breakdown(gapmind: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
     for _, r in results[
-        (results.split_type == "dataset_split")
-        & (results.phenotype.isin(POOR))
+        (results.split_type == "dataset_split") & (results.phenotype.isin(POOR))
     ].iterrows():
         held = held_out(r["key"])
         trains = train_ds(r["key"])
@@ -260,7 +263,8 @@ def per_fold_breakdown(gapmind: pd.DataFrame) -> pd.DataFrame:
                 test_majority=("pos" if test_pos >= test_neg else "neg"),
                 passes_filter=(
                     "yes"
-                    if (not pd.isna(r["n_minority_test"])) and r["n_minority_test"] >= 10
+                    if (not pd.isna(r["n_minority_test"]))
+                    and r["n_minority_test"] >= 10
                     else "no"
                 ),
             )
@@ -272,8 +276,7 @@ def phylo_ooc_breakdown() -> pd.DataFrame:
     """Per-fold phylo_ooc summary for Glucose, Serine, Alanine."""
     results = pd.read_csv(FIG5A_CSV)
     sub = results[
-        (results.split_type == "phylo_ooc")
-        & (results.phenotype.isin(PHYLO_OOC_PHENS))
+        (results.split_type == "phylo_ooc") & (results.phenotype.isin(PHYLO_OOC_PHENS))
     ].copy()
     out = (
         sub.groupby("phenotype")["balanced_accuracy"]
@@ -281,8 +284,15 @@ def phylo_ooc_breakdown() -> pd.DataFrame:
         .round(3)
     )
     detail = sub[
-        ["phenotype", "key", "n_train", "n_test", "balanced_accuracy",
-         "sensitivity", "specificity"]
+        [
+            "phenotype",
+            "key",
+            "n_train",
+            "n_test",
+            "balanced_accuracy",
+            "sensitivity",
+            "specificity",
+        ]
     ].copy()
     detail["balanced_accuracy"] = detail["balanced_accuracy"].round(3)
     detail["sensitivity"] = detail["sensitivity"].round(3)
@@ -293,9 +303,12 @@ def phylo_ooc_breakdown() -> pd.DataFrame:
 def _print_df(df: pd.DataFrame, index: bool = True) -> None:
     """Print a DataFrame as text (avoids optional tabulate dependency)."""
     with pd.option_context(
-        "display.max_columns", None,
-        "display.width", 200,
-        "display.max_colwidth", 60,
+        "display.max_columns",
+        None,
+        "display.width",
+        200,
+        "display.max_colwidth",
+        60,
     ):
         print(df.to_string(index=index))
 

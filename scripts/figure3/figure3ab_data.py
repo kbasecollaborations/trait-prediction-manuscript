@@ -18,8 +18,7 @@ def run_ml_on_splits(
     random_state: int = 42,
     min_test_samples: int = 10,
 ) -> pd.DataFrame:
-    """
-    Run machine learning on all loaded splits.
+    """Run machine learning on all loaded splits.
 
     Parameters
     ----------
@@ -118,7 +117,6 @@ def main() -> None:
     OUTPUT_DIR = Path("data/outputs/figure3")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Options: ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
     SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc", "phylo_ic"]
 
     print("Loading train-test splits...")
@@ -148,11 +146,7 @@ def main() -> None:
     print("\nResults summary:")
     print(f"  Total experiments: {len(results)}")
     print("\nBy split type:")
-    summary = (
-        results.groupby("split_type")["balanced_accuracy"]
-        .describe()
-        .round(3)
-    )
+    summary = results.groupby("split_type")["balanced_accuracy"].describe().round(3)
     print(summary)
 
     print("\nBy phenotype (mean balanced accuracy):")

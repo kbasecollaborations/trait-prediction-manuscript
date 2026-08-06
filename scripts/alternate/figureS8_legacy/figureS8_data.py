@@ -26,10 +26,9 @@ DATASETS: Final[tuple[str, ...]] = ("atleaf", "lit", "marine", "pmi")
 def load_retained_genomes(phenotype_dir: Path, dataset: str) -> set[str]:
     """Load the per-dataset phenotype-file genome universe.
 
-    The universe is the union of all ``genomeID`` values that appear as a row
-    in any phenotype TSV under ``phenotype_dir / dataset``. This corresponds
-    to every genome that has at least one experimental phenotype measurement
-    in this dataset.
+    The universe is the union of all ``genomeID`` values appearing in any
+    phenotype TSV under ``phenotype_dir / dataset``, that is, every genome with
+    at least one experimental measurement in this dataset.
 
     Parameters
     ----------
@@ -64,11 +63,10 @@ def load_dataset_phenotypes(
 ) -> dict[str, pd.Series]:
     """Load all phenotype files for a single dataset, reindexed to the dataset universe.
 
-    Each returned Series is reindexed to ``retained_genomes`` so that genomes
-    in the dataset universe but missing from a particular phenotype TSV appear
-    as ``NaN`` and are counted as ``n_excluded_no_phenotype`` downstream. This
-    guarantees that, for any phenotype, the row sum across all five count
-    columns equals the size of the dataset universe.
+    Each returned Series is reindexed to ``retained_genomes``, so genomes missing
+    from a particular phenotype TSV appear as ``NaN`` and are counted as
+    ``n_excluded_no_phenotype`` downstream. The row sum across all five count
+    columns therefore equals the size of the dataset universe.
 
     Parameters
     ----------
@@ -129,7 +127,7 @@ def compute_counts_for_pair(
     dict[str, int | str]
         Long-form record with counts and identifying labels.
     """
-    n_total = int(len(phenotype_series))
+    n_total = len(phenotype_series)
 
     if phenotype not in gapmind.columns:
         n_no_phenotype = int(phenotype_series.isna().sum())
@@ -155,7 +153,7 @@ def compute_counts_for_pair(
     gap_v = gap[valid].astype(int)
     exp_v = exp[valid].astype(int)
 
-    concordant = (gap_v == exp_v)
+    concordant = gap_v == exp_v
     n_concordant = int(concordant.sum())
     n_fp = int(((gap_v == 1) & (exp_v == 0)).sum())
     n_fn = int(((gap_v == 0) & (exp_v == 1)).sum())
@@ -204,24 +202,24 @@ def build_counts_table(
         retained = load_retained_genomes(phenotype_dir, dataset)
         n_universe = len(retained)
         print(f"  {dataset}: {n_universe} genomes in phenotype-file universe")
-        dataset_phenotypes = load_dataset_phenotypes(
-            phenotype_dir, dataset, retained
-        )
+        dataset_phenotypes = load_dataset_phenotypes(phenotype_dir, dataset, retained)
         for phenotype in phenotypes:
             if phenotype not in dataset_phenotypes:
-                # Phenotype is not measured in this dataset: every genome in
-                # the dataset universe is "excluded due to missing phenotype".
-                rows.append({
-                    "phenotype": phenotype,
-                    "dataset": dataset,
-                    "n_total_genomes": n_universe,
-                    "n_concordant": 0,
-                    "n_discordant_FP": 0,
-                    "n_discordant_FN": 0,
-                    "n_excluded_no_gapmind": 0,
-                    "n_excluded_no_phenotype": n_universe,
-                    "n_for_training": 0,
-                })
+                # Phenotype not measured in this dataset: the whole universe
+                # counts as excluded for a missing phenotype.
+                rows.append(
+                    {
+                        "phenotype": phenotype,
+                        "dataset": dataset,
+                        "n_total_genomes": n_universe,
+                        "n_concordant": 0,
+                        "n_discordant_FP": 0,
+                        "n_discordant_FN": 0,
+                        "n_excluded_no_gapmind": 0,
+                        "n_excluded_no_phenotype": n_universe,
+                        "n_for_training": 0,
+                    }
+                )
                 continue
             rows.append(
                 compute_counts_for_pair(
@@ -275,7 +273,9 @@ def main() -> None:
     total_fp = int(counts["n_discordant_FP"].sum())
     total_fn = int(counts["n_discordant_FN"].sum())
     total_used = total_concordant + total_fp + total_fn
-    pct_concordant = 100.0 * total_concordant / total_used if total_used else float("nan")
+    pct_concordant = (
+        100.0 * total_concordant / total_used if total_used else float("nan")
+    )
     print(
         "\nAggregate (sum across all phenotype x dataset cells with both labels):"
         f"\n  concordant = {total_concordant}"

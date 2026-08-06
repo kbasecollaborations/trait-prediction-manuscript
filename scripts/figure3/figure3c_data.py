@@ -166,9 +166,7 @@ def run_ml_on_dataset_splits_with_phylo_filter(
 
     total_splits = len(split_data)
 
-    with tqdm(
-        total=total_splits * 2, desc="Running ML with phylo filtering"
-    ) as pbar:
+    with tqdm(total=total_splits * 2, desc="Running ML with phylo filtering") as pbar:
         for key in split_data:
             split = split_data[key]
             X_train = split["X_train"]

@@ -6,7 +6,6 @@ Strict marks only 'complete' as present; loose also counts 'likely_complete'.
 """
 
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -23,8 +22,8 @@ from sklearn.metrics import (
 def create_gapmind_predictions(
     input_file: Path,
     output_dir: Path,
-    strict_mapping: Dict[str, int],
-    loose_mapping: Dict[str, int],
+    strict_mapping: dict[str, int],
+    loose_mapping: dict[str, int],
 ) -> None:
     """
     Create strict and loose GapMind phenotype prediction files.
@@ -73,16 +72,14 @@ def create_gapmind_predictions(
     print("=" * 60)
     print(f"Input file: {input_file}")
     print(f"Output directory: {output_dir}")
-    print(f"\nStrict predictions (complete only):")
+    print("\nStrict predictions (complete only):")
     print(f"  - Positives per genome (mean): {gapmind_strict.sum(axis=1).mean():.2f}")
     print(
         f"  - Positives per phenotype (mean): {gapmind_strict.sum(axis=0).mean():.2f}"
     )
-    print(f"\nLoose predictions (complete + likely_complete):")
+    print("\nLoose predictions (complete + likely_complete):")
     print(f"  - Positives per genome (mean): {gapmind_loose.sum(axis=1).mean():.2f}")
-    print(
-        f"  - Positives per phenotype (mean): {gapmind_loose.sum(axis=0).mean():.2f}"
-    )
+    print(f"  - Positives per phenotype (mean): {gapmind_loose.sum(axis=0).mean():.2f}")
 
 
 def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
@@ -138,7 +135,7 @@ def load_experimental_phenotypes(phenotype_dir: Path) -> pd.DataFrame:
 
 def calculate_metrics(
     y_true: pd.Series, y_pred: pd.Series, phenotype_name: str
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """
     Calculate classification metrics for a single phenotype.
 
@@ -156,7 +153,6 @@ def calculate_metrics(
     Dict[str, float]
         Dictionary of metric names and their values
     """
-    # Drop genomes with missing experimental labels
     mask = ~y_true.isna()
     y_true_filtered = y_true[mask].astype(int)
     y_pred_filtered = y_pred[mask].astype(int)
@@ -179,9 +175,7 @@ def calculate_metrics(
         mcc = matthews_corrcoef(y_true_filtered, y_pred_filtered)
 
         # zero_division=0 guards against splits with no positive predictions
-        precision = precision_score(
-            y_true_filtered, y_pred_filtered, zero_division=0.0
-        )
+        precision = precision_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
         recall = recall_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
         f1 = f1_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
 
@@ -279,14 +273,13 @@ def evaluate_predictions(
 
 
 def main() -> None:
-    """Main execution function."""
+    """Write the strict and loose GapMind predictions and their metrics."""
     input_file = Path("data/interim/gapmind/gapmind_phenotype_data_raw.tsv")
     output_dir = Path("data/outputs/figure2")
     phenotype_dir = Path("data/processed/phenotypes")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Strict: only 'complete' is considered positive
     strict_mapping = {
         "complete": 1,
         "likely_complete": 0,
@@ -297,7 +290,6 @@ def main() -> None:
         "not_present": 0,
     }
 
-    # Loose: 'complete' and 'likely_complete' are considered positive
     loose_mapping = {
         "complete": 1,
         "likely_complete": 1,

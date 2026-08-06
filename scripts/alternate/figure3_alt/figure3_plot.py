@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 
 from scripts.visualization import (
@@ -95,7 +95,6 @@ def plot_within_dataset_performance(
         for dataset in datasets
     ]
 
-    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -156,7 +155,6 @@ def plot_cross_dataset_performance(
 
     gapmind_df = pd.read_csv(gapmind_dir / "gapmind_loose_metrics.tsv", sep="\t")
 
-    # Cross-dataset tests: trained on AtLeaf/Marine, tested on Literature
     cross_df = test_df[
         (test_df["train_dataset"] != test_df["test_dataset"])
         & (test_df["test_dataset"] == "lit")
@@ -226,7 +224,7 @@ def plot_cross_dataset_performance(
                 zorder=1,
             )
 
-    gapmind_color = "#A23B72"  # Purple (same as strict in figure2)
+    gapmind_color = "#A23B72"  # same purple as strict in figure2
     gapmind_dict = gapmind_df.set_index("phenotype")["balanced_accuracy"].to_dict()
 
     for phenotype in phenotypes:
@@ -282,7 +280,6 @@ def plot_cross_dataset_performance(
         )
     )
 
-    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -326,8 +323,8 @@ def plot_phylogeny_independent_performance(
 ) -> None:
     """Plot phylogenetically independent test performance.
 
-    Shows cross-dataset test performance with phylogenetic control (in-clade filtering).
-    Tests on Literature dataset, trained on AtLeaf dataset only.
+    Cross-dataset test performance with phylogenetic control (in-clade
+    filtering), trained on Marine and tested on Literature.
 
     Parameters
     ----------
@@ -344,7 +341,6 @@ def plot_phylogeny_independent_performance(
     # "full" = full test dataset with phylogenetic control
     phylo_full = phylo_df[phylo_df["test_type"] == "full"].copy()
 
-    # Marine -> Literature only
     phylo_cross = phylo_full[
         (phylo_full["train_dataset"] != phylo_full["test_dataset"])
         & (phylo_full["test_dataset"] == "lit")
@@ -442,7 +438,6 @@ def plot_phylogeny_independent_performance(
         )
     )
 
-    # Alternating background shading per x-axis category
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -486,12 +481,10 @@ def plot_phylogeny_independent_performance(
 def create_figure(
     data_dir: Path, output_file: Path, gapmind_dir: Path | None = None
 ) -> None:
-    """Create Figure 3 with three subplots showing generalization failures.
+    """Create Figure 3 with three subplots.
 
-    Demonstrates progressive performance degradation:
-    (A) Within-dataset CV: High performance when train/test are from same dataset
-    (B) Cross-dataset: Performance drop when testing on different dataset (includes GapMind)
-    (C) Phylogeny-independent: Further drop with phylogenetic control
+    (A) within-dataset CV, (B) cross-dataset test (with GapMind),
+    (C) cross-dataset test with phylogenetic control.
 
     Parameters
     ----------
@@ -544,7 +537,6 @@ def create_figure(
     plot_cross_dataset_performance(axes[1], data_dir, gapmind_dir, common_phenotypes)
     plot_phylogeny_independent_performance(axes[2], data_dir, common_phenotypes)
 
-    # x labels/ticks only on bottom subplot
     axes[0].set_xlabel("")
     axes[1].set_xlabel("")
     axes[0].tick_params(axis="x", labelbottom=False)

@@ -112,7 +112,6 @@ def calculate_test_results(
     """
     results = []
 
-    # Map every dataset-phenotype-feature combination to its data
     data_map = {}
     for feature in dataset.feature_set.features:
         for phenotype in dataset.phenotype_set.phenotypes:

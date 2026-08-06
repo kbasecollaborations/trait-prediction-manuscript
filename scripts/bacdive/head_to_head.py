@@ -2,8 +2,7 @@
 """More data vs. concordant filtering: a head-to-head on held-out datasets.
 
 For each held-out manuscript dataset D (leave-one-of-4-out) and each shared
-phenotype, train CatBoost under five strategies along the concordance<->volume
-axis and test on D's full labels:
+phenotype, train CatBoost under five strategies and test on D's full labels:
 
     C    concordant samples of the other 3 datasets   (concordant filtering)
     F    full other 3 datasets                        (no filtering)
@@ -12,14 +11,12 @@ axis and test on D's full labels:
     CB   concordant other 3 + BacDive                 (filtering + volume)
 
 Plus two controls:
-    volume  F + BacDive(n) as n grows, vs the fixed C baseline (does volume
-            ever reach concordant filtering?)
+    volume  F + BacDive(n) as n grows, against the fixed C baseline
     nmatch  at matched N=|C|: C vs random-from-F vs BacDive-subsample
-            (curation effect vs sheer sample count)
 
-Resumable: results are checkpointed to ``data/outputs/bacdive/head_to_head.csv``
-after every batch. Re-running skips fits already in the checkpoint, so an
-interrupted run continues where it stopped. Use ``--fresh`` to start over.
+Results are checkpointed to ``data/outputs/bacdive/head_to_head.csv`` after
+every batch, and re-running skips fits already in the checkpoint; ``--fresh``
+starts over.
 
 Run:
     uv run python -m scripts.bacdive.head_to_head            # run / resume full sweep
@@ -58,9 +55,21 @@ PHENO_DIR = Path("data/processed/phenotypes")
 OUTPUT_DIR = Path("data/outputs/bacdive")
 
 DATASETS = ["atleaf", "lit", "marine", "pmi"]
-PHENOTYPES = ["Glucose", "Maltose", "Sucrose", "Mannose", "Fructose", "Galactose",
-              "Mannitol", "Cellobiose", "Glycerol", "Serine", "Alanine",
-              "m-Inositol", "Histidine"]
+PHENOTYPES = [
+    "Glucose",
+    "Maltose",
+    "Sucrose",
+    "Mannose",
+    "Fructose",
+    "Galactose",
+    "Mannitol",
+    "Cellobiose",
+    "Glycerol",
+    "Serine",
+    "Alanine",
+    "m-Inositol",
+    "Histidine",
+]
 SEEDS = range(5)
 VOLUME_SEEDS = range(3)
 VOLUME_GRID = [0, 100, 250, 500, 1000]  # + full appended per (phenotype, D)
@@ -84,8 +93,9 @@ def _train_val(
     sub = y.loc[ids]
     if sub.nunique() < 2 or sub.value_counts().min() < 2:
         return list(ids), []
-    tr, va = train_test_split(np.asarray(ids), test_size=val_frac,
-                              random_state=seed, stratify=sub.to_numpy())
+    tr, va = train_test_split(
+        np.asarray(ids), test_size=val_frac, random_state=seed, stratify=sub.to_numpy()
+    )
     return list(tr), list(va)
 
 
@@ -96,8 +106,9 @@ def _subsample(ids: list[str], y: pd.Series, n: int, seed: int) -> list[str]:
     sub = y.loc[ids]
     if sub.nunique() < 2:
         return list(ids)[:n]
-    keep, _ = train_test_split(np.asarray(ids), train_size=n, random_state=seed,
-                               stratify=sub.to_numpy())
+    keep, _ = train_test_split(
+        np.asarray(ids), train_size=n, random_state=seed, stratify=sub.to_numpy()
+    )
     return list(keep)
 
 
@@ -144,8 +155,9 @@ def build_jobs() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         for D in DATASETS:
             d_ids = [g for g in man_y.index if ds_of.get(g) == D]
             if _minority(man_y, d_ids) < MIN_TEST_MINORITY:
-                skips.append({"phenotype": ph, "held_out": D,
-                              "status": "skip: test minority"})
+                skips.append(
+                    {"phenotype": ph, "held_out": D, "status": "skip: test minority"}
+                )
                 continue
             other3 = [g for g in man_y.index if ds_of.get(g) not in (D, None)]
             c_ids = [g for g in other3 if g in concordant]
@@ -154,32 +166,70 @@ def build_jobs() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             b_ids = [g for g in bac_y.index if strip_version(g) not in d_stripped]
             test_part = [MAN_KOFAM, "man", d_ids]
 
-            strategies = {"C": [("man", c_ids)], "F": [("man", other3)],
-                          "B": [("bac", b_ids)],
-                          "FB": [("man", other3), ("bac", b_ids)],
-                          "CB": [("man", c_ids), ("bac", b_ids)]}
+            strategies = {
+                "C": [("man", c_ids)],
+                "F": [("man", other3)],
+                "B": [("bac", b_ids)],
+                "FB": [("man", other3), ("bac", b_ids)],
+                "CB": [("man", c_ids), ("bac", b_ids)],
+            }
             for strat, parts in strategies.items():
-                if _minority(man_y if strat != "B" else bac_y,
-                             parts[0][1]) < MIN_TRAIN_MINORITY:
-                    skips.append({"phenotype": ph, "held_out": D, "strategy": strat,
-                                  "status": "skip: train minority"})
+                if (
+                    _minority(man_y if strat != "B" else bac_y, parts[0][1])
+                    < MIN_TRAIN_MINORITY
+                ):
+                    skips.append(
+                        {
+                            "phenotype": ph,
+                            "held_out": D,
+                            "strategy": strat,
+                            "status": "skip: train minority",
+                        }
+                    )
                     continue
                 for seed in SEEDS:
                     tp, vp = _build_parts(parts, man_y, bac_y, seed)
-                    jobs.append(_job("strategy", ph, D, strat, seed, tp, vp,
-                                     test_part, c_ids, b_ids, other3))
+                    jobs.append(
+                        _job(
+                            "strategy",
+                            ph,
+                            D,
+                            strat,
+                            seed,
+                            tp,
+                            vp,
+                            test_part,
+                            c_ids,
+                            b_ids,
+                            other3,
+                        )
+                    )
 
-            # --- volume curve: F + BacDive(n) ---
+            # Volume curve: F + BacDive(n)
             grid = sorted(set(VOLUME_GRID) | {len(b_ids)})
             for n in grid:
                 for seed in VOLUME_SEEDS:
                     add = _subsample(b_ids, bac_y, n, seed) if n > 0 else []
                     parts = [("man", other3)] + ([("bac", add)] if add else [])
                     tp, vp = _build_parts(parts, man_y, bac_y, seed)
-                    jobs.append(_job("volume", ph, D, f"FB_n{n}", seed, tp, vp,
-                                     test_part, c_ids, b_ids, other3, n_added=n))
+                    jobs.append(
+                        _job(
+                            "volume",
+                            ph,
+                            D,
+                            f"FB_n{n}",
+                            seed,
+                            tp,
+                            vp,
+                            test_part,
+                            c_ids,
+                            b_ids,
+                            other3,
+                            n_added=n,
+                        )
+                    )
 
-            # --- N-matched control at N=|C| ---
+            # N-matched control at N=|C|
             n = len(c_ids)
             if n >= MIN_TRAIN_MINORITY * 2:
                 for seed in SEEDS:
@@ -190,8 +240,21 @@ def build_jobs() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                     }
                     for tag, parts in variants.items():
                         tp, vp = _build_parts(parts, man_y, bac_y, seed)
-                        jobs.append(_job("nmatch", ph, D, tag, seed, tp, vp,
-                                         test_part, c_ids, b_ids, other3))
+                        jobs.append(
+                            _job(
+                                "nmatch",
+                                ph,
+                                D,
+                                tag,
+                                seed,
+                                tp,
+                                vp,
+                                test_part,
+                                c_ids,
+                                b_ids,
+                                other3,
+                            )
+                        )
     return jobs, skips
 
 
@@ -229,15 +292,26 @@ def _job(
 ) -> dict[str, Any]:
     """Assemble one job payload (metadata + train/val/test parts) for a worker."""
     n_train = sum(len(p[2]) for p in train_parts)
-    return {"analysis": analysis, "phenotype": ph, "held_out": D, "strategy": strat,
-            "seed": seed, "n_added": n_added, "n_train": n_train,
-            "n_test": len(test_part[2]), "n_concordant": len(c_ids),
-            "n_bacdive": len(b_ids), "n_other3": len(other3),
-            "train_parts": train_parts, "val_parts": val_parts, "test_part": test_part}
+    return {
+        "analysis": analysis,
+        "phenotype": ph,
+        "held_out": D,
+        "strategy": strat,
+        "seed": seed,
+        "n_added": n_added,
+        "n_train": n_train,
+        "n_test": len(test_part[2]),
+        "n_concordant": len(c_ids),
+        "n_bacdive": len(b_ids),
+        "n_other3": len(other3),
+        "train_parts": train_parts,
+        "val_parts": val_parts,
+        "test_part": test_part,
+    }
 
 
-# A fit is uniquely identified by these columns (n_added is folded into the
-# volume strategy tag "FB_n{n}", so the five fields below are sufficient).
+# A fit is uniquely identified by these columns; n_added is folded into the
+# volume strategy tag "FB_n{n}".
 KEY_COLS = ["analysis", "phenotype", "held_out", "strategy", "seed"]
 BATCH_SIZE = int(os.environ.get("BACDIVE_BATCH_SIZE", 140))
 
@@ -247,7 +321,7 @@ def _job_key(job: dict[str, Any]) -> tuple:
 
 
 def _load_done_keys(path: Path) -> set[tuple]:
-    """Keys of fits already saved in the checkpoint (resume support)."""
+    """Keys of fits already saved in the checkpoint."""
     if not path.exists():
         return set()
     df = pd.read_csv(path, usecols=KEY_COLS, dtype=str)
@@ -255,7 +329,7 @@ def _load_done_keys(path: Path) -> set[tuple]:
 
 
 def _append_results(path: Path, rows: list[dict]) -> None:
-    """Append a batch to the checkpoint via read-concat-write (crash-safe enough)."""
+    """Append a batch to the checkpoint by read-concat-write into a temp file."""
     new = pd.DataFrame(rows)
     if path.exists():
         new = pd.concat([pd.read_csv(path), new], ignore_index=True)
@@ -267,7 +341,7 @@ def _append_results(path: Path, rows: list[dict]) -> None:
 def _chunks(seq: list, n: int) -> Iterator[list]:
     """Yield successive ``n``-sized chunks of ``seq``."""
     for i in range(0, len(seq), n):
-        yield seq[i:i + n]
+        yield seq[i : i + n]
 
 
 def main(smoke: bool = False, fresh: bool = False) -> None:
@@ -305,8 +379,10 @@ def main(smoke: bool = False, fresh: bool = False) -> None:
 
     done = _load_done_keys(ckpt)
     todo = [j for j in jobs if _job_key(j) not in done]
-    print(f"  {len(jobs)} total fits | {len(done)} already done (resume) | "
-          f"{len(todo)} to run | {len(skips)} build-skips")
+    print(
+        f"  {len(jobs)} total fits | {len(done)} already done (resume) | "
+        f"{len(todo)} to run | {len(skips)} build-skips"
+    )
     print(f"  n_jobs={N_JOBS}, thread_count={THREAD_COUNT}, batch_size={BATCH_SIZE}")
     if not todo:
         print("Nothing to run; checkpoint already complete.")
@@ -321,9 +397,11 @@ def main(smoke: bool = False, fresh: bool = False) -> None:
             n_done = min(bi * BATCH_SIZE, len(todo))
             rate = n_done / elapsed
             eta = (len(todo) - n_done) / rate / 60 if rate else 0
-            print(f"  batch {bi}: {n_done}/{len(todo)} done, "
-                  f"{elapsed / 60:.1f} min elapsed, ~{eta:.1f} min left "
-                  f"-> checkpoint saved to {ckpt}")
+            print(
+                f"  batch {bi}: {n_done}/{len(todo)} done, "
+                f"{elapsed / 60:.1f} min elapsed, ~{eta:.1f} min left "
+                f"-> checkpoint saved to {ckpt}"
+            )
 
     df = pd.read_csv(ckpt)
     ok = df[df.status == "ok"]
@@ -331,14 +409,21 @@ def main(smoke: bool = False, fresh: bool = False) -> None:
     strat = ok[ok.analysis == "strategy"]
     if len(strat):
         print("\n=== mean balanced accuracy by strategy (held-out manuscript test) ===")
-        print(strat.groupby("strategy")["balanced_accuracy"]
-              .agg(["mean", "std", "count"]).round(3).to_string())
+        print(
+            strat.groupby("strategy")["balanced_accuracy"]
+            .agg(["mean", "std", "count"])
+            .round(3)
+            .to_string()
+        )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true", help="fast reduced grid")
-    parser.add_argument("--fresh", action="store_true",
-                        help="ignore any existing checkpoint and start over")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="ignore any existing checkpoint and start over",
+    )
     args = parser.parse_args()
     main(smoke=args.smoke, fresh=args.fresh)

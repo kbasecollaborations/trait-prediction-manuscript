@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Train and save single concordant CatBoost deployment models (one per phenotype).
 
-Companion to ``train_full_data_models``. Instead of training on all labelled
-genomes, each model is trained on the GapMind-concordant genomes for that
-phenotype (genomes where the GapMind loose-threshold call matches the experimental
+Each model is trained on the GapMind-concordant genomes for that phenotype
+(genomes where the GapMind loose-threshold call matches the experimental
 outcome), collapsing the five per-fold ``concordant_models`` checkpoints into one
 deployment model per phenotype trained on the full concordant set.
 
@@ -83,8 +82,7 @@ def _save_model_artifacts(
 
     features = importances.index.tolist()
     with open(out_dir / f"{phenotype}_selected_features.txt", "w") as fh:
-        for feat in features:
-            fh.write(f"{feat}\n")
+        fh.writelines(f"{feat}\n" for feat in features)
 
     metadata: dict[str, int | str] = {
         "model_name": phenotype,
@@ -127,19 +125,29 @@ def main() -> None:
         y = y.loc[common]
         n_pos, n_neg = int(y.sum()), int((y == 0).sum())
         if min(n_pos, n_neg) < MIN_MINORITY:
-            print(f"  Skipping {phenotype}: minority class < {MIN_MINORITY} (pos={n_pos}, neg={n_neg})")
+            print(
+                f"  Skipping {phenotype}: minority class < {MIN_MINORITY} (pos={n_pos}, neg={n_neg})"
+            )
             continue
 
         X_pheno = X.loc[common]
         model = make_classifier(MODEL_TYPE, random_state=RANDOM_STATE)
         model.fit(X_pheno, y)
         meta = _save_model_artifacts(
-            OUTPUT_BASE / phenotype, phenotype, model, X_pheno, n_pos, n_neg, len(concordant)
+            OUTPUT_BASE / phenotype,
+            phenotype,
+            model,
+            X_pheno,
+            n_pos,
+            n_neg,
+            len(concordant),
         )
         summary.append(meta)
 
     if summary:
-        pd.DataFrame(summary).to_csv(OUTPUT_BASE / "concordant_full_models_summary.csv", index=False)
+        pd.DataFrame(summary).to_csv(
+            OUTPUT_BASE / "concordant_full_models_summary.csv", index=False
+        )
     print(f"\nSaved {len(summary)} concordant models under {OUTPUT_BASE}")
 
 

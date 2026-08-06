@@ -79,9 +79,7 @@ def main() -> None:
 
     concordance = concordance_rate_per_phenotype(CONCORDANCE_FILE)
     accuracy = cross_dataset_accuracy_per_phenotype(ML_RESULTS_FILE)
-    merged = concordance.merge(accuracy, on="phenotype").sort_values(
-        "concordance_rate"
-    )
+    merged = concordance.merge(accuracy, on="phenotype").sort_values("concordance_rate")
 
     output_file = OUTPUT_DIR / "figureS16_phenotype_generalizability.tsv"
     merged.to_csv(output_file, sep="\t", index=False)
@@ -89,10 +87,7 @@ def main() -> None:
     rho, p_value = spearmanr(merged["concordance_rate"], merged["cross_dataset_ba"])
     print(merged.to_string(index=False))
     print(f"\nSaved {output_file}")
-    print(
-        f"Spearman rho = {rho:.3f}, p = {p_value:.4f}, "
-        f"n = {len(merged)} phenotypes"
-    )
+    print(f"Spearman rho = {rho:.3f}, p = {p_value:.4f}, n = {len(merged)} phenotypes")
 
 
 if __name__ == "__main__":

@@ -71,8 +71,8 @@ def build_genome_to_class(
     project's strain-id JSON map. For genomes that lack a GTDB taxonomy entry
     (typically IMG-only genomes), the class is inferred from the genus parsed
     out of the ``Genome name`` column using the most common class observed for
-    that genus among genomes that *do* have a GTDB taxonomy. Genomes whose
-    genus cannot be resolved are labelled ``"Unassigned"``.
+    that genus among genomes that have a GTDB taxonomy. Genomes whose genus
+    cannot be resolved are labelled ``"Unassigned"``.
 
     Parameters
     ----------
@@ -95,7 +95,6 @@ def build_genome_to_class(
     df = pd.read_csv(assignments_file, sep="\t", dtype=str)
     df["Genome name"] = df["Genome name"].fillna("")
 
-    # Direct: Genome name -> class
     name_to_class: dict[str, str] = {}
     genus_to_class_counts: dict[str, dict[str, int]] = {}
     for gname, lineage in zip(df["Genome name"], df["gtdb_taxonomy_id"]):
@@ -105,7 +104,6 @@ def build_genome_to_class(
         cls = ranks.get("c") or UNASSIGNED_LABEL
         if gname:
             name_to_class[gname] = cls
-        # Also build genus -> class frequency table for fallback
         genus = ranks.get("g")
         if genus:
             genus_to_class_counts.setdefault(genus, {}).setdefault(cls, 0)
@@ -116,7 +114,6 @@ def build_genome_to_class(
         for g, counts in genus_to_class_counts.items()
     }
 
-    # Strain-map: short code -> GenBank accession; then accession prefix match
     strain_map: dict[str, str] = json.loads(strain_map_file.read_text())
     accession_to_class: dict[str, str] = {}
     for gname, cls in name_to_class.items():
@@ -125,7 +122,6 @@ def build_genome_to_class(
             accession = gname.split("_ASM")[0]
             accession_to_class.setdefault(accession, cls)
 
-    # Build short-code -> class via strain_map
     code_to_class: dict[str, str] = {}
     for code, mapped in strain_map.items():
         accession = mapped.split("_ASM")[0]
@@ -133,12 +129,10 @@ def build_genome_to_class(
         if cls is not None:
             code_to_class[code] = cls
 
-    # Final lookup: combine all sources. Then add genus-based fallback below.
     lookup: dict[str, str] = {}
     lookup.update(name_to_class)
     lookup.update(code_to_class)
 
-    # For every Genome name we couldn't classify directly, try genus inference
     for gname in df["Genome name"]:
         if not gname or gname in lookup:
             continue
@@ -226,10 +220,9 @@ def class_composition(class_assignments: dict[str, str]) -> dict[str, float]:
 def faith_pd(tree: Tree, tips: Iterable[str]) -> float:
     """Compute Faith's PD as the sum of branch lengths spanning the given tips.
 
-    The tree is copied and pruned in-place to the intersection of ``tips`` and
-    the tree's leaves; the sum of remaining edge lengths is returned. This is
-    Faith's PD computed against an unrooted/rooted view of the supplied tree
-    (we do not subtract the root edge separately).
+    The tree is copied and pruned to the intersection of ``tips`` and the
+    tree's leaves; the sum of the remaining edge lengths is returned. The root
+    edge is not subtracted separately.
 
     Parameters
     ----------
@@ -277,11 +270,7 @@ def load_split_indices(
         not exist on disk.
     """
     train_dsets = [d for d in DATASET_SUBSET if d != dataset]
-    folder = (
-        SPLITS_DIR
-        / phenotype
-        / f"train({'+'.join(train_dsets)}),test({dataset})"
-    )
+    folder = SPLITS_DIR / phenotype / f"train({'+'.join(train_dsets)}),test({dataset})"
     train_file = folder / "y_train.tsv"
     val_file = folder / "y_val.tsv"
     test_file = folder / "y_test.tsv"
@@ -321,9 +310,7 @@ def class_overlap(
     float
         Fraction in [0, 1]. ``float('nan')`` if the test set has no classes.
     """
-    test_classes = set(
-        assign_classes(test_ids, class_lookup, genus_to_class).values()
-    )
+    test_classes = set(assign_classes(test_ids, class_lookup, genus_to_class).values())
     train_classes = set(
         assign_classes(train_ids, class_lookup, genus_to_class).values()
     )
@@ -368,8 +355,7 @@ def compute_phenotype_rows(
     """
     rows: list[dict[str, object]] = []
 
-    # The experimental "full" set for this phenotype: genomes with non-NaN
-    # experimental measurement and at least one matching feature row.
+    # "full" scope: genomes with a non-missing experimental measurement.
     if phenotype not in experimental_phenotypes.columns:
         return rows
     exp = experimental_phenotypes[phenotype].dropna()
@@ -379,11 +365,8 @@ def compute_phenotype_rows(
     )
     concordant_genomes = {str(g) for g in concordant_genomes}
 
-    # (a) Class composition
     full_assignments = assign_classes(full_genomes, class_lookup, genus_to_class)
-    conc_assignments = assign_classes(
-        concordant_genomes, class_lookup, genus_to_class
-    )
+    conc_assignments = assign_classes(concordant_genomes, class_lookup, genus_to_class)
     full_comp = class_composition(full_assignments)
     conc_comp = class_composition(conc_assignments)
     all_classes = sorted(set(full_comp) | set(conc_comp))
@@ -409,7 +392,6 @@ def compute_phenotype_rows(
             }
         )
 
-    # (b) Faith PD
     pd_full = faith_pd(tree, full_genomes)
     pd_conc = faith_pd(tree, concordant_genomes)
     pd_ratio = pd_conc / pd_full if pd_full > 0 else float("nan")
@@ -440,9 +422,8 @@ def compute_phenotype_rows(
         }
     )
 
-    # (c) Train/test class overlap per LOO split. Test set composition is held
-    # fixed to the full test set in both scenarios; only the training set
-    # changes.
+    # Train/test class overlap per LOO split; the test set is held fixed in
+    # both scopes and only the training set changes.
     overlaps_full: list[float] = []
     overlaps_conc: list[float] = []
     for ds in DATASET_SUBSET:
@@ -450,15 +431,9 @@ def compute_phenotype_rows(
         if split is None:
             continue
         train_ids, test_ids = split
-        # Restrict train to concordant genomes for the concordant scenario;
-        # the test set is unchanged.
         train_ids_conc = train_ids & concordant_genomes
-        ov_full = class_overlap(
-            train_ids, test_ids, class_lookup, genus_to_class
-        )
-        ov_conc = class_overlap(
-            train_ids_conc, test_ids, class_lookup, genus_to_class
-        )
+        ov_full = class_overlap(train_ids, test_ids, class_lookup, genus_to_class)
+        ov_conc = class_overlap(train_ids_conc, test_ids, class_lookup, genus_to_class)
         rows.append(
             {
                 "phenotype": phenotype,

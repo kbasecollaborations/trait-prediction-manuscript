@@ -17,8 +17,7 @@ def run_ml_on_splits(
     min_test_samples: int = 10,
     experiment_name: str = "combined",
 ) -> pd.DataFrame:
-    """
-    Run machine learning on all loaded splits.
+    """Run machine learning on all loaded splits.
 
     Parameters
     ----------
@@ -123,8 +122,7 @@ def run_ml_on_splits(
 def filter_gapmind_by_phenotype(
     gapmind_features: pd.DataFrame, phenotype_name: str
 ) -> pd.DataFrame:
-    """
-    Filter GapMind features by phenotype prefix.
+    """Filter GapMind features by phenotype prefix.
 
     Parameters
     ----------
@@ -154,8 +152,7 @@ def run_phenotype_filtered_experiment(
     split_types: list[str],
     phenotype_list: list[str],
 ) -> pd.DataFrame:
-    """
-    Run ML per phenotype using only that phenotype's GapMind feature columns.
+    """Run ML per phenotype using only that phenotype's GapMind feature columns.
 
     Parameters
     ----------
@@ -250,16 +247,12 @@ def main() -> None:
     COMBINED_FEATURES_FILE = Path(
         "data/processed/features_reduced/combined_datasets/gapmind_kofam_rast.tsv"
     )
-    GAPMIND_FEATURES_FILE = Path(
-        "data/interim/features/combined_datasets/gapmind.tsv"
-    )
+    GAPMIND_FEATURES_FILE = Path("data/interim/features/combined_datasets/gapmind.tsv")
 
     SPLIT_TYPES = ["random_split", "dataset_split"]
 
-    # Common phenotypes: taken from the split-generation module rather than a
-    # local copy, which had silently dropped Glucose and so excluded it from the
-    # phenotype-filtered experiment (the combined experiment reads the splits
-    # directory directly and was unaffected).
+    # Sourced from the split-generation module; a local copy of this list drifts
+    # and silently drops phenotypes from the phenotype-filtered experiment.
     PHENOTYPES = list(COMMON_PHENOTYPES)
 
     print("=" * 80)
@@ -304,9 +297,7 @@ def main() -> None:
     print("=" * 80)
 
     if not GAPMIND_FEATURES_FILE.exists():
-        print(
-            f"\nERROR: GapMind features file not found: {GAPMIND_FEATURES_FILE}"
-        )
+        print(f"\nERROR: GapMind features file not found: {GAPMIND_FEATURES_FILE}")
         return
 
     results_filtered = run_phenotype_filtered_experiment(
@@ -327,9 +318,7 @@ def main() -> None:
     print("Summary Statistics")
     print("=" * 80)
 
-    all_results = pd.concat(
-        [results_combined, results_filtered], ignore_index=True
-    )
+    all_results = pd.concat([results_combined, results_filtered], ignore_index=True)
 
     # Annotate each row with its full-test minority-class count (Methods).
     from scripts.minority_filter import (

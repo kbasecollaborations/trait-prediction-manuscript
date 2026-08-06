@@ -15,7 +15,6 @@ from scipy.stats import spearmanr, wilcoxon
 
 from scripts.minority_filter import (
     concordant_minority_counts,
-    discordant_minority_counts,
     filter_by_minority,
     full_test_minority_counts,
 )
@@ -25,9 +24,7 @@ OUTPUT_FILE = OUTPUT_DIR / "manuscript_pvalues.tsv"
 PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar.tsv"
 PER_SAMPLE_FILE = Path("data/outputs/figure7/figure7_per_sample.tsv")
 
-MECHFREE_PER_SAMPLE_FILE = Path(
-    "data/outputs/figure6/figure6c_mechfree_per_sample.tsv"
-)
+MECHFREE_PER_SAMPLE_FILE = Path("data/outputs/figure6/figure6c_mechfree_per_sample.tsv")
 """Mechanism-free arm of Figure 6C, produced on the concordant arm's terms by
 ``scripts/figure6/figure6c_mechfree_per_sample.py``."""
 MECHFREE_PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar_mechfree.tsv"
@@ -71,18 +68,14 @@ def _per_phenotype_mean(df: pd.DataFrame) -> pd.Series:
 
 
 def _load_gapmind_random() -> pd.Series:
-    df = pd.read_csv(
-        "data/outputs/figure3/gapmind_random_split_metrics.tsv", sep="\t"
-    )
+    df = pd.read_csv("data/outputs/figure3/gapmind_random_split_metrics.tsv", sep="\t")
     return _per_phenotype_mean(df)
 
 
 def _load_gapmind_dataset() -> pd.Series:
-    df = pd.read_csv(
-        "data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t"
-    )
-    # Apply the same minority-class test filter as the ML side so the
-    # cross-dataset comparison is scored on matched cells (symmetric).
+    df = pd.read_csv("data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t")
+    # Same minority-class test filter as the ML side, so the comparison is
+    # scored on matched cells.
     test_col = "test_dataset" if "test_dataset" in df.columns else None
     df = filter_by_minority(
         df, full_test_minority_counts(), test_dataset_column=test_col
@@ -105,7 +98,8 @@ def test_fig5a_kofam_vs_gapmind_ceiling_dataset() -> tuple[float, int]:
     kofam = kofam[kofam["split_type"] == "dataset_split"]
     gm_raw = Path("data/outputs/figure5/figure5a_concordant_ml_results_gapmind_raw.csv")
     gm_path = (
-        gm_raw if gm_raw.exists()
+        gm_raw
+        if gm_raw.exists()
         else Path("data/outputs/figure5/figure5a_concordant_ml_results_gapmind.csv")
     )
     gm = pd.read_csv(gm_path)
@@ -203,14 +197,11 @@ def test_fig6_spearman_novelty_vs_ba() -> tuple[float, int] | None:
 def test_fig7c_low_conf_vs_random() -> tuple[float, int]:
     """Figure 7C: low-confidence vs random selection paired by (phen, held-out, seed)."""
     df = pd.read_csv("data/outputs/figure7/figure7_prioritization.tsv", sep="\t")
-    pivot = (
-        df.pivot_table(
-            index=["phenotype", "held_out_dataset", "seed"],
-            columns="strategy",
-            values="delta_balanced_accuracy",
-        )
-        .dropna(subset=["low_confidence", "random"])
-    )
+    pivot = df.pivot_table(
+        index=["phenotype", "held_out_dataset", "seed"],
+        columns="strategy",
+        values="delta_balanced_accuracy",
+    ).dropna(subset=["low_confidence", "random"])
     res = wilcoxon(
         pivot["low_confidence"].to_numpy(),
         pivot["random"].to_numpy(),
@@ -249,9 +240,7 @@ def _figure6_metric_means(
 
     phenotypes = list(COMMON_PHENOTYPES)
     long_df = _load_long_form(Path("data/outputs/figure6"), phenotypes)
-    ml_means = (
-        long_df.groupby(["phenotype", "config"])[metric].mean().unstack("config")
-    )
+    ml_means = long_df.groupby(["phenotype", "config"])[metric].mean().unstack("config")
     gm_means = _gapmind_baseline(phenotypes).groupby("phenotype")[metric].mean()
     return ml_means["concordant"], ml_means["free_balanced"], gm_means
 
@@ -284,10 +273,8 @@ def fig6c_concordant_recall_delta_ci(
 ) -> dict[str, float]:
     """Effect size and bootstrap CI for the concordant-ML minus GapMind recall delta.
 
-    Reproducible companion to the borderline rank-based test
-    (``test_fig6c_concordant_recall_vs_gapmind``): reports the per-phenotype mean
-    recall delta, a fixed-seed percentile bootstrap 95% CI, and the count of
-    phenotypes favouring ML. Cited in the main text alongside the Wilcoxon q-value.
+    Cited in the main text alongside the Wilcoxon q-value of
+    ``test_fig6c_concordant_recall_vs_gapmind``.
 
     Parameters
     ----------
@@ -302,9 +289,7 @@ def fig6c_concordant_recall_delta_ci(
         ``mean_delta``, ``ci_low``, ``ci_high``, ``n_positive``, ``n``.
     """
     concordant, _mech_free, gapmind = _figure6_recall_means()
-    common = sorted(
-        set(concordant.index) & set(gapmind.index) & set(COMMON_PHENOTYPES)
-    )
+    common = sorted(set(concordant.index) & set(gapmind.index) & set(COMMON_PHENOTYPES))
     delta = (concordant.loc[common] - gapmind.loc[common]).to_numpy()
     rng = np.random.default_rng(seed)
     boot = rng.choice(delta, size=(n_boot, delta.size), replace=True).mean(axis=1)
@@ -345,7 +330,6 @@ def benjamini_hochberg(pvals: Iterable[float]) -> list[float]:
     finite = ~np.isnan(ranked)
     adj = np.empty(n)
     adj.fill(np.nan)
-    # Compute q for finite entries only
     finite_idx = np.where(finite)[0]
     m = finite_idx.size
     raw = ranked[finite]
@@ -366,9 +350,7 @@ def per_phenotype_mcnemar(
 ) -> pd.DataFrame:
     """Per-phenotype McNemar tests of an ML arm against GapMind.
 
-    The aggregate paired tests treat each phenotype as one observation (n = 15),
-    which averages a bimodal distribution and is underpowered. Here each
-    phenotype is tested separately at the sample level. Under leave-one-dataset-out
+    Each phenotype is tested at the sample level. Under leave-one-dataset-out
     every genome appears in exactly one held-out test set, so pooling the four
     splits yields one prediction pair per genome and no pseudo-replication.
 
@@ -381,11 +363,10 @@ def per_phenotype_mcnemar(
         Per-genome prediction table. Defaults to the concordance-trained arm;
         pass the mechanism-free table to test that arm on identical terms.
     restrict_to : set[tuple[str, str]] | None, optional
-        ``(phenotype, genome)`` pairs to keep. Use this to match two arms on the
-        same evaluation set: a filter that discards more training data can leave
-        a split unfittable, so one arm may cover fewer held-out genomes than the
-        other, and comparing their unmatched means would credit the difference in
-        coverage rather than in the models.
+        ``(phenotype, genome)`` pairs to keep, used to match two arms on the same
+        evaluation set. A filter that discards more training data can leave a
+        split unfittable, so one arm may cover fewer held-out genomes than the
+        other.
 
     Returns
     -------
@@ -438,7 +419,9 @@ def per_phenotype_mcnemar(
                     "ml_only": ml_only,
                     "gapmind_only": gm_only,
                     "p_value": float(
-                        mcnemar([[both, ml_only], [gm_only, neither]], exact=True).pvalue
+                        mcnemar(
+                            [[both, ml_only], [gm_only, neither]], exact=True
+                        ).pvalue
                     ),
                 }
             )
@@ -461,9 +444,7 @@ def main() -> None:
         """Record one test. ``adjust=False`` keeps it out of the BH family.
 
         The BH family is the twelve primary tests described in
-        ``sections/methods.tex``; every other comparison the manuscript prints is
-        reported unadjusted, so it is computed here but excluded from the
-        correction rather than enlarging the family.
+        ``sections/methods.tex``; every other comparison is reported unadjusted.
         """
         if result is None:
             return
@@ -570,9 +551,7 @@ def main() -> None:
     )
 
     per_phenotype = per_phenotype_mcnemar()
-    per_phenotype.to_csv(
-        PER_PHENOTYPE_FILE, sep="\t", index=False, float_format="%.6g"
-    )
+    per_phenotype.to_csv(PER_PHENOTYPE_FILE, sep="\t", index=False, float_format="%.6g")
     print(f"\nPer-phenotype McNemar (concordant ML vs GapMind) -> {PER_PHENOTYPE_FILE}")
     for metric, frame in per_phenotype.groupby("metric"):
         better = int(((frame["delta"] > 0) & (frame["q_value_BH"] < 0.05)).sum())
@@ -581,29 +560,22 @@ def main() -> None:
             f"  {metric}: ML better on {better}/{len(frame)}, "
             f"worse on {worse}/{len(frame)} (BH q < 0.05)"
         )
-    # Sensitivity and specificity average to balanced accuracy, so their sum
-    # quantifies the cancellation behind the null cross-dataset shift.
-    balanced = (
-        per_phenotype.pivot(index="phenotype", columns="metric", values="delta")
-        .mean(axis=1)
-    )
-    # Same test for the mechanism-free arm, so both Figure 6C series carry a
-    # per-phenotype significance call rather than only the concordant one.
+    # Sensitivity and specificity average to balanced accuracy.
+    balanced = per_phenotype.pivot(
+        index="phenotype", columns="metric", values="delta"
+    ).mean(axis=1)
+    # Same test for the mechanism-free arm of Figure 6C.
     if MECHFREE_PER_SAMPLE_FILE.exists():
-        # Match the mechanism-free arm to the concordant arm's evaluation set.
-        # Concordance filtering can leave a split unfittable (Alanine/ATLeaf), so
-        # the mechanism-free arm covers more genomes there; scoring it on the
-        # union would credit the extra split rather than the filter. The
-        # concordant set is the smaller one, so its own table is unaffected.
+        # Match the mechanism-free arm to the concordant arm's evaluation set:
+        # concordance filtering can leave a split unfittable (Alanine/ATLeaf),
+        # so the mechanism-free arm otherwise covers more genomes.
         concordant_rows = filter_by_minority(
             pd.read_csv(PER_SAMPLE_FILE, sep="\t"),
             full_test_minority_counts(),
             test_dataset_column="held_out_dataset",
         )
         concordant_pairs = set(
-            concordant_rows[["phenotype", "genome"]].itertuples(
-                index=False, name=None
-            )
+            concordant_rows[["phenotype", "genome"]].itertuples(index=False, name=None)
         )
         mechfree = per_phenotype_mcnemar(
             MECHFREE_PER_SAMPLE_FILE, restrict_to=concordant_pairs

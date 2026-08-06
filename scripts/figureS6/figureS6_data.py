@@ -7,7 +7,6 @@ subset for Histidine and Galactose, with 3 repeats per configuration.
 
 import json
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,19 +15,15 @@ from tqdm import tqdm
 
 from scripts.ml import _get_scores, make_classifier
 
-
-# Analysis parameters
 PHENOTYPES_TO_ANALYZE = ["Histidine", "Galactose"]
 SAMPLE_SIZES = [50, 100, 200, 500, "full"]
 N_REPEATS = 3
 SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
 RANDOM_STATE = 42
 
-# Feature type to use: "gapmind", "kofam", or "rast"
-# Change this line to switch between feature types
+# One of "gapmind", "kofam" or "rast".
 FEATURE_TYPE = "kofam"
 
-# Scoring metrics
 SCORING = [
     "accuracy",
     "balanced_accuracy",
@@ -43,8 +38,7 @@ SCORING = [
 
 
 def load_gapmind_predictions() -> pd.DataFrame:
-    """
-    Load and process GapMind predictions.
+    """Load and process GapMind predictions.
 
     Returns
     -------
@@ -75,7 +69,7 @@ def load_gapmind_predictions() -> pd.DataFrame:
 
     from scripts.io import index_format_func
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -95,7 +89,6 @@ def load_gapmind_predictions() -> pd.DataFrame:
     gapmind_data.columns = gapmind_data.columns.str.replace("Carbon__", "")
     gapmind_data.columns = gapmind_data.columns.map(phenotype_dict)  # type: ignore
 
-    # Convert to binary
     replace_dict = {
         "complete": 1,
         "likely_complete": 1,
@@ -111,8 +104,7 @@ def load_gapmind_predictions() -> pd.DataFrame:
 
 
 def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]]]:
-    """
-    Load train/test/val split files (labels only, not features).
+    """Load train/test/val split files (labels only, not features).
 
     Parameters
     ----------
@@ -126,7 +118,6 @@ def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]
     """
     result: dict[str, dict[str, dict[str, pd.Series]]] = {}
 
-    # Load random splits
     if "random_split" in SPLIT_TYPES:
         random_split_dir = base_dir / "random_split"
         if random_split_dir.exists():
@@ -166,7 +157,6 @@ def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]
                     }
             result["random_split"] = random_split_data
 
-    # Load dataset splits
     if "dataset_split" in SPLIT_TYPES:
         dataset_split_dir = base_dir / "dataset_split"
         if dataset_split_dir.exists():
@@ -206,7 +196,6 @@ def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]
                     }
             result["dataset_split"] = dataset_split_data
 
-    # Load phylogeny out-of-clade splits
     if "phylo_ooc" in SPLIT_TYPES:
         phylo_split_dir = base_dir / "phylogeny_split"
         if phylo_split_dir.exists():
@@ -255,8 +244,7 @@ def load_split_files(base_dir: Path) -> dict[str, dict[str, dict[str, pd.Series]
 def subsample_indices(
     indices: pd.Index, y: pd.Series, n_samples: int | str, random_state: int
 ) -> pd.Index:
-    """
-    Subsample indices using stratified sampling.
+    """Subsample indices using stratified sampling.
 
     Parameters
     ----------
@@ -279,26 +267,20 @@ def subsample_indices(
 
     y_subset = y.loc[indices]
 
-    # Check if we have enough samples
     if len(y_subset) <= n_samples:
         return indices
 
-    # Check if we have both classes
     if len(y_subset.unique()) == 1:
-        # Only one class, can't stratify - just random sample
         sampled_indices = y_subset.sample(
             n=n_samples, replace=False, random_state=random_state
         ).index
     else:
-        # Check if we can do stratified sampling
-        # For stratification to work, sklearn needs at least one sample per class
-        # in both train and test sets
+        # sklearn stratification needs at least one sample per class in the
+        # holdout portion.
         n_classes = len(y_subset.unique())
         test_size = len(y_subset) - n_samples
 
-        # Need at least n_classes samples in test set for stratification
         if test_size >= n_classes:
-            # Stratified sampling - take the train portion
             sampled_indices, _ = train_test_split(
                 y_subset.index,
                 train_size=n_samples,
@@ -306,7 +288,6 @@ def subsample_indices(
                 random_state=random_state,
             )
         else:
-            # Not enough samples for stratified split, use random sampling
             sampled_indices = y_subset.sample(
                 n=n_samples, replace=False, random_state=random_state
             ).index
@@ -322,8 +303,7 @@ def run_data_requirements_analysis(
     gapmind_data: pd.DataFrame,
     checkpoint_file: Path | None = None,
 ) -> pd.DataFrame:
-    """
-    Run data requirements analysis across all splits and configurations.
+    """Run data requirements analysis across all splits and configurations.
 
     Parameters
     ----------
@@ -344,7 +324,6 @@ def run_data_requirements_analysis(
     """
     results = []
 
-    # Resume from checkpoint if available
     done_keys: set[tuple[str, str]] = set()
     if checkpoint_file is not None and checkpoint_file.exists():
         existing = pd.read_csv(checkpoint_file)
@@ -353,9 +332,10 @@ def run_data_requirements_analysis(
             for _, row in existing[["split_type", "key"]].drop_duplicates().iterrows()
         )
         results.extend(existing.to_dict("records"))
-        print(f"  Resuming: {len(done_keys)} (split_type, key) combinations already done.")
+        print(
+            f"  Resuming: {len(done_keys)} (split_type, key) combinations already done."
+        )
 
-    # Count total iterations for progress bar
     total_iterations = 0
     for split_type in split_data:
         for key in split_data[split_type]:
@@ -369,7 +349,6 @@ def run_data_requirements_analysis(
                 phenotype_name = key.split("_")[0]
                 pbar.set_postfix_str(f"{split_type}/{key}")
 
-                # Skip if already done in checkpoint
                 if (split_type, key) in done_keys:
                     pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
                     continue
@@ -389,16 +368,17 @@ def run_data_requirements_analysis(
                 X_test = feature_data.loc[test_indices]
                 y_test_subset = y_test.loc[test_indices]
 
-                # Skip if test set is too small
                 if len(X_test) < 10:
                     pbar.update(N_REPEATS * len(SAMPLE_SIZES) * 2)
                     continue
 
-                # Identify concordant samples in train/val/test
+                # Concordant = experimental label equals the GapMind call.
                 gapmind_train = gapmind_data.loc[
                     train_indices.intersection(gapmind_data.index), phenotype_name
                 ]
-                concordant_train_mask = y_train_full.loc[gapmind_train.index] == gapmind_train
+                concordant_train_mask = (
+                    y_train_full.loc[gapmind_train.index] == gapmind_train
+                )
                 concordant_train_indices = gapmind_train[concordant_train_mask].index
 
                 gapmind_val = gapmind_data.loc[
@@ -410,17 +390,17 @@ def run_data_requirements_analysis(
                 gapmind_test = gapmind_data.loc[
                     test_indices.intersection(gapmind_data.index), phenotype_name
                 ]
-                concordant_test_mask = y_test_subset.loc[gapmind_test.index] == gapmind_test
+                concordant_test_mask = (
+                    y_test_subset.loc[gapmind_test.index] == gapmind_test
+                )
                 concordant_test_indices = gapmind_test[concordant_test_mask].index
                 discordant_test_indices = gapmind_test[~concordant_test_mask].index
 
-                # Train models with different configurations
                 for training_type in ["full", "concordant"]:
-                    # Set base indices for sampling
                     if training_type == "full":
                         base_train_indices = train_indices
                         base_val_indices = val_indices
-                    else:  # concordant
+                    else:
                         base_train_indices = concordant_train_indices
                         base_val_indices = concordant_val_indices
 
@@ -428,7 +408,6 @@ def run_data_requirements_analysis(
                         for repeat_idx in range(N_REPEATS):
                             pbar.update(1)
 
-                            # Subsample training data
                             repeat_random_state = RANDOM_STATE + repeat_idx
                             sampled_train_indices = subsample_indices(
                                 base_train_indices,
@@ -437,36 +416,36 @@ def run_data_requirements_analysis(
                                 repeat_random_state,
                             )
 
-                            # Skip if we don't have enough samples
                             if len(sampled_train_indices) < 5:
                                 continue
 
                             X_train = X_train_full.loc[sampled_train_indices]
                             y_train = y_train_full.loc[sampled_train_indices]
 
-                            # Skip if training doesn't have both classes
                             if len(y_train.unique()) != 2:
                                 continue
 
-                            # Use full validation set (aligned with training indices)
+                            # Validation set is not subsampled.
                             X_val = X_val_full.loc[base_val_indices]
                             y_val = y_val_full.loc[base_val_indices]
 
-                            # Skip if validation doesn't have both classes
                             if len(y_val.unique()) != 2:
                                 continue
 
-                            # Train model
                             model = make_classifier("cb", random_state=RANDOM_STATE)
 
-                            # Align validation features
+                            # Align validation features to the training columns.
                             X_val_aligned = X_val.copy()
-                            missing_cols = X_train.columns.difference(X_val_aligned.columns)
+                            missing_cols = X_train.columns.difference(
+                                X_val_aligned.columns
+                            )
                             if len(missing_cols) > 0:
                                 missing_df = pd.DataFrame(
                                     0, index=X_val_aligned.index, columns=missing_cols
                                 )
-                                X_val_aligned = pd.concat([X_val_aligned, missing_df], axis=1)
+                                X_val_aligned = pd.concat(
+                                    [X_val_aligned, missing_df], axis=1
+                                )
                             X_val_aligned = X_val_aligned[X_train.columns]
 
                             model.fit(
@@ -477,17 +456,20 @@ def run_data_requirements_analysis(
                                 verbose=False,
                             )
 
-                            # Align test features
+                            # Align test features to the training columns.
                             X_test_aligned = X_test.copy()
-                            missing_cols = X_train.columns.difference(X_test_aligned.columns)
+                            missing_cols = X_train.columns.difference(
+                                X_test_aligned.columns
+                            )
                             if len(missing_cols) > 0:
                                 missing_df = pd.DataFrame(
                                     0, index=X_test_aligned.index, columns=missing_cols
                                 )
-                                X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
+                                X_test_aligned = pd.concat(
+                                    [X_test_aligned, missing_df], axis=1
+                                )
                             X_test_aligned = X_test_aligned[X_train.columns]
 
-                            # Evaluate on full test set
                             result_full = _get_scores(
                                 model, X_test_aligned, y_test_subset, SCORING
                             )
@@ -502,15 +484,20 @@ def run_data_requirements_analysis(
                             result_full["repeat"] = repeat_idx
                             results.append(result_full)
 
-                            # Evaluate on concordant test samples
                             if len(concordant_test_indices) >= 5:
-                                X_test_concordant = X_test_aligned.loc[concordant_test_indices]
-                                y_test_concordant = y_test_subset.loc[concordant_test_indices]
+                                X_test_concordant = X_test_aligned.loc[
+                                    concordant_test_indices
+                                ]
+                                y_test_concordant = y_test_subset.loc[
+                                    concordant_test_indices
+                                ]
                                 result_concordant = _get_scores(
                                     model, X_test_concordant, y_test_concordant, SCORING
                                 )
                                 result_concordant["test_subset"] = "concordant"
-                                result_concordant["n_test_samples"] = len(y_test_concordant)
+                                result_concordant["n_test_samples"] = len(
+                                    y_test_concordant
+                                )
                                 result_concordant["n_train_samples"] = len(y_train)
                                 result_concordant["sample_size"] = sample_size
                                 result_concordant["split_type"] = split_type
@@ -520,15 +507,20 @@ def run_data_requirements_analysis(
                                 result_concordant["repeat"] = repeat_idx
                                 results.append(result_concordant)
 
-                            # Evaluate on discordant test samples
                             if len(discordant_test_indices) >= 5:
-                                X_test_discordant = X_test_aligned.loc[discordant_test_indices]
-                                y_test_discordant = y_test_subset.loc[discordant_test_indices]
+                                X_test_discordant = X_test_aligned.loc[
+                                    discordant_test_indices
+                                ]
+                                y_test_discordant = y_test_subset.loc[
+                                    discordant_test_indices
+                                ]
                                 result_discordant = _get_scores(
                                     model, X_test_discordant, y_test_discordant, SCORING
                                 )
                                 result_discordant["test_subset"] = "discordant"
-                                result_discordant["n_test_samples"] = len(y_test_discordant)
+                                result_discordant["n_test_samples"] = len(
+                                    y_test_discordant
+                                )
                                 result_discordant["n_train_samples"] = len(y_train)
                                 result_discordant["sample_size"] = sample_size
                                 result_discordant["split_type"] = split_type
@@ -538,7 +530,6 @@ def run_data_requirements_analysis(
                                 result_discordant["repeat"] = repeat_idx
                                 results.append(result_discordant)
 
-                # Checkpoint after finishing this (split_type, key)
                 if checkpoint_file is not None and len(results) > 0:
                     pd.DataFrame(results).to_csv(checkpoint_file, index=False)
 
@@ -575,8 +566,8 @@ def main() -> None:
     print(f"  Phenotypes: {PHENOTYPES_TO_ANALYZE}")
     print(f"  Sample sizes: {SAMPLE_SIZES}")
     print(f"  Repeats per configuration: {N_REPEATS}")
-    print(f"  Training types: full, concordant")
-    print(f"  Test subsets: full, concordant, discordant")
+    print("  Training types: full, concordant")
+    print("  Test subsets: full, concordant, discordant")
 
     checkpoint_file = (
         OUTPUT_DIR / f"figure_s6_data_requirements_{FEATURE_TYPE}_checkpoint.csv"

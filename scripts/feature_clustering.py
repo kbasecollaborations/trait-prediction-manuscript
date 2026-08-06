@@ -10,11 +10,10 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
-import numpy as np
 import pandas as pd
 import shap
 from scipy.cluster.hierarchy import fcluster, linkage
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist
 
 warnings.filterwarnings("ignore")
 
@@ -53,9 +52,7 @@ def load_gapmind_predictions(gapmind_file: Path) -> pd.DataFrame:
     pd.DataFrame
         GapMind predictions, indexed by genome ID.
     """
-    return pd.read_csv(
-        gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str}
-    )
+    return pd.read_csv(gapmind_file, sep="\t", index_col=0, dtype={"genomeID": str})
 
 
 def load_pooled_matrix(
@@ -106,10 +103,8 @@ def load_pooled_matrix(
             .set_index("genomeID")[phenotype]
             .dropna()
         )
-        common = (
-            features.index.intersection(labels.index).intersection(
-                gapmind_predictions.index
-            )
+        common = features.index.intersection(labels.index).intersection(
+            gapmind_predictions.index
         )
         labels = labels.loc[common]
         features = features.loc[common]

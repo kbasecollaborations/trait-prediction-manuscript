@@ -1,37 +1,15 @@
 #!/usr/bin/env python3
-"""Do retained false negatives let a mechanism-blind model surface non-canonical routes?
+"""Rank KOFAM genes by SHAP on the GapMind false negatives an fp_only model recovers.
 
-Exploratory confirmatory run for Chris's suggestion (revisions/chris) and ISME
-reviewer point 12. The false-positive-filtering regime (``fp_only``) is the only
-train-set filter that RETAINS GapMind false negatives: organisms that grow
-(experiment = 1) despite an incomplete canonical GapMind pathway (GapMind = 0),
-i.e. presumptive users of a cryptic, alternative, or unannotated route. Unlike
-the concordant-trained model (which never sees a cryptic grower), an
-fp_only-trained model can, in principle, learn KOFAM genes that predict growth
-in exactly those genomes.
+For each phenotype and each leave-one-dataset-out fold: fit an ``fp_only`` and a
+``concordant`` CatBoost model on the same split (only the train/val filter
+differs), take the held-out false negatives (GapMind = 0, experiment = 1) that
+the fp_only model predicts as growers, compute signed per-genome SHAP for both
+models on those same genomes, and pool across folds. Each ranked KO is flagged
+canonical or non-canonical against the GapMind-step and KEGG reference-map KO
+sets.
 
-For each phenotype and each leave-one-dataset-out fold this script:
-
-1. fits an ``fp_only`` CatBoost model and a ``concordant`` CatBoost model on the
-   same split (only the train/val filter differs; the model type, seed and
-   features are identical), reusing the Figure 5 experiment machinery;
-2. identifies the held-out FALSE-NEGATIVE genomes the fp_only model recovers
-   (GapMind = 0, experiment = 1, fp_only prediction = 1);
-3. computes per-genome signed SHAP for BOTH models on those identical recovered
-   genomes, so the fp_only-versus-concordant contrast is matched genome-for-genome;
-4. pools the recovered false negatives across folds and ranks KOFAM KOs by their
-   mean SHAP contribution toward growth in that partition.
-
-Each ranked KO is annotated as CANONICAL or NON-CANONICAL for the substrate.
-"Canonical" is the union of (a) the KOs backing any GapMind step for that
-phenotype (best-effort gene-symbol crosswalk against ``KO_dictionary.json`` over
-every ``<Phenotype>-<step>`` column of the GapMind step matrix) and (b) the KEGG
-reference-map KOs for the substrate. A top KO outside that union, enriched in the
-false-negative genomes and not ranked by the concordant model, is a candidate
-non-canonical mechanism.
-
-This is a read/compute-only diagnostic. It does NOT modify any published Figure 5
-pipeline module and writes only to ``data/outputs/figure5_fn_mechanism/``.
+Writes ``data/outputs/figure5_fn_mechanism/<phenotype>_fn_shap_ranking.csv``.
 
 Run with::
 
@@ -58,11 +36,13 @@ from scripts.figure5.figure5cd_data import (
 from scripts.figure5.fp_only_filter import build_filter_masks, filter_train_val
 from scripts.ml_splits import load_split_data, perform_split_ml_with_model
 
-try:  # KEGG reference-map KO sets (secondary, broad canonical reference).
+try:  # KEGG reference-map KO sets.
     from scripts.tables.kegg_module_coverage import pathway_kos_for_phenotype
-except Exception:  # pragma: no cover - keep the script runnable if imports move.
+except Exception:  # pragma: no cover - fallback if the import moves.
+
     def pathway_kos_for_phenotype(phenotype: str) -> set[str]:  # type: ignore[misc]
         return set()
+
 
 THREADS: int = int(os.environ.get("EXPERIMENT_THREADS", "4"))
 
@@ -80,9 +60,7 @@ RANDOM_STATE: int = 42
 DEFAULT_PHENOTYPES: tuple[str, ...] = ("Fructose", "Mannose")
 TOP_K: int = 25
 
-# GapMind step pseudo-names / curated aliases that the gene-symbol crosswalk
-# cannot resolve on its own. Small, phenotype-agnostic supplement so the
-# canonical set captures well-known alternative-route enzymes GapMind DOES score.
+# GapMind step pseudo-names the gene-symbol crosswalk cannot resolve on its own.
 STEP_ALIAS_TO_KO: dict[str, set[str]] = {
     "man-isomerase": {"K29027"},  # D-mannose isomerase (yihS)
     "mannokinase": {"K00847", "K00845"},  # ROK/hexose kinases to M6P
@@ -153,7 +131,7 @@ def gapmind_step_symbols(step_columns: Sequence[str], phenotype: str) -> list[st
         Step names with the ``<Phenotype>-`` prefix stripped.
     """
     prefix = f"{phenotype}-"
-    return [c[len(prefix):] for c in step_columns if c.startswith(prefix)]
+    return [c[len(prefix) :] for c in step_columns if c.startswith(prefix)]
 
 
 def canonical_ko_set(
@@ -164,7 +142,7 @@ def canonical_ko_set(
     """Build the canonical KO set for a substrate and report crosswalk coverage.
 
     Canonical = KOs backing any GapMind step for the phenotype (gene-symbol
-    crosswalk plus a small alias supplement) UNION the KEGG reference-map KOs.
+    crosswalk plus the alias supplement) union the KEGG reference-map KOs.
 
     Parameters
     ----------
@@ -187,7 +165,9 @@ def canonical_ko_set(
     unmapped: list[str] = []
     for step in steps:
         key = step.lower()
-        matched = set(symbol_to_ko.get(key, set())) | set(STEP_ALIAS_TO_KO.get(key, set()))
+        matched = set(symbol_to_ko.get(key, set())) | set(
+            STEP_ALIAS_TO_KO.get(key, set())
+        )
         if matched:
             gapmind_kos |= matched
         else:
@@ -223,7 +203,9 @@ def per_genome_shap(
     """
     aligned = x_subset.reindex(columns=list(feature_order), fill_value=0)
     pool = Pool(data=aligned)
-    shap = model.get_feature_importance(data=pool, type="ShapValues", thread_count=threads)
+    shap = model.get_feature_importance(
+        data=pool, type="ShapValues", thread_count=threads
+    )
     shap = shap[:, :-1]  # drop the base-value column
     return pd.DataFrame(shap, index=aligned.index, columns=list(feature_order))
 
@@ -315,7 +297,9 @@ def analyse_phenotype(
         features = list(fp_model.feature_names_)
         x_fn = x_test.loc[test_fn]
         preds = fp_model.predict(x_fn.reindex(columns=features, fill_value=0))
-        recovered = [g for g, p in zip(test_fn, np.asarray(preds).ravel()) if int(p) == 1]
+        recovered = [
+            g for g, p in zip(test_fn, np.asarray(preds).ravel()) if int(p) == 1
+        ]
         if not recovered:
             fold_report.append(
                 {"held_out": held_out, "n_test_fn": len(test_fn), "n_recovered": 0}
@@ -324,17 +308,25 @@ def analyse_phenotype(
 
         x_rec = x_test.loc[recovered]
         fp_fn_shap.append(per_genome_shap(fp_model, x_rec, features, threads))
-        cc_fn_shap.append(per_genome_shap(fitted["concordant"], x_rec, features, threads))
+        cc_fn_shap.append(
+            per_genome_shap(fitted["concordant"], x_rec, features, threads)
+        )
         recovered_fn.extend(recovered)
         fold_report.append(
-            {"held_out": held_out, "n_test_fn": len(test_fn), "n_recovered": len(recovered)}
+            {
+                "held_out": held_out,
+                "n_test_fn": len(test_fn),
+                "n_recovered": len(recovered),
+            }
         )
 
     if not fp_fn_shap:
         return None
 
     fp_shap = pd.concat(fp_fn_shap).groupby(level=0).mean()
-    cc_shap = pd.concat(cc_fn_shap).reindex(columns=fp_shap.columns).groupby(level=0).mean()
+    cc_shap = (
+        pd.concat(cc_fn_shap).reindex(columns=fp_shap.columns).groupby(level=0).mean()
+    )
 
     ranking = pd.DataFrame(
         {
@@ -344,7 +336,9 @@ def analyse_phenotype(
             "cc_mean_abs_shap": cc_shap.abs().mean(axis=0),
         }
     )
-    ranking["fp_minus_cc_abs_shap"] = ranking["fp_mean_abs_shap"] - ranking["cc_mean_abs_shap"]
+    ranking["fp_minus_cc_abs_shap"] = (
+        ranking["fp_mean_abs_shap"] - ranking["cc_mean_abs_shap"]
+    )
 
     diagnostics: dict[str, object] = {
         "n_recovered_fn": len(set(recovered_fn)),
@@ -392,7 +386,11 @@ def add_prevalence(
     rec = sorted(set(recovered_genomes) & set(kofam_features.index))
 
     kos = [k for k in ranking.index if k in kofam_features.columns]
-    prev_fn = (kofam_features.loc[rec, kos] > 0).mean(axis=0) if rec else pd.Series(dtype=float)
+    prev_fn = (
+        (kofam_features.loc[rec, kos] > 0).mean(axis=0)
+        if rec
+        else pd.Series(dtype=float)
+    )
     prev_neg = (
         (kofam_features.loc[conc_neg, kos] > 0).mean(axis=0)
         if conc_neg
@@ -438,13 +436,7 @@ def annotate(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    Returns
-    -------
-    argparse.Namespace
-        Parsed arguments.
-    """
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--threads", type=int, default=THREADS)
     parser.add_argument(
@@ -495,7 +487,9 @@ def main() -> None:
         )
         print(f"  Canonical KO set (GapMind union KEGG map): {len(canonical)} KOs")
 
-        masks = build_filter_masks(gapmind_predictions, experimental_phenotypes, phenotype)
+        masks = build_filter_masks(
+            gapmind_predictions, experimental_phenotypes, phenotype
+        )
         result = analyse_phenotype(
             phenotype, dataset_splits, masks, kofam_features, args.threads
         )
@@ -524,7 +518,9 @@ def main() -> None:
 
         top = ranking.head(args.top_k)
         noncanon = top[~top["is_canonical"]]
-        print(f"\n  Top {args.top_k} KOs by SHAP-toward-growth on recovered FN genomes:")
+        print(
+            f"\n  Top {args.top_k} KOs by SHAP-toward-growth on recovered FN genomes:"
+        )
         print(
             top[
                 [
@@ -538,7 +534,9 @@ def main() -> None:
                 ]
             ].to_string(max_colwidth=60)
         )
-        print(f"\n  --> {len(noncanon)} of top {args.top_k} are NON-canonical candidates.")
+        print(
+            f"\n  --> {len(noncanon)} of top {args.top_k} are NON-canonical candidates."
+        )
 
 
 if __name__ == "__main__":

@@ -23,8 +23,7 @@ DATASETS: tuple[str, ...] = ("atleaf", "lit", "marine", "pmi")
 
 KOFAM_CSV: Path = REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_results.csv"
 GAPMIND_RAW_CSV: Path = (
-    REPO_ROOT
-    / "data/outputs/figure5/figure5a_concordant_ml_results_gapmind_raw.csv"
+    REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_results_gapmind_raw.csv"
 )
 KOFAM_FEATURES: Path = (
     REPO_ROOT / "data/processed/features_reduced/combined_datasets/kofam.tsv"
@@ -43,11 +42,7 @@ GOOD_PHENOTYPES: tuple[str, ...] = ("Histidine", "m-Inositol", "Mannitol")
 ALL_PHENOTYPES: tuple[str, ...] = POOR_PHENOTYPES + GOOD_PHENOTYPES
 
 
-# ---------- Part 1: BA tables ----------
-
-def _aggregate_ba(
-    csv: Path, split_type: str
-) -> pd.DataFrame:
+def _aggregate_ba(csv: Path, split_type: str) -> pd.DataFrame:
     """Return per-phenotype mean/std BA after minority filter."""
     df = pd.read_csv(csv)
     if split_type == "dataset_split":
@@ -58,7 +53,13 @@ def _aggregate_ba(
     agg = (
         df.groupby("phenotype")["balanced_accuracy"]
         .agg(["mean", "std", "count"])
-        .rename(columns={"mean": f"ba_mean_{split_type}", "std": f"ba_std_{split_type}", "count": f"n_{split_type}"})
+        .rename(
+            columns={
+                "mean": f"ba_mean_{split_type}",
+                "std": f"ba_std_{split_type}",
+                "count": f"n_{split_type}",
+            }
+        )
     )
     return agg
 
@@ -67,9 +68,8 @@ def build_ba_table() -> pd.DataFrame:
     kofam_ds = _aggregate_ba(KOFAM_CSV, "dataset_split")
     kofam_rs = _aggregate_ba(KOFAM_CSV, "random_split")
     gm_ds = _aggregate_ba(GAPMIND_RAW_CSV, "dataset_split")
-    table = (
-        kofam_ds.join(gm_ds, lsuffix="_kofam", rsuffix="_gapmind")
-        .join(kofam_rs[["ba_mean_random_split"]])
+    table = kofam_ds.join(gm_ds, lsuffix="_kofam", rsuffix="_gapmind").join(
+        kofam_rs[["ba_mean_random_split"]]
     )
     table["delta_gapmind_minus_kofam"] = (
         table["ba_mean_dataset_split_gapmind"] - table["ba_mean_dataset_split_kofam"]
@@ -77,12 +77,12 @@ def build_ba_table() -> pd.DataFrame:
     return table
 
 
-# ---------- Part 2: Single-feature AUROC ----------
-
 def load_concordant_labels(phenotype: str) -> pd.Series:
     """Return a Series of concordant binary labels keyed by genomeID,
     pooled across all four datasets."""
-    gapmind = pd.read_csv(GAPMIND_PRED_TSV, sep="\t", index_col=0, dtype={"genomeID": str})
+    gapmind = pd.read_csv(
+        GAPMIND_PRED_TSV, sep="\t", index_col=0, dtype={"genomeID": str}
+    )
     if phenotype not in gapmind.columns:
         raise KeyError(phenotype)
     labels = []
@@ -90,7 +90,11 @@ def load_concordant_labels(phenotype: str) -> pd.Series:
         p = PHENOTYPE_DIR / ds / f"{phenotype}.tsv"
         if not p.exists():
             continue
-        s = pd.read_csv(p, sep="\t", dtype={"genomeID": str}).set_index("genomeID")[phenotype].dropna()
+        s = (
+            pd.read_csv(p, sep="\t", dtype={"genomeID": str})
+            .set_index("genomeID")[phenotype]
+            .dropna()
+        )
         labels.append(s)
     if not labels:
         return pd.Series(dtype=int)
@@ -118,7 +122,9 @@ def correlation_filter(X: pd.DataFrame, threshold: float = 0.95) -> pd.DataFrame
     return X.drop(columns=to_drop)
 
 
-def restrict_to_phenotype_columns(features: pd.DataFrame, phenotype: str) -> pd.DataFrame:
+def restrict_to_phenotype_columns(
+    features: pd.DataFrame, phenotype: str
+) -> pd.DataFrame:
     """For GapMind-feature matrix, keep columns whose prefix matches the phenotype.
 
     GapMind column names look like ``"Glucose-ptsG"``; for KOFAM there is no
@@ -151,8 +157,7 @@ def single_feature_auroc(
             auc = roc_auc_score(y_.values, x)
         except Exception:
             continue
-        # Use one-sided AUROC (the max of auc and 1-auc) — any direction is
-        # equally informative for a single binary/integer feature.
+        # One-sided AUROC: either direction is informative for a single feature.
         scores.append((col, max(auc, 1.0 - auc)))
     if not scores:
         return float("nan"), []
@@ -203,7 +208,7 @@ def feature_signal_table(
         rows.append(
             {
                 "phenotype": phen,
-                "n_concordant": int(len(y_p)),
+                "n_concordant": len(y_p),
                 "positive_fraction": float(y_p.mean()),
                 "n_features_pre": n_features_pre,
                 "n_after_var": n_after_var,
@@ -214,8 +219,6 @@ def feature_signal_table(
         )
     return pd.DataFrame(rows).set_index("phenotype")
 
-
-# ---------- Part 3: SHAP feature names ----------
 
 def top_shap_features(phenotypes: list[str]) -> pd.DataFrame:
     with open(SHAP_JSON) as f:
@@ -236,8 +239,6 @@ def top_shap_features(phenotypes: list[str]) -> pd.DataFrame:
         )
     return pd.DataFrame(rows).set_index("phenotype")
 
-
-# ---------- main ----------
 
 def main() -> None:
     pd.set_option("display.max_columns", None)
@@ -273,7 +274,9 @@ def main() -> None:
     print(kofam_sig)
     kofam_sig.to_csv(REPO_ROOT / "scripts/figure5_diagnostic/kofam_signal.csv")
 
-    print("\n[GapMind raw step features — restricted to '<phenotype>-*' cols, NO corr/var filter]")
+    print(
+        "\n[GapMind raw step features — restricted to '<phenotype>-*' cols, NO corr/var filter]"
+    )
     gm_sig = feature_signal_table(
         GAPMIND_RAW_FEATURES,
         list(POOR_PHENOTYPES) + list(GOOD_PHENOTYPES),

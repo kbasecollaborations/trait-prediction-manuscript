@@ -1,6 +1,6 @@
 """One-time preparation for the BacDive data-volume experiments.
 
-The exact BacDive retrieval date was not retained. The deposited input files
+The exact BacDive retrieval date was not retained; the deposited input files
 are the fixed snapshot used for the reported analysis.
 
 Produces three cached artefacts (idempotent; skips work that already exists):
@@ -55,7 +55,7 @@ def build_genus_map() -> dict[str, str]:
         if pd.isna(species) or not str(species).strip():
             continue
         genus = str(species).strip().split()[0]
-        # Skip uninformative placeholders
+        # Placeholder first tokens: fall back to the next token.
         if genus.lower() in {"uncultured", "candidatus", "unclassified"}:
             tokens = str(species).strip().split()
             genus = tokens[1] if len(tokens) > 1 else genus
@@ -84,9 +84,9 @@ def reduce_kofam() -> pd.DataFrame:
 
 def compute_overlap() -> set[str]:
     """Version-stripped GCF accessions present in both BacDive and Group A."""
-    bacdive_ids = pd.read_csv(
-        BACDIVE_KOFAM, sep="\t", usecols=[0], dtype=str
-    ).iloc[:, 0]
+    bacdive_ids = pd.read_csv(BACDIVE_KOFAM, sep="\t", usecols=[0], dtype=str).iloc[
+        :, 0
+    ]
     bacdive_stripped = {strip_version(x) for x in bacdive_ids}
 
     group_a_ids = pd.read_csv(GROUP_A_KOFAM, sep="\t", usecols=[0], dtype=str).iloc[

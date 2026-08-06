@@ -10,7 +10,7 @@ import subprocess
 import sys
 import tempfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,11 +19,12 @@ import pandas as pd
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-# Default paths and thresholds
-DEFAULT_MAPPING_PATH = Path("data/processed/pangenome/assignments.ani.merged_mmseqs90.tsv")
+DEFAULT_MAPPING_PATH = Path(
+    "data/processed/pangenome/assignments.ani.merged_mmseqs90.tsv"
+)
 DEFAULT_OUTPUT_PATH = Path("completeness_results.tsv")
-# TODO: Consider lowering to 0.80 if completeness is underestimated. Standard pangenome
-# tools (PPanGGOLiN, PATO) use 80% identity. Higher thresholds may miss divergent homologs.
+# TODO: consider 0.80, as used by PPanGGOLiN and PATO; higher thresholds may miss
+# divergent homologs and underestimate completeness.
 DEFAULT_MIN_IDENTITY = 0.90
 DEFAULT_MIN_COVERAGE = 0.80
 DEFAULT_EVALUE = 1e-3
@@ -133,7 +134,7 @@ def extract_genome_name(faa_path: Path) -> str:
     str
         Genome name with extensions removed.
     """
-    name = faa_path.stem  # removes .faa
+    name = faa_path.stem
     for suffix in [".fna.RAST", ".RAST", ".fna"]:
         if name.endswith(suffix):
             name = name[: -len(suffix)]
@@ -144,9 +145,7 @@ def extract_genome_name(faa_path: Path) -> str:
 def get_core_genes_path(core_genes_dir: Path, species_id: str) -> Path | None:
     """Get path to core genes file for a species.
 
-    Tries multiple naming conventions:
-    - '{species_id}_unique_core_reps.faa' (e.g., from pangenome analysis)
-    - '{species_id}.faa' (simple naming)
+    Tries '{species_id}_unique_core_reps.faa' then '{species_id}.faa'.
 
     Parameters
     ----------
@@ -650,7 +649,11 @@ def print_summary(results: list[CompletenessResult]) -> None:
             (0.0, 0.5, "<50%"),
         ]
         for low, high, label in brackets:
-            count = sum(1 for v in completeness_values if low <= v < high or (high == 1.0 and v == 1.0))
+            count = sum(
+                1
+                for v in completeness_values
+                if low <= v < high or (high == 1.0 and v == 1.0)
+            )
             pct = 100 * count / len(successful)
             print(f"  {label:10s}: {count:6d} ({pct:5.1f}%)")
 
@@ -750,15 +753,24 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if not check_mmseqs2_installed():
         print("Error: MMseqs2 is not installed or not in PATH.", file=sys.stderr)
-        print("Please install MMseqs2: https://github.com/soedinglab/MMseqs2", file=sys.stderr)
+        print(
+            "Please install MMseqs2: https://github.com/soedinglab/MMseqs2",
+            file=sys.stderr,
+        )
         return 1
 
     if not args.all_seqs.is_dir():
-        print(f"Error: --all-seqs directory does not exist: {args.all_seqs}", file=sys.stderr)
+        print(
+            f"Error: --all-seqs directory does not exist: {args.all_seqs}",
+            file=sys.stderr,
+        )
         return 1
 
     if not args.core_genes.is_dir():
-        print(f"Error: --core-genes directory does not exist: {args.core_genes}", file=sys.stderr)
+        print(
+            f"Error: --core-genes directory does not exist: {args.core_genes}",
+            file=sys.stderr,
+        )
         return 1
 
     if not args.mapping.exists():

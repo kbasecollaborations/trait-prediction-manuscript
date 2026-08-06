@@ -25,10 +25,8 @@ from scripts.io import cache_is_fresh, read_features, read_phenotypes
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
 
-# Thread budget per CatBoost fit / SHAP call. Default -1 (all cores) preserves
-# the original Figure 5B behaviour; downstream drivers (e.g. the random-subset
-# control) lower this so the many small-subset cells can be run in parallel
-# without oversubscribing the machine.
+# Thread budget per CatBoost fit / SHAP call; -1 uses all cores. Downstream
+# drivers lower this to run many small-subset cells in parallel.
 _THREAD_COUNT = -1
 
 warnings.filterwarnings("ignore")
@@ -121,7 +119,6 @@ def get_concordant_samples(
         experimental_phenotypes.index
     )
 
-    # Restrict to genomes with non-NaN experimental data.
     exp_data = experimental_phenotypes.loc[common_genomes, phenotype]
     valid_genomes = exp_data.dropna().index
 
@@ -147,7 +144,6 @@ def get_test_dataset_from_key(key: str) -> str | None:
     str | None
         Test dataset name (atleaf, lit, marine, or pmi), or None if not a dataset_split
     """
-    # Example key: "Alanine_train(atleaf+lit+marine),test(pmi)"
     if "test(" not in key:
         return None
 
@@ -189,7 +185,7 @@ def get_shap_top_features(
         thread_count=_THREAD_COUNT,
     )
 
-    # Drop the base-value column, then mean absolute SHAP per feature.
+    # The last SHAP column is the base value, not a feature.
     shap_values = shap_values[:, :-1]
     mean_abs_shap = np.abs(shap_values).mean(axis=0)
 
@@ -223,7 +219,9 @@ def get_screened_feature_names(
     list[str]
         Feature names ranked by CatBoost PredictionValuesChange importance.
     """
-    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
+    model = make_classifier(
+        "cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT
+    )
     model.fit(X, y, verbose=False)
 
     importances = model.get_feature_importance(
@@ -318,9 +316,7 @@ def load_individual_dataset(
     tuple[pd.DataFrame, pd.Series]
         Feature matrix and target variable
     """
-    features_path = (
-        Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
-    )
+    features_path = Path("data/processed/features_reduced") / dataset_name / "kofam.tsv"
     phenotype_path = (
         Path("data/processed/phenotypes") / dataset_name / f"{phenotype}.tsv"
     )
@@ -443,7 +439,9 @@ def train_and_get_top_features_individual(
         X, y, train_size=0.8, stratify=y, random_state=random_state, shuffle=True
     )
 
-    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
+    model = make_classifier(
+        "cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT
+    )
     model.fit(X_train, y_train, verbose=False)
 
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
@@ -484,7 +482,9 @@ def train_and_get_top_features_split(
         shuffle=True,
     )
 
-    model = make_classifier("cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT)
+    model = make_classifier(
+        "cb_noeval", random_state=random_state, thread_count=_THREAD_COUNT
+    )
     model.fit(X_train, y_train, verbose=False)
 
     top_features = get_shap_top_features(model, X_train, y_train, n_features=n_features)
@@ -578,7 +578,6 @@ def analyze_combined_splits(
             if class_counts.min() < 10:
                 continue
 
-            # Re-split the concordant samples into train/val (80/20).
             X_train_conc, X_val_conc, y_train_conc, y_val_conc = train_test_split(
                 X_concordant,
                 y_concordant,
@@ -863,9 +862,9 @@ def compare_features(
 ) -> pd.DataFrame:
     """Compare features between combined train-test splits and individual dataset models.
 
-    For each combination where the dataset was not used in training the combined model,
-    find the intersection and unique features at both the KO level and (when a
-    cluster mapping is supplied) at the redundancy-cluster level.
+    For each combination where the dataset was not used in training the combined
+    model, report intersection and unique features at the KO level and, when a
+    cluster mapping is supplied, at the redundancy-cluster level.
 
     Parameters
     ----------
@@ -959,8 +958,11 @@ def main() -> None:
     phenotype labels and splits it derives from; pass ``--fresh`` to ignore it.
     """
     parser = argparse.ArgumentParser(description="Figure 5B concordant SHAP analysis")
-    parser.add_argument("--fresh", action="store_true",
-                        help="ignore cached SHAP JSONs and recompute from scratch")
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="ignore cached SHAP JSONs and recompute from scratch",
+    )
     args = parser.parse_args()
 
     SPLITS_DIR = Path("data/processed/train_test_splits")
@@ -1000,7 +1002,9 @@ def main() -> None:
         print("\nStep 1: Loading existing combined splits results (concordant)...")
         with open(combined_file, "r") as f:
             combined_results_filtered = json.load(f)
-        print(f"  Loaded {len(combined_results_filtered)} combined splits from: {combined_file}")
+        print(
+            f"  Loaded {len(combined_results_filtered)} combined splits from: {combined_file}"
+        )
     else:
         print("\nStep 1: Analyzing combined train-test splits (concordant samples)...")
         print(f"  - Running {N_SEEDS} random seeds per split")
@@ -1038,15 +1042,19 @@ def main() -> None:
         print("\nStep 2: Loading existing individual datasets results (concordant)...")
         with open(individual_file, "r") as f:
             individual_results = json.load(f)
-        print(f"  Loaded results for {len(individual_results)} datasets from: {individual_file}")
+        print(
+            f"  Loaded results for {len(individual_results)} datasets from: {individual_file}"
+        )
         for dataset, phenotypes in individual_results.items():
             print(f"  - {dataset}: {len(phenotypes)} phenotypes")
     else:
         print(f"\nStep 2: Analyzing individual datasets: {DATASETS}")
-        print(f"  - Concordant samples only")
+        print("  - Concordant samples only")
         print(f"  - Only analyzing common phenotypes: {len(COMMON_PHENOTYPES)}")
         print(f"  - Running {N_SEEDS} random seeds per dataset/phenotype")
-        print(f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per dataset/phenotype")
+        print(
+            f"  - Screening to top {N_CANDIDATE_FEATURES} KOFAM candidates per dataset/phenotype"
+        )
         print(f"  - Extracting top {N_FEATURES} features per run")
         print(f"  - Keeping features appearing in >={THRESHOLD * 100}% of runs")
 
@@ -1061,7 +1069,7 @@ def main() -> None:
             n_candidate_features=N_CANDIDATE_FEATURES,
         )
 
-        print(f"\nCompleted analysis for individual datasets:")
+        print("\nCompleted analysis for individual datasets:")
         for dataset, phenotypes in individual_results.items():
             print(f"  - {dataset}: {len(phenotypes)} phenotypes")
 
@@ -1081,9 +1089,13 @@ def main() -> None:
         )
     else:
         ko_clusters_by_phenotype = None
-        print(f"\nStep 3: cluster mapping not found at {cluster_file}; skipping cluster columns")
+        print(
+            f"\nStep 3: cluster mapping not found at {cluster_file}; skipping cluster columns"
+        )
 
-    print("\nStep 3: Comparing features between combined splits and individual models...")
+    print(
+        "\nStep 3: Comparing features between combined splits and individual models..."
+    )
     summary_df = compare_features(
         combined_results_filtered,
         individual_results,

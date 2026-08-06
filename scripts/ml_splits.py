@@ -6,12 +6,15 @@ from typing import Any
 
 import pandas as pd
 from sklearn.base import BaseEstimator
-
 from trait_prediction.pipeline import (
     align_columns,
     get_feature_importances,
     get_scores,
+)
+from trait_prediction.pipeline import (
     load_single_split as _load_single_split,
+)
+from trait_prediction.pipeline import (
     load_splits as _load_splits,
 )
 
@@ -44,7 +47,9 @@ def load_single_split_data(
 def load_split_data(
     base_dir: Path = Path("data/processed/train_test_splits"),
     split_types: list[str] | None = None,
-    feature_file: Path = Path("data/processed/features_reduced/combined_datasets/kofam.tsv"),
+    feature_file: Path = Path(
+        "data/processed/features_reduced/combined_datasets/kofam.tsv"
+    ),
 ) -> dict[str, dict[str, dict[str, pd.DataFrame | pd.Series]]]:
     """
     Load all train/val/test splits from the base directory.
@@ -226,18 +231,20 @@ def perform_split_ml_with_model(
     scores = get_scores(model, X_test_aligned, y_test, scoring)
     # Return all features (not just top 10) so callers can save full importances
     n_feats = X_train.shape[1]
-    features = get_feature_importances(model, X_train, n_features=n_feats).index.tolist()
+    features = get_feature_importances(
+        model, X_train, n_features=n_feats
+    ).index.tolist()
     scores["features"] = features
 
     return scores, model
 
 
 __all__ = [
+    "align_columns",
+    "get_feature_importances",
+    "get_scores",
     "load_single_split_data",
     "load_split_data",
     "perform_split_ml",
     "perform_split_ml_with_model",
-    "align_columns",
-    "get_feature_importances",
-    "get_scores",
 ]

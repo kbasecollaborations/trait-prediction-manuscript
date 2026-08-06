@@ -1,24 +1,11 @@
 """Assemble the Zenodo deposit under ``data/zenodo/``.
 
-The manifest below is curated rather than a wholesale copy of ``data/``: it lists the
-inputs the analysis scripts consume but cannot regenerate, the figure source data needed
-to redraw every panel without retraining, and the trained model checkpoints. Anything a
-depositor can rebuild from those (raw tool output, intermediate genome files) is excluded
-and named in :data:`EXCLUDED` with the reason.
-
-Deliberately omitted from the archive, with reasons:
-
-``data/processed/gapmind/pmi_gapmind_output_files/`` (2.9 GB)
-    Raw GapMind output. Read only by :mod:`scripts.create_gapmind_features`, whose
-    product ``data/processed/gapmind_features/`` is included.
-``data/raw/all_seqs/``, ``data/raw/genomes_w_phenotype/``
-    Genome and proteome sequences. Proteomes ship as a separate archive; assemblies are
-    retrievable from the accessions in ``genome_accessions.tsv``.
-``*_backup_pre_enantiomer_fix/``, ``_stale_*``
-    Working copies kept for rollback during the 2026-08 substrate identity correction.
-``*.log``, ``*.pkl``, ``*_checkpoint.csv``
-    Run logs, cached intermediates, and resume checkpoints superseded by the final table;
-    all are rebuilt from the archived inputs.
+The manifest is curated rather than a wholesale copy of ``data/``: the inputs the
+analysis scripts consume but cannot regenerate, the figure source data needed to redraw
+every panel without retraining, and the trained model checkpoints. Anything rebuildable
+from those is excluded and named in :data:`EXCLUDED` with the reason; genome assemblies
+are retrievable from the accessions in ``genome_accessions.tsv``. Run logs, pickle
+caches, and resume checkpoints are skipped inside archived directories by :func:`ships`.
 
 Run with ``uv run python -m scripts.build_zenodo_deposit`` (add ``--dry-run`` to preview).
 """
@@ -61,10 +48,24 @@ INPUTS: Final[tuple[str, ...]] = (
 FIGURE_DATA: Final[tuple[str, ...]] = tuple(
     f"data/outputs/{name}"
     for name in (
-        "figure1", "figure2", "figure3", "figure4", "figure5", "figure6", "figure7",
-        "figureS2", "figureS3", "figureS5", "figureS6",
-        "bacdive", "clustering", "agreement_analysis", "ml_comparison",
-        "stats", "pangenome_completeness", "measurement_reliability",
+        "figure1",
+        "figure2",
+        "figure3",
+        "figure4",
+        "figure5",
+        "figure6",
+        "figure7",
+        "figureS2",
+        "figureS3",
+        "figureS5",
+        "figureS6",
+        "bacdive",
+        "clustering",
+        "agreement_analysis",
+        "ml_comparison",
+        "stats",
+        "pangenome_completeness",
+        "measurement_reliability",
     )
 ) + ("data/outputs/leakage_feature_dup_per_split.csv",)
 
@@ -105,6 +106,7 @@ def ships(path: Path) -> bool:
         ``False`` for run logs, pickle caches, and resume checkpoints.
     """
     return path.suffix not in SKIP_SUFFIXES and not path.stem.endswith("_checkpoint")
+
 
 #: Per-dataset phenotype matrices published loose alongside the archive.
 PHENOTYPE_TABLES: Final[dict[str, str]] = {
@@ -195,7 +197,11 @@ def build_archive(dry_run: bool) -> int:
     """
     total = 0
     members: list[Path] = []
-    for label, group in (("inputs", INPUTS), ("figure data", FIGURE_DATA), ("models", MODELS)):
+    for label, group in (
+        ("inputs", INPUTS),
+        ("figure data", FIGURE_DATA),
+        ("models", MODELS),
+    ):
         group_total = 0
         for entry in group:
             files = [f for f in iter_files(entry) if ships(f)]
@@ -238,7 +244,9 @@ def write_checksums(dry_run: bool) -> None:
 def main() -> None:
     """Rebuild the deposit."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="preview without writing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="preview without writing"
+    )
     args = parser.parse_args()
 
     DEPOSIT_DIR.mkdir(parents=True, exist_ok=True)

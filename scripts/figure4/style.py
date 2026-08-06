@@ -9,8 +9,7 @@ LEGEND_FONT_SIZE = 10
 LEGEND_TITLE_SIZE = 12
 ANNOTATION_FONT_SIZE = 10
 
-# Panel A uses diagram text rather than plot axes, so it keeps its own
-# semantic scale while remaining internally consistent.
+# Panel A uses diagram text rather than plot axes, so it has its own scale.
 PANEL_A_TITLE_SIZE = 15
 PANEL_A_SUBTITLE_SIZE = 13
 PANEL_A_AXIS_LABEL_SIZE = 11

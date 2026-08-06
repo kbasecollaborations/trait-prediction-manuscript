@@ -160,8 +160,7 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
             lw=1.5,
             color=MODEL_COLORS[model],
             label=(
-                f"{MODEL_LABELS[model]}\n"
-                f"(ECE = {ece:.2f}, AUC = {aucs[model]:.2f})"
+                f"{MODEL_LABELS[model]}\n(ECE = {ece:.2f}, AUC = {aucs[model]:.2f})"
             ),
             zorder=3,
         )
@@ -226,8 +225,13 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     for x, vals in enumerate(data_by_strategy):
         jitter = rng.uniform(-0.10, 0.10, size=len(vals))
         ax.scatter(
-            np.full(len(vals), x) + jitter, vals, s=10, color="black",
-            alpha=0.45, linewidth=0, zorder=4,
+            np.full(len(vals), x) + jitter,
+            vals,
+            s=10,
+            color="black",
+            alpha=0.45,
+            linewidth=0,
+            zorder=4,
         )
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([STRATEGY_LABELS[s] for s in order], rotation=15, ha="right")
@@ -270,7 +274,6 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
         if paired.empty:
             continue
 
-        # Two box positions flanking the phenotype centre.
         positions = [p_idx - box_width / 1.6, p_idx + box_width / 1.6]
         jitters = [rng.uniform(-0.05, 0.05, size=len(paired)) for _ in strategies]
 
@@ -280,7 +283,6 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
             ys = [paired.iloc[run_idx][s[0]] for s in strategies]
             ax.plot(xs, ys, color="gray", alpha=0.45, linewidth=0.6, zorder=2)
 
-        # Boxes and overlaid points per strategy.
         for i, (strat, _label, color) in enumerate(strategies):
             vals = paired[strat].to_numpy()
             ax.boxplot(
@@ -288,7 +290,9 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
                 positions=[positions[i]],
                 widths=box_width,
                 patch_artist=True,
-                boxprops=dict(facecolor=color, edgecolor="black", linewidth=0.7, alpha=0.7),
+                boxprops=dict(
+                    facecolor=color, edgecolor="black", linewidth=0.7, alpha=0.7
+                ),
                 medianprops=dict(color="black", linewidth=1.0),
                 whiskerprops=dict(color="black", linewidth=0.7),
                 capprops=dict(color="black", linewidth=0.7),
@@ -298,7 +302,11 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
             ax.scatter(
                 np.full(len(vals), positions[i]) + jitters[i],
                 vals,
-                s=14, color=color, edgecolors="black", linewidth=0.4, zorder=4,
+                s=14,
+                color=color,
+                edgecolors="black",
+                linewidth=0.4,
+                zorder=4,
             )
 
     ax.set_xticks(range(len(PANEL_A_PHENOTYPES)))
@@ -309,8 +317,14 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
 
     legend_handles = [
         plt.Rectangle(
-            (0, 0), 1, 1, facecolor=color, edgecolor="black", linewidth=0.7,
-            alpha=0.7, label=label,
+            (0, 0),
+            1,
+            1,
+            facecolor=color,
+            edgecolor="black",
+            linewidth=0.7,
+            alpha=0.7,
+            label=label,
         )
         for _strat, label, color in strategies
     ]

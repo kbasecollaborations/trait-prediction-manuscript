@@ -1,13 +1,13 @@
 """Quantify feature-level data leakage in random-holdout splits.
 
 Genome IDs are disjoint between train and test, but two genomes with different
-IDs can have identical (or near-identical) KOFAM feature vectors and the same
-label, with one in train and one in test of the same split. To the model this is
-an effective memorized duplicate. This script measures exact and near feature
-duplicates across all random splits and bounds the phenomenon globally.
+IDs can carry identical or near-identical KOFAM feature vectors and the same
+label, which the model sees as a memorized duplicate. Counts exact and near
+feature duplicates across all random splits and bounds them globally.
 
-Load path: scripts.ml_splits.load_split_data (random_split), which uses the
-published feature matrix data/processed/features_reduced/combined_datasets/kofam.tsv.
+Splits come from scripts.ml_splits.load_split_data (random_split) over
+data/processed/features_reduced/combined_datasets/kofam.tsv; the per-split table
+is written to data/outputs/leakage_feature_dup_per_split.csv.
 """
 
 from __future__ import annotations
@@ -52,7 +52,6 @@ def global_bound(feature_file: str) -> dict[str, int]:
         n_genomes, n_distinct_vectors, n_genomes_in_dup_groups, n_dup_groups.
     """
     df = pd.read_csv(feature_file, sep="\t", index_col=0)
-    # ensure binary
     arr = (df.to_numpy() > 0).astype(np.uint8)
     hashes = [hashlib.sha1(row.tobytes()).hexdigest() for row in arr]
     counts = Counter(hashes)
@@ -85,7 +84,7 @@ def analyze_split(
     dict
         Per-split metrics plus example exact-duplicate pairs.
     """
-    # Align columns to a common order (they should already match).
+    # Align columns to a common order.
     cols = X_train.columns
     Xtr = pd.concat([X_train, X_val], axis=0)
     ytr = pd.concat([y_train, y_val], axis=0)
@@ -101,10 +100,8 @@ def analyze_split(
 
     n_test = len(te_ids)
 
-    # --- Exact duplicates via hashing ---
     tr_hashes = [hashlib.sha1(r.tobytes()).hexdigest() for r in tr_arr]
     te_hashes = [hashlib.sha1(r.tobytes()).hexdigest() for r in te_arr]
-    # map train hash -> set of labels and list of (id, label)
     tr_hash_map: dict[str, list[tuple[str, int]]] = {}
     for h, gid, lab in zip(tr_hashes, tr_ids, ytr_arr):
         tr_hash_map.setdefault(h, []).append((str(gid), int(lab)))
@@ -120,7 +117,8 @@ def analyze_split(
         n_exact += 1
         test_lab = int(yte_arr[i])
         match_labels = {lab for _, lab in matches}
-        # same-label leak if any matching train genome shares the test label
+        # A leak counts as same-label when any matching train genome shares the
+        # test label.
         if test_lab in match_labels:
             n_exact_same += 1
         else:
@@ -130,7 +128,7 @@ def analyze_split(
         else:
             mixed = False
         if len(exact_examples) < 50:
-            # pick a representative matching train genome (prefer same-label)
+            # Representative matching train genome, preferring same-label.
             same_lab_match = next((g for g, lab in matches if lab == test_lab), None)
             rep = same_lab_match if same_lab_match is not None else matches[0][0]
             rep_lab = next((lab for g, lab in matches if g == rep), matches[0][1])
@@ -145,8 +143,7 @@ def analyze_split(
                 }
             )
 
-    # --- Near duplicates via numpy ---
-    # shared present KOs = te_arr @ tr_arr.T
+    # Near duplicates: shared present KOs = te_arr @ tr_arr.T
     shared = te_arr.astype(np.int32) @ tr_arr.astype(np.int32).T  # (n_test, n_train)
     tr_card = tr_arr.sum(axis=1).astype(np.int32)  # (n_train,)
     te_card = te_arr.sum(axis=1).astype(np.int32)  # (n_test,)
@@ -154,7 +151,7 @@ def analyze_split(
     union = te_card[:, None] + tr_card[None, :] - shared
     union_safe = np.where(union == 0, 1, union)  # avoid div by zero (both all-zero)
     jaccard = shared / union_safe
-    # both all-zero vectors -> define Jaccard 1.0 (identical empty sets)
+    # Two all-zero vectors are identical empty sets, so Jaccard is set to 1.0.
     both_zero = (te_card[:, None] == 0) & (tr_card[None, :] == 0)
     jaccard = np.where(both_zero, 1.0, jaccard)
     # Hamming distance = symmetric difference = |A| + |B| - 2*intersection
@@ -178,7 +175,8 @@ def analyze_split(
     ham_5 = _count_ham(5)
     ham_10 = _count_ham(10)
 
-    # near-dup (Jaccard>=0.98) label agreement with nearest (max-jaccard) train genome
+    # Label agreement of near duplicates (Jaccard >= 0.98) with their nearest
+    # train genome.
     n_near = 0
     n_near_same = 0
     near_examples: list[dict] = []
@@ -245,12 +243,15 @@ def main() -> None:
     all_near_examples: list[dict] = []
 
     for key, d in splits.items():
-        # phenotype = key without trailing _<seed>
+        # Split keys are "<phenotype>_<seed>".
         phenotype = key.rsplit("_", 1)[0]
         res = analyze_split(
-            d["X_train"], d["y_train"],
-            d["X_val"], d["y_val"],
-            d["X_test"], d["y_test"],
+            d["X_train"],
+            d["y_train"],
+            d["X_val"],
+            d["y_val"],
+            d["X_test"],
+            d["y_test"],
         )
         row = {"split": key, "phenotype": phenotype}
         for k, v in res.items():
@@ -272,10 +273,19 @@ def main() -> None:
     df = pd.DataFrame(rows)
 
     num_cols = [
-        "n_test", "n_exact", "n_exact_same", "n_exact_diff",
-        "jac_099", "jac_098", "jac_095",
-        "ham_0", "ham_2", "ham_5", "ham_10",
-        "n_near098", "n_near098_same",
+        "n_test",
+        "n_exact",
+        "n_exact_same",
+        "n_exact_diff",
+        "jac_099",
+        "jac_098",
+        "jac_095",
+        "ham_0",
+        "ham_2",
+        "ham_5",
+        "ham_10",
+        "n_near098",
+        "n_near098_same",
     ]
 
     print("=" * 70)
@@ -286,27 +296,46 @@ def main() -> None:
     print(f"  total test predictions: {n_test_total}")
     print()
     print("  EXACT feature duplicates (test vector identical to >=1 train vector):")
-    print(f"    n_exact total          : {int(tot['n_exact'])} "
-          f"({100*tot['n_exact']/n_test_total:.2f}%)")
-    print(f"    of which SAME label    : {int(tot['n_exact_same'])} "
-          f"({100*tot['n_exact_same']/n_test_total:.2f}%)   <-- effective leak")
-    print(f"    of which DIFF label    : {int(tot['n_exact_diff'])} "
-          f"({100*tot['n_exact_diff']/n_test_total:.2f}%)")
+    print(
+        f"    n_exact total          : {int(tot['n_exact'])} "
+        f"({100 * tot['n_exact'] / n_test_total:.2f}%)"
+    )
+    print(
+        f"    of which SAME label    : {int(tot['n_exact_same'])} "
+        f"({100 * tot['n_exact_same'] / n_test_total:.2f}%)   <-- effective leak"
+    )
+    print(
+        f"    of which DIFF label    : {int(tot['n_exact_diff'])} "
+        f"({100 * tot['n_exact_diff'] / n_test_total:.2f}%)"
+    )
     print()
     print("  NEAR duplicates (Jaccard >= 0.98 to nearest train vector):")
-    print(f"    n_near098 total        : {int(tot['n_near098'])} "
-          f"({100*tot['n_near098']/n_test_total:.2f}%)")
-    print(f"    of which SAME label    : {int(tot['n_near098_same'])} "
-          f"({100*tot['n_near098_same']/n_test_total:.2f}%)")
+    print(
+        f"    n_near098 total        : {int(tot['n_near098'])} "
+        f"({100 * tot['n_near098'] / n_test_total:.2f}%)"
+    )
+    print(
+        f"    of which SAME label    : {int(tot['n_near098_same'])} "
+        f"({100 * tot['n_near098_same'] / n_test_total:.2f}%)"
+    )
     print()
     print("  Jaccard thresholds (count of test genomes, fraction of all test):")
     for thr, col in [("0.99", "jac_099"), ("0.98", "jac_098"), ("0.95", "jac_095")]:
-        print(f"    Jaccard >= {thr}: {int(tot[col]):5d} "
-              f"({100*tot[col]/n_test_total:.2f}%)")
+        print(
+            f"    Jaccard >= {thr}: {int(tot[col]):5d} "
+            f"({100 * tot[col] / n_test_total:.2f}%)"
+        )
     print("  Hamming thresholds (count of test genomes, fraction of all test):")
-    for thr, col in [("0", "ham_0"), ("<=2", "ham_2"), ("<=5", "ham_5"), ("<=10", "ham_10")]:
-        print(f"    Hamming {thr:>4}: {int(tot[col]):5d} "
-              f"({100*tot[col]/n_test_total:.2f}%)")
+    for thr, col in [
+        ("0", "ham_0"),
+        ("<=2", "ham_2"),
+        ("<=5", "ham_5"),
+        ("<=10", "ham_10"),
+    ]:
+        print(
+            f"    Hamming {thr:>4}: {int(tot[col]):5d} "
+            f"({100 * tot[col] / n_test_total:.2f}%)"
+        )
     print()
 
     print("=" * 70)
@@ -318,9 +347,17 @@ def main() -> None:
         pct_near_same=(100 * grp["n_near098_same"] / grp["n_test"]).round(2),
     )
     show_cols = [
-        "n_test", "n_exact", "n_exact_same", "n_exact_diff", "pct_exact_same",
-        "n_near098", "n_near098_same", "pct_near_same",
-        "ham_0", "ham_2", "jac_098",
+        "n_test",
+        "n_exact",
+        "n_exact_same",
+        "n_exact_diff",
+        "pct_exact_same",
+        "n_near098",
+        "n_near098_same",
+        "pct_near_same",
+        "ham_0",
+        "ham_2",
+        "jac_098",
     ]
     with pd.option_context("display.max_rows", None, "display.width", 200):
         print(grp[show_cols].to_string())
@@ -334,20 +371,24 @@ def main() -> None:
         print("  (none)")
     else:
         for e in exact_same[:25]:
-            print(f"  {e['phenotype']:18s} split={e['split']:16s} "
-                  f"test={e['test_id']:22s} train={e['train_id']:22s} "
-                  f"label={e['test_label']} n_matches={e['n_train_matches']} "
-                  f"mixed={e['mixed_train_labels']}")
+            print(
+                f"  {e['phenotype']:18s} split={e['split']:16s} "
+                f"test={e['test_id']:22s} train={e['train_id']:22s} "
+                f"label={e['test_label']} n_matches={e['n_train_matches']} "
+                f"mixed={e['mixed_train_labels']}"
+            )
     print()
 
-    # mixed-label exact duplicates (same vector, different label in train) - ambiguous
+    # Mixed-label exact duplicates: same vector, different labels within train.
     mixed = [e for e in all_exact_examples if e["mixed_train_labels"]]
-    print(f"  exact-dup test genomes whose train matches have MIXED labels: {len(mixed)}")
+    print(
+        f"  exact-dup test genomes whose train matches have MIXED labels: {len(mixed)}"
+    )
     print()
 
-    # Save full per-split table
     out = "data/outputs/leakage_feature_dup_per_split.csv"
     import os
+
     os.makedirs("data/outputs", exist_ok=True)
     df.to_csv(out, index=False)
     print(f"per-split table written to {out}")

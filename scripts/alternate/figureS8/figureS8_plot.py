@@ -161,7 +161,7 @@ def report_top_features(
 
 
 def main() -> None:
-    """Entry point for the Figure S8 plotting script."""
+    """Render Figure S8 to PDF."""
     make_figure(
         phenotypes=PHENOTYPES,
         data_dir=DATA_DIR,

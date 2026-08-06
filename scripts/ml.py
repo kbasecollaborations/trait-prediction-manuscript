@@ -4,11 +4,12 @@ import pandas as pd
 import sklearn
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import StratifiedKFold, cross_validate
-
 from trait_prediction.classifiers import make_classifier as _make_classifier
 from trait_prediction.pipeline import (
     align_columns,
     get_feature_importances,
+)
+from trait_prediction.pipeline import (
     get_scores as _get_scores,
 )
 
@@ -234,12 +235,12 @@ def perform_train_test(
 
 
 __all__ = [
-    "make_classifier",
+    "_get_scores",
+    "align_columns",
     "get_feature_importances",
+    "make_classifier",
     "perform_cv",
     "perform_train_test",
-    "align_columns",
-    "_get_scores",
 ]
 
 _get_scores = _get_scores

@@ -1,7 +1,7 @@
 """Label loading and train/val/test splitting for the BacDive experiments.
 
-All functions return plain genomeID lists (or label Series) so that the parallel
-driver can ship lightweight job payloads to workers. No model code here.
+Functions return plain genomeID lists or label Series so that the parallel driver
+can ship lightweight job payloads to workers.
 """
 
 from pathlib import Path
@@ -151,4 +151,3 @@ def minority_count(y: pd.Series, ids: list[str]) -> int:
     """Size of the smaller class among ``ids`` (0 if only one class)."""
     counts = y.loc[ids].value_counts()
     return int(counts.min()) if len(counts) == 2 else 0
-

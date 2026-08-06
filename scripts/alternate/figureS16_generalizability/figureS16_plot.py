@@ -74,8 +74,7 @@ def plot_phenotype_panel(
     top = top.iloc[::-1]  # largest at the top of the bar chart
 
     labels = [
-        _feature_label(row.feature, row.ko_name)
-        for row in top.itertuples(index=False)
+        _feature_label(row.feature, row.ko_name) for row in top.itertuples(index=False)
     ]
     positions = range(len(top))
     ax.barh(
@@ -105,10 +104,9 @@ def create_figure(output_file: Path) -> None:
     features = pd.read_csv(DATA_FILE, sep="\t")
     counts = pd.read_csv(COUNTS_FILE, sep="\t")
 
-    phenotypes = (
-        counts.nlargest(N_PHENOTYPES, "n_recovered_fn_discordant")["phenotype"]
-        .tolist()
-    )
+    phenotypes = counts.nlargest(N_PHENOTYPES, "n_recovered_fn_discordant")[
+        "phenotype"
+    ].tolist()
     recovered_lookup = dict(
         zip(
             counts["phenotype"],

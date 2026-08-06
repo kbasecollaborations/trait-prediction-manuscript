@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
-"""Label-free concordance meta-classifier (Chris's applicability-domain idea).
+"""Per-genome concordance meta-classifier, evaluated leave-one-dataset-out.
 
-For each phenotype, predict per-genome *concordance* (whether the GapMind call
-agrees with the experimental phenotype) from KOFAM genome features alone,
-evaluated leave-one-dataset-out. Concordance is a label-free deployment signal:
-at deployment we would have GapMind and the genome, but not the experimental
-label, so a model that flags likely-discordant genomes from features alone is an
-applicability-domain detector.
+For each phenotype, predicts concordance (whether the GapMind call agrees with
+the experimental phenotype) from KOFAM genome features alone, scored both pooled
+across phenotypes and per-phenotype against the per-row ``confidence`` column as
+a baseline AUC.
 
-Three cuts are evaluated, each pooled across phenotypes and per-phenotype:
+Three cuts:
 
 1. ``binary``: concordant (1) vs. all discordant (0).
 2. ``fn``: concordant vs. false-negative discordant only (GapMind says no growth,
    experiment says growth). FP-discordant rows are dropped.
 3. ``fp``: concordant vs. false-positive discordant only (GapMind says growth,
    experiment says no growth). FN-discordant rows are dropped.
-
-Each meta-classifier (CatBoost via :func:`scripts.ml.make_classifier`) is compared
-against the existing per-row ``confidence`` column as a baseline AUC for the same
-concordance target, apples-to-apples.
 
 Run with::
 
@@ -39,9 +33,9 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.model_selection import train_test_split
+from trait_prediction.pipeline import align_columns
 
 from scripts.ml import make_classifier
-from trait_prediction.pipeline import align_columns
 
 PER_SAMPLE_FILE: Path = Path("data/outputs/figure7/figure7_per_sample.tsv")
 KOFAM_FEATURE_FILE: Path = Path(
@@ -89,8 +83,8 @@ def load_per_sample(per_sample_file: Path) -> pd.DataFrame:
 
     df = pd.read_csv(per_sample_file, sep="\t", dtype={"genome": str})
 
-    # gapmind_pred is stored as a float because missing calls are NaN; drop those
-    # rows (no GapMind call means no concordance to predict) before casting.
+    # gapmind_pred is a float column because missing calls are NaN; drop those
+    # rows before casting.
     df = df[df["gapmind_pred"].notna()].copy()
     df["gapmind_pred"] = df["gapmind_pred"].astype(int)
     df["y_true"] = df["y_true"].astype(int)
@@ -105,9 +99,7 @@ def load_per_sample(per_sample_file: Path) -> pd.DataFrame:
 def load_kofam_features(kofam_file: Path) -> pd.DataFrame:
     """Load the reduced KOFAM feature matrix.
 
-    The matrix is used as-is (already correlation- and variance-filtered to the
-    reduced feature set shared by the published pipeline); no further filtering is
-    applied here.
+    The matrix is used as-is; it is already correlation- and variance-filtered.
 
     Parameters
     ----------
@@ -159,11 +151,7 @@ def select_cut_rows(rows: pd.DataFrame, cut: Cut) -> pd.DataFrame:
 
 
 def _safe_auc(y_true: np.ndarray, score: np.ndarray) -> float:
-    """ROC AUC that returns ``np.nan`` on a single-class target.
-
-    The confidence baseline reuses this on the raw ``confidence`` column so the
-    baseline AUC is computed apples-to-apples with the meta-classifier AUC.
-    """
+    """ROC AUC that returns ``np.nan`` on a single-class target."""
     if len(np.unique(y_true)) < 2:
         return float("nan")
     return float(roc_auc_score(y_true, score))
@@ -185,8 +173,7 @@ def fit_predict_meta(
     """Fit a concordance meta-classifier and predict concordance probability.
 
     A validation set is carved from the training data for CatBoost early stopping,
-    mirroring the trait-prediction pipeline. ``X_test`` columns are aligned to the
-    training columns before prediction.
+    and ``X_test`` columns are aligned to the training columns before prediction.
 
     Parameters
     ----------
@@ -296,8 +283,8 @@ def evaluate_phenotype_cut(
                 "phenotype": phenotype,
                 "held_out_dataset": held_out,
                 "cut": cut,
-                "n_train": int(len(train_rows)),
-                "n_test": int(len(test_rows)),
+                "n_train": len(train_rows),
+                "n_test": len(test_rows),
                 "n_test_concordant": int(test_rows["concordant"].sum()),
                 "n_test_discordant": int((1 - test_rows["concordant"]).sum()),
                 "meta_auc": _safe_auc(y_test, proba),
@@ -320,9 +307,9 @@ def pooled_summary(
 ) -> pd.DataFrame:
     """Compute pooled (cross-phenotype) meta vs. confidence AUC/AUPRC per cut.
 
-    Predictions are gathered per (phenotype, held-out dataset) so that each meta
-    model still sees only its own training datasets, then concatenated across all
-    phenotypes and held-out datasets to score one pooled curve per cut.
+    Predictions are gathered per (phenotype, held-out dataset), so each meta model
+    sees only its own training datasets, then concatenated to score one pooled
+    curve per cut.
 
     Parameters
     ----------
@@ -381,7 +368,7 @@ def pooled_summary(
         summary_rows.append(
             {
                 "cut": cut,
-                "n_pooled": int(len(y_arr)),
+                "n_pooled": len(y_arr),
                 "n_concordant": int(y_arr.sum()) if len(y_arr) else 0,
                 "n_discordant": int((1 - y_arr).sum()) if len(y_arr) else 0,
                 "meta_auc": _safe_auc(y_arr, np.asarray(pooled_meta)),
@@ -483,7 +470,6 @@ def main() -> None:
     print(f"KOFAM matrix: {kofam.shape[0]} genomes x {kofam.shape[1]} features.")
     print(f"Using thread_count={args.threads} for CatBoost.")
 
-    # Per (phenotype, held-out dataset, cut) records.
     detail_records: list[dict[str, object]] = []
     for phenotype, rows in per_sample.groupby("phenotype", sort=True):
         for cut in cuts:

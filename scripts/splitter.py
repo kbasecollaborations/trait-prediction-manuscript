@@ -10,8 +10,8 @@ from trait_prediction.pipeline.splitters import (
 
 __all__ = [
     "DataSplitter",
-    "RandomSplitter",
+    "InCladeSplitter",
     "LargeTreeTraverseOOCSplitter",
     "OutOfCladeSplitter",
-    "InCladeSplitter",
+    "RandomSplitter",
 ]

@@ -99,8 +99,8 @@ def compute_y_soft(
         conf_phylo = parts["conf_phylo"]
         conf_mech = parts["conf_mech"]
         y_exp = parts["y_exp"]
-        common = (
-            conf_phylo.index.intersection(conf_mech.index).intersection(y_exp.index)
+        common = conf_phylo.index.intersection(conf_mech.index).intersection(
+            y_exp.index
         )
         if len(common) == 0:
             continue
@@ -260,7 +260,9 @@ def run_config(
     )
     y_soft = compute_y_soft(config, inputs)
     filtered = filter_splits(split_data, y_soft)
-    print(f"  {len(filtered)} filtered splits (n_jobs={n_jobs}, thread_count={thread_count})")
+    print(
+        f"  {len(filtered)} filtered splits (n_jobs={n_jobs}, thread_count={thread_count})"
+    )
 
     t0 = time.time()
     if n_jobs == 1:

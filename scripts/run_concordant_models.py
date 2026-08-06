@@ -92,8 +92,7 @@ def _save_model_artifacts(
     features = result.get("features", importances.index.tolist())
     sf_path = out_dir / f"{base_name}_selected_features.txt"
     with open(sf_path, "w") as f:
-        for feat in features:
-            f.write(f"{feat}\n")
+        f.writelines(f"{feat}\n" for feat in features)
 
     metadata = {
         "model_name": base_name,
@@ -122,11 +121,15 @@ def main() -> None:
 
     print("Loading GapMind predictions (loose)...")
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
-    print(f"  Loaded {len(gapmind_predictions)} genomes, {len(gapmind_predictions.columns)} phenotypes")
+    print(
+        f"  Loaded {len(gapmind_predictions)} genomes, {len(gapmind_predictions.columns)} phenotypes"
+    )
 
     print("\nLoading experimental phenotypes...")
     experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
-    print(f"  Loaded {len(experimental_phenotypes)} genomes, {len(experimental_phenotypes.columns)} phenotypes")
+    print(
+        f"  Loaded {len(experimental_phenotypes)} genomes, {len(experimental_phenotypes.columns)} phenotypes"
+    )
 
     print("\nLoading random_split train-test splits...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
@@ -165,7 +168,9 @@ def main() -> None:
             y_test = filtered_split["y_test"]
 
             if len(X_test) < MIN_TEST_SAMPLES:
-                print(f"\nSkipping {key}: test set has only {len(X_test)} concordant samples")
+                print(
+                    f"\nSkipping {key}: test set has only {len(X_test)} concordant samples"
+                )
                 continue
 
             result, model = perform_split_ml_with_model(
@@ -197,7 +202,12 @@ def main() -> None:
                 n_concordant_total=len(concordant_genomes),
             )
 
-            row = {**result, "split_type": "random_split", "key": key, "phenotype": phenotype}
+            row = {
+                **result,
+                "split_type": "random_split",
+                "key": key,
+                "phenotype": phenotype,
+            }
             results_list.append(row)
 
     if results_list:

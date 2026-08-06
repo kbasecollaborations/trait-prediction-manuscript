@@ -24,9 +24,9 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Colours consistent with main figures
-COLOR_FULL = "#7f7f7f"        # grey for full training
-COLOR_CONCORDANT = "#2E86AB"  # blue for concordant training
+# Colours consistent with the main figures.
+COLOR_FULL = "#7f7f7f"
+COLOR_CONCORDANT = "#2E86AB"
 
 COMMON_PHENOTYPES = [
     "Alanine",
@@ -61,7 +61,11 @@ def _prepare(df: pd.DataFrame) -> pd.DataFrame:
         {"full": "Full", "concordant": "Concordant"}
     )
     out["test_subset"] = out["test_subset"].map(
-        {"full": "Full Test", "concordant": "Concordant Test", "discordant": "Discordant Test"}
+        {
+            "full": "Full Test",
+            "concordant": "Concordant Test",
+            "discordant": "Discordant Test",
+        }
     )
     return out
 
@@ -82,8 +86,7 @@ def select_cross_dataset_subset(df: pd.DataFrame) -> pd.DataFrame:
         full-training and concordant-training models.
     """
     return df[
-        (df["split_type"] == "Dataset Split")
-        & (df["test_subset"] == "Concordant Test")
+        (df["split_type"] == "Dataset Split") & (df["test_subset"] == "Concordant Test")
     ].copy()
 
 
@@ -98,7 +101,6 @@ def plot_parity(ax: plt.Axes, df: pd.DataFrame) -> None:
     df : pd.DataFrame
         Prepared results.
     """
-    # Pivot to get full vs concordant side by side per key
     sub = select_cross_dataset_subset(df)
     pivot = sub.pivot_table(
         index=["key", "phenotype"],
@@ -129,7 +131,6 @@ def plot_parity(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.set_aspect("equal", adjustable="box")
     ax.text(-0.08, 1.05, "(A)", transform=ax.transAxes, fontweight="bold", fontsize=14)
 
-    # Count improvements
     n_improved = (pivot["Concordant"] > pivot["Full"]).sum()
     n_total = len(pivot)
     ax.text(
@@ -173,7 +174,6 @@ def plot_phenotype_boxes(ax: plt.Axes, df: pd.DataFrame) -> None:
         for p in phenotypes
     ]
 
-    # Alternating background shading
     for i in range(0, len(phenotypes), 2):
         ax.axvspan(i - 0.5, i + 0.5, color="grey", alpha=0.06, zorder=0)
 
@@ -207,7 +207,6 @@ def plot_phenotype_boxes(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.set_ylim(0.3, 1.05)
     ax.axhline(0.5, ls=":", color="grey", lw=0.7)
 
-    # Legend
     from matplotlib.patches import Patch
 
     ax.legend(
@@ -234,9 +233,8 @@ def main() -> None:
     df = pd.read_csv(data_file)
     print(f"Loaded {len(df)} rows from {data_file}")
 
-    # Apply the manuscript's minority-class-in-test filter (Methods). Fig S5
-    # evaluates cross-dataset performance on the concordant subset of the
-    # held-out dataset, so the concordant minority counts are used.
+    # Minority-class-in-test filter (Methods). Figure S5 evaluates the
+    # concordant subset of the held-out dataset, so concordant counts are used.
     from scripts.minority_filter import (
         concordant_minority_counts,
         filter_by_minority,
@@ -246,7 +244,9 @@ def main() -> None:
     print(f"After minority-class filter: {len(df)} rows")
     plot_data = _prepare(df)
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5), gridspec_kw={"width_ratios": [1, 2]})
+    fig, axes = plt.subplots(
+        1, 2, figsize=(12, 5), gridspec_kw={"width_ratios": [1, 2]}
+    )
 
     plot_parity(axes[0], plot_data)
     plot_phenotype_boxes(axes[1], plot_data)
@@ -256,11 +256,12 @@ def main() -> None:
     print(f"Saved figure to {output_file}")
     plt.close()
 
-    # Print summary
     ds = select_cross_dataset_subset(plot_data)
     print("\nCross-dataset mean balanced accuracy:")
     print(
-        ds.groupby("training_type")["balanced_accuracy"].agg(["mean", "std", "count"]).round(3)
+        ds.groupby("training_type")["balanced_accuracy"]
+        .agg(["mean", "std", "count"])
+        .round(3)
     )
     print("\nDone!")
 

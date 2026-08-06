@@ -10,8 +10,7 @@ from sklearn.metrics import pairwise_distances
 def mean_knn_jaccard_distance(
     test: pd.DataFrame, train: pd.DataFrame, k: int = 5
 ) -> pd.Series:
-    """
-    Mean Jaccard distance from each test row to its ``k`` nearest training rows.
+    """Mean Jaccard distance from each test row to its ``k`` nearest training rows.
 
     Operates on binary presence/absence feature matrices aligned on shared columns.
 
@@ -41,8 +40,7 @@ def mean_knn_jaccard_distance(
 def expected_calibration_error(
     y_true: np.ndarray, proba: np.ndarray, n_bins: int = 10
 ) -> float:
-    """
-    Expected calibration error using equal-width bins on P(class == 1).
+    """Expected calibration error using equal-width bins on P(class == 1).
 
     Parameters
     ----------
@@ -72,8 +70,7 @@ def expected_calibration_error(
 
 
 def calibration_table(per_sample: pd.DataFrame, n_bins: int = 10) -> pd.DataFrame:
-    """
-    Build a reliability-diagram table from a per-sample frame with ``proba``/``y_true``.
+    """Build a reliability-diagram table from a per-sample frame with ``proba``/``y_true``.
 
     Parameters
     ----------
@@ -95,8 +92,12 @@ def calibration_table(per_sample: pd.DataFrame, n_bins: int = 10) -> pd.DataFram
         mask = (proba > lo) & (proba <= hi) if lo > 0 else (proba >= lo) & (proba <= hi)
         if not mask.any():
             continue
-        rows.append({
-            "bin_mid": (lo + hi) / 2, "mean_pred": float(proba[mask].mean()),
-            "frac_pos": float(y[mask].mean()), "count": int(mask.sum()),
-        })
+        rows.append(
+            {
+                "bin_mid": (lo + hi) / 2,
+                "mean_pred": float(proba[mask].mean()),
+                "frac_pos": float(y[mask].mean()),
+                "count": int(mask.sum()),
+            }
+        )
     return pd.DataFrame(rows)

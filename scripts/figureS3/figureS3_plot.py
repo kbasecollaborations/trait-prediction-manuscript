@@ -2,12 +2,12 @@
 """
 Render Figure S3: in-clade vs out-of-clade balanced accuracy.
 
-The figure has two stacked panels (in-clade on top, out-of-clade on the bottom).
-Each panel shows balanced accuracy on the y axis and the 15 shared phenotypes
-on the x axis. Within each phenotype the four leave-one-dataset-out (LOO)
-combinations are shown as coloured strips, one colour per held-out dataset.
-Excluded combinations are stripped from the visual; the figure caption should
-report their count.
+Two stacked panels (in-clade on top, out-of-clade below) show balanced accuracy for
+the 15 shared phenotypes, with the four leave-one-dataset-out combinations drawn as
+coloured strips, one colour per held-out dataset. Excluded combinations are dropped
+from the plot and only counted on stdout.
+
+Reads data/outputs/figureS3/figureS3_data.tsv, writes figures/figure_s3.pdf.
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ def plot_panel(
 
     x = np.arange(len(phenotypes))
 
-    # Alternating background bands to help track phenotype columns
+    # Alternating background bands help track phenotype columns.
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -117,13 +117,12 @@ def plot_panel(
                         f"{int(row['n_test'])}",
                         (x_pos, row["balanced_accuracy"]),
                         textcoords="offset points",
-                        # Alternate the label height between adjacent datasets:
-                        # where two strips sit at nearly the same accuracy their
-                        # labels would otherwise collide horizontally.
+                        # Alternating label heights keep adjacent datasets at
+                        # similar accuracy from colliding.
                         xytext=(0, 6 if ds_idx % 2 == 0 else 15),
                         ha="center",
-                        # The figure is 11.8 in wide but included at \textwidth
-                        # (scale ~0.55), so this prints at roughly 4.5 pt.
+                        # Included at \textwidth (scale ~0.55), so this prints
+                        # at roughly 4.5 pt.
                         fontsize=8,
                         color="dimgray",
                         zorder=3,
@@ -232,9 +231,15 @@ def create_figure(data_file: Path, output_file: Path) -> None:
     if not excluded.empty:
         print(f"Excluded: {len(excluded)} combinations")
         print(excluded["exclusion_reason"].value_counts())
-    mean_in = retained.loc[retained["split_type"] == "in_clade", "balanced_accuracy"].mean()
-    mean_out = retained.loc[retained["split_type"] == "out_of_clade", "balanced_accuracy"].mean()
-    print(f"Mean balanced accuracy: in_clade={mean_in:.3f}, out_of_clade={mean_out:.3f}")
+    mean_in = retained.loc[
+        retained["split_type"] == "in_clade", "balanced_accuracy"
+    ].mean()
+    mean_out = retained.loc[
+        retained["split_type"] == "out_of_clade", "balanced_accuracy"
+    ].mean()
+    print(
+        f"Mean balanced accuracy: in_clade={mean_in:.3f}, out_of_clade={mean_out:.3f}"
+    )
 
 
 if __name__ == "__main__":

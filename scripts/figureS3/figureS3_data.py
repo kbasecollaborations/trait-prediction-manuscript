@@ -3,22 +3,16 @@
 Generate Figure S3 data: in-clade vs out-of-clade balanced accuracy across all
 15 shared phenotypes and the 4 leave-one-dataset-out (LOO) splits.
 
-This script reuses the canonical pattern from ``scripts/figure3/figure3c_data.py``
-- it loads the dataset_split splits (4 LOO combinations per phenotype) and uses
-agglomerative clustering on the phylogenetic distance matrix to partition the
-held-out test set into two non-overlapping subsets:
+Agglomerative clustering on the phylogenetic distance matrix partitions each
+held-out test set into ``in_clade`` (clusters holding at least two training
+samples, the definition used by ``scripts/figure3/figure3c_data.py``) and
+``out_of_clade`` (the complement). Each (phenotype, LOO combination, subset)
+tuple is scored with a CatBoost model (``model_type="cb"``, ``random_state=42``)
+on KOFAM features. Combinations with fewer than 10 test samples or fewer than 10
+minority-class test samples are recorded with ``excluded=True`` and a reason
+rather than dropped.
 
-- ``in_clade``: test samples that fall in clusters with at least two training
-  samples (the same definition figure3c uses).
-- ``out_of_clade``: test samples in clusters that do **not** contain enough
-  training samples (the complement).
-
-For each (phenotype, LOO combination, split flavour) tuple a CatBoost model is
-trained via :func:`scripts.ml.make_classifier` with ``model_type="cb"`` and
-``random_state=42`` on KOFAM features and evaluated on the corresponding test
-subset. Combinations with fewer than 10 test samples or fewer than 10 minority-
-class samples in the test subset are not silently dropped - they are recorded
-with ``excluded=True`` and an exclusion reason for downstream auditing.
+Writes ``data/outputs/figureS3/figureS3_data.tsv``.
 """
 
 from __future__ import annotations
@@ -228,7 +222,7 @@ def build_results(
         X_test = split["X_test"]
         y_test = split["y_test"]
 
-        # Sanity: training/validation must be binary for CatBoost classifier
+        # CatBoost classifier requires binary train and validation labels
         train_is_binary = len(y_train.unique()) == 2
         val_is_binary = len(y_val.unique()) == 2
 
@@ -242,7 +236,7 @@ def build_results(
         ):
             X_test_subset = X_test.loc[subset]
             y_test_subset = y_test.loc[subset]
-            n_test = int(len(X_test_subset))
+            n_test = len(X_test_subset)
             class_counts = y_test_subset.value_counts()
             n_minority_test = int(class_counts.min()) if not class_counts.empty else 0
 
@@ -251,7 +245,7 @@ def build_results(
                 "train_datasets": train_datasets,
                 "test_dataset": test_dataset,
                 "split_type": split_type,
-                "n_train": int(len(X_train)),
+                "n_train": len(X_train),
                 "n_test": n_test,
                 "n_minority_test": n_minority_test,
                 "balanced_accuracy": float("nan"),
@@ -267,9 +261,7 @@ def build_results(
 
             if n_test < MIN_TEST_SAMPLES:
                 row["excluded"] = True
-                row["exclusion_reason"] = (
-                    f"n_test<{MIN_TEST_SAMPLES} (got {n_test})"
-                )
+                row["exclusion_reason"] = f"n_test<{MIN_TEST_SAMPLES} (got {n_test})"
                 rows.append(row)
                 continue
 
@@ -344,7 +336,11 @@ def main() -> None:
             print("\nExclusion reasons:")
             print(excluded["exclusion_reason"].value_counts())
         print("\nMean balanced accuracy per split type:")
-        print(retained.groupby("split_type")["balanced_accuracy"].agg(["mean", "std", "count"]))
+        print(
+            retained.groupby("split_type")["balanced_accuracy"].agg(
+                ["mean", "std", "count"]
+            )
+        )
 
 
 if __name__ == "__main__":

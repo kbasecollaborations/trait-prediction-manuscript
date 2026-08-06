@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
-"""Do the "unexplained" false negatives concentrate candidate experimental mislabels?
+"""Rate of candidate experimental mislabels among unexplained false negatives.
 
 Links the transport-gap split from ``fn_transport_gap.py`` (each GapMind
 false-negative grower flagged as ``explained_transportgap`` when its enzyme-step
-machinery is complete, else an unexplained residual) to two independent signals
-that a "grows" label may be wrong:
+machinery is complete, else an unexplained residual) to two signals that a
+"grows" label may be wrong:
 
-1. Confident genomic-consensus disagreement (from the per-sample model outputs):
-   a false negative where the model confidently (confidence >= 0.9) predicts
-   no-growth AND agrees with GapMind (both call 0) is a candidate mislabel.
-2. Cross-dataset twin conflict (Supplementary Text S13 data): a false negative
-   whose near-identical strain (patristic distance <= 0.01) in another dataset
-   carries the opposite label.
-
-Hypothesis: the unexplained residual (no genomic support for growth) concentrates
-the candidate mislabels, while the transport-gap "explained" false negatives are
-disproportionately rescued by the model.
+1. Confident genomic-consensus disagreement: the model predicts no-growth at
+   confidence >= 0.9 and GapMind also calls 0.
+2. Cross-dataset twin conflict (Supplementary Text S13 data): a near-identical
+   strain (patristic distance <= 0.01) in another dataset carries the opposite
+   label.
 
 Exploratory; prints a report and writes ``data/outputs/figure5_fn_discovery/
 fn_mislabel_analysis.csv``. Not wired into any manuscript pipeline.
@@ -32,7 +27,9 @@ from pathlib import Path
 import pandas as pd
 from scipy.stats import fisher_exact
 
-FN_SCORES: Path = Path("data/outputs/figure5_fn_discovery/fn_negatives_genome_scores.csv")
+FN_SCORES: Path = Path(
+    "data/outputs/figure5_fn_discovery/fn_negatives_genome_scores.csv"
+)
 PER_SAMPLE: Path = Path("data/outputs/figure7/figure7_per_sample.tsv")
 TWIN_PAIRS: Path = Path("data/outputs/measurement_reliability/part1_pairs_thr0.01.csv")
 OUT: Path = Path("data/outputs/figure5_fn_discovery/fn_mislabel_analysis.csv")
@@ -69,7 +66,7 @@ def load_per_sample() -> pd.DataFrame:
         & (fn["gapmind_pred"] == 0)
         & (fn["confidence"] >= CONF_THRESHOLD)
     ).astype(int)
-    # One row per (phenotype, genome): a genome can appear once as a test sample.
+    # One row per (phenotype, genome)
     return fn[
         ["phenotype", "genome", "confidence", "rescued", "consensus_mislabel"]
     ].drop_duplicates(["phenotype", "genome"])
@@ -109,7 +106,10 @@ def rate_table(df: pd.DataFrame, col: str) -> pd.DataFrame:
         Counts and rate of ``col`` for explained vs residual false negatives.
     """
     rows = []
-    for explained, label in [(True, "explained_transportgap"), (False, "residual_unexplained")]:
+    for explained, label in [
+        (True, "explained_transportgap"),
+        (False, "residual_unexplained"),
+    ]:
         sub = df[df["explained_transportgap"] == explained]
         rows.append(
             {
@@ -149,15 +149,23 @@ def main() -> None:
     print("\n-- Model rescue rate (y_pred == 1) --")
     print(rate_table(merged, "rescued").to_string(index=False))
 
-    print("\n-- Confident-consensus candidate mislabel (conf>=0.9, model & GapMind both no-grow) --")
+    print(
+        "\n-- Confident-consensus candidate mislabel (conf>=0.9, model & GapMind both no-grow) --"
+    )
     cm = rate_table(merged, "consensus_mislabel")
     print(cm.to_string(index=False))
 
     exp = merged[merged["explained_transportgap"]]
     res = merged[~merged["explained_transportgap"]]
     table = [
-        [int(res["consensus_mislabel"].sum()), int((res["consensus_mislabel"] == 0).sum())],
-        [int(exp["consensus_mislabel"].sum()), int((exp["consensus_mislabel"] == 0).sum())],
+        [
+            int(res["consensus_mislabel"].sum()),
+            int((res["consensus_mislabel"] == 0).sum()),
+        ],
+        [
+            int(exp["consensus_mislabel"].sum()),
+            int((exp["consensus_mislabel"] == 0).sum()),
+        ],
     ]
     odds, p = fisher_exact(table)
     print(
@@ -178,7 +186,7 @@ def main() -> None:
     mislabel_res = int(res["consensus_mislabel"].sum())
     print(
         f"\nHeadline: of {total_res} unexplained-residual FN, "
-        f"{mislabel_res} ({mislabel_res / max(total_res,1):.1%}) are confident-consensus "
+        f"{mislabel_res} ({mislabel_res / max(total_res, 1):.1%}) are confident-consensus "
         f"candidate mislabels; explained-transport-gap FN mislabel rate is "
         f"{exp['consensus_mislabel'].mean():.1%}."
     )

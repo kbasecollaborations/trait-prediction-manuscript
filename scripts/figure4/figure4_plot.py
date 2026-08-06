@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 
 from scripts.figure4.figure4a_quadrant import create_quadrant_plot
@@ -25,16 +25,14 @@ def create_figure4(output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    # Keep the physical figure size closer to the final manuscript scale so
-    # labels remain legible after LaTeX includes the PDF at \textwidth.
+    # Sized near the final manuscript scale so labels stay legible after LaTeX
+    # includes the PDF at \textwidth.
     fig = plt.figure(figsize=(12.5, 10.4))
 
-    import matplotlib.gridspec as gridspec
+    from matplotlib import gridspec
 
-    # Main grid: tighten the top row so panels A/B do not carry excess empty
-    # space relative to panel C. Explicit top/left/right/bottom remove the
-    # default matplotlib margins so panel A's content reaches close to the
-    # figure edges instead of leaving a wide whitespace band.
+    # Explicit top/left/right/bottom replace the default matplotlib margins so
+    # panel A's content reaches close to the figure edges.
     main_gs = gridspec.GridSpec(
         2,
         1,
@@ -47,8 +45,6 @@ def create_figure4(output_file: Path) -> None:
         right=0.99,
     )
 
-    # Top row grid: allocate slightly more width to panel B to reduce empty
-    # margins around panel A while preserving readability of the bar labels.
     top_gs = gridspec.GridSpecFromSubplotSpec(
         1,
         2,
@@ -57,12 +53,10 @@ def create_figure4(output_file: Path) -> None:
         wspace=0.12,
     )
 
-    # Left side: Figure 4A (quadrant plot)
+    # Figure 4A (quadrant plot).
     ax_quadrant = fig.add_subplot(top_gs[0, 0])
 
-    # Right side: Figure 4B (2 vertically stacked subplots).
-    # Keep the per-phenotype plot slightly shorter than before so the stacked
-    # bars do not dominate the top row.
+    # Figure 4B: two vertically stacked subplots.
     right_gs = gridspec.GridSpecFromSubplotSpec(
         2,
         1,
@@ -71,16 +65,16 @@ def create_figure4(output_file: Path) -> None:
         hspace=0.68,
     )
 
-    ax_b1 = fig.add_subplot(right_gs[0, 0])  # Top subplot
-    ax_b2 = fig.add_subplot(right_gs[1, 0])  # Bottom subplot
+    ax_b1 = fig.add_subplot(right_gs[0, 0])
+    ax_b2 = fig.add_subplot(right_gs[1, 0])
 
-    # Bottom row: Figure 4C (2 vertically stacked subplots with shared x-axis)
+    # Figure 4C: two vertically stacked subplots sharing an x-axis.
     bottom_panel_gs = gridspec.GridSpecFromSubplotSpec(
         2, 1, subplot_spec=main_gs[1, :], hspace=0.56
     )
 
-    ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])  # Top subplot
-    ax_c2 = fig.add_subplot(bottom_panel_gs[1, 0], sharex=ax_c1)  # Bottom subplot, shared x-axis
+    ax_c1 = fig.add_subplot(bottom_panel_gs[0, 0])
+    ax_c2 = fig.add_subplot(bottom_panel_gs[1, 0], sharex=ax_c1)
 
     print("Creating Figure 4A (quadrant plot)...")
     create_quadrant_plot(ax_quadrant)
@@ -91,17 +85,27 @@ def create_figure4(output_file: Path) -> None:
     print("\nCreating Figure 4C (feature stability and comparison)...")
     create_panel_c_plots(ax_c1, ax_c2)
 
-    # Add panel labels. A and B share an explicit figure-level y so they
-    # render at the same vertical position regardless of subplot heights.
+    # Labels A and B share an explicit figure-level y so they render at the same
+    # vertical position regardless of subplot heights.
     panel_label_y = 0.98
     fig.text(
-        0.005, panel_label_y, "A",
-        fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
+        0.005,
+        panel_label_y,
+        "A",
+        fontsize=PANEL_LABEL_SIZE,
+        fontweight="bold",
+        va="top",
+        ha="left",
     )
     b1_bbox = ax_b1.get_position()
     fig.text(
-        b1_bbox.x0 - 0.025, panel_label_y, "B",
-        fontsize=PANEL_LABEL_SIZE, fontweight="bold", va="top", ha="left",
+        b1_bbox.x0 - 0.025,
+        panel_label_y,
+        "B",
+        fontsize=PANEL_LABEL_SIZE,
+        fontweight="bold",
+        va="top",
+        ha="left",
     )
     c1_bbox = ax_c1.get_position()
     fig.text(

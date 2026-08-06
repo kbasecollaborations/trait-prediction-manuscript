@@ -10,18 +10,16 @@ import pandas as pd
 from sklearn.metrics import (
     average_precision_score,
     balanced_accuracy_score,
-    precision_recall_curve,
     precision_score,
     recall_score,
 )
 from tqdm import tqdm
 
-from scripts.ml_splits import load_split_data, perform_split_ml
+from scripts.ml_splits import load_split_data
 
 
 def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
-    """
-    Load GapMind predictions.
+    """Load GapMind predictions.
 
     Parameters
     ----------
@@ -44,7 +42,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
     else:
         marine_ids_map = {}
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -78,8 +76,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
 
 
 def load_experimental_phenotypes(phenotype_dict: dict[str, str]) -> pd.DataFrame:
-    """
-    Load experimental phenotype data.
+    """Load experimental phenotype data.
 
     Parameters
     ----------
@@ -130,8 +127,7 @@ def load_experimental_phenotypes(phenotype_dict: dict[str, str]) -> pd.DataFrame
 def identify_problematic_samples(
     phenotypes_combined: pd.DataFrame, gapmind_data_pheno: pd.DataFrame
 ) -> set[str]:
-    """
-    Identify problematic samples from three GapMind misclassification categories.
+    """Identify problematic samples from three GapMind misclassification categories.
 
     Parameters
     ----------
@@ -156,7 +152,7 @@ def identify_problematic_samples(
             if (gapmind_data_pheno.loc[microbe] == 1).any():
                 microbes_gapmind_predicts_growth.append(microbe)
 
-    # Category 2: All experimental growth but GapMind incomplete
+    # Category 2: all experimental growth but GapMind incomplete
     microbes_all_exp_growth = phenotypes_combined.index[
         phenotypes_combined.apply(lambda x: (x.dropna() == 1).all(), axis=1)
     ].to_list()
@@ -167,7 +163,7 @@ def identify_problematic_samples(
             if not (gapmind_data_pheno.loc[microbe] == 1).all():
                 microbes_gapmind_missing_predictions.append(microbe)
 
-    # Category 3: Top 20 most frequently misclassified
+    # Category 3: top 20 most frequently misclassified
     misclassifications = dict()
     phenotype_names = phenotypes_combined.columns
 
@@ -196,8 +192,12 @@ def identify_problematic_samples(
         + top_20_genomes
     )
 
-    print(f"Category 1 (No growth, GM predicts): {len(microbes_gapmind_predicts_growth)}")
-    print(f"Category 2 (All growth, GM incomplete): {len(microbes_gapmind_missing_predictions)}")
+    print(
+        f"Category 1 (No growth, GM predicts): {len(microbes_gapmind_predicts_growth)}"
+    )
+    print(
+        f"Category 2 (All growth, GM incomplete): {len(microbes_gapmind_missing_predictions)}"
+    )
     print(f"Category 3 (Top 20 misclassified): {len(top_20_genomes)}")
     print(f"Total unique problematic samples: {len(all_problematic)}")
 
@@ -214,8 +214,7 @@ def evaluate_with_predictions(
     y_val: pd.Series,
     exclude_samples: set[str] | None = None,
 ) -> dict[str, float]:
-    """
-    Evaluate model and calculate precision, recall, AUPRC, and balanced accuracy.
+    """Evaluate model and calculate precision, recall, AUPRC, and balanced accuracy.
 
     Parameters
     ----------
@@ -306,8 +305,7 @@ def run_figure6c_analysis(
     output_dir: Path = Path("data/outputs/figure6"),
     split_type: str = "dataset_split",
 ) -> None:
-    """
-    Run Figure 6C analysis: compare metrics before/after filtering problematic samples.
+    """Run Figure 6C analysis: compare metrics before/after filtering problematic samples.
 
     Parameters
     ----------
@@ -347,7 +345,9 @@ def run_figure6c_analysis(
     phenotypes_combined = load_experimental_phenotypes(phenotype_dict)
 
     print("\nIdentifying problematic samples...")
-    problematic_samples = identify_problematic_samples(phenotypes_combined, gapmind_data)
+    problematic_samples = identify_problematic_samples(
+        phenotypes_combined, gapmind_data
+    )
 
     print(f"\nLoading {split_type} data...")
     splits_data = load_split_data(split_types=[split_type])
@@ -376,7 +376,9 @@ def run_figure6c_analysis(
         X_val_aligned = X_val.copy()
         missing_cols_val = X_train.columns.difference(X_val_aligned.columns)
         if len(missing_cols_val) > 0:
-            missing_df = pd.DataFrame(0, index=X_val_aligned.index, columns=missing_cols_val)
+            missing_df = pd.DataFrame(
+                0, index=X_val_aligned.index, columns=missing_cols_val
+            )
             X_val_aligned = pd.concat([X_val_aligned, missing_df], axis=1)
         X_val_aligned = X_val_aligned[X_train.columns]
 
@@ -384,7 +386,9 @@ def run_figure6c_analysis(
         X_test_aligned = X_test.copy()
         missing_cols_test = X_train.columns.difference(X_test_aligned.columns)
         if len(missing_cols_test) > 0:
-            missing_df = pd.DataFrame(0, index=X_test_aligned.index, columns=missing_cols_test)
+            missing_df = pd.DataFrame(
+                0, index=X_test_aligned.index, columns=missing_cols_test
+            )
             X_test_aligned = pd.concat([X_test_aligned, missing_df], axis=1)
         X_test_aligned = X_test_aligned[X_train.columns]
 
@@ -457,7 +461,10 @@ def run_figure6c_analysis(
                 exclude_samples=None,
             )
 
-        for condition, metrics in [("full", metrics_full), ("filtered", metrics_filtered)]:
+        for condition, metrics in [
+            ("full", metrics_full),
+            ("filtered", metrics_filtered),
+        ]:
             results.append(
                 {
                     "phenotype": phenotype_name,

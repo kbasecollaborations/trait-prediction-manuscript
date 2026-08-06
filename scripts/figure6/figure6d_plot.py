@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 from matplotlib.axes import Axes
 from scipy.stats import wilcoxon
@@ -24,11 +24,11 @@ configure_plot_style()
 def load_results(data_file: Path) -> pd.DataFrame:
     """Load the Figure 6D results table with the manuscript's reporting filter applied.
 
-    Figure 6D evaluates on the full held-out test set, so the minority-class rule
-    stated in ``sections/methods.tex`` applies: ``dataset_split`` cells whose
-    held-out test set carries fewer than ten minority-class samples are not
-    reported. Both the standalone panel and the combined Figure 6 composer read
-    through here so the plotted panel and its statistical test cannot diverge.
+    Figure 6D evaluates on the full held-out test set, so the minority-class
+    rule stated in ``sections/methods.tex`` applies: ``dataset_split`` cells
+    whose held-out test set carries fewer than ten minority-class samples are
+    dropped. The standalone panel and the combined Figure 6 composer both read
+    through here.
 
     Parameters
     ----------
@@ -162,8 +162,7 @@ def plot_split_comparison(
     phenotypes: list[str],
     title: str,
 ) -> None:
-    """
-    Plot comparison for a single split type.
+    """Plot the combined vs phenotype-filtered comparison for a single split type.
 
     Parameters
     ----------
@@ -244,14 +243,12 @@ def plot_split_comparison(
     ax.set_ylim(0, 1.05)
     ax.legend(loc="upper right", frameon=False)
 
-    combined_n_features = (
-        split_data[split_data["experiment"] == "combined"]["n_features"]
-        .mean()
-    )
-    filtered_n_features = (
-        split_data[split_data["experiment"] == "phenotype_filtered"]["n_features"]
-        .mean()
-    )
+    combined_n_features = split_data[split_data["experiment"] == "combined"][
+        "n_features"
+    ].mean()
+    filtered_n_features = split_data[split_data["experiment"] == "phenotype_filtered"][
+        "n_features"
+    ].mean()
 
     if not np.isnan(combined_n_features):
         ax.text(
@@ -282,11 +279,10 @@ def plot_balanced_accuracy_scatter(
     data: pd.DataFrame,
     phenotypes: list[str],
 ) -> None:
-    """
-    Plot scatter plot of Combined vs Filtered balanced accuracy.
+    """Scatter combined against phenotype-filtered balanced accuracy.
 
-    Shapes indicate split type (circle=random, square=dataset).
-    Points above the diagonal indicate filtered features outperform combined.
+    Shapes indicate split type (circle = random, square = dataset). Points
+    above the diagonal indicate filtered features outperform combined.
 
     Parameters
     ----------
@@ -368,11 +364,10 @@ def plot_precision_recall_scatter_by_feature_type(
     data: pd.DataFrame,
     phenotypes: list[str],
 ) -> None:
-    """
-    Plot precision vs recall scatter plot.
+    """Scatter precision against recall.
 
-    Shapes indicate split type (circle=random, square=dataset).
-    Colors indicate filter type (blue=combined, red=phenotype-filtered).
+    Shapes indicate split type (circle = random, square = dataset) and colors
+    indicate feature set (blue = combined, red = phenotype-filtered).
 
     Parameters
     ----------
@@ -435,8 +430,7 @@ def create_figure(
     output_file: Path,
     phenotype_order: list[str] | None = None,
 ) -> None:
-    """
-    Create Figure 6D showing combined vs phenotype-filtered features comparison.
+    """Create Figure 6D comparing combined and phenotype-filtered features.
 
     Parameters
     ----------
@@ -519,7 +513,10 @@ def create_figure(
         .unstack(fill_value=np.nan)
     )
 
-    if "combined" in phenotype_summary.columns and "phenotype_filtered" in phenotype_summary.columns:
+    if (
+        "combined" in phenotype_summary.columns
+        and "phenotype_filtered" in phenotype_summary.columns
+    ):
         phenotype_summary["difference"] = (
             phenotype_summary["phenotype_filtered"] - phenotype_summary["combined"]
         )
@@ -533,9 +530,8 @@ if __name__ == "__main__":
     output_file = Path("figures/figure6d.pdf")
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Phenotype order matches the common phenotypes from figure3; taken from the
-    # split-generation module so it cannot drift out of sync (a local copy here
-    # had dropped Glucose).
+    # Read from the split-generation module so the order cannot drift out of
+    # sync with the phenotypes the splits were built for.
     phenotype_order = list(COMMON_PHENOTYPES)
 
     create_figure(data_file, output_file, phenotype_order)

@@ -22,7 +22,6 @@ from scripts.visualization import (
     get_dataset_colors,
 )
 
-
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
@@ -74,9 +73,7 @@ def plot_full_test_balanced_accuracy(
 
     box_data: list[np.ndarray] = []
     for phenotype in phenotypes:
-        values = df.loc[
-            df["phenotype"] == phenotype, "balanced_accuracy_full"
-        ].values
+        values = df.loc[df["phenotype"] == phenotype, "balanced_accuracy_full"].values
         box_data.append(values)
 
     ax.boxplot(
@@ -191,9 +188,7 @@ def plot_test_composition(
             for cat in fractions:
                 fractions[cat].append(0.0)
             continue
-        fractions["concordant"].append(
-            float(sub["n_test_concordant"].sum()) / n_total
-        )
+        fractions["concordant"].append(float(sub["n_test_concordant"].sum()) / n_total)
         fractions["fp_discordant"].append(
             float(sub["n_test_FP_discordant"].sum()) / n_total
         )
@@ -254,7 +249,9 @@ def plot_test_composition(
     )
 
 
-from scripts.minority_filter import full_test_minority_counts as _full_test_minority_counts
+from scripts.minority_filter import (
+    full_test_minority_counts as _full_test_minority_counts,
+)
 
 
 def create_figure(data_file: Path, output_file: Path) -> None:
@@ -309,8 +306,7 @@ def report_summary(data_file: Path) -> None:
     df = df.loc[keep].copy()
     print("\nMedian balanced accuracy across (phenotype, held-out dataset) pairs:")
     print(
-        f"  full held-out test set:   "
-        f"{np.nanmedian(df['balanced_accuracy_full']):.3f}"
+        f"  full held-out test set:   {np.nanmedian(df['balanced_accuracy_full']):.3f}"
     )
     print(
         f"  concordant subset:        "

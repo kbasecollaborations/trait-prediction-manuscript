@@ -1,14 +1,9 @@
 """Regenerate ``data/processed/phenotypes/`` from the raw handoff files.
 
-This replaces the original harmonisation notebook, which stripped stereochemical
-descriptors from substrate names with chained ``str.removeprefix`` calls and then let
-later source columns silently overwrite earlier ones of the same stripped name. Every
-published column is now bound to its source column explicitly, via the table produced
-by :mod:`scripts.build_substrate_identity`.
-
-The script is idempotent and verifies its own output: it refuses to write if two
-published columns would share a filename, and it reports every file whose contents
-differ from what is currently on disk.
+Every published column is bound to its source column explicitly, via the table
+produced by :mod:`scripts.build_substrate_identity`. The script is idempotent: it
+refuses to write if two published columns would share a filename, and it reports
+every file whose contents differ from what is currently on disk.
 
 Run with ``uv run python -m scripts.harmonize_phenotypes``.
 """
@@ -70,7 +65,9 @@ def to_binary(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors="coerce").astype("Int64")
 
 
-def write_dataset(dataset: str, identity: pd.DataFrame, output_dir: Path, dry_run: bool) -> dict[str, str]:
+def write_dataset(
+    dataset: str, identity: pd.DataFrame, output_dir: Path, dry_run: bool
+) -> dict[str, str]:
     """Write every published phenotype file for one dataset.
 
     Parameters
@@ -101,13 +98,18 @@ def write_dataset(dataset: str, identity: pd.DataFrame, output_dir: Path, dry_ru
 
     for row in identity.itertuples():
         if row.source_column not in raw.columns:
-            raise KeyError(f"{dataset}: source column {row.source_column!r} not in raw matrix")
+            raise KeyError(
+                f"{dataset}: source column {row.source_column!r} not in raw matrix"
+            )
         series = to_binary(raw[row.source_column]).rename(row.phenotype)
         rendered = series.to_csv(sep="\t").encode()
         target = destination / f"{row.phenotype}.tsv"
         if not target.exists():
             status[row.phenotype] = "new"
-        elif hashlib.md5(target.read_bytes()).hexdigest() == hashlib.md5(rendered).hexdigest():
+        elif (
+            hashlib.md5(target.read_bytes()).hexdigest()
+            == hashlib.md5(rendered).hexdigest()
+        ):
             status[row.phenotype] = "unchanged"
         else:
             status[row.phenotype] = "modified"
@@ -125,7 +127,9 @@ def write_dataset(dataset: str, identity: pd.DataFrame, output_dir: Path, dry_ru
 def main() -> None:
     """Regenerate all four datasets and report what changed."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dry-run", action="store_true", help="report changes without writing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="report changes without writing"
+    )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     args = parser.parse_args()
 
@@ -134,7 +138,9 @@ def main() -> None:
         subset = identity[identity.dataset == dataset]
         duplicates = subset.loc[subset.phenotype.duplicated(), "phenotype"].tolist()
         if duplicates:
-            raise ValueError(f"{dataset}: duplicate published phenotype names {duplicates}")
+            raise ValueError(
+                f"{dataset}: duplicate published phenotype names {duplicates}"
+            )
 
         status = write_dataset(dataset, subset, args.output_dir, args.dry_run)
         counts = pd.Series(status).value_counts().to_dict()

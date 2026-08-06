@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
 import json
-from collections.abc import Sequence
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
@@ -37,10 +35,9 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     with open(data_file) as f:
         feature_data = json.load(f)
 
-    # Load redundancy-cluster mapping (target-aware via shap.utils.hclust) so the
-    # combined-model count is reported as the number of distinct cluster
-    # identities rather than raw KOs. Falls back to KO counts when the cluster
-    # JSON is absent.
+    # Redundancy-cluster mapping (shap.utils.hclust): the combined-model count is
+    # the number of distinct cluster identities rather than raw KOs, falling back
+    # to KO counts when the cluster JSON is absent.
     cluster_file = Path("data/outputs/clustering/ko_clusters_shap_hclust.json")
     cluster_mapping: dict[str, dict[str, int]] = {}
     if cluster_file.exists():
@@ -66,10 +63,10 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     # Align bars with the bottom subplot's grouped-bar centers.
     x_pos = np.arange(len(phenotypes))
     n_datasets = 3  # atleaf, lit, marine
-    bar_width_bottom = 0.8 / n_datasets  # Width used in bottom subplot
+    bar_width_bottom = 0.8 / n_datasets  # width used in the bottom subplot
 
     bar_center_offset = bar_width_bottom * (n_datasets - 1) / 2
-    bar_width = 0.5  # Narrower bar for better appearance
+    bar_width = 0.5
 
     bars = ax.bar(
         x_pos + bar_center_offset,
@@ -92,13 +89,10 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     )
     # Match tick positions to the bottom subplot.
     ax.set_xticks(x_pos + bar_center_offset)
-    ax.set_xticklabels([])  # No labels on top plot
+    ax.set_xticklabels([])
     ax.tick_params(axis="x", which="both", bottom=False, top=False, labelbottom=False)
     ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE, pad=1)
-    # ax.spines["top"].set_visible(False)
-    # ax.spines["right"].set_visible(False)
 
-    # Set x-axis limits to remove extra spacing
     ax.set_xlim(bar_center_offset - 0.5, len(phenotypes) - 1 + bar_center_offset + 0.5)
 
     ax.set_ylim(0, 10)
@@ -138,13 +132,13 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
 
     # Hatching patterns for feature types (matching Figure 1C).
     patterns = {
-        "common": "",  # Solid (like positive counts in Figure 1C)
-        "unique_individual": "//",  # Diagonal hatching (like negative counts)
-        "unique_combined": "xx",  # Cross-hatching for distinction
+        "common": "",  # solid
+        "unique_individual": "//",  # diagonal hatching
+        "unique_combined": "xx",  # cross-hatching
     }
 
-    # Prefer cluster-level counts (target-aware redundancy clusters from
-    # shap.utils.hclust); fall back to raw KO counts for backwards compatibility.
+    # Cluster-level counts (redundancy clusters from shap.utils.hclust), falling
+    # back to raw KO counts when those columns are absent.
     common_col = (
         "n_intersection_clusters"
         if "n_intersection_clusters" in df.columns
@@ -176,7 +170,6 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
 
         positions = x_pos + i * bar_width
 
-        # Bottom layer: common features (solid, alpha=0.8).
         p1 = ax.bar(
             positions,
             common,
@@ -184,7 +177,6 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             color=dataset_colors[i],
             alpha=0.8,
         )
-        # Top layer: unique to individual (hatched //, alpha=0.4).
         p2 = ax.bar(
             positions,
             unique_individual,
@@ -270,8 +262,6 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=TICK_LABEL_SIZE)
     ax.tick_params(axis="x", which="both", top=False, bottom=True)
     ax.tick_params(axis="y", labelsize=TICK_LABEL_SIZE, pad=1)
-    # ax.spines["top"].set_visible(False)
-    # ax.spines["right"].set_visible(False)
 
     ax.set_xlim(bar_group_center - 0.5, len(phenotypes) - 1 + bar_group_center + 0.5)
     ax.set_ylim(0, 10)
@@ -295,7 +285,6 @@ def create_panel_c_plots(ax_top: Axes, ax_bottom: Axes) -> None:
 
     df = pd.read_csv(data_file2)
 
-    # Union of phenotypes across both sources, sorted alphabetically.
     phenotypes_set = set(feature_data.keys()) | set(df["phenotype"].unique())
     phenotypes = sorted(list(phenotypes_set))
 

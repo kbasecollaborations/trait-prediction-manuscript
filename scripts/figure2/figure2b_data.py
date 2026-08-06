@@ -68,13 +68,12 @@ def fit_nearest_neighbor(
 ) -> None:
     """Fit a :class:`NearestNeighborClassifier` against a precomputed distance matrix.
 
-    Assigns the attributes ``predict`` reads, exactly as the library's ``fit``
-    would, but reuses ``distance_df`` instead of rebuilding it. The installed
-    ``trait_prediction`` version calls ``Tree(tree)`` on its ``tree`` keyword and
-    then recomputes every pairwise distance with ``tree.get_distance``, ignoring
-    the ``distances`` keyword; that both rejects an already-parsed ``Tree`` and
-    would cost a full O(leaves^2) traversal per split. The same bypass is used by
-    ``scripts.figure6.figure6b_parameter_exploration.phylo_knn_confidence``.
+    Assigns the attributes ``predict`` reads instead of calling the library's
+    ``fit``: the installed ``trait_prediction`` version ignores the ``distances``
+    keyword and recomputes every pairwise distance with ``tree.get_distance``,
+    which rejects an already-parsed ``Tree`` and costs an O(leaves^2) traversal
+    per split. ``scripts.figure6.figure6b_parameter_exploration.phylo_knn_confidence``
+    uses the same bypass.
 
     Parameters
     ----------
@@ -178,7 +177,7 @@ def perform_ml(
 
 
 def main() -> None:
-    """Main function to generate baseline predictions."""
+    """Generate the baseline predictions and write them to ``data/outputs/figure2``."""
     RANDOM_SPLIT_DIR = Path("data/processed/train_test_splits/random_split")
     DATASET_SPLIT_DIR = Path("data/processed/train_test_splits/dataset_split")
     PHYLO_SPLIT_DIR = Path("data/processed/train_test_splits/phylogeny_split")

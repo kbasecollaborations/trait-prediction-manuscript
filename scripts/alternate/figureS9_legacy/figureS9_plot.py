@@ -69,7 +69,9 @@ def plot_panel_a(ax: plt.Axes, df: pd.DataFrame) -> None:
     x = np.arange(len(phenotypes))
 
     for ph_idx, phen in enumerate(phenotypes):
-        for offset, scope in zip([-bar_width / 2, bar_width / 2], ["full", "concordant"]):
+        for offset, scope in zip(
+            [-bar_width / 2, bar_width / 2], ["full", "concordant"]
+        ):
             sub = comp[(comp["phenotype"] == phen) & (comp["scope"] == scope)]
             bottom = 0.0
             for cls in classes:
@@ -93,11 +95,13 @@ def plot_panel_a(ax: plt.Axes, df: pd.DataFrame) -> None:
     ax.set_ylabel("Genome fraction")
     ax.set_xlabel("Phenotype")
 
-    ax.set_title("(A) Class composition: full (left) vs concordant (right)", loc="left", fontsize=12)
+    ax.set_title(
+        "(A) Class composition: full (left) vs concordant (right)",
+        loc="left",
+        fontsize=12,
+    )
 
-    handles = [
-        plt.Rectangle((0, 0), 1, 1, color=palette[c], label=c) for c in classes
-    ]
+    handles = [plt.Rectangle((0, 0), 1, 1, color=palette[c], label=c) for c in classes]
     ax.legend(
         handles=handles,
         loc="center left",

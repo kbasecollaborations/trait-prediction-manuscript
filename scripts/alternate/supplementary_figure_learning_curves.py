@@ -401,7 +401,8 @@ def plot_saturation_summary(df: pd.DataFrame, output_file: Path) -> None:
         order_map[random_saturation_sizes[phenotype]] for phenotype in sorted_phenotypes
     ]
     dataset_sizes = [
-        order_map[dataset_saturation_sizes[phenotype]] for phenotype in sorted_phenotypes
+        order_map[dataset_saturation_sizes[phenotype]]
+        for phenotype in sorted_phenotypes
     ]
 
     fig, ax = plt.subplots(figsize=(10.5, 5.5))

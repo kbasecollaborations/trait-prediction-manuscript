@@ -18,7 +18,7 @@ try:
     from requests import Response
 
     _USE_REQUESTS = True
-except ImportError:  # pragma: no cover - fallback for minimal environments
+except ImportError:  # pragma: no cover
     import urllib.error
     import urllib.request
 
@@ -26,7 +26,8 @@ except ImportError:  # pragma: no cover - fallback for minimal environments
 
 try:
     from tqdm import tqdm
-except ImportError:  # pragma: no cover - graceful degradation
+except ImportError:  # pragma: no cover
+
     def tqdm(iterable: Iterable, **_: object) -> Iterable:  # type: ignore[misc]
         return iterable
 
@@ -134,7 +135,9 @@ def parse_module_record(text: str) -> tuple[str, list[str]]:
     return name, definition_lines
 
 
-def fetch_modules(module_ids: list[str]) -> tuple[list[tuple[str, int, str, str]], list[str]]:
+def fetch_modules(
+    module_ids: list[str],
+) -> tuple[list[tuple[str, int, str, str]], list[str]]:
     """Fetch each module's flat-file record and return TSV rows + failures.
 
     Parameters
@@ -333,7 +336,6 @@ def main() -> int:
     t0 = time.time()
     print(f"Refreshing KEGG data into {MAPPING_DIR}")
 
-    # --- Modules ---------------------------------------------------------
     print("Fetching module list...")
     module_ids = fetch_module_ids()
     print(f"  got {len(module_ids)} module IDs")
@@ -347,7 +349,6 @@ def main() -> int:
     write_module_tsv(rows, MODULE_TSV)
     print(f"  wrote {MODULE_TSV}")
 
-    # --- KOs -------------------------------------------------------------
     print("Fetching KO list...")
     term_hash = fetch_ko_entries()
     print(f"  got {len(term_hash)} KO entries")
@@ -356,7 +357,6 @@ def main() -> int:
     write_ko_json(term_hash, KO_JSON)
     print(f"  wrote {KO_JSON}")
 
-    # --- Pathway maps ----------------------------------------------------
     print("Fetching reference pathway map catalog...")
     pathway_names = fetch_pathway_names()
     print(f"  got {len(pathway_names)} pathway names")

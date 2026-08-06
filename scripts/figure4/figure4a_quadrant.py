@@ -3,13 +3,12 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 from matplotlib.patches import FancyBboxPatch, Rectangle
 
 plt.style.use(["science", "nature"])
 
 
-# --- Quadrant border / fill palette -----------------------------------------
 COL_TP = "#3a8a83"  # teal
 COL_FN = "#c47a3d"  # amber
 COL_FP = "#a85060"  # rose
@@ -20,19 +19,17 @@ BG_FN = "#fbf3e9"
 BG_FP = "#f3e6e9"
 BG_TN = "#e7ecf3"
 
-# --- Bullet category colors --------------------------------------------------
 CAT_ANNOTATION = "#6f5fb0"  # purple
 CAT_BIOLOGY = "#3d6e3f"  # dark green
 CAT_MEASUREMENT = "#6c7a89"  # slate gray
 CAT_MEDIA = "#8a6d3a"  # brown
 CAT_REGULATION = "#9c8a35"  # olive yellow
 
-# --- Neutral text colors -----------------------------------------------------
 TXT_DARK = "#1f1f1f"
 TXT_BODY = "#333333"
 TXT_ITALIC = "#6f6f6f"
 
-# --- Font sizes (tuned for the composite Figure 4 slot) ---------------------
+# Font sizes tuned for the composite Figure 4 slot.
 FS_LETTER = 14
 FS_BOX_TITLE = 9
 FS_BOX_SUB = 6.5
@@ -229,7 +226,6 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     ax : plt.Axes
         Matplotlib axes object to plot on.
     """
-    # --- Layout dimensions -------------------------------------------------
     box_w = 5.8
     box_h = 4.55
     h_gap = 0.32
@@ -242,22 +238,19 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
 
     total_right = right_x + box_w
 
-    # --- Axis limits -------------------------------------------------------
-    # Keep the data range tight to the actual drawn content so matplotlib's
-    # auto aspect stretches the layout across the entire panel A slot.
+    # Keep the data range tight to the drawn content so matplotlib's auto
+    # aspect stretches the layout across the entire panel A slot.
     ax.set_xlim(-0.18, total_right + 0.08)
     ax.set_ylim(-0.18, 10.40)
     ax.set_aspect("auto")
     ax.margins(0, 0)
     ax.axis("off")
 
-    # --- Quadrant boxes ----------------------------------------------------
     _draw_box(ax, left_x, top_y, box_w, box_h, COL_TP, BG_TP)
     _draw_box(ax, right_x, top_y, box_w, box_h, COL_FN, BG_FN)
     _draw_box(ax, left_x, bottom_y, box_w, box_h, COL_FP, BG_FP)
     _draw_box(ax, right_x, bottom_y, box_w, box_h, COL_TN, BG_TN)
 
-    # --- Headers -----------------------------------------------------------
     _draw_header(ax, left_x, top_y, box_h, "a", "TRUE POSITIVE", "concordant", COL_TP)
     _draw_header(ax, right_x, top_y, box_h, "b", "FALSE NEGATIVE", "discordant", COL_FN)
     _draw_header(
@@ -267,7 +260,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         ax, right_x, bottom_y, box_h, "d", "TRUE NEGATIVE", "concordant", COL_TN
     )
 
-    # --- Box a content (TP - concordant) -----------------------------------
+    # Box a (true positive).
     bx, by = left_x, top_y
     cx = bx + 0.35
     sec_y = by + box_h - 1.35
@@ -280,7 +273,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     _draw_body_line(ax, cx, sec_y - 1.97, "gene-to-function mapping is supported.")
     _draw_corner_note(ax, bx, by, box_w, "High-quality training sample", COL_TP)
 
-    # --- Box b content (FN - discordant) -----------------------------------
+    # Box b (false negative).
     bx, by = right_x, top_y
     cx = bx + 0.35
     sec_y = by + box_h - 1.35
@@ -296,7 +289,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         _draw_bullet_row(ax, cx, sec_y - 0.42 - i * 0.36, cc, cat, desc)
     _draw_corner_note(ax, bx, by, box_w, "Growth via unknown mechanism", COL_FN)
 
-    # --- Box c content (FP - discordant) -----------------------------------
+    # Box c (false positive).
     bx, by = left_x, bottom_y
     cx = bx + 0.35
     sec_y = by + box_h - 1.35
@@ -312,7 +305,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         _draw_bullet_row(ax, cx, sec_y - 0.42 - i * 0.36, cc, cat, desc)
     _draw_corner_note(ax, bx, by, box_w, "Genes present but not functional", COL_FP)
 
-    # --- Box d content (TN - concordant) -----------------------------------
+    # Box d (true negative).
     bx, by = right_x, bottom_y
     cx = bx + 0.35
     sec_y = by + box_h - 1.35
@@ -326,13 +319,12 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     _draw_body_line(ax, cx, sec_y - 2.24, "genome content and phenotype.")
     _draw_corner_note(ax, bx, by, box_w, "High-quality training sample", COL_TN)
 
-    # --- Top axis: main title and column subtitles -------------------------
     title_y = 10.22
     subtitle_y = 9.78
 
     title_center = (left_x + total_right) / 2.0
-    # Single bold text with the parenthetical rendered as math-italic so the
-    # whole label is one continuous block centered on title_center.
+    # One text object with the parenthetical as math-italic, so the label
+    # centres as a single block on title_center.
     ax.text(
         title_center,
         title_y,
@@ -367,10 +359,8 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         va="center",
     )
 
-    # --- Left axis: row labels and outer label -----------------------------
-    # row_label_x is positioned so the gap from the row-label edge to the box
-    # edge mirrors the vertical gap between the top subtitle and the box top
-    # (both look like one comfortable line-height of breathing room).
+    # row_label_x sets a label-to-box gap that mirrors the vertical gap between
+    # the top subtitle and the box top.
     row_label_x = 0.25
     outer_label_x = -0.10
 
@@ -398,8 +388,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
     )
 
     overall_cy = (bottom_y + top_y + box_h) / 2.0
-    # Single bold rotated text with the parenthetical as math-italic so the
-    # whole rotated label reads as one continuous, centered phrase.
+    # One rotated text object with the parenthetical as math-italic.
     ax.text(
         outer_label_x,
         overall_cy,
@@ -414,8 +403,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
 
 
 if __name__ == "__main__":
-    # Match the per-panel size that the composite Figure 4 will render at,
-    # so the standalone preview reflects the same text density.
+    # Matches the per-panel size the composite Figure 4 renders at.
     fig, ax = plt.subplots(figsize=(6.75, 6.0))
     create_quadrant_plot(ax)
     plt.tight_layout()

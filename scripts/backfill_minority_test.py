@@ -8,13 +8,15 @@ the GapMind / experimental data) are left empty.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import pandas as pd
 
 from scripts.minority_filter import (
     annotate_minority_test as _add_minority_column,
+)
+from scripts.minority_filter import (
     concordant_minority_counts,
     discordant_minority_counts,
     full_test_minority_counts,
@@ -54,7 +56,7 @@ def backfill_csv(
             key_column=key_column,
         )
     else:
-        # multi-subset: counts_provider must return a dict[str, dict] keyed by subset
+        # counts_provider must return a dict[str, dict] keyed by subset.
         provider_dict = counts_provider()  # type: ignore[assignment]
         parts: list[pd.DataFrame] = []
         for subset, sub_df in df.groupby(multi_counts_column):
@@ -74,9 +76,7 @@ def backfill_csv(
 
     out.to_csv(path, sep=sep, index=False)
     n_with = out["n_minority_test"].notna().sum()
-    print(
-        f"  [ok]  {path}: {len(out)} rows, {n_with} with n_minority_test populated"
-    )
+    print(f"  [ok]  {path}: {len(out)} rows, {n_with} with n_minority_test populated")
 
 
 def main() -> None:
@@ -84,7 +84,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()
 
-    # Memoise — the minority-counts helpers each scan the entire phenotype tree.
+    # Memoised: the minority-counts helpers each scan the entire phenotype tree.
     _full = {"_cache": None}
     _conc = {"_cache": None}
     _disc = {"_cache": None}

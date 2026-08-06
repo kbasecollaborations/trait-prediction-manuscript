@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 """Per-genome predictions for the mechanism-free confidence filter (Figure 6C).
 
-The concordant arm of Figure 6C is testable per phenotype because
-``scripts/figure7/figure7_data.py`` emits per-genome predictions for it. The
-mechanism-free arm had no equivalent, so its bars could not carry a significance
-marker. This script produces the matching table.
-
 Only the training-set filter differs from the concordant arm: samples are kept
 when the soft label built from phylogenetic k-NN agreement and the experimental
-label alone (``w_gapmind = 0``) falls outside the ambiguous band. The model,
-random state, column alignment, early stopping and held-out test set are the
-concordant arm's, reused directly from ``figure7_data``, so the two series are
-compared on identical terms.
+label alone (``w_gapmind = 0``) falls outside the ambiguous band. Model, random
+state, column alignment, early stopping and held-out test set are reused from
+``scripts.figure7.figure7_data``, so the two series are compared on identical
+terms.
+
+Writes ``data/outputs/figure6/figure6c_mechfree_per_sample.tsv``.
 
 Run with ``uv run python -m scripts.figure6.figure6c_mechfree_per_sample``.
 """
@@ -66,9 +63,7 @@ def mechfree_retained_genomes() -> dict[str, set[str]]:
         If the mechanism-free configuration is absent from the sweep configs, or
         if it is not in fact mechanism-free.
     """
-    config = next(
-        (c for c in PHASE2_CONFIGS if c.name == MECHFREE_CONFIG_NAME), None
-    )
+    config = next((c for c in PHASE2_CONFIGS if c.name == MECHFREE_CONFIG_NAME), None)
     if config is None:
         raise ValueError(
             f"config {MECHFREE_CONFIG_NAME!r} not in PHASE2_CONFIGS; "

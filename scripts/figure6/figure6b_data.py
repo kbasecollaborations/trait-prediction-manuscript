@@ -55,7 +55,7 @@ def load_gapmind_data() -> pd.DataFrame:
 
     from scripts.io import index_format_func
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -123,7 +123,7 @@ def load_gapmind_confidence() -> dict[str, pd.Series]:
     # GapMind data here is categorical, not binary.
     from scripts.io import index_format_func
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -351,11 +351,9 @@ def filter_confident_samples(
     """
     Filter training and validation splits to keep only confident samples.
 
-    Confidence-based filtering is applied to train and val only; the test set
-    is left untouched so that all filtering strategies are evaluated on the
-    same full cross-dataset held-out test (see Methods).
-
-    Keeps samples where y_soft < threshold_low OR y_soft > threshold_high.
+    Keeps samples where y_soft < threshold_low or y_soft > threshold_high.
+    Filtering applies to train and val only; the test set is left untouched so
+    that all filtering strategies share the same held-out test (see Methods).
 
     Parameters
     ----------
@@ -409,7 +407,6 @@ def filter_confident_samples(
                 filtered_split[X_key] = X.loc[confident_inds]
                 filtered_split[y_key] = y.loc[confident_inds]
 
-            # Test set passes through unchanged.
             filtered_split["X_test"] = split["X_test"]
             filtered_split["y_test"] = split["y_test"]
 
@@ -525,9 +522,8 @@ def main() -> None:
     for split_type in split_data:
         print(f"  {split_type}: {len(split_data[split_type])} splits")
 
-    # Compute y_soft, or reuse a cached copy when it post-dates the experimental
-    # labels it derives from. Existence alone is not a safe test: y_soft is a
-    # weighted function of those labels, so a label correction must invalidate it.
+    # Reuse the cached y_soft only when it post-dates the experimental labels it
+    # is derived from; a label correction must invalidate it.
     import pickle
 
     from scripts.io import cache_is_fresh

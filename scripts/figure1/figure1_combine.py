@@ -12,7 +12,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 PANELS = tuple(ROOT / "figures" / f"figure1{panel}.pdf" for panel in "abc")
 OUTPUT = ROOT / "figures" / "figure1.pdf"

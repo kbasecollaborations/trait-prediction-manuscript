@@ -6,21 +6,21 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 
-from scripts.visualization import (
-    configure_plot_style,
-    format_dataset_names,
-    get_dataset_colors,
-)
 from scripts.figure4.style import (
     AXIS_LABEL_SIZE,
     LEGEND_FONT_SIZE,
     TICK_LABEL_SIZE,
 )
+from scripts.visualization import (
+    configure_plot_style,
+    format_dataset_names,
+)
 
 plt.style.use(["science", "nature"])
 configure_plot_style()
+
 
 def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
     """Load GapMind predictions.
@@ -46,7 +46,7 @@ def load_gapmind_predictions(phenotype_dict: dict[str, str]) -> pd.DataFrame:
     else:
         marine_ids_map = {}
 
-    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict.keys()]
+    gapmind_phenotype_subset = [f"Carbon__{p}" for p in phenotype_dict]
     datasets = ["s__at-leaf-lit-pmi", "s__marine-seqs"]
     gapmind_data_list = [
         pd.read_csv(f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv")
@@ -271,8 +271,7 @@ def create_confusion_matrix_plots(
         "cellobiose": "Cellobiose",
     }
 
-    # Colorblind-friendly colors (Wong palette) - semantic mapping
-    # Cool colors for correct predictions, warm colors for incorrect
+    # Wong palette: cool colors for correct calls, warm for incorrect.
     colors = {
         "TP": "#0072B2",  # Blue (correct)
         "TN": "#009E73",  # Teal (correct)
@@ -342,7 +341,7 @@ def create_confusion_matrix_plots(
 
     datasets = dataset_combined.index.tolist()
     x = np.arange(len(datasets))
-    width = 0.35  # Narrower bars for bottom subplot
+    width = 0.35
 
     tp_vals = dataset_combined["TP"].values
     tn_vals = dataset_combined["TN"].values
@@ -384,7 +383,7 @@ def create_figure4b(output_file: Path) -> None:
     output_file : Path
         Path to save the output figure.
     """
-    import matplotlib.gridspec as gridspec
+    from matplotlib import gridspec
 
     fig = plt.figure(figsize=(12, 8.5))
     gs = gridspec.GridSpec(2, 1, figure=fig, height_ratios=[1.45, 1], hspace=0.45)

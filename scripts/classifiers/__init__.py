@@ -1,11 +1,5 @@
-"""
-Baseline classifier utilities.
+"""Re-export the baseline classifiers implemented in ``trait_prediction.classifiers``."""
 
-This module provides backward-compatible access to baseline classifiers from
-trait_prediction. The actual implementations are in trait_prediction.classifiers.
-"""
-
-# Re-export classifiers from trait_prediction for backward compatibility
 from trait_prediction.classifiers import (
     BernoulliClassifier,
     Classifier,
@@ -14,8 +8,8 @@ from trait_prediction.classifiers import (
 )
 
 __all__ = [
-    "Classifier",
     "BernoulliClassifier",
+    "Classifier",
     "IdentityClassifier",
     "NearestNeighborClassifier",
 ]

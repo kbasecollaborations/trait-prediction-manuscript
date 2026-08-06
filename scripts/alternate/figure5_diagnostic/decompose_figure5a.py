@@ -6,8 +6,8 @@ GapMind-feature rescue. All numbers respect the minority-class filter.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 
@@ -24,7 +24,9 @@ KOFAM_CSV: Path = REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_resul
 GAPMIND_RAW_CSV: Path = (
     REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_results_gapmind_raw.csv"
 )
-GAPMIND_CSV: Path = REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_results_gapmind.csv"
+GAPMIND_CSV: Path = (
+    REPO_ROOT / "data/outputs/figure5/figure5a_concordant_ml_results_gapmind.csv"
+)
 GAPMIND_PRED_TSV: Path = REPO_ROOT / "data/outputs/figure2/gapmind_phenotypes_loose.tsv"
 PHENOTYPE_DIR: Path = REPO_ROOT / "data/processed/phenotypes"
 
@@ -136,15 +138,19 @@ def majority_collapse(row: pd.Series) -> bool:
     sens = float(row["sensitivity"])
     spec = float(row["specificity"])
     high_sens_low_spec = (
-        sens > MAJORITY_COLLAPSE_SENS_THRESHOLD and spec < MAJORITY_COLLAPSE_SPEC_THRESHOLD
+        sens > MAJORITY_COLLAPSE_SENS_THRESHOLD
+        and spec < MAJORITY_COLLAPSE_SPEC_THRESHOLD
     )
     high_spec_low_sens = (
-        spec > MAJORITY_COLLAPSE_SENS_THRESHOLD and sens < MAJORITY_COLLAPSE_SPEC_THRESHOLD
+        spec > MAJORITY_COLLAPSE_SENS_THRESHOLD
+        and sens < MAJORITY_COLLAPSE_SPEC_THRESHOLD
     )
     return bool(high_sens_low_spec or high_spec_low_sens)
 
 
-def load_and_filter(csv_path: Path, minority: dict[tuple[str, str], int]) -> pd.DataFrame:
+def load_and_filter(
+    csv_path: Path, minority: dict[tuple[str, str], int]
+) -> pd.DataFrame:
     """Load a Figure 5A result CSV and apply the minority-test filter.
 
     Parameters
@@ -185,7 +191,9 @@ def summarize_phenotype(
         )
 
         collapsed = (
-            cross.apply(majority_collapse, axis=1) if len(cross) else pd.Series(dtype=bool)
+            cross.apply(majority_collapse, axis=1)
+            if len(cross)
+            else pd.Series(dtype=bool)
         )
         collapse_frac = float(collapsed.mean()) if len(collapsed) else float("nan")
 
@@ -200,13 +208,19 @@ def summarize_phenotype(
                 "n_concordant": n_concordant,
                 "pooled_pos_frac": pooled_pos,
                 "mean_BA_random_KOFAM": (
-                    float(random["balanced_accuracy"].mean()) if len(random) else float("nan")
+                    float(random["balanced_accuracy"].mean())
+                    if len(random)
+                    else float("nan")
                 ),
                 "mean_BA_dataset_KOFAM": (
-                    float(cross["balanced_accuracy"].mean()) if len(cross) else float("nan")
+                    float(cross["balanced_accuracy"].mean())
+                    if len(cross)
+                    else float("nan")
                 ),
                 "mean_BA_phylo_KOFAM": (
-                    float(phylo["balanced_accuracy"].mean()) if len(phylo) else float("nan")
+                    float(phylo["balanced_accuracy"].mean())
+                    if len(phylo)
+                    else float("nan")
                 ),
                 "mean_BA_dataset_GapMind": (
                     float(gapmind_cross["balanced_accuracy"].mean())
@@ -225,19 +239,23 @@ def summarize_phenotype(
                     if len(gapmind_cross) and len(cross)
                     else float("nan")
                 ),
-                "n_dataset_folds": int(len(cross)),
+                "n_dataset_folds": len(cross),
                 "n_collapsed_folds": int(collapsed.sum()) if len(collapsed) else 0,
                 "majority_collapse_frac": collapse_frac,
                 "mean_abs_balance_shift": (
                     float(
-                        balance.loc[balance["phenotype"] == phenotype, "abs_balance_shift"].mean()
+                        balance.loc[
+                            balance["phenotype"] == phenotype, "abs_balance_shift"
+                        ].mean()
                     )
                     if not balance.empty
                     else float("nan")
                 ),
             }
         )
-    return pd.DataFrame(rows).sort_values("mean_BA_dataset_KOFAM").reset_index(drop=True)
+    return (
+        pd.DataFrame(rows).sort_values("mean_BA_dataset_KOFAM").reset_index(drop=True)
+    )
 
 
 def per_fold_detail(
@@ -249,25 +267,29 @@ def per_fold_detail(
     cross["test_dataset"] = cross["key"].apply(extract_test_dataset)
     cross["majority_collapse"] = cross.apply(majority_collapse, axis=1)
     merged = cross.merge(balance, on=["phenotype", "test_dataset"], how="left")
-    return merged[
-        [
-            "phenotype",
-            "test_dataset",
-            "balanced_accuracy",
-            "sensitivity",
-            "specificity",
-            "majority_collapse",
-            "train_pos_frac",
-            "test_pos_frac",
-            "abs_balance_shift",
-            "train_majority",
-            "test_majority",
-            "train_test_majority_match",
-            "n_train",
-            "n_test",
-            "n_minority_test",
+    return (
+        merged[
+            [
+                "phenotype",
+                "test_dataset",
+                "balanced_accuracy",
+                "sensitivity",
+                "specificity",
+                "majority_collapse",
+                "train_pos_frac",
+                "test_pos_frac",
+                "abs_balance_shift",
+                "train_majority",
+                "test_majority",
+                "train_test_majority_match",
+                "n_train",
+                "n_test",
+                "n_minority_test",
+            ]
         ]
-    ].sort_values(["phenotype", "test_dataset"]).reset_index(drop=True)
+        .sort_values(["phenotype", "test_dataset"])
+        .reset_index(drop=True)
+    )
 
 
 def main() -> None:
@@ -281,7 +303,9 @@ def main() -> None:
     gapmind_features = load_and_filter(GAPMIND_RAW_CSV, minority)
 
     phenotypes = sorted(kofam["phenotype"].unique())
-    balance = pd.concat([per_fold_class_balance(p) for p in phenotypes], ignore_index=True)
+    balance = pd.concat(
+        [per_fold_class_balance(p) for p in phenotypes], ignore_index=True
+    )
 
     out_dir = REPO_ROOT / "data/outputs/figure5_diagnostic"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -297,8 +321,10 @@ def main() -> None:
     pd.set_option("display.max_columns", None)
     pd.set_option("display.width", 200)
 
-    print(f"\nMinority-test threshold applied: MIN_MINORITY_TEST_SAMPLES = {MIN_MINORITY_TEST_SAMPLES}")
-    print(f"Per-phenotype summary (sorted by dataset-split KOFAM BA):\n")
+    print(
+        f"\nMinority-test threshold applied: MIN_MINORITY_TEST_SAMPLES = {MIN_MINORITY_TEST_SAMPLES}"
+    )
+    print("Per-phenotype summary (sorted by dataset-split KOFAM BA):\n")
     print(summary.to_string(index=False))
 
     print("\n\nPer-fold detail (dataset_split rows passing minority filter):\n")

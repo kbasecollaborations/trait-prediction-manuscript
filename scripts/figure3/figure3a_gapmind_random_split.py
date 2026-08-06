@@ -21,23 +21,20 @@ from tqdm import tqdm
 from scripts.ml_splits import load_split_data
 
 
-def calculate_metrics(
-    y_true: pd.Series, y_pred: pd.Series
-) -> dict[str, float]:
-    """
-    Calculate classification metrics for GapMind predictions.
+def calculate_metrics(y_true: pd.Series, y_pred: pd.Series) -> dict[str, float]:
+    """Calculate classification metrics for GapMind predictions.
 
     Parameters
     ----------
     y_true : pd.Series
-        True labels (experimental data)
+        Experimental labels.
     y_pred : pd.Series
-        Predicted labels (GapMind predictions)
+        GapMind predictions.
 
     Returns
     -------
     dict[str, float]
-        Dictionary of metric names and their values
+        Metric names mapped to values.
     """
     # Drop genomes with missing experimental labels
     mask = ~y_true.isna()
@@ -61,9 +58,7 @@ def calculate_metrics(
         mcc = matthews_corrcoef(y_true_filtered, y_pred_filtered)
 
         # zero_division=0 guards against splits with no positive predictions
-        precision = precision_score(
-            y_true_filtered, y_pred_filtered, zero_division=0.0
-        )
+        precision = precision_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
         recall = recall_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
         f1 = f1_score(y_true_filtered, y_pred_filtered, zero_division=0.0)
 
@@ -90,18 +85,17 @@ def calculate_metrics(
 
 
 def extract_phenotype_and_repeat(key: str) -> tuple[str, str]:
-    """
-    Extract phenotype name and repeat number from random split key.
+    """Extract phenotype name and repeat number from a random-split key.
 
     Parameters
     ----------
     key : str
-        Key string like "Mannose_0" or "Alanine_4"
+        Key string such as ``"Mannose_0"`` or ``"Alanine_4"``.
 
     Returns
     -------
     tuple[str, str]
-        Tuple of (phenotype_name, repeat_number)
+        ``(phenotype_name, repeat_number)``.
     """
     # Phenotype name may itself contain underscores, so split on the last one
     parts = key.rsplit("_", 1)
@@ -118,12 +112,13 @@ def main() -> None:
     OUTPUT_DIR = Path("data/outputs/figure3")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Use the loose-threshold GapMind predictions
     print(f"Loading GapMind predictions from: {GAPMIND_FILE}")
     gapmind_predictions = pd.read_csv(
         GAPMIND_FILE, sep="\t", index_col=0, dtype={"genomeID": str}
     )
-    print(f"  Loaded {gapmind_predictions.shape[0]} genomes, {gapmind_predictions.shape[1]} phenotypes")
+    print(
+        f"  Loaded {gapmind_predictions.shape[0]} genomes, {gapmind_predictions.shape[1]} phenotypes"
+    )
 
     print("\nLoading random split configurations...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=["random_split"])
@@ -143,7 +138,9 @@ def main() -> None:
         phenotype, repeat = extract_phenotype_and_repeat(key)
 
         if phenotype not in gapmind_predictions.columns:
-            print(f"\nWarning: Phenotype {phenotype} not found in GapMind predictions, skipping {key}")
+            print(
+                f"\nWarning: Phenotype {phenotype} not found in GapMind predictions, skipping {key}"
+            )
             continue
 
         common_genomes = list(set(test_genomes) & set(gapmind_predictions.index))
@@ -173,8 +170,15 @@ def main() -> None:
 
     print("\nResults summary:")
     print(f"  Total random split configurations: {len(results_df)}")
-    print(f"\nMean metrics across all random splits:")
-    for metric in ["accuracy", "balanced_accuracy", "matthews_corrcoef", "precision", "recall", "f1"]:
+    print("\nMean metrics across all random splits:")
+    for metric in [
+        "accuracy",
+        "balanced_accuracy",
+        "matthews_corrcoef",
+        "precision",
+        "recall",
+        "f1",
+    ]:
         mean_val = results_df[metric].mean()
         print(f"    {metric}: {mean_val:.3f}")
 

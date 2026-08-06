@@ -104,9 +104,7 @@ def plot_concordance_grid(
     per_dataset_max: dict[str, int] = {}
     for dataset in datasets:
         sub = df[df["dataset"] == dataset]
-        per_dataset_max[dataset] = int(
-            sub[list(CATEGORY_ORDER)].sum(axis=1).max() or 1
-        )
+        per_dataset_max[dataset] = int(sub[list(CATEGORY_ORDER)].sum(axis=1).max() or 1)
 
     for i, phenotype in enumerate(phenotypes):
         for j, dataset in enumerate(datasets):
@@ -152,7 +150,6 @@ def plot_concordance_grid(
             for spine in ("top", "right", "left"):
                 ax.spines[spine].set_visible(False)
 
-            # Column headers on top row.
             if i == 0:
                 ax.set_title(
                     dataset_titles[j],
@@ -160,7 +157,6 @@ def plot_concordance_grid(
                     fontweight="bold",
                     pad=6,
                 )
-            # Row labels (phenotype) on left column.
             if j == 0:
                 ax.set_ylabel(
                     phenotype,
@@ -170,11 +166,9 @@ def plot_concordance_grid(
                     fontsize=9,
                     labelpad=8,
                 )
-            # x-axis ticks only on bottom row to reduce clutter.
             if i != n_rows - 1:
                 ax.set_xticklabels([])
 
-    # Shared legend below the grid.
     legend_handles = [
         Patch(
             facecolor=CATEGORY_COLORS[cat],

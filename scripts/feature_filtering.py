@@ -8,7 +8,6 @@ from pathlib import Path
 import pandas as pd
 from trait_prediction.main import Feature
 
-# Constants
 VARIANCE_THRESHOLD = 0.01
 CORRELATION_THRESHOLD = 0.95
 FEATURE_DIR = Path("data/interim/features")
@@ -162,7 +161,7 @@ def save_individual_dataset_features(
 
 
 def main() -> None:
-    """Main function to filter features and create combined datasets."""
+    """Filter each feature type and write combined and per-dataset matrices."""
     print("=" * 80)
     print("Feature Filtering Pipeline")
     print("=" * 80)

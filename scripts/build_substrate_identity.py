@@ -1,20 +1,10 @@
 """Build the authoritative substrate identity table for all four phenotype datasets.
 
-Background
-----------
-Carbon-source names were originally harmonised by chained ``str.removeprefix`` calls
-that stripped leading stereochemical descriptors (``D-``, ``L-``, ``a-``, ``g-``,
-``D,L-``, and ``b-`` for the literature dataset only). Where stripping produced two
-identical output names, the writer overwrote the earlier file with the later one, so
-the surviving isomer was decided by source column order rather than by chemistry. In
-nine cases that selected the biologically wrong molecule, most severely Populus
-``Glucose``, which was bound to L-glucose (0/58, a non-metabolisable enantiomer)
-rather than to alpha-D-glucose (58/58).
-
-This module replaces that implicit rule with an explicit table. Every published
-phenotype column is mapped to exactly one raw source column, with the molecule and,
-where known, the Biolog plate well recorded alongside it. ``CORRECTIONS`` lists every
-binding that differs from the original pipeline.
+Every published phenotype column is mapped to exactly one raw source column, with the
+molecule and, where known, the Biolog plate well recorded alongside it. ``CORRECTIONS``
+lists every binding that differs from the original pipeline, which stripped leading
+stereochemical descriptors and resolved the resulting name collisions by source column
+order rather than by chemistry.
 
 Outputs
 -------
@@ -73,7 +63,7 @@ COMMON_PHENOTYPES: Final[list[str]] = [
 #: published file where the generic name cannot denote a single molecule. Every entry
 #: differs from the original pipeline's choice.
 CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
-    # --- Populus: nine columns bound to the wrong molecule by last-wins ------------
+    # Populus: columns bound to the wrong molecule by last-wins.
     ("pmi", "Glucose"): {
         "source": "a-D-Glucose",
         "reason": "L-glucose (PM2A C2, 0/58) is not catabolised by these taxa; "
@@ -110,7 +100,7 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
         "assayed; the anomers do not interconvert (locked methyl acetal) and use different "
         "uptake systems, so the alpha- well (PM2A C6, 4/58) is a separate trait.",
     },
-    # --- Populus: constitutional isomers that no generic name can denote ------------
+    # Populus: constitutional isomers that no generic name can denote.
     ("pmi", "Hydroxy-Butyric-Acid"): {
         "source": "g-Hydroxy Butyric Acid",
         "rename_to": "g-Hydroxy-Butyric-Acid",
@@ -125,12 +115,10 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
         "different formulae. Binding is unchanged (gamma) but the generic name collided with "
         "the alpha- well while b-Cyclodextrin.tsv was left separate.",
     },
-    # --- Populus: an ORNL transcription error mislabelled PM1 D8 -------------------
-    # The workbook names PM1 D8 'b-Methyl-D-Galactoside', but every authoritative plate
-    # map (Biolog Cat. #12111, unchanged 2005-2023; the opm R package; DuctApe with CAS
-    # 3396-99-4 = PubChem CID 76935 'methyl alpha-D-galactopyranoside') gives that well as
-    # the alpha anomer. The beta anomer is PM2A C7 (CAS 1824-94-8, CID 94214). PM1 and PM2A
-    # share no carbon source, so the two columns were never a duplicate measurement.
+    # Populus: the workbook names PM1 D8 'b-Methyl-D-Galactoside', but Biolog Cat. #12111,
+    # the opm R package and DuctApe (CAS 3396-99-4 = PubChem CID 76935) all give that well
+    # as the alpha anomer; the beta anomer is PM2A C7 (CAS 1824-94-8, CID 94214). PM1 and
+    # PM2A share no carbon source, so the two columns are not a duplicate measurement.
     ("pmi", "b-Methyl-D-Galactoside"): {
         "source": "b-Methyl-D-Galactoside",
         "rename_to": "a-Methyl-D-Galactoside",
@@ -144,7 +132,7 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
         "substrate). The '.1' suffix was a pandas duplicate-column artefact baked into the "
         "legacy name map.",
     },
-    # --- Literature: two columns bound to the wrong molecule -----------------------
+    # Literature: columns bound to the wrong molecule.
     ("lit", "Malic-Acid"): {
         "source": "Carbon-L-Malic-Acid",
         "reason": "L-malate (226/270) is the TCA intermediate and is what Populus retained; "
@@ -160,7 +148,7 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
         "rename_to": "g-Hydroxy-Butyric-Acid",
         "reason": "Constitutional isomers, as for Populus. Binding unchanged (gamma).",
     },
-    # --- Literature: N-Acetyl- was stripped, changing the compound ------------------
+    # Literature: N-Acetyl- was stripped, changing the compound.
     ("lit", "Glucosamine"): {
         "source": "Carbon-N-Acetyl-D-Glucosamine",
         "rename_to": "N-Acetyl-D-Glucosamine",
@@ -178,12 +166,9 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
         "rename_to": "N-Acetyl-Neuraminic-Acid",
         "reason": "As above: the column held N-acetylneuraminic acid (sialic acid).",
     },
-    # --- Marine: a hardcoded rename bound the monomer name to a polysaccharide ------
-    # The original notebook hardcoded 'Galacturonate-lmw' -> 'Galacturonic-Acid', so the
-    # shared phenotype name held the pectin polysaccharide while the monomer was written
-    # to Galacturonate.tsv, which no script reads. ``marine_published_name`` no longer
-    # applies that rename, so the polysaccharide now keeps its own name and the monomer
-    # takes the shared one.
+    # Marine: the original notebook hardcoded 'Galacturonate-lmw' -> 'Galacturonic-Acid',
+    # binding the shared name to the pectin polysaccharide. ``marine_published_name`` no
+    # longer applies that rename, so the monomer takes the shared name instead.
     ("marine", "Galacturonate"): {
         "source": "galacturonate",
         "rename_to": "Galacturonic-Acid",
@@ -249,11 +234,11 @@ BIOLOG_WELLS: Final[dict[str, str]] = {
 #: Molecule names for substrates whose raw name is not already unambiguous.
 #:
 #: ATLeaf entries are quoted from Table S1 of Schaefer, Pacheco et al. 2023
-#: (doi:10.1126/science.adf5121), obtained from the ETH Research Collection. The handoff
-#: matrix is that paper's Table S2 verbatim: 8,765 non-null cells compared, 0 mismatches.
-#: Three of our column names are corruptions of the authors' own spellings (Gluconate ->
-#: Glucote, Succinate -> Succite, Bensoate -> Beoate); the filenames are left as they are
-#: to avoid churn, and the true compound is recorded here.
+#: (doi:10.1126/science.adf5121, ETH Research Collection); the handoff matrix is that
+#: paper's Table S2 verbatim (8,765 non-null cells compared, 0 mismatches). Three column
+#: names are corruptions of the authors' own spellings (Gluconate -> Glucote, Succinate
+#: -> Succite, Bensoate -> Beoate); the filenames are left as they are and the true
+#: compound is recorded here.
 #:
 #: Marine entries are the 'present as' column of Gralka et al. 2023 SI Table 2.
 ATLEAF_MOLECULES: Final[dict[str, str]] = {
@@ -310,10 +295,9 @@ MARINE_MOLECULES: Final[dict[str, str]] = {
 def read_header(path: Path) -> list[str]:
     """Return the phenotype column names of a raw handoff TSV.
 
-    Read via pandas rather than :mod:`csv` so that duplicate headers are de-duplicated
-    identically to :func:`scripts.harmonize_phenotypes.read_raw`. The Populus matrix
-    genuinely contains ``b-Methyl-D-Galactoside`` twice, once per plate, and the two
-    wells must stay distinguishable.
+    Read via pandas rather than :mod:`csv` so duplicate headers are de-duplicated
+    identically to :func:`scripts.harmonize_phenotypes.read_raw`; the Populus matrix
+    contains ``b-Methyl-D-Galactoside`` twice, once per plate.
 
     Parameters
     ----------
@@ -368,14 +352,18 @@ def biolog_well(source: str) -> str:
         Plate and well, for example ``PM1 C9``, or an empty string if not catalogued.
     """
     bare = source.removeprefix("Carbon-")
-    return BIOLOG_WELLS.get(source) or BIOLOG_WELLS.get(bare) or BIOLOG_WELLS.get(bare.replace("-", " "), "")
+    return (
+        BIOLOG_WELLS.get(source)
+        or BIOLOG_WELLS.get(bare)
+        or BIOLOG_WELLS.get(bare.replace("-", " "), "")
+    )
 
 
 def marine_published_name(source: str) -> str:
     """Return the published column name for a Marine source column.
 
-    Reproduces the original rule ``name.replace(" ", "-").capitalize()`` plus the two
-    hardcoded special cases, one of which (``Galacturonate-lmw``) is corrected here.
+    Applies ``name.replace(" ", "-").capitalize()``, mapping ``Inositol`` to
+    ``m-Inositol``. The original ``Galacturonate-lmw`` rename is not applied.
 
     Parameters
     ----------
@@ -428,7 +416,9 @@ def build() -> pd.DataFrame:
             # Original rule: the last source column wins.
             original_source = members[-1]
             source = correction.get("source", original_source)
-            assert source in source_columns, f"{dataset}: unknown source column {source!r}"
+            assert source in source_columns, (
+                f"{dataset}: unknown source column {source!r}"
+            )
             final_name = correction.get("rename_to", published)
             molecule = source
             if dataset == "atleaf":
@@ -442,7 +432,9 @@ def build() -> pd.DataFrame:
                     "legacy_phenotype": published,
                     "source_column": source,
                     "molecule": molecule,
-                    "biolog_well": biolog_well(source) if dataset in ("lit", "pmi") else "",
+                    "biolog_well": biolog_well(source)
+                    if dataset in ("lit", "pmi")
+                    else "",
                     "collapsed_group": "; ".join(members) if len(members) > 1 else "",
                     "discarded": "; ".join(m for m in members if m != source),
                     "corrected": bool(correction),
@@ -468,14 +460,29 @@ def main() -> None:
 
     common = table[table.in_common15].copy()
     common = common[
-        ["phenotype", "dataset", "molecule", "source_column", "biolog_well", "collapsed_group", "discarded", "corrected"]
+        [
+            "phenotype",
+            "dataset",
+            "molecule",
+            "source_column",
+            "biolog_well",
+            "collapsed_group",
+            "discarded",
+            "corrected",
+        ]
     ].sort_values(["phenotype", "dataset"], ignore_index=True)
     common.to_csv(COMMON15_OUT, index=False)
 
-    print(f"{FULL_OUT}: {len(table)} rows, {int(table.corrected.sum())} corrected bindings")
-    print(f"{COMMON15_OUT}: {len(common)} rows ({common.phenotype.nunique()} phenotypes x 4 datasets)")
+    print(
+        f"{FULL_OUT}: {len(table)} rows, {int(table.corrected.sum())} corrected bindings"
+    )
+    print(
+        f"{COMMON15_OUT}: {len(common)} rows ({common.phenotype.nunique()} phenotypes x 4 datasets)"
+    )
     for dataset, group in table.groupby("dataset"):
-        print(f"  {dataset}: {len(group)} published phenotypes, {int(group.corrected.sum())} corrected")
+        print(
+            f"  {dataset}: {len(group)} published phenotypes, {int(group.corrected.sum())} corrected"
+        )
 
 
 if __name__ == "__main__":

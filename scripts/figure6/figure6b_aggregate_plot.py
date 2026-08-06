@@ -101,21 +101,15 @@ def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
     ].copy()
     conc = filter_by_minority(conc, full_minority)
     conc = conc[conc["phenotype"].isin(phenotype_set)]
-    rows.append(
-        conc[cols].assign(config="concordant")
-    )
+    rows.append(conc[cols].assign(config="concordant"))
 
     prob_all = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     prob_all = filter_by_minority(prob_all, full_minority, key_column="split")
     prob_all = prob_all[prob_all["phenotype"].isin(phenotype_set)]
     prob = prob_all[prob_all["condition"] == "filtered"]
-    rows.append(
-        prob[cols].assign(config="problematic_removed")
-    )
+    rows.append(prob[cols].assign(config="problematic_removed"))
     full_data = prob_all[prob_all["condition"] == "full"]
-    rows.append(
-        full_data[cols].assign(config="full_data")
-    )
+    rows.append(full_data[cols].assign(config="full_data"))
 
     return pd.concat(rows, ignore_index=True)
 
@@ -134,9 +128,7 @@ def _gapmind_baseline(phenotypes: list[str]) -> pd.DataFrame:
         Minority-filtered per-row metrics.
     """
     full_minority = full_test_minority_counts()
-    gm = pd.read_csv(
-        "data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t"
-    )
+    gm = pd.read_csv("data/outputs/figure3/gapmind_dataset_split_metrics.tsv", sep="\t")
     test_col = "test_dataset" if "test_dataset" in gm.columns else None
     gm = filter_by_minority(gm, full_minority, test_dataset_column=test_col)
     return gm[gm["phenotype"].isin(set(phenotypes))]
@@ -175,7 +167,7 @@ def plot_metric_sweep(
     )
 
     # Equal categorical spacing for all seven columns; the x-tick labels carry
-    # the literal w_gap values so spacing stays uniform across the filter family.
+    # the literal w_gap values.
     column_order = [
         "full_data",
         "problematic_removed",
@@ -210,8 +202,8 @@ def plot_metric_sweep(
                 zorder=2,
             )
 
-    # Rule-based reference: mean GapMind balanced accuracy over the same
-    # minority-filtered phenotypes quoted in the Results text.
+    # Mean GapMind balanced accuracy over the same minority-filtered phenotypes
+    # quoted in the Results text.
     gm = _gapmind_baseline(phenotypes)
     ax.axhline(
         float(gm.groupby("phenotype")["balanced_accuracy"].mean().mean()),
@@ -270,10 +262,20 @@ def plot_metric_sweep(
     sweep_start = config_to_x[CONFIDENCE_CONFIGS[0]]
     sweep_end = config_to_x[CONFIDENCE_CONFIGS[-1]]
     ref_conc_x = config_to_x["concordant"]
-    ax.axvline((ref_prob_x + sweep_start) / 2.0,
-               color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
-    ax.axvline((sweep_end + ref_conc_x) / 2.0,
-               color="grey", linestyle=":", linewidth=0.6, alpha=0.5)
+    ax.axvline(
+        (ref_prob_x + sweep_start) / 2.0,
+        color="grey",
+        linestyle=":",
+        linewidth=0.6,
+        alpha=0.5,
+    )
+    ax.axvline(
+        (sweep_end + ref_conc_x) / 2.0,
+        color="grey",
+        linestyle=":",
+        linewidth=0.6,
+        alpha=0.5,
+    )
 
     config_n: dict[str, int] = {
         cfg: int(round(float(long_df[long_df["config"] == cfg]["trainval"].mean())))
@@ -290,8 +292,7 @@ def plot_metric_sweep(
         "Concordant",
     ]
     xticklabels = [
-        f"{label}\n$n$={config_n[cfg]}"
-        for label, cfg in zip(base_labels, column_order)
+        f"{label}\n$n$={config_n[cfg]}" for label, cfg in zip(base_labels, column_order)
     ]
     ax.set_xlabel("Training-data filter")
     ax.set_ylabel("Metric value across 15 phenotypes")
@@ -390,25 +391,17 @@ def plot_gapmind_delta_forest(
     pd.DataFrame
         Per-phenotype delta values for both filters.
     """
-    # (phenotype-level Wilcoxon tests live in scripts/stats/manuscript_pvalues.py)
-
     long_df = _load_long_form(data_dir, phenotypes)
     long_df = long_df.assign(trainval=long_df["n_train"] + long_df["n_val"])
     gm = _gapmind_baseline(phenotypes)
     gm_means = gm.groupby("phenotype")[metric].mean()
 
-    ml_means = (
-        long_df.groupby(["phenotype", "config"])[metric]
-        .mean()
-        .unstack("config")
-    )
+    ml_means = long_df.groupby(["phenotype", "config"])[metric].mean().unstack("config")
 
-    # Plot the quantity that is actually tested. The per-phenotype McNemar test
-    # pools genomes, whereas averaging the per-split values weights a 33-genome
-    # split like a 235-genome one; the two can disagree in sign and in ordering,
-    # which made the significance markers look unrelated to bar length. Reading
-    # the deltas from the McNemar tables keeps bars, markers and counts on one
-    # quantity. Falls back to the per-split means if those tables are absent.
+    # Bars carry the pooled per-genome McNemar deltas, the quantity the markers
+    # are tested on; averaging the per-split values instead would weight a
+    # 33-genome split like a 235-genome one. Falls back to the per-split means
+    # when the McNemar tables are absent.
     pooled = _pooled_sensitivity_deltas()
     if pooled is not None and metric == "recall":
         delta_df = pooled.sort_values("concordant")
@@ -425,8 +418,12 @@ def plot_gapmind_delta_forest(
         ).sort_values("concordant")
         pooled_source = False
 
-    n_conc = int(round(float(long_df[long_df["config"] == "concordant"]["trainval"].mean())))
-    n_mech = int(round(float(long_df[long_df["config"] == "free_balanced"]["trainval"].mean())))
+    n_conc = int(
+        round(float(long_df[long_df["config"] == "concordant"]["trainval"].mean()))
+    )
+    n_mech = int(
+        round(float(long_df[long_df["config"] == "free_balanced"]["trainval"].mean()))
+    )
 
     y_positions = np.arange(len(delta_df))
     bar_height = 0.38
@@ -467,9 +464,8 @@ def plot_gapmind_delta_forest(
     ax.set_xlim(-0.5, 0.5)
     ax.grid(axis="x", alpha=0.18, linewidth=0.5)
 
-    # Per-phenotype significance markers for BOTH arms. Now that the bars are
-    # the pooled per-genome deltas, a marker sits on the bar whose test produced
-    # it, and marker presence tracks bar length instead of contradicting it.
+    # Per-phenotype significance markers, each drawn on the bar whose test
+    # produced it.
     n_sig_better = n_sig_worse = None
     n_sig_better_mech = n_sig_worse_mech = None
     if pooled_source:
@@ -484,9 +480,8 @@ def plot_gapmind_delta_forest(
                     continue
                 value = delta_df.loc[phenotype, arm]
                 offset = 0.022 if value >= 0 else -0.022
-                # Marker, not a text asterisk: the "*" glyph's ink sits high in
-                # its text box, so va="center" centres the box and leaves the
-                # mark visibly above the bar. A marker centres on the data point.
+                # A marker rather than a "*" text glyph, whose ink sits high in
+                # its text box and so lands above the bar under va="center".
                 ax.plot(
                     value + offset,
                     y + offset_sign * bar_height / 2,
@@ -508,12 +503,10 @@ def plot_gapmind_delta_forest(
                     else:
                         n_sig_worse_mech += 1
 
-        # Mark the borders of the region containing no significant result, so
-        # significance can be read off the axis rather than hunted marker by
-        # marker. Drawn only when the significant and non-significant effects
-        # genuinely separate; the borders are descriptive of this data, not a
-        # critical value, because McNemar power also depends on n and on the
-        # discordant-pair counts.
+        # Borders of the region containing no significant result, drawn only
+        # when the significant and non-significant effects separate. They are
+        # descriptive of this data, not a critical value: McNemar power also
+        # depends on n and on the discordant-pair counts.
         magnitudes = pd.concat(
             [
                 delta_df[["concordant", "q_concordant"]].rename(
@@ -547,8 +540,8 @@ def plot_gapmind_delta_forest(
     n_pos_mech = int((delta_df["mech_free"] > 0).sum())
     n_total = len(delta_df)
 
-    # Single-purpose annotation: how many phenotypes each filter significantly
-    # beats GapMind on. The phenotype-level Wilcoxon tests remain in
+    # How many phenotypes each filter significantly beats GapMind on. The
+    # phenotype-level Wilcoxon tests live in
     # data/outputs/stats/manuscript_pvalues.tsv and are cited in the text.
     if n_sig_better is None:
         annotation = (
@@ -560,7 +553,7 @@ def plot_gapmind_delta_forest(
             f"  concordant {n_sig_better} better, {n_sig_worse} worse\n"
             f"  mech-free {n_sig_better_mech} better, {n_sig_worse_mech} worse"
         )
-    # Legend drawn here, after the band, so the band is included in it.
+    # Drawn after the band so the band is included in the legend.
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.12),
@@ -568,8 +561,8 @@ def plot_gapmind_delta_forest(
         frameon=False,
         fontsize=7,
     )
-    # Bottom-right: rows are sorted ascending, so the lowest rows carry the long
-    # negative bars and the positive half of those rows is clear.
+    # Bottom-right: rows sort ascending, so the positive half of the lowest
+    # rows is clear.
     ax.text(
         0.98,
         0.03,

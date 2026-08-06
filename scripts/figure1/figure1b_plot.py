@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 from matplotlib.patches import Rectangle
 
@@ -50,7 +50,6 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
 
         positions = x + i * bar_width
 
-        # Positive counts form the bottom of each stacked bar
         positive = df_dataset["positive_count"].values
         ax.bar(
             positions,
@@ -61,7 +60,6 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
             alpha=0.8,
         )
 
-        # Negative counts stack on top of the positive counts
         negative = df_dataset["negative_count"].values
         ax.bar(
             positions,
@@ -75,7 +73,7 @@ def plot_data(df: pd.DataFrame, output_file: Path) -> None:
 
     ax.set_xlabel("Phenotype")
     ax.set_ylabel("Number of Genomes")
-    # Center x-tick labels in the middle of the group of bars
+    # Center the tick under each group of dataset bars.
     ax.set_xticks(x + bar_width * (len(datasets) - 1) / 2)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.tick_params(axis="x", which="both", top=False, bottom=True)

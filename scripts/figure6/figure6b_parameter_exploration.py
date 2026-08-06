@@ -27,6 +27,10 @@ def phylo_knn_confidence(
 ) -> pd.Series:
     """Mean experimental label of each genome's k nearest tree neighbours.
 
+    Bypasses ``NearestNeighborClassifier.fit`` because the installed
+    ``trait_prediction`` version recomputes distances from a newick file path
+    rather than reusing the already-loaded ``distance_df``.
+
     Parameters
     ----------
     y_exp : pd.Series
@@ -40,12 +44,6 @@ def phylo_knn_confidence(
     -------
     pd.Series
         Mean label of the k nearest neighbours, indexed like ``y_exp``.
-
-    Notes
-    -----
-    Bypasses ``NearestNeighborClassifier.fit`` because the installed
-    ``trait_prediction`` version recomputes distances from a newick file path
-    rather than reusing the already-loaded ``distance_df``.
     """
     common = y_exp.index.intersection(distance_df.index)
     y_train = y_exp.loc[common].astype(float)
@@ -58,6 +56,7 @@ def phylo_knn_confidence(
         conf.loc[genome_id] = float(y_train.loc[nearest].mean())
     return conf
 
+
 CONFIDENCE_THRESHOLD_LOW = 0.4
 CONFIDENCE_THRESHOLD_HIGH = 0.6
 
@@ -65,9 +64,9 @@ OUTPUT_DIR = Path("data/outputs/figure6")
 CACHE_FILE = OUTPUT_DIR / "phase1_inputs_cache.pkl"
 
 PHENOTYPE_DIR = Path("data/processed/phenotypes")
-"""Experimental labels the cached ``y_exp`` and phylogenetic k-NN confidence
-derive from. Tracked for cache freshness: a label correction must invalidate the
-cache, otherwise the sweep silently trains on superseded soft labels."""
+"""Experimental labels behind the cached ``y_exp`` and phylogenetic k-NN
+confidence. Tracked for cache freshness so a label correction invalidates the
+cache."""
 
 
 @dataclass(frozen=True)
@@ -115,9 +114,8 @@ CONFIGS: list[WeightConfig] = [
 def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
     """Compute ``conf_phylo``, ``conf_mech``, and ``y_exp`` once per phenotype.
 
-    The result is cached in ``CACHE_FILE``. Because the cache is derived from the
-    experimental labels, it is reused only when it post-dates
-    ``PHENOTYPE_DIR``; a stale cache is rebuilt rather than silently returned.
+    Cached in ``CACHE_FILE`` and reused only when it post-dates
+    ``PHENOTYPE_DIR``; a stale cache is rebuilt.
 
     Parameters
     ----------
@@ -158,9 +156,7 @@ def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
             print(f"Warning: {phenotype_name} not in GapMind binary, skipping")
             continue
 
-        conf_phylo = phylo_knn_confidence(
-            y_exp, distance_df, k=K_NEIGHBORS
-        )
+        conf_phylo = phylo_knn_confidence(y_exp, distance_df, k=K_NEIGHBORS)
         inputs[phenotype_name] = {
             "conf_phylo": conf_phylo,
             "conf_mech": conf_mech[phenotype_name],
@@ -204,8 +200,7 @@ def evaluate_config(
         gapmind_pred = parts["gapmind_pred"]
 
         common = (
-            conf_phylo.index
-            .intersection(conf_mech.index)
+            conf_phylo.index.intersection(conf_mech.index)
             .intersection(y_exp.index)
             .intersection(gapmind_pred.index)
         )
@@ -255,9 +250,7 @@ def evaluate_config(
                     else float("nan")
                 ),
                 "frac_concordant_in_kept": (
-                    len(kept_and_concordant) / n_kept
-                    if n_kept > 0
-                    else float("nan")
+                    len(kept_and_concordant) / n_kept if n_kept > 0 else float("nan")
                 ),
                 "n_kept_only": len(kept_only),
                 "n_concordant_only": len(concordant_only),
@@ -308,25 +301,33 @@ def main(fresh: bool = False) -> None:
     filtered_out_sets: dict[str, set[str]] = {}
 
     for config in CONFIGS:
-        print(f"\n=== Config: {config.name} (w_phylo={config.w_phylo}, "
-              f"w_gapmind={config.w_gapmind}, w_exp={config.w_exp}) ===")
+        print(
+            f"\n=== Config: {config.name} (w_phylo={config.w_phylo}, "
+            f"w_gapmind={config.w_gapmind}, w_exp={config.w_exp}) ==="
+        )
         df = evaluate_config(config, inputs)
         all_rows.append(df)
 
         per_phenotype = df.set_index("phenotype")
-        print(per_phenotype[["n_total", "n_kept", "frac_kept",
-                              "frac_kept_in_concordant",
-                              "frac_concordant_in_kept"]].round(3))
+        print(
+            per_phenotype[
+                [
+                    "n_total",
+                    "n_kept",
+                    "frac_kept",
+                    "frac_kept_in_concordant",
+                    "frac_concordant_in_kept",
+                ]
+            ].round(3)
+        )
 
         removed_pool: set[str] = set()
         for phenotype_name, parts in inputs.items():
             conf_phylo = parts["conf_phylo"]
             conf_mech = parts["conf_mech"]
             y_exp = parts["y_exp"]
-            common = (
-                conf_phylo.index
-                .intersection(conf_mech.index)
-                .intersection(y_exp.index)
+            common = conf_phylo.index.intersection(conf_mech.index).intersection(
+                y_exp.index
             )
             conf_phylo_s = conf_phylo.loc[common]
             conf_mech_s = conf_mech.loc[common]
@@ -340,8 +341,9 @@ def main(fresh: bool = False) -> None:
             removed_mask = (y_soft >= CONFIDENCE_THRESHOLD_LOW) & (
                 y_soft <= CONFIDENCE_THRESHOLD_HIGH
             )
-            removed_pool.update(f"{phenotype_name}::{gid}"
-                                 for gid in common[removed_mask])
+            removed_pool.update(
+                f"{phenotype_name}::{gid}" for gid in common[removed_mask]
+            )
         filtered_out_sets[config.name] = removed_pool
 
     long_df = pd.concat(all_rows, ignore_index=True)

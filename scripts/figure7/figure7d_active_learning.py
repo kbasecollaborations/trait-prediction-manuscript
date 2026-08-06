@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Retrospective active-learning pilot: does selective label acquisition beat random?"""
+"""Retrospective active-learning pilot comparing label-free candidate-selection strategies.
+
+Writes data/outputs/figure7/figure7_prioritization.tsv and
+figure7_prioritization_by_phenotype.tsv.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +18,7 @@ import pandas as pd
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from trait_prediction.pipeline import align_columns
 
 from scripts.figure5.figure5cd_data import (
     get_concordant_and_discordant_samples,
@@ -23,8 +28,6 @@ from scripts.figure5.figure5cd_data import (
 from scripts.figure7.applicability import mean_knn_jaccard_distance
 from scripts.ml import make_classifier
 from scripts.ml_splits import load_single_split_data
-from trait_prediction.pipeline import align_columns
-
 
 FEATURE_FILE: Path = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
 SPLITS_DIR: Path = Path("data/processed/train_test_splits/dataset_split")
@@ -40,8 +43,7 @@ STRATEGIES: tuple[str, ...] = ("low_confidence", "high_ood", "diversity", "rando
 def select_candidates(
     candidates: pd.DataFrame, k: int, strategy: str, rng: np.random.Generator
 ) -> list[str]:
-    """
-    Pick ``k`` candidate genome IDs to label under a label-free strategy.
+    """Pick ``k`` candidate genome IDs to label under a label-free strategy.
 
     Parameters
     ----------
@@ -204,7 +206,9 @@ def split_candidate_and_eval(
     """
     if len(y_test) < budget + min_eval_samples:
         return None
-    stratify = y_test if y_test.nunique() == 2 and y_test.value_counts().min() >= 2 else None
+    stratify = (
+        y_test if y_test.nunique() == 2 and y_test.value_counts().min() >= 2 else None
+    )
     candidate_idx, eval_idx = train_test_split(
         y_test.index,
         train_size=candidate_fraction,
@@ -348,9 +352,8 @@ def run_pilot(config: PilotConfig) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
                 if np.isnan(initial_ba):
                     continue
 
-                # Label-free candidate scores: model confidence and feature-space
-                # novelty (mean kNN Jaccard distance to the training set). Both are
-                # computable without knowing the candidate's experimental outcome.
+                # Candidate scores computable without the experimental outcome:
+                # model confidence and mean kNN Jaccard distance to the train set.
                 confidence = np.maximum(candidate_proba, 1 - candidate_proba)
                 ood = mean_knn_jaccard_distance(X_candidate, X_base, k=5)
                 candidates = pd.DataFrame(
@@ -428,7 +431,9 @@ def run_pilot(config: PilotConfig) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
             n_runs=("delta_balanced_accuracy", "size"),
             mean_delta_balanced_accuracy=("delta_balanced_accuracy", "mean"),
         )
-        .sort_values(["phenotype", "mean_delta_balanced_accuracy"], ascending=[True, False])
+        .sort_values(
+            ["phenotype", "mean_delta_balanced_accuracy"], ascending=[True, False]
+        )
     )
     return detailed, selected_detail, by_phenotype
 
@@ -449,7 +454,9 @@ def main() -> None:
     else:
         final = detailed[detailed["n_added"] == detailed["n_added"].max()]
         per_strategy = (
-            final.groupby("strategy")["delta_balanced_accuracy"].mean().sort_values(ascending=False)
+            final.groupby("strategy")["delta_balanced_accuracy"]
+            .mean()
+            .sort_values(ascending=False)
         )
         print("Mean delta balanced accuracy by strategy (final n_added):")
         print(per_strategy.round(4).to_string())

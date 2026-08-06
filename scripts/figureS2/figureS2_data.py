@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
-"""
-Compute the data for Supplementary Figure S2 (phylogenetic distance splits).
+"""Compute the data for Supplementary Figure S2 (phylogenetic distance splits).
 
-For every phenotype and every split type (random, in-clade, out-of-clade), this
-reads the persisted train/val/test splits under
-``data/processed/train_test_splits`` and computes, for each held-out test
-genome, the minimum cophenetic distance to the training set. The result is a
-tidy long-form table used by ``figureS2_plot.py``.
-
-The computation mirrors the original notebook
-(``random_in_out_analysis.ipynb`` in the trait-prediction-notes repository,
-cell ``calculate_distance``): the reference "training" set is every genome that
-is not in the test set (i.e. train + val), and the per-test-genome value is the
-minimum distance to any reference genome. The notebook averaged those minima
-per split for its boxplot; here we keep the finer per-genome granularity so the
-plot can show the full point cloud. All five persisted seeds contribute their
-test genomes.
+For every phenotype and every split type (random, in-clade, out-of-clade), reads the
+persisted train/val/test splits under ``data/processed/train_test_splits`` and
+computes, for each held-out test genome, the minimum cophenetic distance to the
+reference set (every non-test genome, that is train + val). All five persisted seeds
+contribute their test genomes. Writes the tidy long-form table read by
+``figureS2_plot.py``.
 
 Run with::
 
@@ -26,11 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
-# The 15 phenotypes shared across all four datasets (canonical manuscript set).
-# The original figure_s2.png showed 16 phenotypes including "Trehalose"; this
-# rewrite uses the 15 shared phenotypes for consistency with the rest of the
-# manuscript. To reproduce the original 16-phenotype figure, replace this with
-# the notebook's phenotype list.
+# The 15 phenotypes shared across all four datasets; the original figure_s2.png
+# showed 16, including "Trehalose".
 from scripts.create_data_splits import COMMON_PHENOTYPES
 
 SPLITS_DIR = Path("data/processed/train_test_splits")
@@ -39,8 +27,7 @@ OUTPUT_FILE = Path("data/outputs/figureS2/figureS2_data.tsv")
 
 N_SEEDS = 5
 
-# Maps each display split type to the on-disk seed folders that hold it.
-# Each entry yields folders containing y_train.tsv / y_val.tsv / y_test.tsv.
+# Display split type -> seed-folder template holding y_train/y_val/y_test.tsv.
 SPLIT_TYPE_DIRS: dict[str, str] = {
     "random": "random_split/{phenotype}/{seed}",
     "in-clade": "phylogeny_split/{phenotype}/in-clade/{seed}",
@@ -134,8 +121,7 @@ def build_table(distance_df: pd.DataFrame) -> pd.DataFrame:
                 folder = SPLITS_DIR / template.format(phenotype=phenotype, seed=seed)
                 if not folder.exists():
                     continue
-                # Reference set = every non-test genome (train + val), matching
-                # the notebook's `set(samples) - set(test_samples)`.
+                # Reference set = every non-test genome (train + val).
                 train_ids = read_genome_ids(folder, "y_train.tsv") + read_genome_ids(
                     folder, "y_val.tsv"
                 )
@@ -151,7 +137,9 @@ def build_table(distance_df: pd.DataFrame) -> pd.DataFrame:
                             "min_distance": dist,
                         }
                     )
-    return pd.DataFrame(rows, columns=["phenotype", "split_type", "genome", "min_distance"])
+    return pd.DataFrame(
+        rows, columns=["phenotype", "split_type", "genome", "min_distance"]
+    )
 
 
 def main() -> None:

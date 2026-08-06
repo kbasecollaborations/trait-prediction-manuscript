@@ -134,10 +134,9 @@ def filter_split_to_concordant(
 
     for key in ["X_train", "y_train", "X_val", "y_val", "X_test", "y_test"]:
         data = split_data[key]
-        # Select by boolean mask rather than by listing a set: set iteration
-        # order for strings is salted per process, so indexing with
-        # ``list(set(...) & ...)`` reorders the rows differently on every run and
-        # makes the fitted models irreproducible. A mask keeps the source order.
+        # Select by boolean mask, not by listing a set: string set iteration
+        # order is salted per process, so indexing with ``list(set(...) & ...)``
+        # reorders rows on every run and makes the fitted models irreproducible.
         filtered = data.loc[data.index.isin(concordant_genomes)]
         filtered_data[key] = filtered
 
@@ -216,9 +215,7 @@ def run_ml_on_concordant_splits(
                 )
 
                 if len(concordant_genomes) == 0:
-                    print(
-                        f"\nSkipping {split_type}/{key}: no concordant samples found"
-                    )
+                    print(f"\nSkipping {split_type}/{key}: no concordant samples found")
                     continue
 
                 filtered_split = filter_split_to_concordant(
@@ -273,14 +270,13 @@ def run_ml_on_concordant_splits(
 
 FEATURE_FILES: dict[str, Path] = {
     "kofam": Path("data/processed/features_reduced/combined_datasets/kofam.tsv"),
-    # Filtered (correlation- and variance-reduced) GapMind features. Note that
-    # the 0.95 correlation filter consolidates the same transporter / pathway
-    # gene across multiple phenotype prefixes, which depletes per-phenotype
-    # feature spaces for amino-acid pathways. Kept here for reproducibility.
+    # Filtered (correlation- and variance-reduced) GapMind features. The 0.95
+    # correlation filter consolidates the same transporter / pathway gene across
+    # phenotype prefixes, which depletes per-phenotype feature spaces for
+    # amino-acid pathways.
     "gapmind": Path("data/processed/features_reduced/combined_datasets/gapmind.tsv"),
-    # Raw (unfiltered) GapMind features. Preserves every per-phenotype
-    # pathway-step column so the ceiling line is a fair pipeline-ceiling per
-    # phenotype. Used for the Fig 5A red reference lines.
+    # Raw (unfiltered) GapMind features, keeping every per-phenotype
+    # pathway-step column. Used for the Fig 5A red reference lines.
     "gapmind_raw": Path("data/interim/features/combined_datasets/gapmind.tsv"),
 }
 
@@ -322,11 +318,15 @@ def main() -> None:
 
     print("Loading GapMind predictions (loose)...")
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
-    print(f"  Loaded {len(gapmind_predictions)} genomes, {len(gapmind_predictions.columns)} phenotypes")
+    print(
+        f"  Loaded {len(gapmind_predictions)} genomes, {len(gapmind_predictions.columns)} phenotypes"
+    )
 
     print("\nLoading experimental phenotypes...")
     experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
-    print(f"  Loaded {len(experimental_phenotypes)} genomes, {len(experimental_phenotypes.columns)} phenotypes")
+    print(
+        f"  Loaded {len(experimental_phenotypes)} genomes, {len(experimental_phenotypes.columns)} phenotypes"
+    )
 
     print("\nLoading train-test splits...")
     split_data = load_split_data(

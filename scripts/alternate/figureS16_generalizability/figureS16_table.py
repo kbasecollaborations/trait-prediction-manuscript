@@ -108,9 +108,7 @@ def build_table(features: pd.DataFrame, counts: pd.DataFrame) -> str:
             for r in sub.itertuples(index=False)
         ]
         feature_cell = r" \newline ".join(cells)
-        lines.append(
-            f"{latex_escape(phenotype)} & {n_recovered} & {feature_cell} \\\\"
-        )
+        lines.append(f"{latex_escape(phenotype)} & {n_recovered} & {feature_cell} \\\\")
         lines.append(r"\hline")
 
     lines.extend(

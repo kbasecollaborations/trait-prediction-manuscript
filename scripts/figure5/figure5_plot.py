@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Create Figure 5: performance on GapMind-concordant samples."""
 
-import json
 import warnings
 from pathlib import Path
 from typing import Literal
@@ -9,16 +8,13 @@ from typing import Literal
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 from scipy.stats import wilcoxon
 
-from scripts.minority_filter import (
-    MIN_MINORITY_TEST_SAMPLES,
-)
 from scripts.minority_filter import (
     concordant_minority_counts as _concordant_minority_counts,
 )
@@ -41,7 +37,7 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Set random seed for reproducible jitter
+# Seed for reproducible jitter.
 np.random.seed(42)
 
 
@@ -75,20 +71,17 @@ def _paired_panel_pvalue(
     Parameters
     ----------
     left_values : pd.Series
-        Phenotype-level values for the first condition. The series index must be
-        phenotype names.
+        First-condition values, indexed by phenotype.
     right_values : pd.Series
-        Phenotype-level values for the second condition. The series index must be
-        phenotype names.
+        Second-condition values, indexed by phenotype.
     phenotypes : list[str]
-        Phenotypes displayed in the panel. Only overlapping phenotypes from this
-        plotted list are used in the paired comparison.
+        Phenotypes displayed in the panel; only these are paired.
 
     Returns
     -------
     tuple[float | None, int]
-        The Wilcoxon p-value and the number of paired phenotypes used. Returns
-        ``None`` when too few overlapping pairs are available or the test is not
+        Wilcoxon p-value and number of paired phenotypes. The p-value is
+        ``None`` with fewer than two pairs or when the test is not
         numerically well-defined.
     """
     paired_phenotypes = [
@@ -136,9 +129,7 @@ def _add_panel_pvalue_annotation(
     n_pairs : int
         Number of phenotype pairs used in the comparison.
     position : Literal["top_right", "bottom_right"]
-        Anchor location of the annotation within the axes. ``"top_right"``
-        places the text at the upper-right corner; ``"bottom_right"`` places
-        it at the lower-right corner.
+        Anchor corner of the annotation within the axes.
     """
     if position == "top_right":
         x, y, ha, va = 0.98, 0.97, "right", "top"
@@ -177,23 +168,20 @@ def plot_dataset_split_performance(
     """
     ml_df = pd.read_csv(data_dir / "figure5a_concordant_ml_results.csv")
 
-    # Apply the minority-class-test-samples filter (Methods): drop dataset-split
-    # cells whose held-out concordant test set has fewer than
-    # MIN_MINORITY_TEST_SAMPLES minority-class samples. Random-split rows pass
-    # through unchanged.
+    # Methods filter: drop dataset-split cells whose held-out concordant test set
+    # has fewer than MIN_MINORITY_TEST_SAMPLES minority-class samples.
+    # Random-split rows pass through unchanged.
     minority_counts = _concordant_minority_counts()
     ml_df = _filter_by_minority(ml_df, minority_counts)
 
     dataset_df = ml_df[ml_df["split_type"] == "dataset_split"].copy()
     random_df = ml_df[ml_df["split_type"] == "random_split"].copy()
 
-    # Optional GapMind-feature ceiling: a sanity-check reference showing
-    # cross-dataset BA when concordant models are trained on the GapMind step
-    # features directly. Drawn as a per-phenotype red line if available.
-    # Prefer the raw GapMind features over the correlation-filtered ones
-    # because the 0.95 correlation filter consolidates duplicated step
-    # features across phenotype prefixes and unfairly depletes some
-    # per-phenotype feature spaces (e.g., amino-acid pathways).
+    # Optional GapMind-feature ceiling: cross-dataset BA when concordant models
+    # are trained on the GapMind step features directly. Raw features are
+    # preferred over the correlation-filtered ones because the 0.95 filter
+    # consolidates step features duplicated across phenotype prefixes and
+    # depletes some per-phenotype feature spaces (e.g., amino-acid pathways).
     gapmind_raw_file = data_dir / "figure5a_concordant_ml_results_gapmind_raw.csv"
     gapmind_file = data_dir / "figure5a_concordant_ml_results_gapmind.csv"
     if gapmind_raw_file.exists():
@@ -221,7 +209,6 @@ def plot_dataset_split_performance(
 
     x = np.arange(len(phenotypes))
 
-    # Alternating phenotype background bands for visual grouping.
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -247,7 +234,7 @@ def plot_dataset_split_performance(
 
     random_means = random_df.groupby("phenotype")["balanced_accuracy"].mean().to_dict()
 
-    # Random split mean as a per-phenotype reference line.
+    # Random-split mean, one reference line per phenotype.
     for phenotype in phenotypes:
         if phenotype in random_means:
             x_pos = x[phenotypes.index(phenotype)]
@@ -261,11 +248,9 @@ def plot_dataset_split_performance(
                 zorder=1,
             )
 
-    # Plot GapMind-feature ceiling as reference lines (one short red line per
-    # phenotype). This is the BA reached when the same pipeline is trained on
-    # GapMind step features under concordant training and cross-dataset
-    # evaluation; the gap to the KOFAM boxes quantifies pathway-annotation
-    # information present in GapMind but absent or fragmented in KOFAM.
+    # GapMind-feature ceiling, one reference line per phenotype: BA reached by
+    # the same pipeline trained on GapMind step features under concordant
+    # training and cross-dataset evaluation.
     for phenotype in phenotypes:
         if phenotype in gapmind_means:
             x_pos = x[phenotypes.index(phenotype)]
@@ -311,10 +296,9 @@ def plot_dataset_split_performance(
     ax.set_ylim(0, 1.05)
 
     dataset_means = dataset_df.groupby("phenotype")["balanced_accuracy"].mean()
-    # If the GapMind ceiling is available, the more interesting paired
-    # comparison is KOFAM cross-dataset vs GapMind cross-dataset (the gap that
-    # the new condition is meant to highlight). Otherwise fall back to the
-    # original KOFAM-dataset-vs-KOFAM-random comparison.
+    # With the GapMind ceiling available the paired comparison is KOFAM
+    # cross-dataset vs GapMind cross-dataset; otherwise it is KOFAM
+    # cross-dataset vs KOFAM random.
     if gapmind_means:
         reference_series = pd.Series(gapmind_means)
     else:
@@ -364,8 +348,8 @@ def create_feature_comparison_plot(
     data_file = data_dir / "figure5b_feature_comparison_summary.csv"
     df = pd.read_csv(data_file)
 
-    # Prefer cluster-level counts (target-aware redundancy clusters from
-    # shap.utils.hclust); fall back to raw KO counts if those columns are absent.
+    # Cluster-level counts (redundancy clusters from shap.utils.hclust), falling
+    # back to raw KO counts when those columns are absent.
     common_col = (
         "n_intersection_clusters"
         if "n_intersection_clusters" in df.columns
@@ -386,7 +370,6 @@ def create_feature_comparison_plot(
     bar_width = 0.8 / len(datasets)
     bar_group_center = bar_width * (len(datasets) - 1) / 2
 
-    # Alternating phenotype background bands for visual grouping.
     for i in range(len(phenotypes)):
         if i % 2 == 0:
             ax.axvspan(i - 0.5, i + 0.5, color="gray", alpha=0.1, zorder=0)
@@ -408,7 +391,6 @@ def create_feature_comparison_plot(
 
         positions = x_pos - bar_group_center + i * bar_width
 
-        # Bottom layer: common features (solid, alpha=0.8).
         ax.bar(
             positions,
             common,
@@ -416,7 +398,6 @@ def create_feature_comparison_plot(
             color=dataset_colors[i],
             alpha=0.8,
         )
-        # Top layer: unique to individual (hatched //, alpha=0.4).
         ax.bar(
             positions,
             unique_individual,
@@ -505,7 +486,7 @@ def _load_gapmind_phenotype_means(
     minority_counts : dict | None, optional
         When provided, exclude per-(phenotype, held-out-dataset) cells below the
         minority-class threshold before aggregating, so the GapMind baseline is
-        filtered on the same cells as the ML side (symmetric comparison).
+        filtered on the same cells as the ML side.
 
     Returns
     -------
@@ -537,7 +518,7 @@ def plot_ml_vs_gapmind_full_test(
     """Plot panel C: ML vs GapMind balanced accuracy on the full test set.
 
     Two series share the scatter axes: random holdout (green) and cross-dataset
-    (blue). Each point is one phenotype-mean; points above the dashed y=x
+    (blue). Each point is one phenotype mean; points above the dashed y=x
     diagonal mark ML outperforming GapMind.
 
     Parameters
@@ -663,8 +644,7 @@ def plot_ml_vs_gapmind_test_subsets(
 
     Shares panel C's axes. The concordant (purple) and discordant (orange)
     cross-dataset subsets sit at GapMind BA exactly 1 and 0 by construction, so
-    each series collapses to a vertical strip whose height conveys ML
-    performance inside and outside the applicability domain.
+    each series collapses to a vertical strip.
 
     Parameters
     ----------
@@ -693,9 +673,8 @@ def plot_ml_vs_gapmind_test_subsets(
     concordant_phens = sorted(set(ml_concordant.index) & set(phenotypes))
     discordant_phens = sorted(set(ml_discordant.index) & set(phenotypes))
 
-    # GapMind BA on the concordant subset is exactly 1.0 by construction
-    # (every retained sample is one where GapMind matches the experiment);
-    # on the discordant subset it is exactly 0.0 for the symmetric reason.
+    # GapMind BA is exactly 1.0 on the concordant subset and 0.0 on the
+    # discordant subset by construction.
     gm_concordant_x = np.full(len(concordant_phens), 1.0)
     gm_discordant_x = np.full(len(discordant_phens), 0.0)
 
@@ -771,11 +750,9 @@ def plot_ml_vs_gapmind_test_subsets(
 def create_figure(data_dir: Path, output_file: Path) -> None:
     """Create Figure 5 with four subplots laid out in three rows.
 
-    Layout:
-    - Row 0: Panel A (per-phenotype concordant cross-dataset BA, full width).
-    - Row 1: Panel B (stable feature clusters per phenotype, full width).
-              Phenotype tick labels are shown on this row's x-axis.
-    - Row 2: Panel C (left) and Panel D (right) ML vs GapMind scatters.
+    Row 0 is panel A (per-phenotype concordant cross-dataset BA), row 1 is
+    panel B (stable feature clusters, carrying the phenotype tick labels), and
+    row 2 holds panels C and D, the ML vs GapMind scatters.
 
     Parameters
     ----------
@@ -807,15 +784,15 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 
-    # Phenotypes for panel C/D may also include cells absent from the
-    # feature/intersection panels but present in the per-phenotype BA tables.
+    # Panels C and D also cover phenotypes absent from the feature-intersection
+    # panels but present in the per-phenotype BA tables.
     full_test_phenotypes = sorted(
         set(test_df[test_df["test_type"] == "full"]["phenotype"].unique())
     )
 
     fig = plt.figure(figsize=(12, 10))
-    # Panels A and B share the per-phenotype x-axis (tight top gridspec); panels
-    # C and D are scatters with a different x-axis (looser bottom gridspec).
+    # Panels A and B share the per-phenotype x-axis (top gridspec); panels C and
+    # D are scatters with a different x-axis (bottom gridspec).
     gs_top = fig.add_gridspec(
         nrows=2,
         ncols=1,
@@ -837,9 +814,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
 
     plot_dataset_split_performance(ax_a, data_dir, common_phenotypes)
     create_feature_comparison_plot(ax_b, data_dir, common_phenotypes)
-    plot_ml_vs_gapmind_full_test(
-        ax_c, data_dir, full_test_phenotypes, panel_label="C"
-    )
+    plot_ml_vs_gapmind_full_test(ax_c, data_dir, full_test_phenotypes, panel_label="C")
     plot_ml_vs_gapmind_test_subsets(
         ax_d, data_dir, full_test_phenotypes, panel_label="D"
     )
@@ -849,7 +824,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
         ax.set_xlim(-0.5, len(common_phenotypes) - 0.5)
         ax.set_xticks(x_pos)
 
-    # Phenotype tick labels live on panel B (panel C/D are scatters).
+    # Phenotype tick labels live on panel B.
     ax_a.set_xlabel("")
     ax_a.set_xticklabels([])
     ax_b.set_xlabel("")

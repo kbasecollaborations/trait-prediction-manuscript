@@ -5,14 +5,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
-from matplotlib.patches import Rectangle
 
 from scripts.visualization import (
     configure_plot_style,
-    format_dataset_names,
-    get_dataset_color_list,
 )
 
 plt.style.use(["science", "nature"])
@@ -46,8 +43,8 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
     strict_data = strict_df.set_index("phenotype").reindex(phenotypes)
     loose_data = loose_df.set_index("phenotype").reindex(phenotypes)
 
-    color_strict = "#2E86AB"  # Blue
-    color_loose = "#A23B72"  # Purple
+    color_strict = "#2E86AB"
+    color_loose = "#A23B72"
 
     ax.bar(
         x - width / 2,
@@ -66,7 +63,6 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
         alpha=0.8,
     )
 
-    # Horizontal lines mark the mean balanced accuracy for each confidence level
     mean_strict = strict_df["balanced_accuracy"].mean()
     mean_loose = loose_df["balanced_accuracy"].mean()
 
@@ -142,15 +138,15 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
     df["model"] = df["model"].map(model_labels)
 
     palette = {
-        "Identity": "#A0A0A0",  # Light gray
-        "Bernoulli": "#707070",  # Medium gray
-        "Nearest Neighbor": "#000000",  # Black
+        "Identity": "#A0A0A0",
+        "Bernoulli": "#707070",
+        "Nearest Neighbor": "#000000",
     }
 
     markers = {
-        "Identity": "o",  # Circle
-        "Bernoulli": "s",  # Square
-        "Nearest Neighbor": "^",  # Triangle
+        "Identity": "o",
+        "Bernoulli": "s",
+        "Nearest Neighbor": "^",
     }
 
     phenotypes = sorted(df["phenotype"].unique())
@@ -181,7 +177,6 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
                 label=model_name,
             )
 
-        # Draw a short horizontal line at each model/phenotype mean
         for phenotype in phenotypes:
             phenotype_data = split_df[split_df["phenotype"] == phenotype]
             x_pos = phenotypes.index(phenotype)
@@ -209,7 +204,6 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         ax.set_xticklabels(phenotypes)
         ax.set_xlim(-0.5, len(phenotypes) - 0.5)
 
-        # Only show x-tick labels on the bottom subplot
         if idx == len(split_order) - 1:
             ax.set_xlabel("Phenotype")
             ax.tick_params(
@@ -270,7 +264,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     """
     fig = plt.figure(figsize=(12, 14))
 
-    # Top-level gridspec: panel A above the two-row panel B section
+    # Panel A above the two-row panel B section.
     gs_main = fig.add_gridspec(2, 1, height_ratios=[1, 2], hspace=0.6)
     gs_b = gs_main[1].subgridspec(2, 1, hspace=0.25)
 

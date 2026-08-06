@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
 """Reclassify false-negative-driven features by mechanistic relevance.
 
-Chris's question was about alternative MECHANISMS, which includes transporters
-and regulators, not only alternative catabolic enzymes. An earlier pass lumped
-transporters and regulators together with housekeeping and lineage markers and
-dismissed them all as co-occurrence. This script separates them:
+KOs are classed as mechanistically relevant (substrate transporters,
+transcriptional regulators, catabolic enzymes), irrelevant co-occurrence
+(housekeeping genes), or unknown. For every false-negative-introduced feature
+(stable in the concordant+false-negative model but not the concordant-only
+model) and for the top false-negative-vs-true-negative discriminators on the
+unfiltered feature set, reports the mechanistic class and the prevalence in
+false negatives versus true negatives.
 
-* mechanistically relevant: substrate transporters, transcriptional regulators,
-  and catabolic/metabolic enzymes;
-* irrelevant co-occurrence: ribosomal, tRNA/rRNA, DNA replication/repair,
-  translation, cell-division and other housekeeping genes;
-* unknown: uncharacterised / putative proteins.
-
-It reports, for every false-negative-introduced feature (stable in the
-concordant+false-negative model but not the concordant-only model) and for the
-top false-negative-vs-true-negative discriminators on the full unfiltered
-feature set, the mechanistic class, prevalence in false negatives vs true
-negatives, and whether the feature is a transporter (candidate alternative
-uptake route). Output feeds a manual/literature vetting step.
+Writes ``fn_introduced_reclassified.csv`` and ``fn_contrastive_reclassified.csv``
+under ``data/outputs/figure5_fn_discovery/``.
 
 Run with::
 
@@ -34,21 +27,23 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier, Pool
 
-from scripts.figure5.figure5cd_data import (
-    load_experimental_phenotypes,
-    load_gapmind_predictions,
-)
 from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
     build_symbol_to_ko,
     canonical_ko_set,
     load_ko_descriptions,
+)
+from scripts.figure5.figure5cd_data import (
+    load_experimental_phenotypes,
+    load_gapmind_predictions,
 )
 
 KO_DICT_FILE: Path = Path("data/external/mapping/KO_dictionary.json")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 GAPMIND_STEP_FILE: Path = Path("data/interim/features/combined_datasets/gapmind.tsv")
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
-FN_INTRODUCED: Path = Path("data/outputs/figure5_fn_discovery/fn_introduced_features.csv")
+FN_INTRODUCED: Path = Path(
+    "data/outputs/figure5_fn_discovery/fn_introduced_features.csv"
+)
 CONCORDANT_STABLE: Path = Path(
     "data/outputs/figure5_fn_discovery/concordant_stable_features.json"
 )
@@ -57,7 +52,7 @@ FEATURE_DIRS: tuple[str, ...] = ("lit", "marine", "atleaf", "pmi")
 MIN_CLASS: int = 15
 TOP_K_CONTRASTIVE: int = 40
 
-# --- Mechanistic classification lexicons (matched on the KO description) ---
+# Mechanistic classification lexicons, matched against the KO description.
 TRANSPORTER_RE = re.compile(
     r"(transport|permease|\bPTS\b|\bABC\b|symport|antiport|\bporter\b|\bMFS\b|"
     r"\bSSS\b|\bTRAP\b|uptake|importer|exporter|efflux|channel|\bTonB\b|"
@@ -70,7 +65,7 @@ REGULATOR_RE = re.compile(
     r"\bHTH\b|DNA-binding|anti-sigma|regulatory protein)",
     re.IGNORECASE,
 )
-# Housekeeping / clearly-irrelevant co-occurrence markers.
+# Housekeeping and other co-occurrence markers.
 HOUSEKEEPING_RE = re.compile(
     r"(ribosomal|\btRNA\b|\brRNA\b|DNA (repair|polymerase|replication|gyrase|"
     r"helicase|primase|ligase|topoisomerase)|recombinase|restriction enzyme|"
@@ -91,9 +86,8 @@ EC_RE = re.compile(r"\[EC:")
 def classify(description: str) -> str:
     """Classify a KO by mechanistic relevance from its description.
 
-    Order of precedence: housekeeping (irrelevant) is checked first so that a
-    DNA-repair ATPase is not mislabelled a transporter; then transporter,
-    regulator, enzyme, unknown, other.
+    Housekeeping is matched first so that a DNA-repair ATPase is not classed as a
+    transporter, then transporter, regulator, enzyme, unknown, other.
 
     Parameters
     ----------
@@ -197,7 +191,9 @@ def annotate_fn_introduced(
         ``prev_tn`` and ``grower_enriched`` columns.
     """
     df = pd.read_csv(FN_INTRODUCED)
-    df["mech_class"] = [classify(ko_desc.get(k, d)) for k, d in zip(df["ko"], df["description"])]
+    df["mech_class"] = [
+        classify(ko_desc.get(k, d)) for k, d in zip(df["ko"], df["description"])
+    ]
     prev_fn, prev_tn = [], []
     cache: dict[str, tuple[list[str], list[str]]] = {}
     for _, row in df.iterrows():
@@ -205,8 +201,12 @@ def annotate_fn_introduced(
         if ph not in cache:
             cache[ph] = fn_tn_sets(gm, exp, ph, kofam.index)
         fn, tn = cache[ph]
-        prev_fn.append(kofam.loc[fn, ko].mean() if ko in kofam.columns and fn else np.nan)
-        prev_tn.append(kofam.loc[tn, ko].mean() if ko in kofam.columns and tn else np.nan)
+        prev_fn.append(
+            kofam.loc[fn, ko].mean() if ko in kofam.columns and fn else np.nan
+        )
+        prev_tn.append(
+            kofam.loc[tn, ko].mean() if ko in kofam.columns and tn else np.nan
+        )
     df["prev_fn"] = np.round(prev_fn, 3)
     df["prev_tn"] = np.round(prev_tn, 3)
     df["grower_enriched"] = df["prev_fn"] > df["prev_tn"]
@@ -266,11 +266,18 @@ def contrastive_candidates(
         keep = x.columns[(x.sum(0) >= 3) & (x.sum(0) <= len(x) - 3)]
         x = x[keep]
         model = CatBoostClassifier(
-            iterations=300, depth=4, learning_rate=0.05, random_state=42,
-            thread_count=4, verbose=False, auto_class_weights="Balanced",
+            iterations=300,
+            depth=4,
+            learning_rate=0.05,
+            random_state=42,
+            thread_count=4,
+            verbose=False,
+            auto_class_weights="Balanced",
         )
         model.fit(x, y)
-        shap = model.get_feature_importance(Pool(x, y), type="ShapValues", thread_count=4)[:, :-1]
+        shap = model.get_feature_importance(
+            Pool(x, y), type="ShapValues", thread_count=4
+        )[:, :-1]
         signed = pd.Series(shap[y.values == 1].mean(0), index=x.columns)
         canonical, _, _ = canonical_ko_set(ph, step_columns, symbol_to_ko)
         conc = conc_by_pheno.get(ph, set())
@@ -312,7 +319,6 @@ def main() -> None:
     kofam = load_kofam_presence()
     concordant_stable = json.loads(CONCORDANT_STABLE.read_text())
 
-    # (A) FN-introduced stable features, reclassified.
     fni = annotate_fn_introduced(ko_desc, gm, exp, kofam)
     fni.to_csv(OUT_DIR / "fn_introduced_reclassified.csv", index=False)
     print("=" * 90)
@@ -323,18 +329,29 @@ def main() -> None:
     print(f"\nMechanistically relevant AND grower-enriched: {len(rel)} of {len(fni)}")
     print(
         rel.sort_values(["mech_class", "prev_fn"], ascending=[True, False])[
-            ["phenotype", "ko", "mech_class", "prev_fn", "prev_tn", "in_gapmind_steps", "description"]
+            [
+                "phenotype",
+                "ko",
+                "mech_class",
+                "prev_fn",
+                "prev_tn",
+                "in_gapmind_steps",
+                "description",
+            ]
         ].to_string(index=False)
     )
 
-    # (B) Unfiltered FN-vs-TN contrastive candidates.
     cand = contrastive_candidates(
         ko_desc, symbol_to_ko, step_columns, gm, exp, kofam, concordant_stable
     )
     cand.to_csv(OUT_DIR / "fn_contrastive_reclassified.csv", index=False)
     print("\n" + "=" * 90)
-    print("(B) UNFILTERED FN-vs-TN CONTRASTIVE: relevant, grower-enriched, non-canonical,")
-    print("    NOT already a concordant stable feature (candidate alternate mechanisms)")
+    print(
+        "(B) UNFILTERED FN-vs-TN CONTRASTIVE: relevant, grower-enriched, non-canonical,"
+    )
+    print(
+        "    NOT already a concordant stable feature (candidate alternate mechanisms)"
+    )
     print("=" * 90)
     keep = cand[
         cand["mech_class"].isin(RELEVANT)
@@ -349,8 +366,17 @@ def main() -> None:
         print(f"\n--- {cls.upper()} ({len(sub)}) ---")
         if len(sub):
             print(
-                sub[["phenotype", "ko", "prev_fn", "prev_tn", "prev_gap", "shap_toward_growth", "description"]]
-                .to_string(index=False)
+                sub[
+                    [
+                        "phenotype",
+                        "ko",
+                        "prev_fn",
+                        "prev_tn",
+                        "prev_gap",
+                        "shap_toward_growth",
+                        "description",
+                    ]
+                ].to_string(index=False)
             )
     print("\nWrote fn_introduced_reclassified.csv and fn_contrastive_reclassified.csv")
 

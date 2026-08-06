@@ -6,11 +6,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scienceplots
+import scienceplots  # noqa: F401  (registers matplotlib styles)
 import seaborn as sns
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
-from matplotlib.patches import Patch
 
 from scripts.visualization import configure_plot_style
 
@@ -18,7 +16,7 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Set random seed for reproducible jitter
+# Reproducible jitter.
 np.random.seed(42)
 
 
@@ -27,13 +25,12 @@ def plot_confident_samples_performance(
     data_dir: Path,
     phenotypes: list[str] | None = None,
 ) -> None:
-    """
-    Plot dataset split performance comparison across three filtering conditions.
+    """Plot dataset-split performance across three training-set filters.
 
     All three conditions are evaluated on the same full cross-dataset held-out
-    test set; only the training (and validation) set changes between conditions.
-    Numbers above each bar give the train + val samples removed by that filter
-    relative to the unfiltered training pool.
+    test set; only the training (and validation) set changes. Numbers above
+    each bar give the train + val samples removed by that filter relative to
+    the unfiltered training pool.
 
     Parameters
     ----------
@@ -51,8 +48,6 @@ def plot_confident_samples_performance(
 
     full_minority = full_test_minority_counts()
 
-    # All three conditions evaluate on the same full cross-dataset held-out test
-    # set; only the training set differs.
     # 1. Concordant-trained model (Figure 5C data).
     concordant_df = pd.read_csv(
         Path("data/outputs/figure5/figure5c_concordant_train_different_test.csv")
@@ -71,9 +66,7 @@ def plot_confident_samples_performance(
     # 3. Problematic-sample-removed training (Figure 6C "filtered" condition).
     misclass_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
     misclass_df = misclass_df[misclass_df["condition"] == "filtered"].copy()
-    misclass_df = filter_by_minority(
-        misclass_df, full_minority, key_column="split"
-    )
+    misclass_df = filter_by_minority(misclass_df, full_minority, key_column="split")
 
     # Unfiltered baseline (Figure 6C "full"), used to report samples removed.
     full_df = pd.read_csv(data_dir / "figure6c_dataset_split_results.csv")
@@ -115,15 +108,12 @@ def plot_confident_samples_performance(
         ysoft_df.groupby("phenotype")["trainval_samples"].mean().reindex(phenotypes)
     )
     misclass_trainval = (
-        misclass_df.groupby("phenotype")["trainval_samples"]
-        .mean()
-        .reindex(phenotypes)
+        misclass_df.groupby("phenotype")["trainval_samples"].mean().reindex(phenotypes)
     )
     full_trainval = (
         full_df.groupby("phenotype")["trainval_samples"].mean().reindex(phenotypes)
     )
 
-    # Train+val samples removed by each filter relative to the unfiltered pool.
     concordant_removed = full_trainval - concordant_trainval
     ysoft_removed = full_trainval - ysoft_trainval
     misclass_removed = full_trainval - misclass_trainval
@@ -166,22 +156,18 @@ def plot_confident_samples_performance(
         capsize=3,
     )
 
-    # Add text annotations showing train+val samples removed by each filter.
-    # Adjacent bars often have similar heights, so we stagger the annotation
-    # y positions (low, high, low) to keep neighbouring labels from colliding.
+    # Adjacent bars often have similar heights, so the annotation y positions
+    # are staggered (low, high, low) to keep neighbouring labels apart.
     base_offset = 0.02
     raised_offset = 0.085
 
     for i, phenotype in enumerate(phenotypes):
-        # Anchor every label in the group to the tallest bar top so the stagger
-        # stays consistent across phenotypes.
+        # Anchor every label in the group to the tallest bar top.
         tops = [
             (concordant_means[i] + concordant_stds[i])
             if not np.isnan(concordant_means[i])
             else 0,
-            (ysoft_means[i] + ysoft_stds[i])
-            if not np.isnan(ysoft_means[i])
-            else 0,
+            (ysoft_means[i] + ysoft_stds[i]) if not np.isnan(ysoft_means[i]) else 0,
             (misclass_means[i] + misclass_stds[i])
             if not np.isnan(misclass_means[i])
             else 0,
@@ -243,7 +229,7 @@ def plot_confident_samples_performance(
     )
     ax.tick_params(axis="x", which="major", pad=1)
     ax.set_xlim(float(x[0] - width * 1.5), float(x[-1] + width * 1.5))
-    # Headroom above 1.0 leaves room for the per-bar `-N` removal annotations.
+    # Headroom above 1.0 for the per-bar `-N` removal annotations.
     ax.set_ylim(0, 1.25)
 
     ax.legend(
@@ -255,8 +241,7 @@ def plot_confident_samples_performance(
 
 
 def create_figure(data_dir: Path, output_file: Path) -> None:
-    """
-    Create Figure 6B plot.
+    """Create the standalone Figure 6B plot.
 
     Parameters
     ----------
@@ -289,7 +274,9 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     print(f" - Y_soft filtered: {len(ysoft_phenotypes)}")
     print(f" - Misclassified removed: {len(misclass_phenotypes)}")
     common_phenotypes = sorted(
-        concordant_phenotypes.intersection(ysoft_phenotypes).intersection(misclass_phenotypes)
+        concordant_phenotypes.intersection(ysoft_phenotypes).intersection(
+            misclass_phenotypes
+        )
     )
     print(f" - Common phenotypes: {len(common_phenotypes)}")
 

@@ -7,10 +7,9 @@ Used by the Table S2 / Table S3 generators to append a coverage summary line.
 import re
 from pathlib import Path
 
-# Phenotype -> canonical KEGG module identifier(s). Multiple modules are
-# allowed when the phenotype's pathway is split across module entries.
-# Phenotypes with no dedicated catabolism module in KEGG are mapped to
-# None and reported as "no canonical KEGG module" in the table.
+# Phenotype -> canonical KEGG module identifier(s); several when the pathway is
+# split across module entries. ``None`` marks phenotypes with no dedicated
+# catabolism module in KEGG, reported as "no canonical KEGG module".
 PHENOTYPE_TO_MODULES: dict[str, tuple[str, ...] | None] = {
     "Histidine": ("M00045",),
     "Galactose": ("M00632",),
@@ -37,30 +36,24 @@ MODULE_NAMES: dict[str, str] = {
     "M00879": "Arginine succinyltransferase pathway",
 }
 
-# Phenotype -> KEGG reference pathway map(s). Each entry lists every KEGG
-# map that contains an absolutely essential (gatekeeper) catabolic step for
-# the phenotype. Most phenotypes have a single canonical map, but two
-# phenotypes need a pair because KEGG splits their catabolic route across
-# maps:
+# Phenotype -> KEGG reference pathway map(s) carrying a gatekeeper catabolic
+# step for the phenotype; KO membership is the union across the listed maps.
+# Two phenotypes need a pair because KEGG splits their catabolic route:
 #
-# - Glycerol: glycerol kinase (K00864) lives on map00561 (Glycerolipid
-#   metabolism), but the committed oxidation glycerol-3-P -> DHAP
-#   (K00111/K00112/K00113) is only on map00564 (Glycerophospholipid
-#   metabolism). Both steps are required for growth.
-# - Arginine: arginase (K01476) and decarboxylase (K01585) are on map00330
-#   (Arginine and proline metabolism); the ADI-pathway gatekeepers
-#   (K01478 arcA, K00611 argF/arcB) are only on map00220 (despite the
-#   "Arginine biosynthesis" label, this map houses the ADI catabolic
-#   route in KEGG). Soil bacteria use both routes across lineages.
-#
-# Pathway-KO membership is the union across all listed maps.
+# - Glycerol: glycerol kinase (K00864) is on map00561, but the committed
+#   oxidation glycerol-3-P -> DHAP (K00111/K00112/K00113) is only on map00564.
+# - Arginine: arginase (K01476) and decarboxylase (K01585) are on map00330;
+#   the ADI-pathway gatekeepers (K01478 arcA, K00611 argF/arcB) are only on
+#   map00220, which houses the ADI catabolic route despite its
+#   "Arginine biosynthesis" label. Soil bacteria use both routes across
+#   lineages.
 PHENOTYPE_TO_PATHWAY_MAPS: dict[str, tuple[str, ...]] = {
     "Histidine": ("map00340",),
     "Galactose": ("map00052",),
-    # map00040 carries the isomerase (Ashwell) route; map00053 (Ascorbate and
-    # aldarate metabolism) carries the oxidative galacturonate -> galactarate
-    # route via uronate dehydrogenase (K18981), the stable feature the model
-    # relies on. Bacteria use both routes across lineages.
+    # map00040 carries the isomerase (Ashwell) route; map00053 carries the
+    # oxidative galacturonate -> galactarate route via uronate dehydrogenase
+    # (K18981), a stable feature of the model. Bacteria use both routes across
+    # lineages.
     "Galacturonic-Acid": ("map00040", "map00053"),
     "Glucose": ("map00010",),
     "Arginine": ("map00330", "map00220"),
@@ -244,8 +237,7 @@ def pathway_coverage_line(
         module_kos.update(_load_module_kos().get(module_id, frozenset()))
 
     def _cluster_representatives(kos: list[str]) -> list[str]:
-        """Pick one KO per cluster, falling back to the raw KO list when no
-        clustering metadata is available."""
+        """Pick one KO per cluster, or the raw KO list when unclustered."""
         if ko_to_cluster is None:
             return sorted(set(kos))
         seen_clusters: dict[int, str] = {}

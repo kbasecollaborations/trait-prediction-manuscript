@@ -58,9 +58,7 @@ def load_checkm2_results(
                     dfs.append(pd.read_csv(subfile, sep="\t"))
 
     if not dfs:
-        raise FileNotFoundError(
-            f"No quality_report.tsv files found in: {input_paths}"
-        )
+        raise FileNotFoundError(f"No quality_report.tsv files found in: {input_paths}")
 
     combined = pd.concat(dfs, ignore_index=True)
 
@@ -257,12 +255,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     failed_genomes = df.loc[df["Fails_QC"], "Name"]
     args.failed_list.parent.mkdir(parents=True, exist_ok=True)
     failed_genomes.to_csv(args.failed_list, index=False, header=False)
-    print(f"Failed genome list saved to: {args.failed_list} ({len(failed_genomes)} genomes)")
+    print(
+        f"Failed genome list saved to: {args.failed_list} ({len(failed_genomes)} genomes)"
+    )
 
     passed_genomes = df.loc[~df["Fails_QC"], "Name"]
     args.passed_list.parent.mkdir(parents=True, exist_ok=True)
     passed_genomes.to_csv(args.passed_list, index=False, header=False)
-    print(f"Passed genome list saved to: {args.passed_list} ({len(passed_genomes)} genomes)")
+    print(
+        f"Passed genome list saved to: {args.passed_list} ({len(passed_genomes)} genomes)"
+    )
 
     return 0
 

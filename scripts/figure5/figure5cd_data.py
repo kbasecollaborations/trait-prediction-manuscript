@@ -137,8 +137,7 @@ def filter_split_for_training(
     for key in ["X_train", "y_train", "X_val", "y_val"]:
         data = split_data[key]
         # Boolean mask, not list(set(...)): set iteration order is salted per
-        # process, so listing it reorders the rows on every run and makes the
-        # fitted models irreproducible.
+        # process and would reorder rows, making the fitted models irreproducible.
         filtered = data.loc[data.index.isin(concordant_genomes)]
         filtered_data[key] = filtered
 
@@ -242,7 +241,8 @@ def run_ml_on_concordant_train_with_different_test_sets(
     total_splits = sum(len(splits) for splits in split_data.values())
 
     with tqdm(
-        total=total_splits, desc="Running ML: train on concordant, test on discordant/full"
+        total=total_splits,
+        desc="Running ML: train on concordant, test on discordant/full",
     ) as pbar:
         for split_type in split_data:
             for key in split_data[split_type]:
@@ -282,7 +282,10 @@ def run_ml_on_concordant_train_with_different_test_sets(
                 X_test_full = concordant_split["X_test"]
                 y_test_full = concordant_split["y_test"]
 
-                if len(X_test_full) >= min_test_samples and len(y_test_full.unique()) == 2:
+                if (
+                    len(X_test_full) >= min_test_samples
+                    and len(y_test_full.unique()) == 2
+                ):
                     result_full = perform_split_ml(
                         X_train,
                         y_train,
@@ -318,7 +321,10 @@ def run_ml_on_concordant_train_with_different_test_sets(
                         X_test_disc = discordant_split["X_test"]
                         y_test_disc = discordant_split["y_test"]
 
-                        if len(X_test_disc) >= min_test_samples and len(y_test_disc.unique()) == 2:
+                        if (
+                            len(X_test_disc) >= min_test_samples
+                            and len(y_test_disc.unique()) == 2
+                        ):
                             result_disc = perform_split_ml(
                                 X_train,
                                 y_train,
@@ -340,7 +346,9 @@ def run_ml_on_concordant_train_with_different_test_sets(
                             result_disc["n_val"] = len(X_val)
                             result_disc["n_test"] = len(X_test_disc)
                             result_disc["n_concordant_train"] = len(concordant_genomes)
-                            result_disc["n_discordant_available"] = len(discordant_genomes)
+                            result_disc["n_discordant_available"] = len(
+                                discordant_genomes
+                            )
 
                             results.append(result_disc)
 
@@ -394,8 +402,8 @@ def main() -> None:
         min_test_samples=5,
     )
 
-    # Annotate each row with its discordant minority-class test count
-    # (Figure 5C tests on the discordant subset; Methods).
+    # Figure 5C tests on the discordant subset, so the minority-class count is
+    # taken over discordant samples (Methods).
     from scripts.minority_filter import (
         annotate_minority_test,
         discordant_minority_counts,
