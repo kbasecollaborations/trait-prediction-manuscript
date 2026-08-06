@@ -4,7 +4,7 @@
 
 \subsection*{Carbon Source Utilisation Datasets}
 
-We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus, a previously unpublished Biolog assay of Oak Ridge National Laboratory Plant-Microbe Interfaces isolates released with this work (per-dataset strain, substrate, and growth-assay details in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
+We obtained four binary growth datasets on defined carbon sources: ATLeaf~\cite{Schafer2023-nk}, Biolog~\cite{BiologDatasetCitation}, Marine~\cite{Gralka2023-ft}, and Populus~\cite{PopulusDatasetCitation} (per-dataset strain, substrate, and growth-assay details in Supplementary Text~S1 and Table~\ref{tab:dataset_overview}).
 These contributed 819 input strain records, of which 795 phenotype records were retained after assembly-fragmentation, CheckM2, and feature-profile outlier filtering; pangenome completeness was assessed independently (Supplementary Text~S2; Supplementary Figure~\ref{fig:pangenome_completeness}).
 We aligned phenotype and genomic-feature identifiers, yielding 780 matched strains eligible for feature-based analyses; sample sizes varied by phenotype because not every strain was measured for every phenotype.
 Carbon source names were standardised and analyses were restricted to the 15 phenotypes shared across all four datasets.
@@ -84,7 +84,7 @@ For histidine, training-data requirements were assessed by fitting models to str
 
 For full-data and concordance-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
 The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was pooled across phenotypes~\cite{Pedregosa2011Sklearn}.
-Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S8), and label-free aggregates (mean confidence, fraction of high-confidence predictions) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
+Risk--coverage curves retained genomes in decreasing order of confidence and scored the retained subset by accuracy against the phenotype's majority-class rate, balanced accuracy being undefined where the most-confident genomes share a single true class (Supplementary Text~S8); label-free aggregates (mean confidence, fraction of high-confidence predictions) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
 
 \subsection*{Statistical Analysis}
 

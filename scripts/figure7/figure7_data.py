@@ -293,9 +293,7 @@ def collect_full_data_per_sample(
     return pd.DataFrame.from_records(records)
 
 
-def safe_balanced_accuracy(
-    y_true: np.ndarray, y_pred: np.ndarray, require_both_classes: bool = False
-) -> float:
+def safe_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     Balanced accuracy that falls back to plain accuracy on a single-class set.
 
@@ -305,23 +303,16 @@ def safe_balanced_accuracy(
         Ground-truth labels.
     y_pred : np.ndarray
         Predicted labels.
-    require_both_classes : bool, optional
-        When True, return ``np.nan`` instead of the plain-accuracy fallback if
-        only one true class is present. Curves that are read as balanced
-        accuracy set this, because the fallback is a different quantity on the
-        same axis and produces a step where it switches off.
-
     Returns
     -------
     float
         Balanced accuracy when both classes are present, plain accuracy when a
-        single class is present and ``require_both_classes`` is False, and
-        ``np.nan`` when the input is empty or the single-class case is refused.
+        single class is present, ``np.nan`` when the input is empty.
     """
     if len(y_true) == 0:
         return float("nan")
     if len(np.unique(y_true)) < 2:
-        return float("nan") if require_both_classes else float((y_true == y_pred).mean())
+        return float((y_true == y_pred).mean())
     return float(balanced_accuracy_score(y_true, y_pred))
 
 
@@ -355,9 +346,7 @@ def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
                 "coverage": float(coverage),
                 "n_retained": k,
                 "confidence_threshold": float(ordered["confidence"].iloc[k - 1]),
-                "balanced_accuracy": safe_balanced_accuracy(
-                    y_true[:k], y_pred[:k], require_both_classes=True
-                ),
+                "balanced_accuracy": safe_balanced_accuracy(y_true[:k], y_pred[:k]),
                 "accuracy": float((y_true[:k] == y_pred[:k]).mean()),
             }
         )
@@ -366,11 +355,16 @@ def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
 
 def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
     """
-    Compute per-phenotype risk-coverage curves using class-stratified confidence.
+    Compute per-phenotype selective-accuracy curves over the confidence ranking.
 
-    Coverage is applied within each predicted class, so both classes stay
-    represented and balanced accuracy stays well-defined; raw ``max(p, 1 - p)``
-    abstention is degenerate on class-skewed per-phenotype subsets.
+    Genomes are retained in decreasing order of ``max(p, 1 - p)``, the rule a
+    user would apply at deployment, and the retained subset is scored by
+    accuracy. Accuracy rather than balanced accuracy because it is defined on
+    every non-empty subset: on class-skewed phenotypes the most-confident
+    genomes can share a single true class, where balanced accuracy is not
+    defined. The class skew is carried instead by ``majority_baseline``, the
+    accuracy of always predicting the phenotype's majority class, which is the
+    no-skill reference each curve must be read against.
 
     Parameters
     ----------
@@ -380,45 +374,31 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        One row per (phenotype, coverage) with retained-subset balanced
-        accuracy, accuracy, sample count, and per-class retained counts.
+        One row per (phenotype, coverage) with retained-subset accuracy, the
+        retained count, the confidence threshold, and the majority-class
+        baseline.
     """
     rows: list[dict[str, object]] = []
     for phenotype, group in per_sample.groupby("phenotype", sort=True):
-        pos = (
-            group[group["y_pred"] == 1]
-            .sort_values("proba", ascending=False, kind="mergesort")
-            .reset_index(drop=True)
-        )
-        neg = (
-            group[group["y_pred"] == 0]
-            .sort_values("proba", ascending=True, kind="mergesort")
-            .reset_index(drop=True)
-        )
-        n_pos, n_neg = len(pos), len(neg)
-        if n_pos == 0 and n_neg == 0:
+        ordered = group.sort_values(
+            "confidence", ascending=False, kind="mergesort"
+        ).reset_index(drop=True)
+        n_total = len(ordered)
+        if n_total == 0:
             continue
+        y_true = ordered["y_true"].to_numpy()
+        y_pred = ordered["y_pred"].to_numpy()
+        positive_rate = float(y_true.mean())
         for coverage in COVERAGE_GRID:
-            k_pos = max(1, int(round(coverage * n_pos))) if n_pos else 0
-            k_neg = max(1, int(round(coverage * n_neg))) if n_neg else 0
-            retained = pd.concat(
-                [pos.iloc[:k_pos], neg.iloc[:k_neg]], ignore_index=True
-            )
-            y_true = retained["y_true"].to_numpy()
-            y_pred = retained["y_pred"].to_numpy()
+            k = max(1, int(round(coverage * n_total)))
             rows.append(
                 {
                     "phenotype": phenotype,
                     "coverage": float(coverage),
-                    "n_retained": len(retained),
-                    "n_retained_pos": k_pos,
-                    "n_retained_neg": k_neg,
-                    "balanced_accuracy": safe_balanced_accuracy(
-                        y_true, y_pred, require_both_classes=True
-                    ),
-                    "accuracy": float((y_true == y_pred).mean())
-                    if len(retained)
-                    else float("nan"),
+                    "n_retained": k,
+                    "confidence_threshold": float(ordered["confidence"].iloc[k - 1]),
+                    "accuracy": float((y_true[:k] == y_pred[:k]).mean()),
+                    "majority_baseline": max(positive_rate, 1.0 - positive_rate),
                 }
             )
     return pd.DataFrame(rows)

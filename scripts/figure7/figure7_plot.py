@@ -35,7 +35,12 @@ _PALETTE = sns.color_palette("colorblind", n_colors=6)
 PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
 ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
 
-PANEL_A_PHENOTYPES = ["m-Inositol", "Histidine", "Glucose"]
+# Panel A spans high, intermediate, and low cross-dataset balanced accuracy
+# (0.82, 0.74, 0.64). Panel D draws from the six phenotypes with enough valid
+# label-acquisition runs, ordered strong to weak generaliser (0.71, 0.64, 0.51),
+# so the two panels no longer share a phenotype list.
+PANEL_A_PHENOTYPES = ["m-Inositol", "Sucrose", "Glycerol"]
+PANEL_D_PHENOTYPES = ["Histidine", "Mannose", "Glucose"]
 MODEL_LABELS = {"concordant": "Concordant", "full_data": "Full-data"}
 MODEL_COLORS = {"concordant": PRIMARY_COLOR, "full_data": ACCENT_COLOR}
 STRATEGY_LABELS = {
@@ -83,15 +88,31 @@ def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
     risk : pd.DataFrame
         Contents of ``figure7_risk_coverage_by_phenotype.tsv``.
     """
+    # Shared y-limits taken from the plotted values, so a model that falls below
+    # its no-skill baseline stays on scale instead of being clipped away.
+    shown = risk[risk.phenotype.isin(PANEL_A_PHENOTYPES)]
+    y_lo = float(min(shown["accuracy"].min(), shown["majority_baseline"].min())) - 0.04
+
     for ax, phen in zip(axes, PANEL_A_PHENOTYPES, strict=True):
-        ax.axhline(0.5, ls="--", color="gray", lw=0.8, alpha=0.7, zorder=1)
+        # No-skill reference is the phenotype's majority-class rate, not 0.5:
+        # accuracy on a skewed phenotype starts high without any model skill.
+        baseline = float(risk[risk.phenotype == phen]["majority_baseline"].iloc[0])
+        ax.axhline(
+            baseline,
+            ls="--",
+            color="gray",
+            lw=0.8,
+            alpha=0.7,
+            zorder=1,
+            label="Majority class",
+        )
         for model in ("concordant", "full_data"):
             sub = risk[(risk.phenotype == phen) & (risk.model == model)].sort_values(
                 "coverage"
             )
             ax.plot(
                 sub.coverage,
-                sub.balanced_accuracy,
+                sub.accuracy,
                 marker="o",
                 ms=3.5,
                 lw=1.5,
@@ -103,13 +124,13 @@ def plot_risk_coverage(axes: list[Axes], risk: pd.DataFrame) -> None:
             )
         ax.set_title(phen, fontsize=12)
         ax.set_xlim(0, 1.02)
-        ax.set_ylim(0.35, 1.0)
+        ax.set_ylim(y_lo, 1.03)
         ax.set_xlabel("Coverage")
-    axes[0].set_ylabel("Balanced accuracy\n(retained subset)")
+    axes[0].set_ylabel("Accuracy\n(retained subset)")
     axes[1].legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.22),
-        ncol=2,
+        ncol=3,
         frameon=False,
         fontsize=10,
     )
@@ -261,7 +282,7 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     rng = np.random.default_rng(42)
 
     ax.axhline(0.0, color="gray", ls="--", lw=0.8, alpha=0.7, zorder=1)
-    for p_idx, phen in enumerate(PANEL_A_PHENOTYPES):
+    for p_idx, phen in enumerate(PANEL_D_PHENOTYPES):
         paired = (
             final[final.phenotype == phen]
             .pivot_table(
@@ -309,9 +330,9 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
                 zorder=4,
             )
 
-    ax.set_xticks(range(len(PANEL_A_PHENOTYPES)))
-    ax.set_xticklabels(PANEL_A_PHENOTYPES)
-    ax.set_xlim(-0.6, len(PANEL_A_PHENOTYPES) - 0.4)
+    ax.set_xticks(range(len(PANEL_D_PHENOTYPES)))
+    ax.set_xticklabels(PANEL_D_PHENOTYPES)
+    ax.set_xlim(-0.6, len(PANEL_D_PHENOTYPES) - 0.4)
     ax.set_ylabel(f"$\\Delta$ balanced accuracy\nfrom {budget} added labels")
     ax.set_xlabel("Phenotype (strong $\\rightarrow$ weak generaliser)")
 

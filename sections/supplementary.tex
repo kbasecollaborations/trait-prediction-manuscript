@@ -111,6 +111,11 @@ Because every identical-vector group is confined to a single source dataset, lea
 Under full-data training, core histidine enzymes other than K01712 appeared among dataset-specific stable features but not in the aggregated dataset, likely reflecting annotation gaps or alternative pathways.
 Table~\ref{tab:feature_comparison} gives the histidine worked example under full-data and concordant training; stable features ranked among the top 10 by mean absolute SHAP value in at least 70\% of 20 runs, with cluster labels denoting SHAP-supervised redundancy groups (Methods).
 
+The example shared feature column of Table~\ref{tab:main_feature_comparison} is populated as follows.
+Where the two models share a feature outright the shared KO is shown; where they share a redundancy cluster but not the identical KO (so the cell would otherwise be empty despite a non-zero shared-cluster count), a representative KO from each shared cluster is shown instead, keeping this column consistent with the shared-cluster count.
+Features whose redundancy cluster is pathway-resident are preferred; off-pathway features such as transporters or regulators are shown only when no pathway-resident feature is stable, so the column still conveys the biological signal the model relies on (for Glycerol the stable features are the glpF glycerol facilitator and the glpR glycerol-3-phosphate regulon repressor, transport and regulation rather than catabolic enzymes; for Arginine the only shared signals are off-pathway choline/betaine and sarcosine-oxidase clusters, confounders rather than arginine catabolism).
+This column is illustrative rather than exhaustive, and its feature selection is independent of the (\% in pathway) coverage statistic, which continues to score only canonical pathway-map residency.
+
 % ============================================================
 %   TABLES
 % ============================================================
@@ -261,7 +266,8 @@ For alanine in particular, GapMind's pathway definition encodes only transport, 
 \subsection*{Supplementary Text S8: Reliability and Experiment-Prioritisation Details}
 
 CatBoost probabilities were not post hoc calibrated, so confidence, $\max(p,\,1-p)$, ranked predictions only; calibration used reliability diagrams and expected calibration error over ten equal-width bins pooled across phenotypes for each model.
-Risk--coverage curves retained the same fraction within each predicted class, ranking class-1 calls by $p$ and class-0 calls by $1-p$, before recomputing balanced accuracy; this prevents retained subsets from collapsing to one predicted class.
+Risk--coverage curves retained genomes in decreasing order of confidence and scored the retained subset by accuracy, the rule and the metric a user would apply at deployment.
+Accuracy rather than balanced accuracy because on a class-skewed phenotype the most-confident genomes can share a single true class, on which balanced accuracy is undefined; each curve is therefore read against the phenotype's majority-class rate, the accuracy reached without model skill.
 
 Feature-space novelty was the mean Jaccard distance from a held-out genome to its five nearest training genomes in KOFAM space.
 The high-novelty strategy selected the candidates ranked highest on this measure, whereas the diversity strategy selected candidates evenly spaced along the same ranking.
@@ -308,7 +314,8 @@ The largest feature-resolution gap was glucose, for which GapMind-feature and KO
 
 \paragraph{Calibration, abstention, and rescue.}
 The full-data and concordance-trained models were overconfident under cross-dataset shift, with expected calibration error 0.11 and 0.17, respectively (Figure~\ref{fig:selective_prediction}B).
-Confidence-based abstention improved retained-subset balanced accuracy for m-inositol and histidine. For glucose the model's predictions approach one class, so the retained subset at low coverage contains almost no negatives and balanced accuracy degenerates towards plain accuracy; the resulting rise is therefore an artefact of the retention rule rather than improved discrimination (Figure~\ref{fig:selective_prediction}A).
+Confidence-based abstention improved retained-subset accuracy for sucrose ($0.75$ to $0.88$ at half coverage) but added little for m-inositol, whose model was already accurate across the full test set, and nothing for glycerol (Figure~\ref{fig:selective_prediction}A).
+Glycerol is the informative failure: the concordance-trained model tracks its majority-class rate at every coverage level and the full-data model lies below it throughout, falling to $0.16$ over its most-confident tenth, so on this phenotype confidence ranks predictions in the wrong direction and abstention cannot define a usable applicability domain.
 In the experiment-prioritisation simulation the advantage of low-confidence selection concentrated on glucose, where it roughly doubled the gain from random labelling ($0.24$ versus $0.13$).
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
 Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
