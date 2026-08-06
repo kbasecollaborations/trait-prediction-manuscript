@@ -6,13 +6,13 @@
 Microbial carbon utilisation is a foundational ecological phenotype that remains difficult to predict from genomes despite well-characterised pathways.
 Machine-learning models generalise poorly across datasets, a failure usually attributed to training-set size and taxonomic bias.
 To test this, we integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets.
-Balanced accuracy fell from 0.75--0.90 within datasets to 0.52--0.84 across them, and testing on close relatives recovered only 0.03, so mechanistically inconsistent genotype-phenotype relationships drove models to dataset-correlated shortcuts.
-Restricting training to concordant samples, whose measured growth matched their annotated pathway, doubled the carbon sources recovering known pathway genes across datasets (6 to 12), whereas matched random subsets did not.
-Coherence mattered more than volume: adding over 8000 literature-curated BacDive genomes did not significantly exceed the concordant set.
-Because such filtering requires a mechanistic predictor, we used a mechanism-free alternative using phylogenetic and experimental labels which recovered part of the gain, not the recall advantage.
-Concordance-trained models were bounded specialists, rescuing mechanistic false negatives twice as often as false positives (44\% versus 19\%), mostly generalists.
+Balanced accuracy fell from 0.75--0.90 within datasets to 0.52--0.84 across them, and testing on close relatives recovered only 0.03 of that drop, so mechanistically inconsistent genotype-phenotype relationships drove models to dataset-correlated shortcuts.
+Restricting training to concordant samples, whose measured growth matched their annotated pathway, doubled the carbon sources recovering known pathway genes across datasets (6 to 12 of 15), whereas matched random subsets did not.
+Coherence mattered more than volume: adding over 8000 literature-curated BacDive genomes did not significantly exceed the smaller concordant set.
+Because such filtering requires a mechanistic predictor, we tested a mechanism-free alternative combining phylogenetic agreement and experimental labels, which recovered part of the gain but not the recall advantage.
+Concordance-trained models were bounded specialists, rescuing mechanistic false negatives twice as often as false positives (44\% versus 19\%), mostly metabolic generalists.
 To locate those bounds, model confidence defined an applicability domain, and prioritising low-confidence genomes for training improved cross-dataset accuracy more than random or diversity-based sampling, especially for the weaker phenotypes.
-This recasts generalisation in biological machine learning as a problem of label-mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice, and suggests a workflow of concordant training, applicability detection, and confidence-guided experimentation.
+This recasts generalisation in biological machine learning as a problem of label-mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice.
 }
 \end{abstract}
 
