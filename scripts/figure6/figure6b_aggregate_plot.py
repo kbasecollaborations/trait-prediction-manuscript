@@ -503,39 +503,6 @@ def plot_gapmind_delta_forest(
                     else:
                         n_sig_worse_mech += 1
 
-        # Borders of the region containing no significant result, drawn only
-        # when the significant and non-significant effects separate. They are
-        # descriptive of this data, not a critical value: McNemar power also
-        # depends on n and on the discordant-pair counts.
-        magnitudes = pd.concat(
-            [
-                delta_df[["concordant", "q_concordant"]].rename(
-                    columns={"concordant": "d", "q_concordant": "q"}
-                ),
-                delta_df[["mech_free", "q_mech_free"]].rename(
-                    columns={"mech_free": "d", "q_mech_free": "q"}
-                ),
-            ]
-        )
-        magnitudes["absd"] = magnitudes["d"].abs()
-        sig_min = magnitudes.loc[magnitudes["q"] < 0.05, "absd"].min()
-        ns_max = magnitudes.loc[magnitudes["q"] >= 0.05, "absd"].max()
-        if pd.notna(sig_min) and pd.notna(ns_max) and ns_max < sig_min:
-            edge = float((sig_min + ns_max) / 2.0)
-            for position, label in (
-                (-edge, f"$|\\Delta|<{edge:.2f}$: no $q<0.05$"),
-                (edge, None),
-            ):
-                ax.axvline(
-                    position,
-                    color="grey",
-                    linestyle=":",
-                    linewidth=0.9,
-                    alpha=0.75,
-                    zorder=1,
-                    label=label,
-                )
-
     n_pos_conc = int((delta_df["concordant"] > 0).sum())
     n_pos_mech = int((delta_df["mech_free"] > 0).sum())
     n_total = len(delta_df)
@@ -553,11 +520,10 @@ def plot_gapmind_delta_forest(
             f"  concordant {n_sig_better} better, {n_sig_worse} worse\n"
             f"  mech-free {n_sig_better_mech} better, {n_sig_worse_mech} worse"
         )
-    # Drawn after the band so the band is included in the legend.
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.12),
-        ncol=3,
+        ncol=2,
         frameon=False,
         fontsize=7,
     )

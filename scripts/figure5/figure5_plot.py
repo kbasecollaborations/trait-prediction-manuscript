@@ -803,7 +803,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     gs_bot = fig.add_gridspec(
         nrows=1,
         ncols=2,
-        top=0.43,
+        top=0.40,
         bottom=0.04,
         wspace=0.22,
     )
@@ -827,7 +827,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     # Phenotype tick labels live on panel B.
     ax_a.set_xlabel("")
     ax_a.set_xticklabels([])
-    ax_b.set_xlabel("")
+    ax_b.set_xlabel("Phenotype", labelpad=-18)
     ax_b.set_xticklabels(common_phenotypes, rotation=45, ha="right")
     ax_b.tick_params(axis="x", labelbottom=True)
 

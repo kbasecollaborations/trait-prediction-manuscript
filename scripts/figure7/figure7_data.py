@@ -293,7 +293,9 @@ def collect_full_data_per_sample(
     return pd.DataFrame.from_records(records)
 
 
-def safe_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+def safe_balanced_accuracy(
+    y_true: np.ndarray, y_pred: np.ndarray, require_both_classes: bool = False
+) -> float:
     """
     Balanced accuracy that falls back to plain accuracy on a single-class set.
 
@@ -303,17 +305,23 @@ def safe_balanced_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         Ground-truth labels.
     y_pred : np.ndarray
         Predicted labels.
+    require_both_classes : bool, optional
+        When True, return ``np.nan`` instead of the plain-accuracy fallback if
+        only one true class is present. Curves that are read as balanced
+        accuracy set this, because the fallback is a different quantity on the
+        same axis and produces a step where it switches off.
 
     Returns
     -------
     float
         Balanced accuracy when both classes are present, plain accuracy when a
-        single class is present, ``np.nan`` when the input is empty.
+        single class is present and ``require_both_classes`` is False, and
+        ``np.nan`` when the input is empty or the single-class case is refused.
     """
     if len(y_true) == 0:
         return float("nan")
     if len(np.unique(y_true)) < 2:
-        return float((y_true == y_pred).mean())
+        return float("nan") if require_both_classes else float((y_true == y_pred).mean())
     return float(balanced_accuracy_score(y_true, y_pred))
 
 
@@ -347,7 +355,9 @@ def build_risk_coverage(per_sample: pd.DataFrame) -> pd.DataFrame:
                 "coverage": float(coverage),
                 "n_retained": k,
                 "confidence_threshold": float(ordered["confidence"].iloc[k - 1]),
-                "balanced_accuracy": safe_balanced_accuracy(y_true[:k], y_pred[:k]),
+                "balanced_accuracy": safe_balanced_accuracy(
+                    y_true[:k], y_pred[:k], require_both_classes=True
+                ),
                 "accuracy": float((y_true[:k] == y_pred[:k]).mean()),
             }
         )
@@ -403,7 +413,9 @@ def build_risk_coverage_by_phenotype(per_sample: pd.DataFrame) -> pd.DataFrame:
                     "n_retained": len(retained),
                     "n_retained_pos": k_pos,
                     "n_retained_neg": k_neg,
-                    "balanced_accuracy": safe_balanced_accuracy(y_true, y_pred),
+                    "balanced_accuracy": safe_balanced_accuracy(
+                        y_true, y_pred, require_both_classes=True
+                    ),
                     "accuracy": float((y_true == y_pred).mean())
                     if len(retained)
                     else float("nan"),
