@@ -1,7 +1,7 @@
-\begin{landscape}
 \begin{table}[p]
 \centering
 \scriptsize
+\setlength{\tabcolsep}{3pt}
 \begin{tabularx}{\linewidth}{llXX}
 \hline
 \textbf{Training set} & \textbf{Held-out dataset} & \textbf{Shared stable features} & \textbf{Unique to held-out-alone model} \\
@@ -20,4 +20,3 @@
 \caption{\textbf{Stable KOFAM features for histidine under full-data and concordant training.} Shared features occur in both the three-dataset and held-out-alone models; unique features occur only in the held-out-alone model. Cluster labels mark SHAP-supervised redundancy groups, and module coverage counts one representative per cluster across the three comparisons. Features appeared in at least 70\% of 20 training runs.}
 \label{tab:feature_comparison}
 \end{table}
-\end{landscape}
