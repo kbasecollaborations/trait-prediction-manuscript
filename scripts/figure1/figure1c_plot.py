@@ -225,8 +225,27 @@ def gapmind_selection_enrichment() -> float:
     return picked_share / matrix_share
 
 
+def phenotype_filtered_feature_count() -> float:
+    """Typical size of a single phenotype's curated GapMind feature block.
+
+    Computed rather than hard-coded so the Feature-filtering rung's label cannot
+    go stale when the phenotype-filtered results are regenerated; the previous
+    literal (32) was left behind by a pre-correction run that lacked Glucose.
+
+    Returns
+    -------
+    float
+        Median across phenotypes of the mean number of features used by the
+        phenotype-filtered cross-dataset models.
+    """
+    results = pd.read_csv(OUTPUTS / "figure6/figure6d_phenotype_filtered_results.csv")
+    results = results[results.split_type == "dataset_split"]
+    return float(results.groupby("phenotype")["n_features"].mean().median())
+
+
 RUNGS = load_rungs()
 GAPMIND_ENRICHMENT = gapmind_selection_enrichment()
+FILTERED_N_FEATURES = phenotype_filtered_feature_count()
 
 ROWS = [
     dict(
@@ -265,7 +284,7 @@ ROWS = [
     dict(
         y=YS[4], label="Feature\nfiltering",
         train=("full", INK, "normal"),
-        feat=("filtered GapMind\n(~32)", STEEL, "bold"),
+        feat=(f"filtered GapMind\n($\\sim${FILTERED_N_FEATURES:.0f})", STEEL, "bold"),
         evalu=("cross-dataset", INK, "normal"),
         kind="range_median", **RUNGS["filtered"],
         finding="Highest median, but capped\nby the curated pathway",

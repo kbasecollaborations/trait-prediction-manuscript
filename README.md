@@ -40,7 +40,7 @@ produces.
 
 | Figure | Folder | Content |
 | --- | --- | --- |
-| Figure 1 | `scripts/figure1/` | Dataset characteristics: phylogenetic tree (1B). Panel 1A is a BioRender illustration (no script). |
+| Figure 1 | `scripts/figure1/` | Dataset characteristics: phenotype class distributions (1B, `figure1b_data.py` + `figure1b_plot.py`) and the analysis-variant performance ladder (1C, `figure1c_plot.py`). Panel 1A is a BioRender illustration (no script); `figure1_combine.py` stacks the three panel PDFs. |
 | Figure 2 | `scripts/figure2/` | Baselines: GapMind (2A) and phylogeny-based nearest-neighbor (2B). |
 | Figure 3 | `scripts/figure3/` | Model performance across train/test split strategies (random, dataset, phylogenetic), compared with GapMind. |
 | Figure 4 | `scripts/figure4/` | Feature importance: SHAP-based identification of predictive gene functions (`figure4c_*`), with quadrant/summary panels. |
@@ -55,6 +55,8 @@ Supporting diagnostics for Figure 5A underperformers live in
 
 | Figure | Folder | Content |
 | --- | --- | --- |
+| Figure S1 | (no script) | Pruned GTDB reference tree (`figure_s1.png`), rendered outside this repository. |
+| Figure S2 | `scripts/figureS2/` | Phylogenetic distance distributions across evaluation split types. |
 | Figure S3 | `scripts/figureS3/` | In-clade vs out-of-clade balanced accuracy. |
 | Figure S4 | `scripts/pangenome_completeness/` | Pangenome-based completeness audit. |
 | Figure S5 | `scripts/figureS5/` | KOFAM features on concordant samples. |
@@ -72,9 +74,9 @@ All in `scripts/tables/`:
 
 - `main_table1.py` — main-text Table 1 (concordance vs full feature
   comparison)
-- `table1.py` — Supplementary Table S3 (stable features under full-data and
+- `table1.py` — Supplementary Table S4 (stable features under full-data and
   concordant training)
-- `table2.py` — compatibility entry point for the merged Supplementary Table S3
+- `table2.py` — compatibility entry point for the merged Supplementary Table S4
 - `kegg_module_coverage.py` — KEGG-module pathway coverage
 
 p-values reported in the text are produced by

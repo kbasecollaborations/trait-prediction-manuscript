@@ -20,6 +20,8 @@ Outputs
 -------
 ``data/processed/substrate_identity.csv``
     Full table: one row per (dataset, published phenotype).
+``data/zenodo/substrate_identity_all.csv``
+    The same full table, as published in the Zenodo deposit.
 ``data/zenodo/substrate_identity_common15.csv``
     The 15 phenotypes shared by all four datasets, for the Zenodo deposit and the
     supplementary data listing.
@@ -37,6 +39,7 @@ REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 RAW_DIR: Final[Path] = REPO_ROOT / "data/raw/phenotypes"
 LEGACY_NAME_MAP: Final[Path] = RAW_DIR / "phenotype_common_names_legacy.csv"
 FULL_OUT: Final[Path] = REPO_ROOT / "data/processed/substrate_identity.csv"
+ALL_OUT: Final[Path] = REPO_ROOT / "data/zenodo/substrate_identity_all.csv"
 COMMON15_OUT: Final[Path] = REPO_ROOT / "data/zenodo/substrate_identity_common15.csv"
 
 #: Datasets keyed by the raw handoff file stem and the legacy name-map column.
@@ -461,6 +464,7 @@ def main() -> None:
     FULL_OUT.parent.mkdir(parents=True, exist_ok=True)
     COMMON15_OUT.parent.mkdir(parents=True, exist_ok=True)
     table.to_csv(FULL_OUT, index=False)
+    table.to_csv(ALL_OUT, index=False)
 
     common = table[table.in_common15].copy()
     common = common[

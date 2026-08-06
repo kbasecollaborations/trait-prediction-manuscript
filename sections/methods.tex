@@ -84,11 +84,11 @@ For histidine, training-data requirements were assessed by fitting models to str
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
 For full-data and concordance-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
-The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was computed per phenotype and pooled~\cite{Pedregosa2011Sklearn}.
+The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was pooled across phenotypes~\cite{Pedregosa2011Sklearn}.
 Risk--coverage curves used class-stratified abstention to avoid degenerate single-class retained subsets (Supplementary Text~S8), and label-free aggregates (mean confidence, fraction of high-confidence predictions) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
 
 \subsection*{Statistical Analysis}
 
 Paired comparisons of balanced accuracy and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.wilcoxon}); Spearman rank correlations linked per-phenotype label-free aggregates to cross-dataset balanced accuracy (\texttt{scipy.stats.spearmanr}).
-Twelve primary tests (ten Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg (BH) procedure at a false-discovery rate of $\leq 0.05$ (\texttt{scripts/stats/manuscript\_pvalues.py}); raw $p$-values are reported in the main text with adjusted $q$-values inline for borderline tests, and all other comparisons are unadjusted.
+Twelve primary tests (ten Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg (BH) procedure at a false-discovery rate of $\leq 0.05$ (\texttt{scripts/stats/manuscript\_pvalues.py}); raw $p$-values are reported in the main text with adjusted $q$-values inline for borderline tests, and other test families are adjusted separately.
 Summary statistics are mean $\pm$ standard deviation across folds or repeats unless otherwise noted.

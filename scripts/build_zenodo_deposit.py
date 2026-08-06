@@ -16,6 +16,8 @@ Deliberately omitted from the archive, with reasons:
     retrievable from the accessions in ``genome_accessions.tsv``.
 ``*_backup_pre_enantiomer_fix/``, ``_stale_*``
     Working copies kept for rollback during the 2026-08 substrate identity correction.
+``*.log``, ``*.pkl``
+    Run logs and cached intermediates; both are rebuilt from the archived inputs.
 
 Run with ``uv run python -m scripts.build_zenodo_deposit`` (add ``--dry-run`` to preview).
 """
@@ -60,8 +62,8 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
     f"data/outputs/{name}"
     for name in (
         "figure1", "figure2", "figure3", "figure4", "figure5", "figure6", "figure7",
-        "figureS2", "figureS3", "figureS5", "figureS6", "figureS7",
-        "bacdive", "clustering", "agreement_analysis", "concordance_meta",
+        "figureS2", "figureS3", "figureS5", "figureS6",
+        "bacdive", "clustering", "agreement_analysis",
         "stats", "pangenome_completeness", "measurement_reliability",
     )
 ) + ("data/outputs/leakage_feature_dup_per_split.csv",)
@@ -81,7 +83,12 @@ EXCLUDED: Final[dict[str, str]] = {
     "data/outputs_backup_pre_enantiomer_fix": "rollback copy from the substrate identity correction",
     "data/processed/phenotypes_backup_pre_enantiomer_fix": "rollback copy",
     "data/processed/train_test_splits_backup_pre_enantiomer_fix": "rollback copy",
+    "data/outputs/figureS7": "retired learning-curve figure; the current Figure S7 is drawn from data/outputs/bacdive",
+    "data/outputs/concordance_meta": "exploratory meta-classifier; no figure, table, or reported value uses it",
 }
+
+#: Working artefacts skipped inside archived directories.
+SKIP_SUFFIXES: Final[tuple[str, ...]] = (".log", ".pkl")
 
 #: Per-dataset phenotype matrices published loose alongside the archive.
 PHENOTYPE_TABLES: Final[dict[str, str]] = {
@@ -175,7 +182,7 @@ def build_archive(dry_run: bool) -> int:
     for label, group in (("inputs", INPUTS), ("figure data", FIGURE_DATA), ("models", MODELS)):
         group_total = 0
         for entry in group:
-            files = iter_files(entry)
+            files = [f for f in iter_files(entry) if f.suffix not in SKIP_SUFFIXES]
             if not files:
                 print(f"  MISSING  {entry}")
                 continue
