@@ -3,15 +3,14 @@
 \begin{abstract}
 {
 \noindent
-The carbon sources a microorganism can utilise are key determinants of its ecological niche, yet are difficult to predict from genomes even for well-characterised pathways.
-Machine-learning models often achieve high within-dataset accuracy but generalise poorly across datasets, and whether this reflects the algorithm or the training data remains unresolved.
-To distinguish these explanations, we integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets, focusing on the 15 shared sources.
-Cross-dataset accuracy declined even among close relatives, so phylogeny alone did not explain it.
-Restricting training to concordant strains (measured growth matching their annotated pathways), under an identical pipeline, increased the carbon sources with predictive pathway genes recovered across datasets from six to twelve of fifteen, whereas matched random subsets did not.
-A larger literature-curated collection (BacDive) improved the unfiltered model but did not significantly exceed this concordant set.
-Because concordance filtering requires a mechanistic predictor, a mechanism-free filter based on phylogenetic agreement and experimental labels recovered part of the improvement but not the gain in recall.
-Neither surpassed a curated pathway-based predictor overall; instead, the concordance-trained model acted as a bounded specialist, recovering growth missed by incomplete annotations more often than it overturned annotated pathways lacking growth (44\% versus 19\%), predominantly among metabolic generalists, not substrate-specific routes.
-Generalisation therefore depends less on training-set size than on label agreement with annotated pathways, and prioritising low-confidence genomes for measurement improved it more than random or diversity-based selection.
+The carbon sources a microorganism can utilise shape its ecological niche, yet remain difficult to predict from genomes even for well-characterised pathways.
+Machine-learning models often achieve high within-dataset accuracy but generalise poorly across datasets, a failure usually attributed to training-set size and taxonomic bias.
+To explore this, we integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets, focusing on the 15 shared sources.
+We observed that while intra-dataset accuracy was high, cross-dataset accuracy was poor and declined even among close relatives, so phylogeny alone did not explain failure.
+Growth may follow a conserved pathway, an uncharacterised alternative, or fail despite a complete one. An aggregated training sets pool mechanistically distinct genotype-phenotype relationships, so a model fitted to that pool has a higher chance of learning dataset-specific correlations in place of transferable mechanism.
+Restricting training to concordant strains (growth matching annotated pathways), improved cross-dataset performance and doubled the carbon sources with predictive pathway genes recovered across datasets, from six to twelve of fifteen, whereas matched random subsets did not.
+Increasing data volume by adding over 8000 literature-curated BacDive genomes to the training data did not significantly improve cross-dataset performance over the smaller concordant set.
+Though concordance-trained models do not incorporate the full set of diverse mechanisms present in the full dataset, they instead act as bounded specialists that recovered growth missed by incomplete annotations more often than they overturned annotated pathways lacking growth (44\% versus 19\%), predominantly metabolic generalists.
 }
 \end{abstract}
 
