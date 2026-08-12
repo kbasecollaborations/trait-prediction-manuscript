@@ -202,6 +202,7 @@ def plot_phenotype_boxes(ax: plt.Axes, df: pd.DataFrame) -> None:
 
     ax.set_xticks(x)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
+    ax.set_xlabel("Phenotype")
     ax.set_ylabel("Balanced Accuracy")
     ax.set_xlim(-0.5, len(phenotypes) - 0.5)
     ax.set_ylim(0.3, 1.05)
