@@ -439,8 +439,15 @@ def create_misclassification_plots(
     ax3.set_xlabel("Number of Misclassifications", fontsize=12)
     ax3.set_ylabel("Microbe ID", fontsize=12)
     ax3.set_yticks(range(len(top_20_df)))
-    short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
-    ax3.set_yticklabels(short_labels, fontsize=8)
+    # Assembly accessions need the numeric field to stay distinguishable; other
+    # identifiers are unique before the first underscore.
+    short_labels = [
+        "_".join(str(gid).split("_")[:2])
+        if str(gid).startswith(("GCF_", "GCA_"))
+        else str(gid).split("_")[0]
+        for gid in top_20_df["genome_id"]
+    ]
+    ax3.set_yticklabels(short_labels, fontsize=6.5)
     ax3.invert_yaxis()
     ax3.tick_params(axis="y", which="major", pad=2)
 
@@ -568,8 +575,15 @@ def plot_microbe_misclassification_ranking(
     ax.set_xlabel("Number of misclassifications")
     ax.set_ylabel("Microbe ID", labelpad=8)
     ax.set_yticks(y_positions)
-    short_labels = [str(gid).split("_")[0] for gid in top_20_df["genome_id"]]
-    ax.set_yticklabels(short_labels, fontsize=7)
+    # Assembly accessions need the numeric field to stay distinguishable; other
+    # identifiers are unique before the first underscore.
+    short_labels = [
+        "_".join(str(gid).split("_")[:2])
+        if str(gid).startswith(("GCF_", "GCA_"))
+        else str(gid).split("_")[0]
+        for gid in top_20_df["genome_id"]
+    ]
+    ax.set_yticklabels(short_labels, fontsize=6)
     ax.invert_yaxis()
     ax.set_ylim(float(len(top_20_df) - 0.5), -0.5)
     ax.tick_params(axis="y", which="major", pad=3)

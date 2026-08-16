@@ -229,7 +229,8 @@ Confidence-based abstention improved retained-subset accuracy for sucrose ($0.75
 Glycerol is the informative failure: the concordance-trained model tracks its majority-class rate at every coverage level and the full-data model lies below it throughout, falling to $0.16$ over its most-confident tenth, so on this phenotype confidence ranks predictions in the wrong direction and abstention cannot define a usable applicability domain.
 In the experiment-prioritisation simulation the advantage of low-confidence selection concentrated on glucose, where it roughly doubled the gain from random labelling ($0.24$ versus $0.13$).
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
-Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the 44\% versus 19\% asymmetry, rather than the absolute rescue level, is therefore the relevant result.
+Both false-negative and false-positive rescue rates remained below the corresponding marginal model-call rates; the median 44\% versus 19\% asymmetry (means 42\% and 20\%), rather than the absolute rescue level, is therefore the relevant result.
+The false-negative rate exceeded the false-positive rate for 12 of the 15 phenotypes, and the paired Wilcoxon test over the per-phenotype rates gave $p = 0.02$ (Benjamini--Hochberg $q = 0.036$), the values quoted in the Results for Figure~\ref{fig:concordant_analysis}D.
 
 \paragraph{False-negative retention and the specificity tradeoff.}
 Under balanced class weights, concordance filtering improved cross-dataset balanced accuracy by 0.042 over unfiltered training.
@@ -316,18 +317,20 @@ For alpha- and beta-D-glucose the anomeric distinction is not meaningful in solu
 \begin{table}[p]
 \centering
 \small
-\begin{tabularx}{\textwidth}{lrrrrrX}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{lrrrrrrX}
 \hline
-\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \textbf{Growth Assay} \\
+\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \makecell[r]{\textbf{Positive-} \\ \textbf{Call Rate}} & \textbf{Growth Assay} \\
 \hline
-ATLeaf  & 224 & 45  & 206 & 206 & 15 & Agar plate \\
-Biolog  & 362 & 64  & 362 & 362 & 15 & Biolog PM (colourimetric) \\
-Marine  & 175 & 100 & 172 & 157 & 15 & Liquid culture OD \\
-Populus & 58  & 190 & 55  & 55  & 15 & Liquid culture OD \\
+ATLeaf  & 224 & 45  & 206 & 206 & 15 & 0.47 & Agar plate \\
+Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog PM (colourimetric) \\
+Marine  & 175 & 100 & 172 & 157 & 15 & 0.51 & Liquid culture OD \\
+Populus & 58  & 190 & 55  & 55  & 15 & 0.74 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
 ``Original'' gives the source-dataset size; ``Retained Phenotype Records'' gives the records surviving genome quality control (Supplementary Text~S2); ``Feature-linked'' gives phenotype records with matching processed genomic features.
+``Positive-Call Rate'' is the fraction of non-missing labels scored as growth across the 15 shared phenotypes, the quantity adjusted for in the label-conflict analysis (Supplementary Text~S12).
 All datasets entered aggregated and leave-one-dataset-out analyses; Populus was excluded only from selected feature-stability comparisons.}
 \label{tab:dataset_overview}
 \end{table}
