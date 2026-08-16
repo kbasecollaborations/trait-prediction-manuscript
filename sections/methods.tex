@@ -64,10 +64,8 @@ A pipeline-ceiling reference (Figure~\ref{fig:concordant_analysis}A, red dashed 
 
 \subsection*{Feature Importance Analysis}
 
-Stable predictive features were identified by SHAP (SHapley Additive exPlanations)~\cite{Lundberg2017SHAP} analysis of a fixed 500-iteration CatBoost variant trained without early stopping: for each phenotype--dataset configuration, models were trained across 20 random seeds, the top 10 features by mean absolute SHAP value per run were extracted, and features appearing in $\geq$70\% of runs were designated ``stable''.
-For concordant-training stability analyses, each phenotype--split matrix was first screened to the 300 KOFAM features with highest CatBoost importance before the SHAP recurrence criterion was applied.
-To avoid counting biologically redundant KOs (paralogues, operon-mates, alternative enzymes) as separate features, per-phenotype stable KOs were grouped into SHAP-supervised redundancy clusters (\texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP} at distance threshold 0.5; Supplementary Text~S7); this post hoc grouping replaced raw KO identity for intersection and uniqueness counts and did not affect training, predictions, or reported metrics (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Supplementary Table~\ref{tab:feature_comparison}).
-For Table~\ref{tab:main_feature_comparison}, the cluster counts of Figure~\ref{fig:concordant_analysis}B are additionally annotated with the pathway-coverage statistic defined in the table legend, a uniform metric broader than the catabolism-module statistic in Supplementary Table~\ref{tab:feature_comparison}.
+Stable predictive features were KOFAM features that recurred among the top ten by mean absolute SHAP value across repeated models (Supplementary Text~S7).
+Biologically redundant KOs were grouped post hoc into SHAP-supervised clusters before features were compared across datasets; clustering did not affect model fitting, predictions, or reported metrics (Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B; Tables~\ref{tab:main_feature_comparison} and~\ref{tab:feature_comparison}).
 
 \subsection*{Data Quality Filtering Strategies}
 

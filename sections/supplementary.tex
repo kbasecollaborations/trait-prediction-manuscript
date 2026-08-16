@@ -68,6 +68,7 @@ Because each identical-vector group lies within one dataset, leave-one-dataset-o
 
 Under full-data training, core histidine enzymes other than K01712 appeared among dataset-specific stable features but not in the aggregated dataset, likely reflecting annotation gaps or alternative pathways.
 Table~\ref{tab:feature_comparison} gives the histidine worked example under full-data and concordant training; stable features ranked among the top 10 by mean absolute SHAP value in at least 70\% of 20 runs, with cluster labels denoting SHAP-supervised redundancy groups (Methods).
+Under concordant training, the histidine cluster containing K01468 (imidazolonepropionase), K01712 (urocanate hydratase), and K05836 (histidine-utilisation repressor) was recovered across datasets, the shared-cluster count rose from 4 to 8, the held-out-alone count fell from 6 to 3, and pathway concentration on map00340 rose from 17\% to 33\%; the stricter KEGG module M00045 statistic is reported in Table~\ref{tab:feature_comparison}.
 
 The example shared feature column of Table~\ref{tab:main_feature_comparison} is populated as follows.
 Where the two models share a feature outright the shared KO is shown; where they share a redundancy cluster but not the identical KO (so the cell would otherwise be empty despite a non-zero shared-cluster count), a representative KO from each shared cluster is shown instead, keeping this column consistent with the shared-cluster count.
@@ -166,6 +167,9 @@ Models used full-data (blue circles) or concordant (orange squares) training at 
 
 \subsection*{Supplementary Text S7: SHAP-Supervised Redundancy Clustering Procedure}
 
+Stable features were identified with a fixed 500-iteration CatBoost model trained without early stopping.
+For each phenotype--dataset configuration, models were trained with 20 random seeds; features appearing among the top ten by mean absolute SHAP value in at least 70\% of runs were designated stable.
+For concordant-training comparisons, each phenotype--split matrix was first screened to the 300 KOFAM features with highest CatBoost importance.
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B use cluster-level rather than raw-KO intersections so correlated KOs representing the same predictive signal are not counted separately.
 For each phenotype, the union of stable KOs was clustered on the pooled concordant feature matrix across all four datasets with \texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}.
 The routine fits a univariate boosted-tree model from each KO to the phenotype and computes a pairwise distance of $1-R^2$ between the resulting per-sample predictions.
@@ -203,6 +207,15 @@ After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, samples in the inclusive in
 Four weight configurations $(w_{\mathrm{phylo}}, w_{\mathrm{gap}}, w_{\mathrm{exp}})$ were evaluated: the mechanism-free $(0.40, 0.00, 0.60)$ and three GapMind-weighted settings $(0.20, 0.30, 0.50)$, $(0.15, 0.40, 0.45)$, and $(0.10, 0.50, 0.40)$.
 All were applied to training and validation samples only; held-out test samples were unchanged, and the inclusive ambiguity interval was the same throughout.
 Data cost differed little between the two filters: concordant training retained $72\%$ of samples ($n\approx 385$) and the mechanism-free filter $74\%$ ($n\approx 396$), against $n\approx 534$ with no filter.
+
+\paragraph{Filter performance across the weight sweep.}
+Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.02, while mean recall rose from 0.76 at $w_{\mathrm{gap}}=0$ to 0.84 at $w_{\mathrm{gap}}=0.5$ at near-constant precision; problematic-sample removal alone gave no measurable improvement.
+Concordant training reached mean balanced accuracy 0.68 and the mechanism-free filter 0.647 (paired Wilcoxon $p=0.30$), compared with 0.646 without filtering and 0.69 for GapMind.
+Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas the mechanism-free filter split 5 and 6; neither mean recall shift was significant ($p=0.095$ and $p=0.56$, respectively).
+Concordant recall gains were led by mannose ($+0.17$), while losses were greatest for galacturonic acid ($-0.23$) and glycerol ($-0.18$; Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
+At $w_{\mathrm{gap}}=0.5$, recall exceeded GapMind by a mean 0.10 (higher for 12 of 15 phenotypes, $p=0.012$) but precision was lower by 0.04 ($p=0.048$).
+The concordant filter gained 0.05 recall (higher for 12 of 15 phenotypes) without a detectable precision cost (mean $-0.02$, $p=0.17$).
+The endpoint therefore shifted the operating point towards positive calls rather than adding discriminative information.
 
 \subsection*{Supplementary Text S10: Per-Phenotype Detail for Concordant-Training Analysis}
 
