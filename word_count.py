@@ -260,12 +260,15 @@ def texcount_words(tex_file: pathlib.Path) -> int:
         If ``texcount`` is not available or returns an unexpected result.
     """
 
+    tex_source = "%TC:macro \\keywords [ignore]\n" + tex_file.read_text()
+
     try:
         # ``-1`` makes texcount print just the total word count for the file.
         result = subprocess.run(
-            ["texcount", "-1", str(tex_file)],
+            ["texcount", "-1", "-"],
             check=True,
             capture_output=True,
+            input=tex_source,
             text=True,
         )
     except FileNotFoundError as exc:  # ``texcount`` not installed
