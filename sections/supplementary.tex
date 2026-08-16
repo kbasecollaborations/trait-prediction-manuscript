@@ -27,7 +27,7 @@ Biolog Phenotype MicroArrays measured utilisation by a colourimetric tetrazolium
 Marine~\cite{Gralka2023-ft} comprised 175 heterotrophic marine bacteria assessed on 100 substrates; phenotypic processing retained 172 records, of which 157 matched processed genomic features and 15 were lost during identifier alignment.
 
 \paragraph*{Populus.}
-Populus~\cite{PopulusDatasetCitation} is a previously unpublished Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in minimal medium for 58 isolates across 190 carbon sources.
+Populus~\cite{PopulusDatasetCitation} is a Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in MOPS minimal medium for 58 experimental profiles from 57 isolates across 191 carbon sources plus one no-carbon control.
 Because of its small sample size and narrow phylogenetic breadth, Populus was excluded from selected feature-stability comparisons.
 
 \subsection*{Supplementary Text S2: Genome Quality Control}
@@ -171,9 +171,9 @@ Stable features were identified with a fixed 500-iteration CatBoost model traine
 For each phenotype--dataset configuration, models were trained with 20 random seeds; features appearing among the top ten by mean absolute SHAP value in at least 70\% of runs were designated stable.
 For concordant-training comparisons, each phenotype--split matrix was first screened to the 300 KOFAM features with highest CatBoost importance.
 The stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B use cluster-level rather than raw-KO intersections so correlated KOs representing the same predictive signal are not counted separately.
-For each phenotype, the union of stable KOs was clustered on the pooled concordant feature matrix across all four datasets with \texttt{shap.utils.hclust}~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP}.
-The routine fits a univariate boosted-tree model from each KO to the phenotype and computes a pairwise distance of $1-R^2$ between the resulting per-sample predictions.
-The resulting distance matrix was single-linkage clustered at the default cutoff of 0.5.
+For each phenotype, the union of stable KOs was clustered on the pooled concordant feature matrix across all four datasets with \texttt{shap.utils.hclust} in SHAP v0.50.0~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP,SHAPhclustDocs}.
+With phenotype labels supplied, the routine fitted a univariate XGBoost model of the phenotype from each KO, then fitted models using every other KO to predict each first-stage model's output, defining directional distances as $1-R^2$.
+The smaller directional distance for each KO pair formed a single-linkage matrix, which was cut at a distance threshold of 0.5.
 Clustering followed stable-feature identification and therefore did not affect model fitting, predictions, or balanced-accuracy estimates.
 The stability analyses used the confirmed \texttt{cb\_noeval} default of 500 iterations without early stopping to reduce computational cost and attribution variation across 20 seeds.
 
@@ -237,7 +237,7 @@ Retaining GapMind false negatives increased recall by 0.030 but reduced specific
 All four quantities are per-phenotype means over minority-class-filtered cross-dataset cells (\texttt{scripts/figure5/fp\_only\_filter.py}).
 False-negative growers used more other carbon sources than GapMind-negative non-growers (9.5 versus 5.2 of the remaining 14; Mann--Whitney $p<10^{-200}$) and encoded more sugar-ABC transport components (6.5 versus 4.3; $p<10^{-60}$).
 The features introduced by false negatives were dominated by broad carbohydrate transporters and regulators; in 9 of 15 phenotypes, a transporter rather than an enzyme was the GapMind step most often absent, supporting a metabolic-generalist rather than substrate-specific interpretation.
-Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and K26399~\cite{Watanabe2019Altronate} as a divergent altronate dehydratase, but neither establishes a validated alternative route.
+Candidate exceptions with greater substrate-specific plausibility included sucrose uptake through a broad multiple-sugar ABC importer (K02025) and the arabinonate dehydratase K26399, a member of the D-altronate-dehydratase family~\cite{Watanabe2019Pentose,Watanabe2019Altronate}, but neither establishes a validated alternative route.
 Partitioning false negatives by the genomic presence of their catabolic machinery separated a recoverable fraction from a larger residual lacking such support.
 This residual was enriched for confident model--GapMind agreement against the experimental label (odds ratio 3.3), consistent with, but not proving, a contribution from experimental mislabelling (Supplementary Text~S12).
 
@@ -262,7 +262,7 @@ The BacDive pool size did not predict the gain ($\rho=0.26$, $p=0.38$).
 
 Feature selection was less reproducible as volume increased (Figure~\ref{fig:bacdive_curation}B,C): mean pairwise top-10 Jaccard similarity was 0.378 for C, 0.316 for F, and 0.253 for FB (C versus FB, $p<10^{-8}$), with the ordering retained under shared-feature and rank-sensitive analyses.
 Concordant models more consistently selected committed-pathway features, although mannose was an exception.
-Thus, added BacDive data improved unfiltered training, while the FB--C comparison did not detect a performance difference and does not establish equivalence; within this experiment, C used fewer samples and produced more reproducible, mechanism-aligned feature rankings~\cite{Geirhos2020Shortcut}.
+Thus, added BacDive data improved unfiltered training, while the FB--C comparison did not detect a performance difference and does not establish equivalence; within this experiment, C used fewer samples and produced more reproducible, mechanism-aligned feature rankings, a pattern consistent with reduced shortcut learning~\cite{Geirhos2020Shortcut}.
 
 \begin{figure}[ht]
 \centering
