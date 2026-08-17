@@ -45,7 +45,7 @@ Across random holdout evaluations of the aggregated dataset, at least one stable
 By contrast, only six of fifteen phenotypes shared at least one common stable feature cluster between models trained on the three non-held-out datasets and the held-out dataset alone (Figure~\ref{fig:misclassification_diagnosis}C, bottom; per-phenotype full-data counts in Table~\ref{tab:main_feature_comparison}).
 
 For histidine, KOFAM annotations consistently identified the main catabolic enzyme K01712 (urocanate hydratase) across datasets, illustrating that a mechanism-blind classifier can recover a genuine catabolic pathway gene when the experimental label agrees with the annotated mechanism (Supplementary Text~S4)~\cite{Bender2012HutBacteria}.
-Heterogeneous training pools that mix well-characterised with mechanistically ambiguous samples are a known source of poor cross-dataset generalisation in genomic ML~\cite{Whalen2022Pitfalls}.
+Distributional differences between training and test data are a recognised pitfall in genomic machine learning~\cite{Whalen2022Pitfalls}.
 Together, these analyses indicate that the aggregated training set pools many distinct genotype--phenotype mechanisms, mixing tractable samples with intractable ones (Figure~\ref{fig:misclassification_diagnosis}B,C); we therefore hypothesised that restricting training to samples with internally consistent genotype--phenotype relationships would let models recover transferable mechanistic features, using GapMind concordance to isolate this subset.
 \FloatBarrier{}
 
