@@ -12,6 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr, wilcoxon
+from sklearn.metrics import roc_auc_score
 
 from scripts.minority_filter import (
     concordant_minority_counts,
@@ -23,6 +24,9 @@ OUTPUT_DIR = Path("data/outputs/stats")
 OUTPUT_FILE = OUTPUT_DIR / "manuscript_pvalues.tsv"
 PER_PHENOTYPE_FILE = OUTPUT_DIR / "per_phenotype_mcnemar.tsv"
 PER_SAMPLE_FILE = Path("data/outputs/figure7/figure7_per_sample.tsv")
+FULLDATA_PER_SAMPLE_FILE = Path("data/outputs/figure7/figure7_per_sample_fulldata.tsv")
+"""Full-data counterpart of ``PER_SAMPLE_FILE``, used to attribute within-stratum
+discrimination to concordance filtering rather than to the feature space."""
 
 MECHFREE_PER_SAMPLE_FILE = Path("data/outputs/figure6/figure6c_mechfree_per_sample.tsv")
 """Mechanism-free arm of Figure 6C, produced on the concordant arm's terms by
@@ -143,6 +147,71 @@ def test_fig5d_fn_vs_fp_rescue() -> tuple[float, int]:
         .dropna()
     )
     return _paired_wilcoxon(rates["FN"], rates["FP"])
+
+
+def test_fig5d_fn_vs_fp_rescue_marginal_adjusted() -> tuple[float, int]:
+    """Figure 5D rescue asymmetry after subtracting the model's own call rate.
+
+    A hard-call rescue rate is bounded by how often the model emits that class at
+    all: an FN is "rescued" by a positive call and an FP by a negative one. Each
+    per-phenotype rate is therefore compared against the concordance-trained
+    model's marginal call rate for the same class on the same held-out samples,
+    which removes the class-prior contribution the raw contrast confounds with a
+    genomic one.
+    """
+    per_sample = pd.read_csv(PER_SAMPLE_FILE, sep="\t")
+    call_rate = per_sample.groupby("phenotype")["y_pred"].mean()
+    disc = per_sample[per_sample["gapmind_pred"] != per_sample["y_true"]].copy()
+    disc["error_type"] = np.where(disc["y_true"] == 1, "FN", "FP")
+    disc["rescued"] = (disc["y_pred"] == disc["y_true"]).astype(int)
+    rates = (
+        disc.groupby(["phenotype", "error_type"])["rescued"]
+        .mean()
+        .unstack("error_type")
+        .dropna()
+    )
+    fn_excess = rates["FN"] - call_rate.reindex(rates.index)
+    fp_excess = rates["FP"] - (1.0 - call_rate.reindex(rates.index))
+    return _paired_wilcoxon(fn_excess, fp_excess)
+
+
+def _within_stratum_auc(path: Path, gapmind_call: int) -> pd.Series:
+    """Per-phenotype ROC AUC of predicted growth probability within one GapMind call.
+
+    GapMind is constant inside a stratum, so its own AUC there is 0.5 by
+    construction and any discrimination is information the pathway-completeness
+    rule does not carry. Unlike a hard-call rescue rate this is threshold-free
+    and therefore invariant to the model's marginal call rate.
+
+    Parameters
+    ----------
+    path
+        Per-sample cross-dataset predictions for one training regime.
+    gapmind_call
+        Stratum to score: 0 for GapMind-negative genomes, 1 for GapMind-positive.
+
+    Returns
+    -------
+    pandas.Series
+        AUC indexed by phenotype, omitting phenotypes whose stratum is
+        single-class or has fewer than ten genomes.
+    """
+    per_sample = pd.read_csv(path, sep="\t")
+    stratum = per_sample[per_sample["gapmind_pred"] == gapmind_call]
+    out: dict[str, float] = {}
+    for phenotype, group in stratum.groupby("phenotype"):
+        if len(group) < 10 or group["y_true"].nunique() < 2:
+            continue
+        out[str(phenotype)] = float(roc_auc_score(group["y_true"], group["proba"]))
+    return pd.Series(out)
+
+
+def test_fig5d_within_stratum_auc(gapmind_call: int) -> tuple[float, int]:
+    """Concordance-trained vs full-data within-stratum AUC across phenotypes."""
+    return _paired_wilcoxon(
+        _within_stratum_auc(PER_SAMPLE_FILE, gapmind_call),
+        _within_stratum_auc(FULLDATA_PER_SAMPLE_FILE, gapmind_call),
+    )
 
 
 def _phenotype_aggregates() -> pd.DataFrame:
@@ -487,9 +556,27 @@ def main() -> None:
         test_fig5c_random(),
     )
     add(
-        "T4_fig5d_fn_vs_fp_rescue",
+        "T4_fig5d_within_stratum_auc_gapmind_negative",
         "Results §82 / Fig 5D",
+        test_fig5d_within_stratum_auc(0),
+    )
+    add(
+        "T4b_fig5d_within_stratum_auc_gapmind_positive",
+        "Supplementary Text S10",
+        test_fig5d_within_stratum_auc(1),
+        adjust=False,
+    )
+    add(
+        "T4c_fig5d_fn_vs_fp_rescue_raw",
+        "Supplementary Text S10",
         test_fig5d_fn_vs_fp_rescue(),
+        adjust=False,
+    )
+    add(
+        "T4d_fig5d_fn_vs_fp_rescue_marginal_adjusted",
+        "Supplementary Text S10",
+        test_fig5d_fn_vs_fp_rescue_marginal_adjusted(),
+        adjust=False,
     )
     add(
         "T5_fig5c_concordant_vs_gapmind_dataset",
