@@ -27,7 +27,7 @@ Growth calls derive predominantly from Biolog Phenotype MicroArray colourimetric
 Marine~\cite{Gralka2023-ft} comprised 175 heterotrophic marine bacteria assessed on 100 substrates; phenotypic processing retained 172 records, of which 157 matched processed genomic features and 15 were lost during identifier alignment.
 
 \paragraph*{Populus.}
-Populus~\cite{PopulusDatasetCitation} is a Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in MOPS minimal medium for 58 experimental profiles from 57 isolates across 191 carbon sources plus one no-carbon control.
+Populus~\cite{PopulusDatasetCitation} is a Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in MOPS minimal medium for 58 experimental profiles from 57 isolates across 190 carbon sources plus a no-carbon control on each of the two plates.
 Because of its small sample size and narrow phylogenetic breadth, Populus was excluded from selected feature-stability comparisons.
 
 \subsection*{Supplementary Text S2: Genome Quality Control}
@@ -193,7 +193,7 @@ Predictions with confidence of at least 0.8 were counted as high-confidence when
 Neither summary predicted per-phenotype cross-dataset balanced accuracy across the 15 phenotypes (Spearman $\rho$ between $-0.18$ and $-0.05$, both $p > 0.5$).
 For experiment prioritisation, each eligible held-out dataset was split approximately 50:50 into candidate and evaluation pools, stratified when possible; 25 candidate labels were added to the concordant training set and evaluated across three seeds and four held-out datasets.
 The random baseline therefore includes the benefit of initial exposure to the held-out dataset, while other strategies are credited only for improvement beyond that baseline.
-After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, BH-adjusted $q=0.048$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
+After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, BH-adjusted $q=0.052$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
 This computational pilot used 120 CatBoost iterations, depth 4, and learning rate 0.05 without evaluation-set early stopping.
 
 \subsection*{Supplementary Text S9: Composite Confidence Weighting}
@@ -246,11 +246,11 @@ In the experiment-prioritisation simulation the advantage of low-confidence sele
 Rescue rates are the per-phenotype fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, computed separately for GapMind false negatives and false positives.
 The false-negative rate exceeded the false-positive rate for 12 of the 15 phenotypes (means 42\% and 20\%; paired Wilcoxon $p = 0.018$), but both rates remained below the corresponding marginal model-call rates.
 Because a hard-call rescue rate is bounded by how often the model emits that class at all, an unrescued false negative and a low positive-call rate are not separable in this contrast.
-Subtracting each phenotype's marginal call rate removes the asymmetry entirely ($-0.19$ versus $-0.19$, higher for 7 of 15 phenotypes, $p = 0.98$), as does a logistic model of per-genome correctness with a call-rate offset and phenotype fixed effects ($p = 0.51$).
+Subtracting each phenotype's marginal call rate removes the asymmetry entirely ($-0.19$ versus $-0.19$, higher for 7 of 15 phenotypes, $p = 0.98$).
 We therefore scored discrimination within each GapMind call using the predicted growth probability, which is threshold-free and so invariant to the marginal call rate, and on which GapMind itself scores 0.5 by construction because its call is constant within a stratum.
 The concordance-trained model separated growers from non-growers within both strata (pooled AUC 0.674 among GapMind-negative and 0.676 among GapMind-positive genomes; per-phenotype means 0.636 and 0.656, above 0.5 for 12 and 14 of 15 phenotypes respectively).
 Comparing the two training regimes on the same genomes localises the gain: concordance training exceeded full-data training within the GapMind-negative stratum (0.636 versus 0.534, higher for 13 of 15 phenotypes, $p < 0.001$, Benjamini--Hochberg $q = 0.003$) but not within the GapMind-positive stratum (0.656 versus 0.646, 8 of 15, $p = 0.76$), with full-data training close to chance where the rule under-called.
-This is the asymmetry quoted in the Results for Figure~\ref{fig:concordant_analysis}D, and it matches the expected genomic basis of the two error types: growth despite an incomplete annotated pathway leaves recoverable genomic content, whereas a complete but unexpressed pathway leaves none.
+This is the asymmetry quoted in the Results for Figure~\ref{fig:concordant_analysis}D, and it matches the expected genomic basis of the two error types: growth despite an incomplete annotated pathway leaves genomic content that concordant training sharpens, whereas a complete but unexpressed pathway leaves a signal that it does not.
 Three phenotypes fell below 0.5 in the GapMind-negative stratum (glycerol 0.455, arginine 0.443, serine 0.258), consistent with the per-phenotype heterogeneity reported above.
 
 \paragraph{False-negative retention and the specificity tradeoff.}
@@ -282,7 +282,7 @@ FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 
 FB was not significantly different from C (0.725 versus 0.706, $p=0.20$; Matthews correlation coefficient $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall; C was equal or higher on $F_1$ and recall.
 The BacDive pool size did not predict the gain ($\rho=0.26$, $p=0.38$).
 Two further arms bound the comparison: BacDive alone matched the concordant set (0.709 versus 0.706, $p=0.53$), whereas adding BacDive to the concordant set exceeded it (0.729 versus 0.706, $p=0.03$ across the 45 phenotype--held-out cells, $p=0.09$ across the 13 phenotype means).
-Coherence and volume are therefore complementary rather than alternatives: concordance filtering reached comparable cross-dataset performance from roughly an order of magnitude fewer training samples, and added volume improved on it further only when applied to the already-filtered set.
+Coherence and volume are therefore complementary rather than alternatives: concordance filtering reached comparable cross-dataset performance from roughly four-fold fewer training samples, and added volume improved on it further only when applied to the already-filtered set.
 
 Feature selection was less reproducible as volume increased (Figure~\ref{fig:bacdive_curation}B,C): mean pairwise top-10 Jaccard similarity was 0.378 for C, 0.316 for F, and 0.253 for FB (C versus FB, $p<10^{-8}$), with the ordering retained under shared-feature and rank-sensitive analyses.
 Concordant models more consistently selected committed-pathway features, although mannose was an exception.
