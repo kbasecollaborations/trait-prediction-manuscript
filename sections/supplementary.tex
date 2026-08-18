@@ -21,7 +21,7 @@ ATLeaf~\cite{Schafer2023-nk} comprised 224 \textit{Arabidopsis thaliana} leaf-su
 
 \paragraph*{Biolog.}
 Biolog comprised 362 strains tested on 64 substrates, compiled from multiple published studies~\cite{BiologDatasetCitation}.
-Biolog Phenotype MicroArrays measured utilisation by a colourimetric tetrazolium readout in 96-well plates.
+Growth calls derive predominantly from Biolog Phenotype MicroArray colourimetric tetrazolium assays in 96-well plates, with a subset from other published growth-assay formats; per-strain sources are given in the deposited metadata table~\cite{ZenodoDeposit}.
 
 \paragraph*{Marine.}
 Marine~\cite{Gralka2023-ft} comprised 175 heterotrophic marine bacteria assessed on 100 substrates; phenotypic processing retained 172 records, of which 157 matched processed genomic features and 15 were lost during identifier alignment.
@@ -281,6 +281,8 @@ After label--feature intersection and removal of accessions overlapping the held
 FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p<0.001$, higher for 12 of 13 phenotypes).
 FB was not significantly different from C (0.725 versus 0.706, $p=0.20$; Matthews correlation coefficient $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall; C was equal or higher on $F_1$ and recall.
 The BacDive pool size did not predict the gain ($\rho=0.26$, $p=0.38$).
+Two further arms bound the comparison: BacDive alone matched the concordant set (0.709 versus 0.706, $p=0.53$), whereas adding BacDive to the concordant set exceeded it (0.729 versus 0.706, $p=0.03$ across the 45 phenotype--held-out cells, $p=0.09$ across the 13 phenotype means).
+Coherence and volume are therefore complementary rather than alternatives: concordance filtering reached comparable cross-dataset performance from roughly an order of magnitude fewer training samples, and added volume improved on it further only when applied to the already-filtered set.
 
 Feature selection was less reproducible as volume increased (Figure~\ref{fig:bacdive_curation}B,C): mean pairwise top-10 Jaccard similarity was 0.378 for C, 0.316 for F, and 0.253 for FB (C versus FB, $p<10^{-8}$), with the ordering retained under shared-feature and rank-sensitive analyses.
 Concordant models more consistently selected committed-pathway features, although mannose was an exception.
@@ -345,7 +347,7 @@ For alpha- and beta-D-glucose the anomeric distinction is not meaningful in solu
 \textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \makecell[r]{\textbf{Positive-} \\ \textbf{Call Rate}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 206 & 15 & 0.47 & Agar plate \\
-Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog PM (colourimetric) \\
+Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog PM and related assays \\
 Marine  & 175 & 100 & 172 & 157 & 15 & 0.51 & Liquid culture OD \\
 Populus & 58  & 190 & 55  & 55  & 15 & 0.74 & Liquid culture OD \\
 \hline
