@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 2 weight sweep: train CatBoost on y_soft-filtered splits for four weight configs."""
+"""Phase 2 sweep: train CatBoost with soft-label sample weights."""
 
 from __future__ import annotations
 
@@ -25,8 +25,10 @@ from scripts.figure6.figure6b_parameter_exploration import (
 )
 from scripts.ml_splits import load_split_data, perform_split_ml
 
-WeightingMode = Literal["label_confidence", "boundary_certainty"]
-DEFAULT_WEIGHTING_MODE: WeightingMode = "label_confidence"
+WeightingMode = Literal[
+    "label_confidence", "boundary_certainty", "recall_priority"
+]
+DEFAULT_WEIGHTING_MODE: WeightingMode = "recall_priority"
 
 OUTPUT_DIR = Path("data/outputs/figure6")
 SPLITS_DIR = Path("data/processed/train_test_splits")
@@ -154,10 +156,12 @@ def sample_weights_from_soft_labels(
         Observed binary labels.
     y_soft : pd.Series
         Composite probabilities of growth, aligned by genome ID.
-    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+    weighting_mode : WeightingMode, optional
         ``label_confidence`` assigns the composite support for the observed
         label. ``boundary_certainty`` assigns twice the distance from 0.5 with
-        a nonzero floor.
+        a nonzero floor. ``recall_priority`` uses label confidence for
+        positive labels and the stronger boundary certainty for negative
+        labels.
 
     Returns
     -------
@@ -176,6 +180,10 @@ def sample_weights_from_soft_labels(
         weights = 1.0 - (observed - soft).abs()
     elif weighting_mode == "boundary_certainty":
         weights = np.clip(2.0 * (soft - 0.5).abs(), 0.01, 1.0)
+    elif weighting_mode == "recall_priority":
+        boundary = np.clip(2.0 * (soft - 0.5).abs(), 0.01, 1.0)
+        label_confidence = 1.0 - (observed - soft).abs()
+        weights = boundary.where(observed == 0, label_confidence)
     else:
         raise ValueError(f"unsupported weighting mode: {weighting_mode!r}")
     return pd.Series(weights, index=common, dtype=float)
@@ -203,7 +211,7 @@ def compute_split_sample_weights(
         GapMind confidence, omitted for mechanism-free weighting.
     distance_df : pd.DataFrame
         Precomputed phylogenetic distance matrix.
-    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+    weighting_mode : WeightingMode, optional
         Mapping from composite probability to sample weight.
 
     Returns
@@ -244,7 +252,7 @@ def filter_splits(
         mechanism-free configuration.
     distance_df : pd.DataFrame
         Precomputed phylogenetic distance matrix.
-    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+    weighting_mode : WeightingMode, optional
         Mapping from composite probability to sample weight.
 
     Returns
@@ -385,7 +393,7 @@ def run_config(
         Parallel workers. ``1`` runs sequentially.
     thread_count : int
         CatBoost threads per worker.
-    weighting_mode : {"label_confidence", "boundary_certainty"}
+    weighting_mode : WeightingMode
         Mapping from composite probability to sample weight.
     output_suffix : str, optional
         Suffix used to keep sensitivity-analysis outputs separate.
@@ -404,7 +412,8 @@ def run_config(
         split_data, config, conf_mech, distance_df, weighting_mode
     )
     print(
-        f"  {len(filtered)} filtered splits (n_jobs={n_jobs}, thread_count={thread_count})"
+        f"  {len(filtered)} weighted splits "
+        f"(n_jobs={n_jobs}, thread_count={thread_count})"
     )
 
     t0 = time.time()
@@ -443,7 +452,7 @@ def main(
         Parallel workers across ML fits. Use ``1`` to disable parallelism.
     thread_count : int
         CatBoost ``thread_count`` per worker.
-    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+    weighting_mode : WeightingMode, optional
         Mapping from composite probability to sample weight. Non-default
         sensitivity outputs receive a filename suffix.
     """

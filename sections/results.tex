@@ -78,14 +78,16 @@ Concordance filtering, however, removes approximately 30\% of samples and requir
 
 \FloatBarrier{}
 
-\subsection*{Mechanism-free confidence filtering provides a pathway-independent alternative}
+\subsection*{Mechanism-free confidence weighting provides a recall-oriented alternative}
 
-We evaluated a soft-label filter combining phylogenetic $k$-NN agreement, GapMind pathway completeness, and the experimental label, with the GapMind contribution ranging from zero (mechanism-free) to 0.5 (Methods; Supplementary Text~S9).
+Mechanism-free recall-prioritised weighting combined phylogenetic $k$-NN agreement and experimental labels; three comparison settings added GapMind contributions of 0.3--0.5 (Methods; Supplementary Text~S9).
 A small number of problematic genomes, discordant with GapMind across many phenotypes, accounted for a disproportionate share of misclassifications (Figure~\ref{fig:improvement_strategies}A) and were tested as an additional filter.
-Across this sweep, mean cross-dataset balanced accuracy varied by less than 0.02, while recall rose from 0.74 to 0.82 at near-constant precision; their removal alone provided no measurable improvement (Figure~\ref{fig:improvement_strategies}B).
-Concordant training had the highest mean balanced accuracy (0.68 versus 0.641 for the mechanism-free filter), although this difference was not significant (paired Wilcoxon $p = 0.17$); neither surpassed GapMind (0.69).
-GapMind's pathway-completeness rule is conservative and biased towards false negatives, so recall most directly reflects what the ML filters add over the curated baseline.
-Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for more phenotypes than the mechanism-free filter (9 of 15 versus 5), although neither mean recall shift was significant (Figure~\ref{fig:improvement_strategies}C; Supplementary Text~S9).
+Across this sweep, mean cross-dataset balanced accuracy varied by less than 0.005, while recall rose from 0.759 to 0.826 as precision declined from 0.733 to 0.701; problematic-genome removal alone provided no measurable improvement (Figure~\ref{fig:improvement_strategies}B).
+Concordant training had the highest mean balanced accuracy (0.68 versus 0.644 for mechanism-free weighting), although this difference was not significant (paired Wilcoxon $p = 0.23$); neither surpassed GapMind (0.69).
+Because GapMind is biased towards false negatives, recall reflects what ML adds over this baseline.
+Mechanism-free weighting increased mean recall (0.759 versus 0.748 unfiltered and 0.737 GapMind) with little balanced-accuracy change relative to unfiltered ML (0.644 versus 0.646) but lower specificity (0.529 versus 0.544).
+On matched positive observations, it added 103 true positives over unfiltered ML and 127 over GapMind (Supplementary Text~S9).
+Concordant training produced more significant phenotype-level recall gains over GapMind (9 of 15 versus 6), but neither mean recall shift was significant (paired Wilcoxon $p = 0.095$ and $p = 0.56$; Figure~\ref{fig:improvement_strategies}C; Supplementary Text~S9).
 At $w_{\mathrm{gap}} = 0.5$, higher recall was accompanied by lower precision, indicating a shift towards positive calls rather than greater discrimination (Supplementary Text~S9; Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
 
 As a complementary test, phenotype-filtered GapMind features (without correlation filtering; Supplementary Text~S5) matched combined GapMind, KOFAM, and RAST features under random holdout but improved cross-dataset balanced accuracy (paired Wilcoxon $p<0.001$, BH-adjusted $q=0.003$); the combined-feature models still concentrated on curated GapMind terms, consistent with prior reports favouring biologically relevant over comprehensive feature sets~\cite{Li2023-up} (Figure~\ref{fig:improvement_strategies}D).

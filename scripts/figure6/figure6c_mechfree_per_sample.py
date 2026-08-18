@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Per-genome predictions for the mechanism-free confidence filter (Figure 6C).
+"""Per-genome predictions for the mechanism-free weighting strategy (Figure 6C).
 
-Tree-placed training and validation samples receive weights equal to the
-confidence assigned to their experimental label by phylogenetic k-NN agreement
-and the experimental label alone (``w_gapmind = 0``). Model, random state,
-column alignment, early stopping and held-out test set match the concordant arm.
+Tree-placed training and validation samples receive recall-prioritised weights
+from phylogenetic k-NN agreement and the experimental label alone
+(``w_gapmind = 0``). Phylogenetic conflicts reduce every sample's weight, with
+stronger down-weighting for negative labels. Model, random state, column
+alignment, early stopping and held-out test set match the concordant arm.
 
 Writes ``data/outputs/figure6/figure6c_mechfree_per_sample.tsv``.
 
@@ -42,7 +43,7 @@ from scripts.ml_splits import align_columns, load_split_data
 OUTPUT_FILE: Path = Path("data/outputs/figure6/figure6c_mechfree_per_sample.tsv")
 
 MECHFREE_CONFIG_NAME: str = "free_balanced"
-"""The $w_{gap} = 0$ arm of the Figure 6B sweep, i.e. the mechanism-free filter."""
+"""The $w_{gap} = 0$ arm of the Figure 6B mechanism-free weighting sweep."""
 
 
 def mechfree_sample_weights(
@@ -61,7 +62,7 @@ def mechfree_sample_weights(
         Phenotype represented by the split.
     distance_df : pd.DataFrame
         Precomputed phylogenetic distance matrix.
-    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+    weighting_mode : WeightingMode, optional
         Mapping from composite probability to sample weight.
 
     Returns

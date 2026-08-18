@@ -25,10 +25,10 @@ W_GAP_VALUES: dict[str, float] = {
 }
 
 CONFIG_TO_LABEL: dict[str, str] = {
-    "free_balanced": "Confidence (no GapMind)",
-    "current": "Confidence (w=0.3)",
-    "high_mech": "Confidence (w=0.4)",
-    "very_high_mech": "Confidence (w=0.5)",
+    "free_balanced": "Weighted (no GapMind)",
+    "current": "Weighted (w=0.3)",
+    "high_mech": "Weighted (w=0.4)",
+    "very_high_mech": "Weighted (w=0.5)",
     "problematic_removed": "Problematic removed",
     "concordant": "Concordant",
 }
@@ -62,7 +62,7 @@ METRIC_MARKERS: dict[str, str] = {
 
 
 def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
-    """Assemble long-form data for the six filter conditions.
+    """Assemble long-form data for the seven training-data strategies.
 
     Parameters
     ----------
@@ -76,7 +76,7 @@ def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
     pd.DataFrame
         Columns ``config``, ``phenotype``, ``balanced_accuracy``, ``precision``,
         ``recall``, ``n_train``, ``n_val``. The six configs are the four
-        confidence-filter weight settings plus ``concordant`` and
+        soft-label weight settings plus ``full_data``, ``concordant``, and
         ``problematic_removed``.
     """
     full_minority = full_test_minority_counts()
@@ -294,7 +294,7 @@ def plot_metric_sweep(
     xticklabels = [
         f"{label}\n$n$={config_n[cfg]}" for label, cfg in zip(base_labels, column_order)
     ]
-    ax.set_xlabel("Training-data filter")
+    ax.set_xlabel("Training-data strategy")
     ax.set_ylabel("Metric value across 15 phenotypes")
     ax.set_xticks(xticks)
     ax.set_xticklabels(xticklabels, fontsize=8)
@@ -445,7 +445,7 @@ def plot_gapmind_delta_forest(
         color=CONDITION_COLORS["free_balanced"],
         edgecolor="black",
         linewidth=0.5,
-        label=f"Confidence (no GapMind, $n$={n_mech})",
+        label=f"Mechanism-free weighted ($n$={n_mech})",
         zorder=3,
     )
 

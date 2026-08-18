@@ -252,7 +252,7 @@ def _figure6_recall_means() -> tuple[pd.Series, pd.Series, pd.Series]:
 
 
 def test_fig6b_concordant_vs_mechfree_ba() -> tuple[float, int]:
-    """Figure 6B: concordant vs mechanism-free filter balanced accuracy (cross-dataset)."""
+    """Figure 6B: concordant vs mechanism-free weighting balanced accuracy."""
     concordant, mech_free, _gapmind = _figure6_metric_means("balanced_accuracy")
     return _paired_wilcoxon(concordant, mech_free)
 
@@ -264,9 +264,20 @@ def test_fig6c_concordant_recall_vs_gapmind() -> tuple[float, int]:
 
 
 def test_fig6c_mechfree_recall_vs_gapmind() -> tuple[float, int]:
-    """Figure 6C: mechanism-free filter recall vs GapMind recall (cross-dataset)."""
+    """Figure 6C: mechanism-free weighting recall vs GapMind recall."""
     _concordant, mech_free, gapmind = _figure6_recall_means()
     return _paired_wilcoxon(mech_free, gapmind)
+
+
+def test_fig6c_mechfree_recall_vs_unfiltered() -> tuple[float, int]:
+    """Figure 6C: mechanism-free weighting vs unfiltered ML recall."""
+    from scripts.figure6.figure6b_aggregate_plot import _load_long_form
+
+    long_df = _load_long_form(
+        Path("data/outputs/figure6"), list(COMMON_PHENOTYPES)
+    )
+    means = long_df.groupby(["phenotype", "config"])["recall"].mean().unstack()
+    return _paired_wilcoxon(means["free_balanced"], means["full_data"])
 
 
 def fig6c_concordant_recall_delta_ci(
@@ -520,6 +531,11 @@ def main() -> None:
         "T10_fig6c_mechfree_recall_vs_gapmind",
         "Results §90 / Fig 6C",
         test_fig6c_mechfree_recall_vs_gapmind(),
+    )
+    add(
+        "T12_fig6c_mechfree_recall_vs_unfiltered",
+        "Results §90 / Fig 6C",
+        test_fig6c_mechfree_recall_vs_unfiltered(),
     )
     add(
         "T8a_fig6d_combined_vs_filtered_random",

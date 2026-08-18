@@ -196,26 +196,39 @@ The random baseline therefore includes the benefit of initial exposure to the he
 After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, BH-adjusted $q=0.048$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
 This computational pilot used 120 CatBoost iterations, depth 4, and learning rate 0.05 without evaluation-set early stopping.
 
-\subsection*{Supplementary Text S9: Composite Confidence Score for Data Quality Filtering}
+\subsection*{Supplementary Text S9: Composite Confidence Weighting}
 
-The composite score used to identify ambiguous training samples (Figure~\ref{fig:improvement_strategies}B) was calculated as follows:
+The composite score used to weight training and validation samples (Figure~\ref{fig:improvement_strategies}B) was calculated as follows:
 \begin{equation*}
     y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gap}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp},
 \end{equation*}
 Within each split, the phylogenetic component was the mean experimental label among the $k=3$ nearest training genomes and therefore took values 0, $1/3$, $2/3$, or 1; a training genome was excluded from its own neighbours.
 The experimental component was the binary phenotype label used only for training- and validation-set quality assessment.
 GapMind categories mapped to six numeric levels: complete, 1.0; likely complete, 0.9; steps missing medium, 0.6; steps missing low, 0.3; not present, 0.1; and no evidence or uncategorized, 0.0.
-After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, samples in the inclusive interval $[0.4,0.6]$ were excluded and all others retained.
+After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, every scored sample was retained and assigned the recall-prioritised weight
+\begin{equation*}
+    s_i =
+    \begin{cases}
+        y_{\mathrm{soft},i}, & \mathrm{exp}_i = 1,\\
+        \max\left(0.01, 2\left|y_{\mathrm{soft},i}-0.5\right|\right), & \mathrm{exp}_i = 0.
+    \end{cases}
+\end{equation*}
+Thus, in the mechanism-free setting, complete phylogenetic conflicts remained in training with weights 0.60 for positive labels and 0.20 for negative labels, while complete agreements received weights 0.99 and 0.98, respectively.
+The asymmetric weighting prioritised recall while ensuring that every phylogenetic conflict reduced confidence; symmetric label-confidence and decision-boundary mappings gave similar balanced accuracy but lower recall in sensitivity analyses.
 Four weight configurations $(w_{\mathrm{phylo}}, w_{\mathrm{gap}}, w_{\mathrm{exp}})$ were evaluated: the mechanism-free $(0.40, 0.00, 0.60)$ and three GapMind-weighted settings $(0.20, 0.30, 0.50)$, $(0.15, 0.40, 0.45)$, and $(0.10, 0.50, 0.40)$.
-All were applied to training and validation samples only; held-out test labels were not used to calculate the filter, held-out test samples were unchanged, and the inclusive ambiguity interval was the same throughout.
-Data cost differed little between the two filters: concordant training retained $72\%$ of samples ($n\approx 385$) and the mechanism-free filter $75\%$ ($n\approx 400$), against $n\approx 534$ with no filter.
+All weights were applied to training and validation samples only; held-out test labels were not used to calculate them, and held-out test samples were unchanged.
+Tree-unplaced training and validation genomes were excluded because they lacked a phylogenetic score; tree-placed conflicts were not excluded.
+The mechanism-free analysis therefore retained $80\%$ of samples as rows ($n\approx 427$; summed sample weight $\approx374$), compared with $n\approx 534$ without filtering and $n\approx385$ under concordance filtering.
 
-\paragraph{Filter performance across the weight sweep.}
-Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.02, while mean recall rose from 0.74 at $w_{\mathrm{gap}}=0$ to 0.82 at $w_{\mathrm{gap}}=0.5$ at near-constant precision; problematic-sample removal alone gave no measurable improvement.
-Concordant training reached mean balanced accuracy 0.68 and the mechanism-free filter 0.641 (paired Wilcoxon $p=0.17$), compared with 0.646 without filtering and 0.69 for GapMind.
-Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas the mechanism-free filter split 5 and 5; neither mean recall shift was significant ($p=0.095$ and $p=0.93$, respectively).
+\paragraph{Performance across the weight sweep.}
+Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.005, while mean recall rose from 0.759 at $w_{\mathrm{gap}}=0$ to 0.826 at $w_{\mathrm{gap}}=0.5$ as precision declined from 0.733 to 0.701; problematic-sample removal alone gave no measurable improvement.
+Concordant training reached mean balanced accuracy 0.68 and mechanism-free weighting 0.644 (paired Wilcoxon $p=0.23$), compared with 0.646 without filtering and 0.69 for GapMind.
+Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas mechanism-free weighting was higher for 6 and lower for 6; neither mean recall shift was significant ($p=0.095$ and $p=0.56$, respectively).
+Mechanism-free weighting increased mean recall by 0.011 over unfiltered ML (higher for 12 of 15 phenotypes, $p=0.11$), while reducing mean specificity by 0.015.
+Across 6{,}027 matched positive phenotype--genome observations, mechanism-free weighting made 4{,}552 true-positive calls, compared with 4{,}449 for unfiltered ML and 4{,}425 for GapMind.
+On the 5{,}929 positive observations with concordant-model predictions, concordant training made 4{,}580 true-positive calls, compared with 4{,}367 for unfiltered ML and 4{,}375 for GapMind.
 Concordant recall gains were led by mannose ($+0.17$), while losses were greatest for galacturonic acid ($-0.23$) and glycerol ($-0.18$; Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
-At $w_{\mathrm{gap}}=0.5$, recall exceeded GapMind by a mean 0.08 (higher for 12 of 15 phenotypes, $p=0.030$) but precision was lower by 0.04 ($p=0.018$).
+At $w_{\mathrm{gap}}=0.5$, recall exceeded GapMind by a mean 0.089 (higher for 12 of 15 phenotypes, $p=0.010$), but precision was lower by 0.066 ($p=0.010$) and specificity by 0.198 ($p<0.001$).
 The concordant filter gained 0.05 recall (higher for 12 of 15 phenotypes) without a detectable precision cost (mean $-0.02$, $p=0.17$).
 The endpoint therefore shifted the operating point towards positive calls rather than adding discriminative information.
 

@@ -71,8 +71,9 @@ Biologically redundant KOs were grouped post hoc into SHAP-supervised clusters b
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering, both applied to training and validation samples only, never to the held-out test set.
 Problematic-sample removal excluded universal non-growers with any GapMind growth prediction, universal growers with incomplete GapMind pathways, and the twenty most frequently GapMind-misclassified genomes.
-Confidence-based filtering excluded ambiguous training and validation samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; phylogenetic agreement was calculated within each split using training labels only.
-Four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S9).
+Confidence-based weighting combined split-local phylogenetic neighbour agreement (training labels only), GapMind pathway completeness, and experimental outcome.
+Tree-unplaced training and validation genomes were excluded because they could not be scored; tree-placed conflicts were retained and down-weighted asymmetrically to prioritise recall (Supplementary Text~S9).
+Four score configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula and sample weights in Supplementary Text~S9).
 All conditions in Figure~\ref{fig:improvement_strategies}B were evaluated on the same full cross-dataset held-out test set.
 
 \subsection*{Sample Size Requirements}

@@ -82,7 +82,7 @@ def create_figure6(output_file: Path) -> None:
         data_dir, common_phenotypes
     )
     print(
-        f" - Top-BA confidence config: {best_config_name} ({best_label}); "
+        f" - Top-BA weighted config: {best_config_name} ({best_label}); "
         f"mech-free gap: {summary['free_balanced'] - summary.max():+.3f} BA"
     )
     gs_cd = GridSpecFromSubplotSpec(1, 2, subplot_spec=gs[2, 0], wspace=0.32)
