@@ -7,21 +7,26 @@ import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
+from scripts.figure6.figure6b_data import (
+    K_NEIGHBORS,
+    load_gapmind_confidence,
+    load_phylogenetic_data,
+)
 from scripts.figure6.figure6b_parameter_exploration import (
     WeightConfig,
-    build_inputs,
+    phylo_knn_confidence,
 )
 from scripts.ml_splits import load_split_data, perform_split_ml
 
-CONFIDENCE_THRESHOLD_LOW = 0.4
-CONFIDENCE_THRESHOLD_HIGH = 0.6
+WeightingMode = Literal["label_confidence", "boundary_certainty"]
+DEFAULT_WEIGHTING_MODE: WeightingMode = "label_confidence"
 
 OUTPUT_DIR = Path("data/outputs/figure6")
 SPLITS_DIR = Path("data/processed/train_test_splits")
@@ -50,7 +55,7 @@ PHASE2_CONFIGS: list[WeightConfig] = [
 
 @dataclass(frozen=True)
 class FilteredSplit:
-    """One filtered split ready for ML.
+    """One confidence-weighted split ready for ML.
 
     Attributes
     ----------
@@ -61,7 +66,9 @@ class FilteredSplit:
     phenotype : str
         Phenotype name.
     X_train, y_train, X_val, y_val, X_test, y_test : pd.DataFrame | pd.Series
-        Filtered train/val and original test.
+        Phylogenetically scored train/val and original test.
+    train_weights, val_weights : pd.Series
+        Per-row confidence weights for CatBoost fitting and early stopping.
     """
 
     split_type: str
@@ -73,81 +80,201 @@ class FilteredSplit:
     y_val: pd.Series
     X_test: pd.DataFrame
     y_test: pd.Series
+    train_weights: pd.Series
+    val_weights: pd.Series
 
 
-def compute_y_soft(
+def compute_split_y_soft(
     config: WeightConfig,
-    inputs: dict[str, dict[str, pd.Series]],
+    split: dict[str, Any],
+    phenotype_name: str,
+    conf_mech: dict[str, pd.Series] | None,
+    distance_df: pd.DataFrame,
 ) -> dict[str, pd.Series]:
-    """Compute ``y_soft`` per phenotype for a given weight config.
+    """Compute train and validation soft labels without held-out test labels.
 
     Parameters
     ----------
     config : WeightConfig
         Weights to apply.
-    inputs : dict[str, dict[str, pd.Series]]
-        Phase 1 cached per-phenotype series (``conf_phylo``, ``conf_mech``,
-        ``y_exp``).
+    split : dict[str, Any]
+        One train/validation/test split.
+    phenotype_name : str
+        Phenotype represented by the split.
+    conf_mech : dict[str, pd.Series] | None
+        GapMind confidence by phenotype and genome. May be omitted when
+        ``w_gapmind`` is zero.
+    distance_df : pd.DataFrame
+        Precomputed phylogenetic distance matrix.
 
     Returns
     -------
     dict[str, pd.Series]
-        Mapping phenotype name -> ``y_soft`` series clipped to ``(0.01, 0.99)``.
+        Soft-label series for ``train`` and ``val``, clipped to ``(0.01, 0.99)``.
     """
-    y_soft: dict[str, pd.Series] = {}
-    for phenotype_name, parts in inputs.items():
-        conf_phylo = parts["conf_phylo"]
-        conf_mech = parts["conf_mech"]
-        y_exp = parts["y_exp"]
-        common = conf_phylo.index.intersection(conf_mech.index).intersection(
-            y_exp.index
+    y_train = cast(pd.Series, split["y_train"]).dropna()
+    scores: dict[str, pd.Series] = {}
+    for set_name in ("train", "val"):
+        y_exp = cast(pd.Series, split[f"y_{set_name}"]).dropna()
+        conf_phylo = phylo_knn_confidence(
+            y_train,
+            distance_df,
+            k=K_NEIGHBORS,
+            query_index=y_exp.index,
         )
-        if len(common) == 0:
-            continue
+        common = conf_phylo.index.intersection(y_exp.index)
+        mech_conf: pd.Series | None = None
+        if config.w_gapmind != 0.0:
+            if conf_mech is None or phenotype_name not in conf_mech:
+                raise ValueError(
+                    f"GapMind confidence is required for {config.name!r}"
+                )
+            mech_conf = conf_mech[phenotype_name]
+            common = common.intersection(mech_conf.index)
         soft = (
             conf_phylo.loc[common] * config.w_phylo
-            + conf_mech.loc[common] * config.w_gapmind
             + y_exp.loc[common] * config.w_exp
         )
-        y_soft[phenotype_name] = np.clip(soft, 0.01, 1 - 0.01)
-    return y_soft
+        if mech_conf is not None:
+            soft += mech_conf.loc[common] * config.w_gapmind
+        scores[set_name] = np.clip(soft, 0.01, 1 - 0.01)
+    return scores
+
+
+def sample_weights_from_soft_labels(
+    y_exp: pd.Series,
+    y_soft: pd.Series,
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> pd.Series:
+    """Convert composite growth probabilities to per-label confidence weights.
+
+    Parameters
+    ----------
+    y_exp : pd.Series
+        Observed binary labels.
+    y_soft : pd.Series
+        Composite probabilities of growth, aligned by genome ID.
+    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+        ``label_confidence`` assigns the composite support for the observed
+        label. ``boundary_certainty`` assigns twice the distance from 0.5 with
+        a nonzero floor.
+
+    Returns
+    -------
+    pd.Series
+        Sample weights for genomes present in both inputs.
+
+    Raises
+    ------
+    ValueError
+        If ``weighting_mode`` is unsupported.
+    """
+    common = y_exp.index.intersection(y_soft.index)
+    observed = y_exp.loc[common].astype(float)
+    soft = y_soft.loc[common].astype(float)
+    if weighting_mode == "label_confidence":
+        weights = 1.0 - (observed - soft).abs()
+    elif weighting_mode == "boundary_certainty":
+        weights = np.clip(2.0 * (soft - 0.5).abs(), 0.01, 1.0)
+    else:
+        raise ValueError(f"unsupported weighting mode: {weighting_mode!r}")
+    return pd.Series(weights, index=common, dtype=float)
+
+
+def compute_split_sample_weights(
+    config: WeightConfig,
+    split: dict[str, Any],
+    phenotype_name: str,
+    conf_mech: dict[str, pd.Series] | None,
+    distance_df: pd.DataFrame,
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> dict[str, pd.Series]:
+    """Compute aligned train and validation weights without test labels.
+
+    Parameters
+    ----------
+    config : WeightConfig
+        Composite-score weights.
+    split : dict[str, Any]
+        One train/validation/test split.
+    phenotype_name : str
+        Phenotype represented by the split.
+    conf_mech : dict[str, pd.Series] | None
+        GapMind confidence, omitted for mechanism-free weighting.
+    distance_df : pd.DataFrame
+        Precomputed phylogenetic distance matrix.
+    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+        Mapping from composite probability to sample weight.
+
+    Returns
+    -------
+    dict[str, pd.Series]
+        Per-row weights for the tree-scored train and validation genomes.
+    """
+    soft_by_set = compute_split_y_soft(
+        config, split, phenotype_name, conf_mech, distance_df
+    )
+    return {
+        set_name: sample_weights_from_soft_labels(
+            cast(pd.Series, split[f"y_{set_name}"]).dropna(),
+            soft,
+            weighting_mode,
+        )
+        for set_name, soft in soft_by_set.items()
+    }
 
 
 def filter_splits(
     split_data: dict[str, dict[str, dict[str, Any]]],
-    y_soft: dict[str, pd.Series],
+    config: WeightConfig,
+    conf_mech: dict[str, pd.Series] | None,
+    distance_df: pd.DataFrame,
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
 ) -> list[FilteredSplit]:
-    """Apply ``y_soft`` filter to train+val of every split.
+    """Prepare confidence-weighted train and validation data for every split.
 
     Parameters
     ----------
     split_data : dict
         From ``load_split_data``.
-    y_soft : dict[str, pd.Series]
-        From ``compute_y_soft``.
+    config : WeightConfig
+        Weights to apply.
+    conf_mech : dict[str, pd.Series] | None
+        GapMind confidence by phenotype and genome. May be omitted for the
+        mechanism-free configuration.
+    distance_df : pd.DataFrame
+        Precomputed phylogenetic distance matrix.
+    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+        Mapping from composite probability to sample weight.
 
     Returns
     -------
     list[FilteredSplit]
-        Filtered splits, skipping any that lose a class in train or val.
+        Weighted splits, skipping any that lack a class in train or val.
     """
     filtered: list[FilteredSplit] = []
     for split_type, splits in split_data.items():
         for key, split in splits.items():
             phenotype_name = key.split("_")[0]
-            if phenotype_name not in y_soft:
+            if config.w_gapmind != 0.0 and (
+                conf_mech is None or phenotype_name not in conf_mech
+            ):
                 continue
 
-            soft = y_soft[phenotype_name]
+            weights_by_set = compute_split_sample_weights(
+                config,
+                split,
+                phenotype_name,
+                conf_mech,
+                distance_df,
+                weighting_mode,
+            )
             kept_idx: dict[str, pd.Index] = {}
             for set_name in ("train", "val"):
                 y = split[f"y_{set_name}"]
-                common = y.index.intersection(soft.index)
-                soft_set = soft.loc[common]
-                confident = (soft_set < CONFIDENCE_THRESHOLD_LOW) | (
-                    soft_set > CONFIDENCE_THRESHOLD_HIGH
+                kept_idx[set_name] = y.index.intersection(
+                    weights_by_set[set_name].index
                 )
-                kept_idx[set_name] = soft_set[confident].index
 
             X_train = split["X_train"].loc[kept_idx["train"]]
             y_train = split["y_train"].loc[kept_idx["train"]]
@@ -172,6 +299,8 @@ def filter_splits(
                     y_val=y_val,
                     X_test=X_test,
                     y_test=y_test,
+                    train_weights=weights_by_set["train"].loc[y_train.index],
+                    val_weights=weights_by_set["val"].loc[y_val.index],
                 )
             )
     return filtered
@@ -208,6 +337,8 @@ def fit_one(
         fs.y_test,
         model_type="cb",
         scoring=SCORING,
+        train_sample_weight=fs.train_weights,
+        val_sample_weight=fs.val_weights,
         random_state=42,
         thread_count=thread_count,
     )
@@ -221,6 +352,8 @@ def fit_one(
             "n_train": len(fs.X_train),
             "n_val": len(fs.X_val),
             "n_test": len(fs.X_test),
+            "train_weight_sum": float(fs.train_weights.sum()),
+            "val_weight_sum": float(fs.val_weights.sum()),
         }
     )
     return result
@@ -229,9 +362,12 @@ def fit_one(
 def run_config(
     config: WeightConfig,
     split_data: dict[str, dict[str, dict[str, Any]]],
-    inputs: dict[str, dict[str, pd.Series]],
+    conf_mech: dict[str, pd.Series],
+    distance_df: pd.DataFrame,
     n_jobs: int,
     thread_count: int,
+    weighting_mode: WeightingMode,
+    output_suffix: str = "",
 ) -> pd.DataFrame:
     """Run all ML fits for one weight config.
 
@@ -241,12 +377,18 @@ def run_config(
         Weights to apply.
     split_data : dict
         Output of ``load_split_data`` (shared across configs).
-    inputs : dict[str, dict[str, pd.Series]]
-        Phase 1 cached per-phenotype series.
+    conf_mech : dict[str, pd.Series]
+        GapMind confidence by phenotype and genome.
+    distance_df : pd.DataFrame
+        Precomputed phylogenetic distance matrix.
     n_jobs : int
         Parallel workers. ``1`` runs sequentially.
     thread_count : int
         CatBoost threads per worker.
+    weighting_mode : {"label_confidence", "boundary_certainty"}
+        Mapping from composite probability to sample weight.
+    output_suffix : str, optional
+        Suffix used to keep sensitivity-analysis outputs separate.
 
     Returns
     -------
@@ -258,8 +400,9 @@ def run_config(
         f"(w_phylo={config.w_phylo}, w_gapmind={config.w_gapmind}, "
         f"w_exp={config.w_exp}) ==="
     )
-    y_soft = compute_y_soft(config, inputs)
-    filtered = filter_splits(split_data, y_soft)
+    filtered = filter_splits(
+        split_data, config, conf_mech, distance_df, weighting_mode
+    )
     print(
         f"  {len(filtered)} filtered splits (n_jobs={n_jobs}, thread_count={thread_count})"
     )
@@ -278,13 +421,20 @@ def run_config(
     print(f"  Elapsed: {time.time() - t0:.1f}s")
 
     df = pd.DataFrame(rows)
-    out_file = OUTPUT_DIR / f"figure6b_weight_sweep_{config.name}.csv"
+    df["weighting_mode"] = weighting_mode
+    out_file = OUTPUT_DIR / (
+        f"figure6b_weight_sweep_{config.name}{output_suffix}.csv"
+    )
     df.to_csv(out_file, index=False)
     print(f"  Saved {out_file}")
     return df
 
 
-def main(n_jobs: int = 4, thread_count: int = 3) -> None:
+def main(
+    n_jobs: int = 4,
+    thread_count: int = 3,
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> None:
     """Run all Phase 2 configs and write a combined CSV.
 
     Parameters
@@ -293,19 +443,34 @@ def main(n_jobs: int = 4, thread_count: int = 3) -> None:
         Parallel workers across ML fits. Use ``1`` to disable parallelism.
     thread_count : int
         CatBoost ``thread_count`` per worker.
+    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+        Mapping from composite probability to sample weight. Non-default
+        sensitivity outputs receive a filename suffix.
     """
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading splits from {SPLITS_DIR} ...")
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
 
-    # Routed through build_inputs() rather than unpickling the cache directly, so
-    # the freshness check against the phenotype labels applies here too.
-    inputs = build_inputs()
+    print("Loading phylogenetic distances and GapMind confidence ...")
+    _tree, distance_df = load_phylogenetic_data()
+    conf_mech = load_gapmind_confidence()
+    output_suffix = (
+        "" if weighting_mode == DEFAULT_WEIGHTING_MODE else f"_{weighting_mode}"
+    )
 
     all_results: list[pd.DataFrame] = []
     for config in PHASE2_CONFIGS:
-        df = run_config(config, split_data, inputs, n_jobs, thread_count)
+        df = run_config(
+            config,
+            split_data,
+            conf_mech,
+            distance_df,
+            n_jobs,
+            thread_count,
+            weighting_mode,
+            output_suffix,
+        )
         all_results.append(df)
 
     combined = pd.concat(all_results, ignore_index=True)
@@ -316,7 +481,9 @@ def main(n_jobs: int = 4, thread_count: int = 3) -> None:
     )
 
     combined = annotate_minority_test(combined, full_test_minority_counts())
-    combined_file = OUTPUT_DIR / "figure6b_weight_sweep_combined.csv"
+    combined_file = OUTPUT_DIR / (
+        f"figure6b_weight_sweep_combined{output_suffix}.csv"
+    )
     combined.to_csv(combined_file, index=False)
     print(f"\nSaved combined results: {combined_file}")
 
@@ -331,4 +498,12 @@ def main(n_jobs: int = 4, thread_count: int = 3) -> None:
 if __name__ == "__main__":
     n_jobs_env = int(os.environ.get("PHASE2_N_JOBS", "4"))
     thread_count_env = int(os.environ.get("PHASE2_THREAD_COUNT", "3"))
-    main(n_jobs=n_jobs_env, thread_count=thread_count_env)
+    weighting_mode_env = cast(
+        WeightingMode,
+        os.environ.get("FIGURE6_WEIGHTING_MODE", DEFAULT_WEIGHTING_MODE),
+    )
+    main(
+        n_jobs=n_jobs_env,
+        thread_count=thread_count_env,
+        weighting_mode=weighting_mode_env,
+    )

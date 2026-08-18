@@ -71,7 +71,8 @@ Biologically redundant KOs were grouped post hoc into SHAP-supervised clusters b
 
 Two additional filtering strategies were evaluated beyond concordant sample filtering, both applied to training and validation samples only, never to the held-out test set.
 Problematic-sample removal excluded universal non-growers with any GapMind growth prediction, universal growers with incomplete GapMind pathways, and the twenty most frequently GapMind-misclassified genomes.
-Confidence-based filtering excluded ambiguous training samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S9).
+Confidence-based filtering excluded ambiguous training and validation samples by a soft-label score combining phylogenetic neighbour agreement, GapMind pathway completeness, and experimental outcome; phylogenetic agreement was calculated within each split using training labels only.
+Four weight configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula, thresholds, and weights in Supplementary Text~S9).
 All conditions in Figure~\ref{fig:improvement_strategies}B were evaluated on the same full cross-dataset held-out test set.
 
 \subsection*{Sample Size Requirements}
@@ -86,6 +87,7 @@ Risk--coverage curves retained genomes in decreasing order of confidence and sco
 
 \subsection*{Statistical Analysis}
 
-Paired comparisons of balanced accuracy and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.\allowbreak wilcoxon}); Spearman rank correlations linked per-phenotype label-free aggregates to cross-dataset balanced accuracy (\texttt{scipy.stats.\allowbreak spearmanr}).
+Paired comparisons of balanced accuracy and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.\allowbreak wilcoxon}); the experiment-prioritisation comparison instead averaged seeds within phenotype--held-out-dataset cells and included a paired analysis of the six phenotype means as a sensitivity analysis.
+Spearman rank correlations linked per-phenotype label-free aggregates to cross-dataset balanced accuracy (\texttt{scipy.stats.\allowbreak spearmanr}).
 Twelve primary tests (ten Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg (BH) procedure at a false-discovery rate of $\leq 0.05$; raw $p$-values are reported in the main text with adjusted $q$-values inline for borderline tests, and other test families are adjusted separately.
 Summary statistics are mean $\pm$ standard deviation across folds or repeats unless otherwise noted.

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from catboost import Pool
 from sklearn.base import BaseEstimator
 from trait_prediction.pipeline import (
     align_columns,
@@ -86,6 +87,8 @@ def perform_split_ml(
     y_test: pd.Series,
     model_type: str = "cb",
     scoring: list[str] | None = None,
+    train_sample_weight: pd.Series | None = None,
+    val_sample_weight: pd.Series | None = None,
     **model_kwargs,
 ) -> dict[str, Any]:
     """
@@ -109,6 +112,11 @@ def perform_split_ml(
         Type of classifier model to use ('cb', 'rf', 'dt', etc.), by default "cb"
     scoring : list[str] | None, optional
         List of scoring metrics to evaluate. If None, uses default metrics.
+    train_sample_weight : pd.Series | None, optional
+        Per-row CatBoost training weights aligned to ``y_train``.
+    val_sample_weight : pd.Series | None, optional
+        Per-row CatBoost validation weights aligned to ``y_val`` and used for
+        early-stopping model selection.
     **model_kwargs
         Additional keyword arguments passed to the classifier
 
@@ -137,13 +145,35 @@ def perform_split_ml(
     X_test_aligned = align_columns(X_train, X_test)
 
     if model_type == "cb":
-        model.fit(
-            X_train,
-            y_train,
-            eval_set=(X_val_aligned, y_val),
-            use_best_model=True,
-            verbose=False,
-        )
+        if train_sample_weight is None and val_sample_weight is None:
+            model.fit(
+                X_train,
+                y_train,
+                eval_set=(X_val_aligned, y_val),
+                use_best_model=True,
+                verbose=False,
+            )
+        else:
+            train_pool = Pool(
+                X_train,
+                y_train,
+                weight=None
+                if train_sample_weight is None
+                else train_sample_weight.loc[y_train.index],
+            )
+            val_pool = Pool(
+                X_val_aligned,
+                y_val,
+                weight=None
+                if val_sample_weight is None
+                else val_sample_weight.loc[y_val.index],
+            )
+            model.fit(
+                train_pool,
+                eval_set=val_pool,
+                use_best_model=True,
+                verbose=False,
+            )
     elif model_type == "cb_noeval":
         model.fit(X_train, y_train, verbose=False)
     else:

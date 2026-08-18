@@ -23,9 +23,12 @@ from scripts.io import cache_is_fresh
 
 
 def phylo_knn_confidence(
-    y_exp: pd.Series, distance_df: pd.DataFrame, k: int
+    y_reference: pd.Series,
+    distance_df: pd.DataFrame,
+    k: int,
+    query_index: pd.Index | None = None,
 ) -> pd.Series:
-    """Mean experimental label of each genome's k nearest tree neighbours.
+    """Mean reference label of each query genome's nearest tree neighbours.
 
     Bypasses ``NearestNeighborClassifier.fit`` because the installed
     ``trait_prediction`` version recomputes distances from a newick file path
@@ -33,25 +36,33 @@ def phylo_knn_confidence(
 
     Parameters
     ----------
-    y_exp : pd.Series
-        Binary experimental labels indexed by genome ID.
+    y_reference : pd.Series
+        Binary labels available to the neighbour classifier, indexed by genome ID.
     distance_df : pd.DataFrame
         Square pairwise tree-distance matrix, diagonal set to ``inf``.
     k : int
         Number of nearest neighbours.
+    query_index : pd.Index | None, optional
+        Genomes to score. When omitted, score the reference genomes with self
+        excluded by the infinite distance-matrix diagonal.
 
     Returns
     -------
     pd.Series
-        Mean label of the k nearest neighbours, indexed like ``y_exp``.
+        Mean label of the k nearest reference neighbours for each query genome.
     """
-    common = y_exp.index.intersection(distance_df.index)
-    y_train = y_exp.loc[common].astype(float)
-    distances_train = distance_df.loc[common, common]
+    reference = y_reference.index.intersection(distance_df.index)
+    queries = (
+        reference
+        if query_index is None
+        else query_index.intersection(distance_df.index)
+    )
+    y_train = y_reference.loc[reference].astype(float)
+    distances = distance_df.loc[queries, reference]
 
-    conf = pd.Series(index=common, dtype=float)
-    for genome_id in common:
-        node_distances = distances_train.loc[genome_id]
+    conf = pd.Series(index=queries, dtype=float)
+    for genome_id in queries:
+        node_distances = distances.loc[genome_id]
         nearest = node_distances.nsmallest(k).index
         conf.loc[genome_id] = float(y_train.loc[nearest].mean())
     return conf

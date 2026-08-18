@@ -78,12 +78,12 @@ Concordance filtering, however, removes approximately 30\% of samples and requir
 
 \FloatBarrier{}
 
-\subsection*{Mechanism-free confidence filtering captures part of the concordance gain}
+\subsection*{Mechanism-free confidence filtering provides a pathway-independent alternative}
 
 We evaluated a soft-label filter combining phylogenetic $k$-NN agreement, GapMind pathway completeness, and the experimental label, with the GapMind contribution ranging from zero (mechanism-free) to 0.5 (Methods; Supplementary Text~S9).
 A small number of problematic genomes, discordant with GapMind across many phenotypes, accounted for a disproportionate share of misclassifications (Figure~\ref{fig:improvement_strategies}A) and were tested as an additional filter.
-Across this sweep, mean cross-dataset balanced accuracy varied by less than 0.02, while recall rose from 0.76 to 0.84 at near-constant precision; their removal alone provided no measurable improvement (Figure~\ref{fig:improvement_strategies}B).
-Concordant training had the highest mean balanced accuracy (0.68), but did not significantly exceed the mechanism-free filter (0.647; paired Wilcoxon $p = 0.30$); neither surpassed GapMind (0.69).
+Across this sweep, mean cross-dataset balanced accuracy varied by less than 0.02, while recall rose from 0.74 to 0.82 at near-constant precision; their removal alone provided no measurable improvement (Figure~\ref{fig:improvement_strategies}B).
+Concordant training had the highest mean balanced accuracy (0.68 versus 0.641 for the mechanism-free filter), although this difference was not significant (paired Wilcoxon $p = 0.17$); neither surpassed GapMind (0.69).
 GapMind's pathway-completeness rule is conservative and biased towards false negatives, so recall most directly reflects what the ML filters add over the curated baseline.
 Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for more phenotypes than the mechanism-free filter (9 of 15 versus 5), although neither mean recall shift was significant (Figure~\ref{fig:improvement_strategies}C; Supplementary Text~S9).
 At $w_{\mathrm{gap}} = 0.5$, higher recall was accompanied by lower precision, indicating a shift towards positive calls rather than greater discrimination (Supplementary Text~S9; Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
@@ -104,6 +104,6 @@ The gain was not uniform, and tracked how much transferable signal the model had
 At the phenotype level, the confidence-derived summaries did not predict which phenotypes a model would handle reliably: neither mean prediction confidence nor the fraction of high-confidence predictions correlated with cross-dataset balanced accuracy (Supplementary Text~S8).
 Because per-phenotype reliability cannot be certified in advance, we asked instead which additional measurements would most improve the concordance-trained model.
 In a retrospective simulation, 25 held-out genome labels were added to the concordant training set and the model retrained (Figure~\ref{fig:selective_prediction}C; Supplementary Text~S8).
-Selecting the least-confident genomes improved transfer the most, exceeding random selection (mean $\Delta$ balanced accuracy $0.09$ vs $0.07$; paired Wilcoxon $p = 0.002$), whereas selecting the most novel or diverse genomes did not beat random~\cite{Vasanthakumari2024ActiveLearning}.
+Selecting the least-confident genomes produced the largest mean transfer gain ($\Delta$ balanced accuracy $0.09$ vs $0.07$; seed-averaged paired Wilcoxon across 23 phenotype--dataset cells, $p = 0.024$, BH-adjusted $q = 0.048$), although the advantage was not consistent across the six phenotype means ($p = 0.16$); selecting the most novel or diverse genomes did not beat random~\cite{Vasanthakumari2024ActiveLearning}.
 The advantage tracked how poorly the model already transferred (Figure~\ref{fig:selective_prediction}D): it was largest for glucose, the weakest generaliser of the three shown, where low-confidence selection roughly doubled the gain from random labelling ($0.24$ versus $0.13$), smaller for mannose ($0.13$ versus $0.10$), and absent for histidine ($0.02$ versus $0.03$), whose model already transferred well.
 Prediction confidence therefore provides a deployment-oriented ranking signal for selective reporting and prioritising experiments.

@@ -193,6 +193,7 @@ Predictions with confidence of at least 0.8 were counted as high-confidence when
 Neither summary predicted per-phenotype cross-dataset balanced accuracy across the 15 phenotypes (Spearman $\rho$ between $-0.18$ and $-0.05$, both $p > 0.5$).
 For experiment prioritisation, each eligible held-out dataset was split approximately 50:50 into candidate and evaluation pools, stratified when possible; 25 candidate labels were added to the concordant training set and evaluated across three seeds and four held-out datasets.
 The random baseline therefore includes the benefit of initial exposure to the held-out dataset, while other strategies are credited only for improvement beyond that baseline.
+After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, BH-adjusted $q=0.048$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
 This computational pilot used 120 CatBoost iterations, depth 4, and learning rate 0.05 without evaluation-set early stopping.
 
 \subsection*{Supplementary Text S9: Composite Confidence Score for Data Quality Filtering}
@@ -201,19 +202,20 @@ The composite score used to identify ambiguous training samples (Figure~\ref{fig
 \begin{equation*}
     y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gap}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp},
 \end{equation*}
-The phylogenetic component was the mean experimental label among the $k=3$ nearest neighbours and therefore took values 0, $1/3$, $2/3$, or 1; the experimental component was the binary phenotype label used only for training-set quality assessment.
+Within each split, the phylogenetic component was the mean experimental label among the $k=3$ nearest training genomes and therefore took values 0, $1/3$, $2/3$, or 1; a training genome was excluded from its own neighbours.
+The experimental component was the binary phenotype label used only for training- and validation-set quality assessment.
 GapMind categories mapped to six numeric levels: complete, 1.0; likely complete, 0.9; steps missing medium, 0.6; steps missing low, 0.3; not present, 0.1; and no evidence or uncategorized, 0.0.
 After clipping $y_{\mathrm{soft}}$ to $[0.01,0.99]$, samples in the inclusive interval $[0.4,0.6]$ were excluded and all others retained.
 Four weight configurations $(w_{\mathrm{phylo}}, w_{\mathrm{gap}}, w_{\mathrm{exp}})$ were evaluated: the mechanism-free $(0.40, 0.00, 0.60)$ and three GapMind-weighted settings $(0.20, 0.30, 0.50)$, $(0.15, 0.40, 0.45)$, and $(0.10, 0.50, 0.40)$.
-All were applied to training and validation samples only; held-out test samples were unchanged, and the inclusive ambiguity interval was the same throughout.
-Data cost differed little between the two filters: concordant training retained $72\%$ of samples ($n\approx 385$) and the mechanism-free filter $74\%$ ($n\approx 396$), against $n\approx 534$ with no filter.
+All were applied to training and validation samples only; held-out test labels were not used to calculate the filter, held-out test samples were unchanged, and the inclusive ambiguity interval was the same throughout.
+Data cost differed little between the two filters: concordant training retained $72\%$ of samples ($n\approx 385$) and the mechanism-free filter $75\%$ ($n\approx 400$), against $n\approx 534$ with no filter.
 
 \paragraph{Filter performance across the weight sweep.}
-Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.02, while mean recall rose from 0.76 at $w_{\mathrm{gap}}=0$ to 0.84 at $w_{\mathrm{gap}}=0.5$ at near-constant precision; problematic-sample removal alone gave no measurable improvement.
-Concordant training reached mean balanced accuracy 0.68 and the mechanism-free filter 0.647 (paired Wilcoxon $p=0.30$), compared with 0.646 without filtering and 0.69 for GapMind.
-Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas the mechanism-free filter split 5 and 6; neither mean recall shift was significant ($p=0.095$ and $p=0.56$, respectively).
+Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.02, while mean recall rose from 0.74 at $w_{\mathrm{gap}}=0$ to 0.82 at $w_{\mathrm{gap}}=0.5$ at near-constant precision; problematic-sample removal alone gave no measurable improvement.
+Concordant training reached mean balanced accuracy 0.68 and the mechanism-free filter 0.641 (paired Wilcoxon $p=0.17$), compared with 0.646 without filtering and 0.69 for GapMind.
+Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas the mechanism-free filter split 5 and 5; neither mean recall shift was significant ($p=0.095$ and $p=0.93$, respectively).
 Concordant recall gains were led by mannose ($+0.17$), while losses were greatest for galacturonic acid ($-0.23$) and glycerol ($-0.18$; Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
-At $w_{\mathrm{gap}}=0.5$, recall exceeded GapMind by a mean 0.10 (higher for 12 of 15 phenotypes, $p=0.012$) but precision was lower by 0.04 ($p=0.048$).
+At $w_{\mathrm{gap}}=0.5$, recall exceeded GapMind by a mean 0.08 (higher for 12 of 15 phenotypes, $p=0.030$) but precision was lower by 0.04 ($p=0.018$).
 The concordant filter gained 0.05 recall (higher for 12 of 15 phenotypes) without a detectable precision cost (mean $-0.02$, $p=0.17$).
 The endpoint therefore shifted the operating point towards positive calls rather than adding discriminative information.
 
@@ -283,7 +285,8 @@ Bars and markers show means, error bars show the standard error across 45 phenot
 \subsection*{Supplementary Text S12: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
 
 At phylogenetic distance $d\leq0.01$, phenotype-specific comparisons between near-identical strains conflicted in 28.0\% of cross-dataset cases (73 of 261) and 10.1\% of within-dataset cases (782 of 7{,}706; odds ratio 3.44), with a monotone excess at stricter thresholds.
-Logistic regression adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69, 95\% confidence interval 2.00--3.61, $p=6.5\times10^{-11}$); conditioning on both datasets' rates also remained significant (odds ratio 1.86, $p=0.008$).
+Pair-level logistic adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69), and conditioning on both datasets' rates gave an odds ratio of 1.86.
+Because comparisons reuse strains across pairs and phenotypes, these odds ratios are descriptive and independence-based confidence intervals and $p$-values are not interpreted.
 The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects; the adjustment addresses only positive-call-rate imbalance.
 Most near-identical comparisons nevertheless agreed, so label inconsistency limits rather than prevents transfer.
 This pattern is compatible with the data-coherence interpretation but does not show that concordance filtering specifically identifies the conflicting pairs.

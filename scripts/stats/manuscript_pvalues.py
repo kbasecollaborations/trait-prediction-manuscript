@@ -195,13 +195,14 @@ def test_fig6_spearman_novelty_vs_ba() -> tuple[float, int] | None:
 
 
 def test_fig7c_low_conf_vs_random() -> tuple[float, int]:
-    """Figure 7C: low-confidence vs random selection paired by (phen, held-out, seed)."""
+    """Figure 7C: compare strategies after averaging seeds within transfer tasks."""
     df = pd.read_csv("data/outputs/figure7/figure7_prioritization.tsv", sep="\t")
     pivot = df.pivot_table(
         index=["phenotype", "held_out_dataset", "seed"],
         columns="strategy",
         values="delta_balanced_accuracy",
     ).dropna(subset=["low_confidence", "random"])
+    pivot = pivot.groupby(level=["phenotype", "held_out_dataset"]).mean()
     res = wilcoxon(
         pivot["low_confidence"].to_numpy(),
         pivot["random"].to_numpy(),

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Per-genome predictions for the mechanism-free confidence filter (Figure 6C).
 
-Only the training-set filter differs from the concordant arm: samples are kept
-when the soft label built from phylogenetic k-NN agreement and the experimental
-label alone (``w_gapmind = 0``) falls outside the ambiguous band. Model, random
-state, column alignment, early stopping and held-out test set are reused from
-``scripts.figure7.figure7_data``, so the two series are compared on identical
-terms.
+Tree-placed training and validation samples receive weights equal to the
+confidence assigned to their experimental label by phylogenetic k-NN agreement
+and the experimental label alone (``w_gapmind = 0``). Model, random state,
+column alignment, early stopping and held-out test set match the concordant arm.
 
 Writes ``data/outputs/figure6/figure6c_mechfree_per_sample.tsv``.
 
@@ -15,32 +13,31 @@ Run with ``uv run python -m scripts.figure6.figure6c_mechfree_per_sample``.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
+from catboost import Pool
 from tqdm import tqdm
 
-from scripts.figure5.figure5cd_data import (
-    load_experimental_phenotypes,
-    load_gapmind_predictions,
-)
-from scripts.figure6.figure6b_parameter_exploration import build_inputs
+from scripts.figure5.figure5cd_data import load_gapmind_predictions
+from scripts.figure6.figure6b_data import load_phylogenetic_data
 from scripts.figure6.figure6b_weight_sweep import (
-    CONFIDENCE_THRESHOLD_HIGH,
-    CONFIDENCE_THRESHOLD_LOW,
+    DEFAULT_WEIGHTING_MODE,
     PHASE2_CONFIGS,
-    compute_y_soft,
+    WeightingMode,
+    compute_split_sample_weights,
 )
 from scripts.figure7.figure7_data import (
     GAPMIND_FILE,
     KOFAM_FEATURE_FILE,
-    PHENOTYPE_DIR,
     SPLITS_DIR,
-    fit_concordant_model_and_predict_proba,
     parse_held_out_dataset,
 )
-from scripts.ml_splits import load_split_data
+from scripts.ml import make_classifier
+from scripts.ml_splits import align_columns, load_split_data
 
 OUTPUT_FILE: Path = Path("data/outputs/figure6/figure6c_mechfree_per_sample.tsv")
 
@@ -48,14 +45,29 @@ MECHFREE_CONFIG_NAME: str = "free_balanced"
 """The $w_{gap} = 0$ arm of the Figure 6B sweep, i.e. the mechanism-free filter."""
 
 
-def mechfree_retained_genomes() -> dict[str, set[str]]:
-    """Genome IDs retained by the mechanism-free confidence filter, per phenotype.
+def mechfree_sample_weights(
+    split: dict[str, Any],
+    phenotype: str,
+    distance_df: pd.DataFrame,
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> dict[str, pd.Series]:
+    """Return split-local mechanism-free train and validation weights.
+
+    Parameters
+    ----------
+    split : dict[str, Any]
+        One train/validation/test split.
+    phenotype : str
+        Phenotype represented by the split.
+    distance_df : pd.DataFrame
+        Precomputed phylogenetic distance matrix.
+    weighting_mode : {"label_confidence", "boundary_certainty"}, optional
+        Mapping from composite probability to sample weight.
 
     Returns
     -------
-    dict[str, set[str]]
-        Mapping phenotype name to the set of genomes whose soft label lies
-        outside the ambiguous band and are therefore eligible for training.
+    dict[str, pd.Series]
+        Per-row weights for tree-placed train and validation genomes.
 
     Raises
     ------
@@ -75,17 +87,62 @@ def mechfree_retained_genomes() -> dict[str, set[str]]:
             "it is not mechanism-free"
         )
 
-    y_soft = compute_y_soft(config, build_inputs())
-    retained: dict[str, set[str]] = {}
-    for phenotype, soft in y_soft.items():
-        confident = (soft < CONFIDENCE_THRESHOLD_LOW) | (
-            soft > CONFIDENCE_THRESHOLD_HIGH
-        )
-        retained[phenotype] = set(soft.index[confident])
-    return retained
+    return compute_split_sample_weights(
+        config,
+        split,
+        phenotype,
+        None,
+        distance_df,
+        weighting_mode,
+    )
 
 
-def collect_per_sample_predictions() -> pd.DataFrame:
+def fit_mechfree_model_and_predict_proba(
+    split: dict[str, Any],
+    weights: dict[str, pd.Series],
+) -> pd.DataFrame | None:
+    """Fit one weighted mechanism-free model and predict its full test set.
+
+    Parameters
+    ----------
+    split : dict[str, Any]
+        One train/validation/test split.
+    weights : dict[str, pd.Series]
+        Train and validation weights indexed by eligible genome ID.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        Test probabilities and binary predictions, or ``None`` if a weighted
+        fitting subset lacks both classes.
+    """
+    train_idx = weights["train"].index
+    val_idx = weights["val"].index
+    y_train = split["y_train"].loc[train_idx]
+    y_val = split["y_val"].loc[val_idx]
+    if y_train.nunique() != 2 or y_val.nunique() != 2:
+        return None
+
+    X_train = split["X_train"].loc[train_idx]
+    X_val = align_columns(X_train, split["X_val"].loc[val_idx])
+    X_test = align_columns(X_train, split["X_test"])
+    model = make_classifier("cb", random_state=42)
+    model.fit(
+        Pool(X_train, y_train, weight=weights["train"].loc[train_idx]),
+        eval_set=Pool(X_val, y_val, weight=weights["val"].loc[val_idx]),
+        use_best_model=True,
+        verbose=False,
+    )
+    proba = np.asarray(model.predict_proba(X_test))[:, 1]
+    return pd.DataFrame(
+        {"proba": proba, "y_pred": (proba >= 0.5).astype(int)},
+        index=X_test.index,
+    )
+
+
+def collect_per_sample_predictions(
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> pd.DataFrame:
     """Fit the mechanism-free model per cross-dataset split and pool predictions.
 
     Returns
@@ -96,8 +153,7 @@ def collect_per_sample_predictions() -> pd.DataFrame:
         ``gapmind_pred``, matching ``figure7_per_sample.tsv``.
     """
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
-    experimental_phenotypes = load_experimental_phenotypes(PHENOTYPE_DIR)
-    retained = mechfree_retained_genomes()
+    _tree, distance_df = load_phylogenetic_data()
 
     split_data = load_split_data(
         base_dir=SPLITS_DIR,
@@ -112,11 +168,13 @@ def collect_per_sample_predictions() -> pd.DataFrame:
         if held_out is None:
             continue
         phenotype = key.split("_", 1)[0]
-        eligible = retained.get(phenotype)
-        if not eligible:
+        weights = mechfree_sample_weights(
+            split, phenotype, distance_df, weighting_mode
+        )
+        if any(weight.empty for weight in weights.values()):
             continue
 
-        predictions = fit_concordant_model_and_predict_proba(split, eligible)
+        predictions = fit_mechfree_model_and_predict_proba(split, weights)
         if predictions is None:
             continue
 
@@ -149,12 +207,21 @@ def collect_per_sample_predictions() -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def main() -> None:
+def main(
+    weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
+) -> None:
     """Write the mechanism-free per-sample prediction table."""
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    table = collect_per_sample_predictions()
-    table.to_csv(OUTPUT_FILE, sep="\t", index=False)
-    print(f"\nWrote {len(table)} rows to {OUTPUT_FILE}")
+    output_file = (
+        OUTPUT_FILE
+        if weighting_mode == DEFAULT_WEIGHTING_MODE
+        else OUTPUT_FILE.with_name(
+            f"{OUTPUT_FILE.stem}_{weighting_mode}{OUTPUT_FILE.suffix}"
+        )
+    )
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    table = collect_per_sample_predictions(weighting_mode)
+    table.to_csv(output_file, sep="\t", index=False)
+    print(f"\nWrote {len(table)} rows to {output_file}")
     print(
         table.groupby("phenotype")
         .agg(n=("genome", "size"), n_pos=("y_true", "sum"))
@@ -163,4 +230,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(
+        cast(
+            WeightingMode,
+            os.environ.get("FIGURE6_WEIGHTING_MODE", DEFAULT_WEIGHTING_MODE),
+        )
+    )
