@@ -30,10 +30,14 @@ Marine~\cite{Gralka2023-ft} comprised 175 heterotrophic marine bacteria assessed
 Populus~\cite{PopulusDatasetCitation} is a Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere; it recorded optical density in MOPS minimal medium for 58 experimental profiles from 57 isolates across 190 carbon sources plus a no-carbon control on each of the two plates.
 Because of its small sample size and narrow phylogenetic breadth, Populus was excluded from selected feature-stability comparisons.
 
-\subsection*{Supplementary Text S2: Genome Quality Control}
+\subsection*{Supplementary Text S2: Genome Quality Assessment}
 
-Assemblies with more than 500 contigs were excluded, after which CheckM2 v1.1.0~\cite{Chklovski2023CheckM2} retained genomes with completeness $>$90\% and contamination $<$5\%.
-Isolation Forest~\cite{Liu2008IsolationForest} screened the KEGG feature matrix for outliers using 100 estimators, contamination 0.05, and random state 42.
+Genome quality was assessed with CheckM2 v1.1.0~\cite{Chklovski2023CheckM2} for 829 assemblies.
+Quality was recorded as a covariate rather than applied as an exclusion criterion, so that performance reflects the assemblies a user would realistically supply.
+Of the 755 modelled strains with a CheckM2 record, 689 met the MIMAG high-quality thresholds (completeness $\geq$90\%, contamination $\leq$5\%) and 732 met the medium-quality thresholds (completeness $\geq$50\%, contamination $\leq$10\%); 23 fell below the medium-quality thresholds and 15 further strains lacked a CheckM2 record.
+To test whether retaining lower-quality assemblies affected the results, we repeated the CatBoost KOFAM analysis for all 15 shared phenotypes with training, validation, and test sets each restricted to a quality tier.
+Balanced accuracy was insensitive to this restriction: relative to the unfiltered data, the high-quality tier shifted balanced accuracy by a median of $+0.004$ under random splits (75 phenotype-fold pairs, Wilcoxon $p = 0.03$) and $+0.015$ under cross-dataset splits (58 pairs, $p = 0.003$), and the medium-quality tier by $-0.000$ ($p = 0.72$) and $+0.005$ ($p = 0.05$).
+These shifts are more than an order of magnitude smaller than the gap between random and cross-dataset splits, so genome quality filtering does not alter any conclusion reported here.
 
 \paragraph*{Pangenome-based completeness assessment.}
 As an exploratory secondary audit, pangenome completeness was the fraction of species-specific core genes detected by MMseqs2~\cite{Steinegger2017MMseqs2} at 90\% identity, 80\% coverage, and E-value $10^{-3}$ (Figure~\ref{fig:pangenome_completeness}).
@@ -41,7 +45,7 @@ Of 829 records available to the audit, 394 had a species assignment and core-gen
 This predicted-proteome audit was assembled independently of the 819 phenotype records and was not a filtering step.
 
 \paragraph*{Overall attrition.}
-Quality control retained 795 of 819 phenotype records (97.1\%): ATLeaf 206/224, Biolog 362/362, Marine 172/175, and Populus 55/58.
+Genome availability determined the analysed set: 795 of 819 phenotype records (97.1\%) had a genome assembly available for annotation (ATLeaf 206/224, Biolog 362/362, Marine 172/175, Populus 55/58).
 Of these, 780 matched processed genomic-feature identifiers and were eligible for feature-based analyses.
 
 \subsection*{Supplementary Text S3: Model Selection and Evaluation Details}
@@ -350,7 +354,7 @@ Populus & 58  & 190 & 55  & 55  & 15 & 0.74 & Liquid culture OD \\
 \hline
 \end{tabularx}
 \caption{\textbf{Overview of carbon source utilisation datasets.}
-``Original'' gives the source-dataset size; ``Retained Phenotype Records'' gives the records surviving genome quality control (Supplementary Text~S2); ``Feature-linked'' gives phenotype records with matching processed genomic features.
+``Original'' gives the source-dataset size; ``Retained Phenotype Records'' gives the records with an available genome assembly; ``Feature-linked'' gives phenotype records with matching processed genomic features.
 ``Positive-Call Rate'' is the fraction of non-missing labels scored as growth across the 15 shared phenotypes, the quantity adjusted for in the label-conflict analysis (Supplementary Text~S12).
 All datasets entered aggregated and leave-one-dataset-out analyses; Populus was excluded only from selected feature-stability comparisons.}
 \label{tab:dataset_overview}
