@@ -3,7 +3,7 @@
 Generate data for Supplementary Figure S7: learning curves for all 15 shared phenotypes.
 
 Mirrors scripts/figureS6/figureS6_data.py (Histidine and Galactose only) and writes
-to data/outputs/figureS7/.
+to data/outputs/learning_curves/.
 """
 
 import json
@@ -441,7 +441,7 @@ def main() -> None:
     feature_file = Path(
         f"data/processed/features_reduced/combined_datasets/{FEATURE_TYPE}.tsv"
     )
-    output_dir = Path("data/outputs/figureS7")
+    output_dir = Path("data/outputs/learning_curves")
     output_dir.mkdir(parents=True, exist_ok=True)
     # Key the checkpoint directory on the size list: a cached chunk only holds
     # the sizes it was computed with, and the resume path reuses it wholesale.
@@ -471,7 +471,7 @@ def main() -> None:
     )
     results["feature_type"] = FEATURE_TYPE
 
-    out_file = output_dir / f"figureS7_learning_curves_{FEATURE_TYPE}.csv"
+    out_file = output_dir / f"learning_curves_{FEATURE_TYPE}.csv"
     results.to_csv(out_file, index=False)
     print(f"\nSaved {len(results)} rows to {out_file}")
 

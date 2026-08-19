@@ -60,7 +60,7 @@ Supporting diagnostics for Figure 5A underperformers live in
 | Figure S3 | `scripts/figureS3/` | In-clade vs out-of-clade balanced accuracy. |
 | Figure S4 | `scripts/pangenome_completeness/` | Pangenome-based completeness audit. |
 | Figure S5 | `scripts/figureS5/` | KOFAM features on concordant samples. |
-| Figure S6 | `scripts/figureS6/figureS6_multiphenotype_plot.py` | Per-phenotype performance versus training-set size, all 15 shared phenotypes (source data `data/outputs/figureS7/`, renamed to `learning_curves/` once the rebuild finishes). The histidine-only grid from `figureS6_data.py`/`figureS6_plot.py` is now an alternate, with source data in `data/outputs/learning_curves_histidine/`. |
+| Figure S6 | `scripts/figureS6/figureS6_multiphenotype_plot.py` | Per-phenotype performance versus training-set size, all 15 shared phenotypes (source data `data/outputs/learning_curves/`). The histidine-only grid from `figureS6_data.py`/`figureS6_plot.py` is now an alternate, with source data in `data/outputs/learning_curves_histidine/`. |
 | Figure S7 | `scripts/bacdive/`, `scripts/figureS7/` | BacDive data-volume comparison and feature stability (asset `figure_s7.pdf`). |
 
 Unselected, superseded, and exploratory code is kept under `scripts/alternate/`

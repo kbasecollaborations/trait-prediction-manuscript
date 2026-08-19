@@ -72,7 +72,7 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
         "figureS3",
         "figureS5",
         "learning_curves_histidine",
-        "figureS7",
+        "learning_curves",
         "figure5_fp_only",
         "figure5_fn_discovery",
         "bacdive",

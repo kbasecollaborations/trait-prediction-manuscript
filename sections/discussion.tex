@@ -36,7 +36,7 @@ Mechanism-free weighting requires no pathway annotations and increased true-posi
 It is therefore recall-oriented rather than a balanced-accuracy substitute for concordance training.
 This suggests that concordance-trained models encode mechanistic information beyond what label consistency alone captures.
 Alternatively, restricting a full-data model to predictions agreeing with GapMind recovers much of the specialist's cross-dataset accuracy but requires GapMind for every genome (Supplementary Text~S13).
-Turning to the second question, 50 concordant training samples for histidine reached at least 90\% of the all-available-sample performance, although requirements for other phenotypes remain unresolved (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
+Turning to the second question, 50 to 100 concordant training samples reached at least 90\% of the all-available-sample performance for most shared phenotypes, although the earliest-saturating phenotypes were also the least predictable, so additional data helped most where transfer already succeeded (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
 The practical question therefore includes both how many samples to acquire and which genomes are most informative to measure.
 
 Deploying any of these specialists on a new genome whose concordance is unknown requires a per-prediction trust signal (Figure~\ref{fig:selective_prediction}A,B)~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject}; selecting the least-confident genomes for labelling then produced the largest observed mean transfer gain, concentrated in the weakest of the three phenotypes shown (Figure~\ref{fig:selective_prediction}D).

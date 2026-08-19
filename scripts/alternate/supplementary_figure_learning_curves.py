@@ -19,7 +19,7 @@ configure_plot_style()
 
 
 FEATURE_TYPE = "kofam"
-DATA_FILE = Path(f"data/outputs/figureS7/figureS7_learning_curves_{FEATURE_TYPE}.csv")
+DATA_FILE = Path(f"data/outputs/learning_curves/learning_curves_{FEATURE_TYPE}.csv")
 OUTPUT_DIR = Path("figures")
 
 
@@ -297,12 +297,12 @@ def build_training_size_grid(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_training_size_grid(df: pd.DataFrame, output_file: Path) -> None:
-    """Plot per-phenotype learning curves by training type and test subset.
+    """Plot approach-to-ceiling curves and per-phenotype saturation sizes.
 
-    Two stacked blocks of 15 panels, one panel per shared phenotype. Within a
-    panel, colour distinguishes full from concordant training and line style
-    distinguishes the full from the concordant test subset, so the panel shows
-    whether concordance-trained models plateau earlier than full-data models.
+    Panel A normalises each phenotype to its own all-sample balanced accuracy,
+    so the 90% saturation criterion reads as a single horizontal line and all
+    15 phenotypes fit one axis. Panel B gives the sample size at which each
+    phenotype first meets that criterion, under both evaluations.
 
     Parameters
     ----------
@@ -314,105 +314,137 @@ def plot_training_size_grid(df: pd.DataFrame, output_file: Path) -> None:
     Raises
     ------
     ValueError
-        If none of the expected evaluation blocks are present in the data.
+        If the cross-dataset evaluation is absent from the data.
     """
     means = build_training_size_grid(df)
-    blocks = [b for b in GRID_BLOCKS if b[1] in set(means["split_type"])]
-    if not blocks:
+    if "Dataset Split" not in set(means["split_type"]):
         raise ValueError(
-            f"No expected split types in data; found {sorted(set(means['split_type']))}"
+            f"Cross-dataset results absent; found {sorted(set(means['split_type']))}"
         )
 
     size_order = get_sample_size_order(means)
-    x_positions = np.arange(len(size_order))
+    x = np.arange(len(size_order))
     x_labels = [s if s != "full" else "All" for s in size_order]
-    n_rows, n_cols = 5, 3
 
-    fig = plt.figure(figsize=(12, 15))
-    outer = fig.add_gridspec(len(blocks), 1, hspace=0.30, top=0.93, bottom=0.05)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
 
-    for block_idx, (letter, split_label, block_title) in enumerate(blocks):
-        block = means[means["split_type"] == split_label]
-        inner = outer[block_idx].subgridspec(n_rows, n_cols, hspace=0.45, wspace=0.18)
-        phenotypes = [p for p in COMMON_PHENOTYPES if p in set(block["phenotype"])]
-
-        for pos, phenotype in enumerate(phenotypes):
-            ax = fig.add_subplot(inner[pos // n_cols, pos % n_cols])
-            panel = block[block["phenotype"] == phenotype]
-
-            for training_type, color in TRAINING_COLORS.items():
-                for test_subset, (linestyle, marker) in TEST_SUBSET_STYLES.items():
-                    series = panel[
-                        (panel["training_type"] == training_type)
-                        & (panel["test_subset"] == test_subset)
-                    ].set_index("sample_size")["mean"]
-                    if series.empty:
-                        continue
-                    values = [series.get(size, np.nan) for size in size_order]
-                    ax.plot(
-                        x_positions,
-                        values,
-                        color=color,
-                        linestyle=linestyle,
-                        marker=marker,
-                        markersize=3,
-                        linewidth=1.1,
-                        markeredgewidth=0,
-                    )
-
-            ax.axhline(0.5, ls=":", color="grey", lw=0.6)
-            ax.set_title(phenotype, fontsize=9, pad=3)
-            ax.set_ylim(0.0, 1.0)
-            ax.set_xlim(-0.4, len(size_order) - 0.6)
-            ax.set_xticks(x_positions)
-            ax.grid(axis="y", color="0.92", linewidth=0.4)
-            ax.tick_params(labelsize=7)
-
-            on_bottom_row = pos >= len(phenotypes) - n_cols
-            ax.set_xticklabels(x_labels if on_bottom_row else [])
-            if pos % n_cols == 0:
-                ax.set_ylabel("Balanced accuracy", fontsize=8)
-            else:
-                ax.set_yticklabels([])
-            if on_bottom_row and pos % n_cols == 1:
-                ax.set_xlabel("Training samples", fontsize=8)
-
-        block_ax = fig.add_subplot(outer[block_idx], frame_on=False)
-        block_ax.set_xticks([])
-        block_ax.set_yticks([])
-        block_ax.set_title(
-            f"{letter}. {block_title}",
-            fontsize=11,
-            fontweight="bold",
-            loc="left",
-            pad=22,
+    # Panel A: every phenotype normalised to its own all-sample value.
+    ax = axes[0]
+    for training_type, color in TRAINING_COLORS.items():
+        sub = means[
+            (means["split_type"] == "Dataset Split")
+            & (means["training_type"] == training_type)
+            & (means["test_subset"] == "Full Test")
+        ]
+        pivot = sub.pivot(index="phenotype", columns="sample_size", values="mean")
+        pivot = pivot.reindex([p for p in COMMON_PHENOTYPES if p in pivot.index])
+        # Expressed as a percentage of each phenotype's own all-sample value,
+        # not as balanced accuracy: the axis is a ratio, so it can exceed 100%
+        # where a smaller training set beats the full one.
+        normalised = 100 * pivot[size_order].div(pivot["full"], axis=0)
+        for _, row in normalised.iterrows():
+            ax.plot(x, row.to_numpy(), color=color, lw=0.7, alpha=0.35)
+        ax.plot(
+            x,
+            normalised.median().to_numpy(),
+            color=color,
+            lw=2.4,
+            marker="o",
+            ms=5,
+            label=f"{training_type} training",
         )
 
-    handles = [
-        Line2D(
-            [],
-            [],
-            color=TRAINING_COLORS[training_type],
-            linestyle=TEST_SUBSET_STYLES[test_subset][0],
-            marker=TEST_SUBSET_STYLES[test_subset][1],
-            markersize=4,
-            linewidth=1.2,
-            label=f"{training_type} training, {test_subset.lower()}",
-        )
-        for training_type in TRAINING_COLORS
-        for test_subset in TEST_SUBSET_STYLES
-    ]
-    fig.legend(
-        handles=handles,
-        loc="upper center",
+    ax.axhline(90, ls="--", color="0.3", lw=1.2)
+    ax.axhline(100, ls=":", color="0.6", lw=0.8)
+    # Escape the percent sign: scienceplots renders text through LaTeX, where a
+    # bare % comments out the rest of the string.
+    ax.text(0.04, 91.2, r"90\% saturation criterion", fontsize=8, color="0.3")
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
+    ax.set_xlim(-0.25, len(size_order) - 0.75)
+    # Ceiling above 100 because intermediate sizes can beat the full set.
+    ax.set_ylim(0, 115)
+    ax.set_yticks([0, 25, 50, 75, 90, 100, 115])
+    ax.set_xlabel("Training samples")
+    ax.set_ylabel(r"Percent of all-sample balanced accuracy (\%)")
+    ax.grid(axis="y", color="0.92", lw=0.4)
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
         ncol=2,
         frameon=False,
         fontsize=9,
-        bbox_to_anchor=(0.5, 0.985),
     )
 
+    # Panel B: saturation size per phenotype under both evaluations.
+    ax = axes[1]
+    saturation = {
+        label: estimate_saturation_sizes(df, split_type=split)
+        for label, split in (
+            ("Cross-dataset", "Dataset Split"),
+            ("Random-holdout", "Random Split"),
+        )
+    }
+    cross = saturation["Cross-dataset"]
+    order = sorted(cross, key=lambda p: (size_order.index(cross[p]), p))
+    styles = {"Cross-dataset": ("#2E86AB", "s"), "Random-holdout": ("#06A77D", "o")}
+
+    for row, phenotype in enumerate(order):
+        positions = [
+            size_order.index(saturation[label][phenotype])
+            for label in styles
+            if phenotype in saturation[label]
+        ]
+        if len(positions) == 2:
+            ax.plot(positions, [row, row], color="0.75", lw=1.2, zorder=1)
+        for label, (color, marker) in styles.items():
+            if phenotype not in saturation[label]:
+                continue
+            ax.scatter(
+                size_order.index(saturation[label][phenotype]),
+                row,
+                s=44,
+                color=color,
+                marker=marker,
+                edgecolors="black",
+                linewidths=0.4,
+                zorder=2,
+            )
+
+    ax.set_yticks(np.arange(len(order)))
+    ax.set_yticklabels(order, fontsize=8)
+    ax.invert_yaxis()
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
+    ax.set_xlim(-0.4, len(size_order) - 0.6)
+    ax.set_xlabel(r"Samples to reach 90\% of all-sample performance")
+    ax.grid(axis="x", color="0.92", lw=0.4)
+    ax.legend(
+        handles=[
+            Line2D([], [], ls="", marker=m, color=c, markersize=7, label=label)
+            for label, (c, m) in styles.items()
+        ],
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        frameon=False,
+        fontsize=9,
+    )
+
+    for ax, letter in zip(axes, "AB"):
+        ax.text(
+            -0.16,
+            1.06,
+            letter,
+            transform=ax.transAxes,
+            fontsize=13,
+            fontweight="bold",
+            va="top",
+        )
+
+    fig.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
-    print(f"Saved multi-phenotype training-size grid to {output_file}")
+    print(f"Saved training-size figure to {output_file}")
     plt.close(fig)
 
 
