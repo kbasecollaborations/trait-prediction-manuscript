@@ -153,19 +153,20 @@ Each box summarises the one to four cross-dataset splits available for that phen
 \label{fig:kofam_concordant}
 \end{figure}
 
-\subsection*{Supplementary Text S6: Histidine Learning Curves}
+\subsection*{Supplementary Text S6: Learning Curves for the Shared Phenotypes}
 
-For histidine, mean concordance-trained KOFAM performance with 50 samples was already at least 90\% of the all-available-sample value under random-holdout, cross-dataset, and out-of-clade evaluation (Figure~\ref{fig:sample_size_histidine}).
+For histidine, mean concordance-trained KOFAM performance with 50 samples was already at least 90\% of the all-available-sample value under random-holdout, cross-dataset, and out-of-clade evaluation (Figure~\ref{fig:sample_size_phenotypes}).
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{figure_s6.pdf}
 \caption{
-\textbf{Histidine performance by KOFAM training-set size.}
-Columns show random-holdout, cross-dataset, and out-of-clade evaluation; rows show full, concordant, and discordant test subsets.
-Models used full-data (blue circles) or concordant (orange squares) training at requested sizes of 50, 100, 200, 500, and all available samples; requested sizes above the eligible count were capped, so capped runs can overlap.
+\textbf{Per-phenotype performance by KOFAM training-set size.}
+(\textbf{A}) Cross-dataset and (\textbf{B}) random-holdout evaluation, with one panel per shared phenotype.
+Within a panel, colour distinguishes full-data (blue) from concordant (orange) training, and line style distinguishes the full (solid) from the concordant (dashed) test subset.
+Points are means across repeats and across the splits available for each phenotype, at requested sizes of 25, 50, 100, 200, and all available samples; requested sizes above the eligible count were capped, and the dotted line marks the 0.5 chance level.
 }
-\label{fig:sample_size_histidine}
+\label{fig:sample_size_phenotypes}
 \end{figure}
 
 \subsection*{Supplementary Text S7: SHAP-Supervised Redundancy Clustering Procedure}
