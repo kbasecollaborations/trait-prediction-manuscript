@@ -19,8 +19,8 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-DATA_FILE: Path = Path("data/outputs/figureS16/figureS16_recovered_features.tsv")
-COUNTS_FILE: Path = Path("data/outputs/figureS16/figureS16_recovered_counts.tsv")
+DATA_FILE: Path = Path("data/outputs/phenotype_generalizability/figureS16_recovered_features.tsv")
+COUNTS_FILE: Path = Path("data/outputs/phenotype_generalizability/figureS16_recovered_counts.tsv")
 OUTPUT_FILE: Path = Path("figures/figure_s16.pdf")
 
 N_PHENOTYPES: int = 6

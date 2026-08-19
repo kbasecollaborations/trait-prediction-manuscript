@@ -32,7 +32,7 @@ FEATURE_FILE: Path = (
 )
 GAPMIND_FILE: Path = REPO_ROOT / "data/outputs/figure2/gapmind_phenotypes_loose.tsv"
 PHENOTYPE_DIR: Path = REPO_ROOT / "data/processed/phenotypes"
-OUTPUT_DIR: Path = REPO_ROOT / "data/outputs/figureS8"
+OUTPUT_DIR: Path = REPO_ROOT / "data/outputs/shap_beeswarm_concordant"
 
 
 def load_concordant_train_test(

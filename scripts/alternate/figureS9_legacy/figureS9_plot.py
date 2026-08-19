@@ -22,7 +22,7 @@ sns.set_context("paper")
 configure_plot_style()
 
 
-DATA_FILE: Path = Path("data/outputs/figureS9/taxonomic_bias.tsv")
+DATA_FILE: Path = Path("data/outputs/taxonomic_bias/taxonomic_bias.tsv")
 OUTPUT_FILE: Path = Path("figures/figure_s9.pdf")
 
 

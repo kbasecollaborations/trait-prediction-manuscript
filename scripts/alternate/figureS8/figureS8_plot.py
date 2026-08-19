@@ -21,7 +21,7 @@ TOP_N: int = 15
 PANEL_LABELS: tuple[str, ...] = ("A", "B")
 
 REPO_ROOT: Path = Path(__file__).resolve().parents[2]
-DATA_DIR: Path = REPO_ROOT / "data/outputs/figureS8"
+DATA_DIR: Path = REPO_ROOT / "data/outputs/shap_beeswarm_concordant"
 OUTPUT_PDF: Path = REPO_ROOT / "figures/figure_s8.pdf"
 
 

@@ -152,7 +152,7 @@ def main() -> None:
     for path in [
         Path("data/outputs/figureS5/figureS5_kofam_concordant_results.csv"),
         Path("data/outputs/figureS7/figureS7_learning_curves_kofam.csv"),
-        Path("data/outputs/figureS6/figure_s6_data_requirements_kofam.csv"),
+        Path("data/outputs/learning_curves_histidine/figure_s6_data_requirements_kofam.csv"),
     ]:
         backfill_csv(
             path,

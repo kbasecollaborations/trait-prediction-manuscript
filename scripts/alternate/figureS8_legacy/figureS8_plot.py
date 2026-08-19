@@ -17,7 +17,7 @@ from scripts.visualization import (
     format_dataset_names,
 )
 
-INPUT_FILE: Final[Path] = Path("data/outputs/figureS8/concordance_counts.tsv")
+INPUT_FILE: Final[Path] = Path("data/outputs/concordance_counts/concordance_counts.tsv")
 OUTPUT_FILE: Final[Path] = Path("figures/figure_s8.pdf")
 
 # Match Figure 4 quadrant palette: concordant green, FP red, FN yellow, excluded grey.

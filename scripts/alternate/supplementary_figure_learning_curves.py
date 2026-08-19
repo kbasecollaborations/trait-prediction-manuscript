@@ -10,6 +10,7 @@ import scienceplots  # noqa: F401
 import seaborn as sns
 from matplotlib.lines import Line2D
 
+from scripts.create_data_splits import COMMON_PHENOTYPES
 from scripts.visualization import configure_plot_style
 
 plt.style.use(["science", "nature"])
@@ -18,23 +19,6 @@ configure_plot_style()
 
 
 FEATURE_TYPE = "kofam"
-COMMON_PHENOTYPES = [
-    "Alanine",
-    "Arginine",
-    "Cellobiose",
-    "Fructose",
-    "Galactose",
-    "Galacturonic-Acid",
-    "Glucose",
-    "Glycerol",
-    "Histidine",
-    "Maltose",
-    "Mannitol",
-    "Mannose",
-    "Serine",
-    "Sucrose",
-    "m-Inositol",
-]
 DATA_FILE = Path(f"data/outputs/figureS7/figureS7_learning_curves_{FEATURE_TYPE}.csv")
 OUTPUT_DIR = Path("figures")
 
@@ -104,11 +88,9 @@ def get_sample_size_order(df: pd.DataFrame) -> list[str]:
     list[str]
         Ordered sample-size labels.
     """
-    return [
-        size
-        for size in ["50", "100", "200", "500", "full"]
-        if size in set(df["sample_size"])
-    ]
+    present = set(df["sample_size"])
+    numeric = sorted((s for s in present if s != "full"), key=int)
+    return numeric + (["full"] if "full" in present else [])
 
 
 def estimate_saturation_sizes(
@@ -134,6 +116,10 @@ def estimate_saturation_sizes(
     ].copy()
 
     phenotypes = [p for p in COMMON_PHENOTYPES if p in sub["phenotype"].unique()]
+    # Candidate sizes come from the data, not a literal: the grid gained 25 and
+    # dropped 500, and a hardcoded list would skip the smallest size and fall
+    # back to a label that no longer exists.
+    candidate_sizes = [s for s in get_sample_size_order(sub) if s != "full"]
     saturation_sizes: dict[str, str] = {}
 
     for phenotype in phenotypes:
@@ -143,7 +129,7 @@ def estimate_saturation_sizes(
         ].mean()
         threshold = 0.90 * full_perf
 
-        for sample_size in ["50", "100", "200", "500"]:
+        for sample_size in candidate_sizes:
             sample_perf = phenotype_df.loc[
                 phenotype_df["sample_size"] == sample_size, "balanced_accuracy"
             ].mean()
@@ -151,7 +137,7 @@ def estimate_saturation_sizes(
                 saturation_sizes[phenotype] = sample_size
                 break
         else:
-            saturation_sizes[phenotype] = "500"
+            saturation_sizes[phenotype] = "full"
 
     return saturation_sizes
 
@@ -266,6 +252,167 @@ def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
     plt.tight_layout()
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved heatmap to {output_file}")
+    plt.close(fig)
+
+
+#: Training-type colours, matching ``scripts/figureS6/figureS6_plot.py``.
+TRAINING_COLORS: dict[str, str] = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
+#: Test-subset line styles for the multi-phenotype grid.
+TEST_SUBSET_STYLES: dict[str, tuple[str, str]] = {
+    "Full Test": ("-", "o"),
+    "Concordant Test": ("--", "s"),
+}
+#: Evaluation blocks stacked in the multi-phenotype grid, as
+#: ``(panel letter, internal split label, display title)``.
+GRID_BLOCKS: tuple[tuple[str, str, str], ...] = (
+    ("A", "Dataset Split", "Cross-dataset evaluation"),
+    ("B", "Random Split", "Random-holdout evaluation"),
+)
+
+
+def build_training_size_grid(df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate learning-curve results for the multi-phenotype grid.
+
+    Averages balanced accuracy over repeats and over the splits available for
+    each phenotype, for the four training-type by test-subset series.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Prepared results from :func:`load_plot_data`.
+
+    Returns
+    -------
+    pd.DataFrame
+        Long-form means indexed by split type, phenotype, training type, test
+        subset, and sample size, with an ``n_measurements`` column recording
+        how many rows each mean summarises.
+    """
+    sub = df[df["test_subset"].isin(TEST_SUBSET_STYLES)].copy()
+    grouped = sub.groupby(
+        ["split_type", "phenotype", "training_type", "test_subset", "sample_size"],
+        dropna=False,
+    )["balanced_accuracy"]
+    return grouped.agg(mean="mean", n_measurements="size").reset_index()
+
+
+def plot_training_size_grid(df: pd.DataFrame, output_file: Path) -> None:
+    """Plot per-phenotype learning curves by training type and test subset.
+
+    Two stacked blocks of 15 panels, one panel per shared phenotype. Within a
+    panel, colour distinguishes full from concordant training and line style
+    distinguishes the full from the concordant test subset, so the panel shows
+    whether concordance-trained models plateau earlier than full-data models.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Prepared results from :func:`load_plot_data`.
+    output_file : Path
+        Where to save the figure.
+
+    Raises
+    ------
+    ValueError
+        If none of the expected evaluation blocks are present in the data.
+    """
+    means = build_training_size_grid(df)
+    blocks = [b for b in GRID_BLOCKS if b[1] in set(means["split_type"])]
+    if not blocks:
+        raise ValueError(
+            f"No expected split types in data; found {sorted(set(means['split_type']))}"
+        )
+
+    size_order = get_sample_size_order(means)
+    x_positions = np.arange(len(size_order))
+    x_labels = [s if s != "full" else "All" for s in size_order]
+    n_rows, n_cols = 5, 3
+
+    fig = plt.figure(figsize=(12, 15))
+    outer = fig.add_gridspec(len(blocks), 1, hspace=0.30, top=0.93, bottom=0.05)
+
+    for block_idx, (letter, split_label, block_title) in enumerate(blocks):
+        block = means[means["split_type"] == split_label]
+        inner = outer[block_idx].subgridspec(n_rows, n_cols, hspace=0.45, wspace=0.18)
+        phenotypes = [p for p in COMMON_PHENOTYPES if p in set(block["phenotype"])]
+
+        for pos, phenotype in enumerate(phenotypes):
+            ax = fig.add_subplot(inner[pos // n_cols, pos % n_cols])
+            panel = block[block["phenotype"] == phenotype]
+
+            for training_type, color in TRAINING_COLORS.items():
+                for test_subset, (linestyle, marker) in TEST_SUBSET_STYLES.items():
+                    series = panel[
+                        (panel["training_type"] == training_type)
+                        & (panel["test_subset"] == test_subset)
+                    ].set_index("sample_size")["mean"]
+                    if series.empty:
+                        continue
+                    values = [series.get(size, np.nan) for size in size_order]
+                    ax.plot(
+                        x_positions,
+                        values,
+                        color=color,
+                        linestyle=linestyle,
+                        marker=marker,
+                        markersize=3,
+                        linewidth=1.1,
+                        markeredgewidth=0,
+                    )
+
+            ax.axhline(0.5, ls=":", color="grey", lw=0.6)
+            ax.set_title(phenotype, fontsize=9, pad=3)
+            ax.set_ylim(0.0, 1.0)
+            ax.set_xlim(-0.4, len(size_order) - 0.6)
+            ax.set_xticks(x_positions)
+            ax.grid(axis="y", color="0.92", linewidth=0.4)
+            ax.tick_params(labelsize=7)
+
+            on_bottom_row = pos >= len(phenotypes) - n_cols
+            ax.set_xticklabels(x_labels if on_bottom_row else [])
+            if pos % n_cols == 0:
+                ax.set_ylabel("Balanced accuracy", fontsize=8)
+            else:
+                ax.set_yticklabels([])
+            if on_bottom_row and pos % n_cols == 1:
+                ax.set_xlabel("Training samples", fontsize=8)
+
+        block_ax = fig.add_subplot(outer[block_idx], frame_on=False)
+        block_ax.set_xticks([])
+        block_ax.set_yticks([])
+        block_ax.set_title(
+            f"{letter}. {block_title}",
+            fontsize=11,
+            fontweight="bold",
+            loc="left",
+            pad=22,
+        )
+
+    handles = [
+        Line2D(
+            [],
+            [],
+            color=TRAINING_COLORS[training_type],
+            linestyle=TEST_SUBSET_STYLES[test_subset][0],
+            marker=TEST_SUBSET_STYLES[test_subset][1],
+            markersize=4,
+            linewidth=1.2,
+            label=f"{training_type} training, {test_subset.lower()}",
+        )
+        for training_type in TRAINING_COLORS
+        for test_subset in TEST_SUBSET_STYLES
+    ]
+    fig.legend(
+        handles=handles,
+        loc="upper center",
+        ncol=2,
+        frameon=False,
+        fontsize=9,
+        bbox_to_anchor=(0.5, 0.985),
+    )
+
+    fig.savefig(output_file, dpi=300, bbox_inches="tight")
+    print(f"Saved multi-phenotype training-size grid to {output_file}")
     plt.close(fig)
 
 

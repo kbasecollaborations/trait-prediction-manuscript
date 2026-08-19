@@ -22,10 +22,11 @@ FEATURE_TYPE = "kofam"
 # Sample sizes used in figure_s6_data.py
 SAMPLE_SIZES = [50, 100, 200, 500, "full"]
 
-# Only the Histidine combined-test grid appears in the manuscript (as
-# figure_s6.pdf); all other variants go to figures/alternate/.
+# The manuscript figure_s6.pdf is now the multi-phenotype grid written by
+# scripts/figureS6/figureS6_multiphenotype_plot.py. Every grid here, Histidine
+# included, is an alternate; this script no longer writes figures/.
 MANUSCRIPT_PHENOTYPE = "Histidine"
-MANUSCRIPT_FIGURE_NAME = "figure_s6.pdf"
+MANUSCRIPT_FIGURE_NAME = "figure_s6_histidine_all_tests.pdf"
 
 
 def prepare_plot_data(df: pd.DataFrame) -> pd.DataFrame:
@@ -462,7 +463,7 @@ def print_summary_statistics(df: pd.DataFrame) -> None:
 def main() -> None:
     """Generate Figure S6 plots."""
     data_file = Path(
-        f"data/outputs/figureS6/figure_s6_data_requirements_{FEATURE_TYPE}.csv"
+        f"data/outputs/learning_curves_histidine/figure_s6_data_requirements_{FEATURE_TYPE}.csv"
     )
     df = pd.read_csv(data_file)
 
@@ -471,8 +472,8 @@ def main() -> None:
 
     plot_data = prepare_plot_data(df)
 
-    # The manuscript figure (figure_s6.pdf) lives in figures/; all other
-    # variants go to figures/alternate/.
+    # Every grid from this script is an alternate; figures/figure_s6.pdf is
+    # written by figureS6_multiphenotype_plot.py instead.
     output_dir = Path("figures")
     alternate_dir = output_dir / "alternate"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -493,7 +494,7 @@ def main() -> None:
     print("  Creating combined-test-subset plots per phenotype...")
     plot_combined_test_subsets(
         plot_data,
-        manuscript_dir=output_dir,
+        manuscript_dir=alternate_dir,
         alternate_dir=alternate_dir,
     )
 

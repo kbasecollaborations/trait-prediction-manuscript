@@ -71,7 +71,8 @@ FIGURE_DATA: Final[tuple[str, ...]] = tuple(
         "figureS2",
         "figureS3",
         "figureS5",
-        "figureS6",
+        "learning_curves_histidine",
+        "figureS7",
         "figure5_fp_only",
         "figure5_fn_discovery",
         "bacdive",
@@ -99,7 +100,6 @@ EXCLUDED: Final[dict[str, str]] = {
     "data/outputs_backup_pre_enantiomer_fix": "rollback copy from the substrate identity correction",
     "data/processed/phenotypes_backup_pre_enantiomer_fix": "rollback copy",
     "data/processed/train_test_splits_backup_pre_enantiomer_fix": "rollback copy",
-    "data/outputs/figureS7": "retired learning-curve figure; the current Figure S7 is drawn from data/outputs/bacdive",
     "data/outputs/concordance_meta": "exploratory meta-classifier; no figure, table, or reported value uses it",
     "data/processed/unique_core_faas": "pangenome core-gene FASTAs; regenerable from the proteomes",
     "data/processed/pangenome/old": "superseded pre-mmseqs90 assignments",
@@ -151,7 +151,16 @@ def iter_files(relative: str) -> list[Path]:
     if target.is_file():
         return [target]
     if target.is_dir():
-        return sorted(f for f in target.rglob("*") if f.is_file())
+        # Underscore-prefixed subdirectories are scratch by repository
+        # convention (``_chunks_*`` checkpoints, ``_stale_*`` quarantines).
+        # They are intermediate or superseded, and the consolidated CSV
+        # alongside them carries the same results.
+        return sorted(
+            f
+            for f in target.rglob("*")
+            if f.is_file()
+            and not any(part.startswith("_") for part in f.relative_to(target).parts)
+        )
     return []
 
 

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pandas as pd
 
-FEATURES_FILE: Path = Path("data/outputs/figureS16/figureS16_recovered_features.tsv")
-COUNTS_FILE: Path = Path("data/outputs/figureS16/figureS16_recovered_counts.tsv")
+FEATURES_FILE: Path = Path("data/outputs/phenotype_generalizability/figureS16_recovered_features.tsv")
+COUNTS_FILE: Path = Path("data/outputs/phenotype_generalizability/figureS16_recovered_counts.tsv")
 OUTPUT_FILE: Path = Path("sections/table_recovered_features.tex")
 
 MIN_RECOVERED: int = 20

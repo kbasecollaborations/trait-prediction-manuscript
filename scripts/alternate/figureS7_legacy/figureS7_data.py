@@ -33,9 +33,12 @@ COMMON_PHENOTYPES = [
     "Sucrose",
     "m-Inositol",
 ]
-SAMPLE_SIZES: list[int | str] = [50, 100, 200, 500, "full"]
+# 25 replaces the old 50 floor so the saturation knee is inside the measured
+# range; 500 is dropped because it is near-identical to "full" at the ~534
+# train+val samples available per phenotype-split.
+SAMPLE_SIZES: list[int | str] = [25, 50, 100, 200, "full"]
 N_REPEATS = 3
-SPLIT_TYPES = ["random_split", "dataset_split", "phylo_ooc"]
+SPLIT_TYPES = ["random_split", "dataset_split"]
 RANDOM_STATE = 42
 FEATURE_TYPE = "kofam"
 
@@ -440,7 +443,12 @@ def main() -> None:
     )
     output_dir = Path("data/outputs/figureS7")
     output_dir.mkdir(parents=True, exist_ok=True)
-    chunk_dir = output_dir / f"_chunks_{FEATURE_TYPE}"
+    # Key the checkpoint directory on the size list: a cached chunk only holds
+    # the sizes it was computed with, and the resume path reuses it wholesale.
+    # Deriving the name means changing SAMPLE_SIZES invalidates the cache
+    # instead of silently blending two size grids.
+    sizes_tag = "-".join(str(s) for s in SAMPLE_SIZES)
+    chunk_dir = output_dir / f"_chunks_{FEATURE_TYPE}_{sizes_tag}"
     chunk_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading {FEATURE_TYPE.upper()} features...")

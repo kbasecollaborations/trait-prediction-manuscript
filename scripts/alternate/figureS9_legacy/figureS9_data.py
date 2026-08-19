@@ -4,7 +4,7 @@
 For each shared phenotype, compares the full experimental set against the
 concordant subset on three measures: GTDB Class composition, Faith PD, and
 train/test class overlap across the four LOO splits (test set held fixed). Writes
-``data/outputs/figureS9/taxonomic_bias.tsv`` in long form.
+``data/outputs/taxonomic_bias/taxonomic_bias.tsv`` in long form.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ TREE_FILE: Path = Path("data/processed/phylogeny/gtdb-pruned.nwk")
 GAPMIND_FILE: Path = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 SPLITS_DIR: Path = Path("data/processed/train_test_splits/dataset_split")
-OUTPUT_FILE: Path = Path("data/outputs/figureS9/taxonomic_bias.tsv")
+OUTPUT_FILE: Path = Path("data/outputs/taxonomic_bias/taxonomic_bias.tsv")
 
 UNASSIGNED_LABEL: str = "Unassigned"
 

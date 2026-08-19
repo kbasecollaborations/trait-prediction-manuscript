@@ -17,7 +17,7 @@ from scripts.figure5.figure5a_data import load_gapmind_predictions
 
 GAPMIND_FILE: Final[Path] = Path("data/outputs/figure2/gapmind_phenotypes_loose.tsv")
 PHENOTYPE_DIR: Final[Path] = Path("data/processed/phenotypes")
-OUTPUT_DIR: Final[Path] = Path("data/outputs/figureS8")
+OUTPUT_DIR: Final[Path] = Path("data/outputs/concordance_counts")
 OUTPUT_FILE: Final[Path] = OUTPUT_DIR / "concordance_counts.tsv"
 
 DATASETS: Final[tuple[str, ...]] = ("atleaf", "lit", "marine", "pmi")

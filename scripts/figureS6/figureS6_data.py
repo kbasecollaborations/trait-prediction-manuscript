@@ -542,7 +542,7 @@ def main() -> None:
     FEATURE_FILE = Path(
         f"data/processed/features_reduced/combined_datasets/{FEATURE_TYPE}.tsv"
     )
-    OUTPUT_DIR = Path("data/outputs/figureS6")
+    OUTPUT_DIR = Path("data/outputs/learning_curves_histidine")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print(f"Loading {FEATURE_TYPE.upper()} feature data...")

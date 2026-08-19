@@ -32,7 +32,7 @@ KOFAM_FEATURE_FILE: Path = Path(
 )
 PHENOTYPE_DIR: Path = Path("data/processed/phenotypes")
 EXISTING_5C_FILE: Path = OUTPUT_DIR / "figure5c_concordant_train_different_test.csv"
-S8_COUNTS_FILE: Path = Path("data/outputs/figureS8/concordance_counts.tsv")
+S8_COUNTS_FILE: Path = Path("data/outputs/concordance_counts/concordance_counts.tsv")
 
 RANDOM_STATE: int = 42
 MIN_TRAIN_SAMPLES: int = 5
