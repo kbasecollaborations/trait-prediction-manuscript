@@ -255,8 +255,7 @@ def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
     plt.close(fig)
 
 
-#: Training-type colours, matching the canonical concordance/neutral pair in
-#: ``scripts/visualization.py`` (also used in figures 7, S5 and S7).
+#: Training-type colours, shared with figures 7, S5 and S7.
 TRAINING_COLORS: dict[str, str] = {"Full": "#9E9E9E", "Concordant": "#6A4C93"}
 #: Test-subset line styles for the multi-phenotype grid.
 TEST_SUBSET_STYLES: dict[str, tuple[str, str]] = {

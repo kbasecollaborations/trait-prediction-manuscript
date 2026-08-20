@@ -39,11 +39,7 @@ CONDITION_COLORS: dict[str, str] = {
     "gapmind": "#A23B72",
 }
 
-# Figure-local metric vocabulary, keyed by its own legend. Colour is load
-# bearing here because the per-phenotype dots behind the means have to be
-# separable; marker shape and line style below are redundant backups.
-# Indigo and gold rather than the tab10 blue/orange: those were dE 2.3 and 8.2
-# from the ATLeaf and Biolog bars that panel A of this same figure draws.
+# Metric colours for panel B, with marker and line style as backup channels.
 METRIC_COLORS: dict[str, str] = {
     "balanced_accuracy": "#3B4CC0",
     "precision": "#F2C230",
@@ -59,7 +55,6 @@ METRIC_MARKERS: dict[str, str] = {
     "precision": "s",
     "recall": "^",
 }
-#: Line style is a second redundant channel behind colour and marker shape.
 METRIC_LINESTYLES: dict[str, str] = {
     "balanced_accuracy": "-",
     "precision": "--",
@@ -215,8 +210,6 @@ def plot_metric_sweep(
         float(gm.groupby("phenotype")["balanced_accuracy"].mean().mean()),
         linestyle=":",
         linewidth=1.2,
-        # GapMind is the mechanism baseline, not an ML metric, so it takes the
-        # manuscript GapMind magenta rather than the balanced-accuracy colour.
         color=CONDITION_COLORS["gapmind"],
         alpha=0.8,
         zorder=1,

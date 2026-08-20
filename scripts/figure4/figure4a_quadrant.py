@@ -9,10 +9,7 @@ from matplotlib.patches import FancyBboxPatch, Rectangle
 plt.style.use(["science", "nature"])
 
 
-# Confusion-outcome colours, shared with figure 4B so the schematic and the
-# quantification key the same way. Cool = concordant, warm = discordant.
-# These are deliberately NOT the dataset hues: figure 4C draws ATLeaf/Biolog/
-# Marine, and the previous values were byte-identical to them.
+# Confusion-outcome colours, shared with figure 4B.
 COL_TP = "#499DD4"  # blue
 COL_FN = "#7D083B"  # wine
 COL_FP = "#E1B22F"  # amber
@@ -23,9 +20,7 @@ BG_FN = "#f2e7ec"
 BG_FP = "#fcf5e5"
 BG_TN = "#e5f5ec"
 
-# Failure-cause vocabulary, local to this panel and keyed by the inline bold
-# labels. Annotation moved off purple (it collided with the manuscript
-# concordance colour) and media/regulation were pulled apart.
+# Failure-cause colours, keyed by the inline bold labels in each quadrant.
 CAT_ANNOTATION = "#4C5B8A"  # indigo slate
 CAT_BIOLOGY = "#3d6e3f"  # dark green
 CAT_MEASUREMENT = "#6c7a89"  # slate gray

@@ -37,8 +37,7 @@ HEAD_TO_HEAD = Path("data/outputs/bacdive/head_to_head.csv")
 STRATEGY_STABILITY = Path("data/outputs/bacdive/strategy_stability.csv")
 
 ORDER = ["C", "F", "FB"]
-# Training-strategy arms, not datasets: canonical concordance purple, the
-# neutral reference arm, and an added-volume accent.
+# Training-strategy arms.
 COLORS = {"C": "#6A4C93", "F": "#9E9E9E", "FB": "#F5B25C"}
 LABELS = {
     "C": "Concordant\n(curated)",

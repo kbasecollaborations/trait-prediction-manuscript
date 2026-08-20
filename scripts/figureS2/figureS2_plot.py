@@ -37,10 +37,7 @@ SPLIT_LABELS = {
     "out-of-clade": "Out-of-clade",
 }
 
-# Split-type colours. ``random`` carries the canonical random-split green used
-# in figures 3, 5 and S6; the previous blue was the cross-dataset colour, so
-# the same split read as two different things across the manuscript. In-clade
-# and out-of-clade appear as colours only here.
+# Split-type colours; in-clade and out-of-clade are drawn only in this figure.
 SPLIT_COLORS = {
     "random": "#57BA64",  # green
     "in-clade": "#2B5164",  # dark slate
@@ -70,8 +67,7 @@ def main() -> None:
         hue_order=SPLIT_ORDER,
         palette=palette,
         showfliers=False,
-        # seaborn desaturates box fills to 0.75 by default, which made the
-        # printed boxes differ from the hand-built legend swatches below.
+        # Keep the box fills at full saturation so they match the legend.
         saturation=1.0,
         ax=ax,
     )
@@ -85,9 +81,7 @@ def main() -> None:
         dodge=True,
         alpha=0.35,
         size=2.5,
-        # Raw points stay neutral; the dodged boxes carry the split-type
-        # colour. Passing ``color`` alongside ``hue`` is deprecated in seaborn
-        # 0.13 and silently builds a ``dark:black`` gradient instead.
+        # Raw points stay black; the dodged boxes carry the split-type colour.
         palette=["black"] * len(SPLIT_ORDER),
         legend=False,
         ax=ax,

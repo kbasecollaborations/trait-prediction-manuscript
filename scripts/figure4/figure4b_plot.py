@@ -271,9 +271,7 @@ def create_confusion_matrix_plots(
         "cellobiose": "Cellobiose",
     }
 
-    # Cool for correct calls, warm for incorrect. Shifted off the Wong values
-    # because those were byte-identical to the ATLeaf/Marine/Biolog dataset
-    # hues drawn in panel C of this same figure.
+    # Cool for correct calls, warm for incorrect. Shared with figure 4A.
     colors = {
         "TP": "#499DD4",  # Blue (correct)
         "TN": "#009E54",  # Green (correct)

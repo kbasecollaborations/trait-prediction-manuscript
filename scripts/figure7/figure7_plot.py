@@ -29,30 +29,18 @@ PER_SAMPLE_FILES = {
 }
 OUTPUT_FILE = Path("figures/figure7.pdf")
 
-# Colour palette: seaborn ``colorblind`` (matches ``visualization.get_dataset_colors``).
-# Index 0 (blue) is the primary accent; index 3 (vermillion) the secondary.
-_PALETTE = sns.color_palette("colorblind", n_colors=6)
-PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
-
-# Panel A spans high, intermediate, and low cross-dataset balanced accuracy
-# (0.82, 0.74, 0.64). Panel D draws from the six phenotypes with enough valid
-# label-acquisition runs, ordered strong to weak generaliser (0.71, 0.64, 0.51),
-# so the two panels no longer share a phenotype list.
+# Panel A spans high, intermediate and low cross-dataset balanced accuracy;
+# panel D uses the phenotypes with enough valid label-acquisition runs.
 PANEL_A_PHENOTYPES = ["m-Inositol", "Sucrose", "Glycerol"]
 PANEL_D_PHENOTYPES = ["Histidine", "Mannose", "Glucose"]
 MODEL_LABELS = {"concordant": "Concordant", "full_data": "Full-data"}
-# Panels C/D: label-selection strategies, keyed by their own legend and by the
-# x-axis labels. Figure 7 draws no dataset series, so these hues cannot be
-# mistaken for dataset identity within this figure.
+# Label-selection strategy colours for panels C and D.
 STRATEGY_COLORS = {
     "low_confidence": "#0173B2",
     "diversity": "#CC78BC",
     "random": "#7F7F7F",
     "high_ood": "#146B3A",
 }
-# Canonical concordance purple against a neutral reference arm. PRIMARY/ACCENT
-# stay behind the panel C/D strategy palette; reusing them here made
-# "concordant" share a colour with "low confidence" inside one figure.
 MODEL_COLORS = {"concordant": "#6A4C93", "full_data": "#9E9E9E"}
 STRATEGY_LABELS = {
     "low_confidence": "Low confidence",

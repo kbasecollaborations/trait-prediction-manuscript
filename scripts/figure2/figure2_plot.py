@@ -43,9 +43,6 @@ def plot_gapmind_comparison(ax: plt.Axes, data_dir: Path) -> None:
     strict_data = strict_df.set_index("phenotype").reindex(phenotypes)
     loose_data = loose_df.set_index("phenotype").reindex(phenotypes)
 
-    # Both bars are GapMind, so both stay in the GapMind magenta family: the
-    # permissive threshold carries the canonical hue used in figure 3, strict a
-    # darker shade. #2E86AB is reserved for the cross-dataset split.
     color_strict = "#6E2A4E"
     color_loose = "#A23B72"
 

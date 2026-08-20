@@ -7,8 +7,7 @@ under cross-dataset and random-holdout evaluation.
 
 Reads the consolidated KOFAM learning curves written by
 ``scripts.alternate.figureS7_legacy.figureS7_data`` and writes
-``figures/figure_s6.pdf``. The histidine grid remains available as
-``figures/alternate/figure_s6_histidine_all_tests.pdf``.
+``figures/figure_s6.pdf``.
 
 Run:
     uv run python -m scripts.figureS6.figureS6_multiphenotype_plot
