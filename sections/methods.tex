@@ -26,19 +26,19 @@ Genomes lacking species-level assignments were placed at genus or family level.
 
 \subsection*{Baseline Predictors}
 
-We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls, strict (only ``complete'' positive) and permissive (``complete'' and ``likely complete'' positive), with all other calls negative (Supplementary Text~S3).
+We evaluated GapMind as a mechanistic baseline using two binary thresholds on pathway-completeness calls, strict (only ``complete'' positive) and permissive (``complete'' and ``likely complete'' positive), with all other calls negative.
 A phylogenetic $k$-nearest-neighbour classifier assigned phenotypes by majority vote among the $k=3$ closest training relatives.
 Null baselines comprised an identity model (predicting the most common training class) and a Bernoulli model (sampling from observed training class probabilities).
 
 \subsection*{Data Pre-processing and Feature Selection}
 
 KOFAM, GapMind, and RAST annotations were converted into binary presence/absence matrices (GapMind pathway scores retained integer values).
-Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, removing the most connected features; Supplementary Text~S3).
+Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, removing the most connected features).
 KOFAM yielded around 5500 retained features and GapMind around 1000.
 
 \subsection*{Machine Learning Classifiers}
 
-We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost} (v1.2.8), which performed as well as or better than a range of alternative model families (Supplementary Table~\ref{tab:best_models_counts}; Supplementary Text~S3).
+We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost} (v1.2.8), which performed as well as or better than a range of alternative model families (Supplementary Table~\ref{tab:best_models_counts}).
 The CatBoost hyperparameters were tuned on performance across all phenotypes (1000 iterations, learning rate 0.03, tree depth 4; full configuration in Supplementary Text~S3).
 Random holdout evaluations used five 70:15:15 train/validation/test partitions generated independently for each phenotype and stratified by its binary growth label (Figure~\ref{fig:ml_performance}A).
 Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation partition on the non-test data.
@@ -49,7 +49,7 @@ Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation 
 
 Performance was evaluated under four scenarios: random holdout within the aggregated dataset; leave-one-dataset-out cross-dataset; and in-clade and out-of-clade phylogenetic splits.
 Exact-duplicate feature vectors were rare and did not produce train--test overlap in leave-one-dataset-out evaluation (Supplementary Text~S3).
-Phenotype--dataset combinations with fewer than 10 minority-class test samples were excluded to prevent balanced-accuracy collapse; cross-dataset missing features were imputed as zero (Supplementary Text~S3).
+Phenotype--dataset combinations with fewer than 10 minority-class test samples were excluded to prevent balanced-accuracy collapse; cross-dataset missing features were imputed as zero.
 
 \subsubsection*{Phylogenetic Partitioning}
 
@@ -72,7 +72,7 @@ Biologically redundant KOs were grouped post hoc into SHAP-supervised clusters b
 Two additional filtering strategies were evaluated beyond concordant sample filtering, both applied to training and validation samples only, never to the held-out test set.
 Problematic-sample removal excluded universal non-growers with any GapMind growth prediction, universal growers with incomplete GapMind pathways, and the twenty most frequently GapMind-misclassified genomes.
 Confidence-based weighting combined split-local phylogenetic neighbour agreement (training labels only), GapMind pathway completeness, and experimental outcome.
-Tree-unplaced training and validation genomes were excluded because they could not be scored; tree-placed conflicts were retained and down-weighted asymmetrically to prioritise recall (Supplementary Text~S9).
+Tree-unplaced training and validation genomes were excluded because they could not be scored; tree-placed conflicts were retained and down-weighted asymmetrically to prioritise recall.
 Four score configurations spanning $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$ were evaluated, including a mechanism-free setting ($w_{\mathrm{gap}} = 0$) (full formula and sample weights in Supplementary Text~S9).
 All conditions in Figure~\ref{fig:improvement_strategies}B were evaluated on the same full cross-dataset held-out test set.
 
@@ -85,7 +85,7 @@ Requested sizes above the eligible count were capped, and subsets that retained 
 
 For full-data and concordance-trained models on the cross-dataset test set, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
 The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was pooled across phenotypes~\cite{Pedregosa2011Sklearn}.
-Risk--coverage curves retained genomes in decreasing order of confidence and scored the retained subset by accuracy against the phenotype's majority-class rate, balanced accuracy being undefined where the most-confident genomes share a single true class (Supplementary Text~S8); label-free aggregates (mean confidence, fraction of high-confidence predictions) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy.
+Risk--coverage curves retained genomes in decreasing order of confidence and scored the retained subset by accuracy against the phenotype's majority-class rate, balanced accuracy being undefined where the most-confident genomes share a single true class; label-free aggregates (mean confidence, fraction of high-confidence predictions) were Spearman-correlated with per-phenotype cross-dataset balanced accuracy (Supplementary Text~S8).
 
 \subsection*{Statistical Analysis}
 
