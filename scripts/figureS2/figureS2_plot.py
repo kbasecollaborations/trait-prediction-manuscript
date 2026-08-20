@@ -43,7 +43,7 @@ SPLIT_LABELS = {
 # and out-of-clade appear as colours only here.
 SPLIT_COLORS = {
     "random": "#57BA64",  # green
-    "in-clade": "#CA9161",  # brown
+    "in-clade": "#2B5164",  # dark slate
     "out-of-clade": "#785EF0",  # violet
 }
 

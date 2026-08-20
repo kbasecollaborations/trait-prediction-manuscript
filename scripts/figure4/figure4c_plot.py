@@ -74,7 +74,7 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
         bar_width,
         # Neutral: this bar pools all datasets, so it must not read as a fourth
         # ATLeaf bar against the per-dataset subplot below.
-        color="#C8C8C8",
+        color="#595959",
         alpha=0.8,
     )
 

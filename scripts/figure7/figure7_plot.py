@@ -41,14 +41,14 @@ PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
 PANEL_A_PHENOTYPES = ["m-Inositol", "Sucrose", "Glycerol"]
 PANEL_D_PHENOTYPES = ["Histidine", "Mannose", "Glucose"]
 MODEL_LABELS = {"concordant": "Concordant", "full_data": "Full-data"}
-# Panels C/D: strategies are keyed by hatch on a single neutral fill, so no
-# strategy colour can be mistaken for the full-data grey in panels A/B.
-STRATEGY_FILL = "#BFBFBF"
-STRATEGY_HATCH = {
-    "low_confidence": "//",
-    "diversity": "\\\\",
-    "random": "",
-    "high_ood": "xx",
+# Panels C/D: label-selection strategies, keyed by their own legend and by the
+# x-axis labels. Figure 7 draws no dataset series, so these hues cannot be
+# mistaken for dataset identity within this figure.
+STRATEGY_COLORS = {
+    "low_confidence": "#0173B2",
+    "diversity": "#CC78BC",
+    "random": "#7F7F7F",
+    "high_ood": "#146B3A",
 }
 # Canonical concordance purple against a neutral reference arm. PRIMARY/ACCENT
 # stay behind the panel C/D strategy palette; reusing them here made
@@ -220,10 +220,7 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     def _hex(i: int) -> str:
         return "#%02x%02x%02x" % tuple(int(255 * v) for v in palette[i])
 
-    # Label-selection strategies are a figure-local vocabulary already named on
-    # the x axis, so they spend no hue budget: one neutral fill plus a hatch.
-    # Hatch also survives greyscale print and every form of colour blindness.
-    colors = dict.fromkeys(STRATEGY_HATCH, STRATEGY_FILL)
+    colors = dict(STRATEGY_COLORS)
     budget = int(prior["n_added"].max())
     final = prior[prior["n_added"] == budget]
     order = ["low_confidence", "diversity", "random", "high_ood"]
@@ -247,7 +244,6 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
         body.set_edgecolor("black")
         body.set_linewidth(0.7)
         body.set_alpha(0.65)
-        body.set_hatch(STRATEGY_HATCH[order[i]])
     for key in ("cmedians", "cmaxes", "cmins", "cbars"):
         bar = parts.get(key)
         if bar is not None:
@@ -285,8 +281,8 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     budget = int(prior["n_added"].max())
     final = prior[prior["n_added"] == budget]
     strategies: list[tuple[str, str, str]] = [
-        ("random", "Random", STRATEGY_FILL),
-        ("low_confidence", "Low-confidence", STRATEGY_FILL),
+        ("random", "Random", STRATEGY_COLORS["random"]),
+        ("low_confidence", "Low-confidence", STRATEGY_COLORS["low_confidence"]),
     ]
     box_width = 0.32
     rng = np.random.default_rng(42)
@@ -326,7 +322,6 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
                     edgecolor="black",
                     linewidth=0.7,
                     alpha=0.7,
-                    hatch=STRATEGY_HATCH[strat],
                 ),
                 medianprops=dict(color="black", linewidth=1.0),
                 whiskerprops=dict(color="black", linewidth=0.7),
@@ -359,7 +354,6 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
             edgecolor="black",
             linewidth=0.7,
             alpha=0.7,
-            hatch=STRATEGY_HATCH[strat],
             label=label,
         )
         for strat, label, color in strategies

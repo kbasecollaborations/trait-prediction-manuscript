@@ -13,7 +13,7 @@ Dataset identity (``get_dataset_colors``)
 Evaluation split type
     random / in-distribution holdout  #57BA64
     cross-dataset (leave-one-dataset-out)  #2E86AB
-    in-clade  #CA9161
+    in-clade  #2B5164
     out-of-clade  #785EF0
 
 GapMind (rule-based)
@@ -35,23 +35,34 @@ Neutral
     aggregate over all datasets  #9E9E9E
     chance, parity, zero and banding chrome  grey at low alpha
 
-Figure-local vocabularies carry NO hue. Their categories are already named on
-an axis or in a legend, so they use a neutral ramp plus a redundant
-non-colour channel. This keeps the hue budget for categories that recur:
-    Fig 2B baseline models     luminance ramp + markers o / s / ^
+Tier 2, figure-local vocabularies. Each is keyed by its own legend or by its
+own axis labels, so a Tier-2 colour never carries a manuscript-wide meaning.
+Tier-2 colours may therefore repeat ACROSS figures; what they must never do is
+collide with a Tier-1 category drawn in the SAME figure.
+    Fig 2B baseline models     #A0A0A0 / #707070 / #000000 + markers o / s / ^
     Fig 4A failure causes      local swatches keyed by inline bold labels
-    Fig 6A-right problem modes #4D4D4D / #909090 / #C8C8C8
-    Fig 6B metrics             one ink #3F3F3F + markers o / s / ^ + line style
-    Fig 7C/D strategies        one fill #BFBFBF + hatch (// \\ none xx)
-    Fig S4 QC status           #3A3A3A / #8C8C8C / #BFBFBF / #E0E0E0
+    Fig 6A-right problem modes #8C2155 / #17BECF / #7F7F7F
+    Fig 4C pooled/aggregate bar #595959
+    Fig 6B metrics             #3B4CC0 / #F2C230 / #D62728
+                               + markers o / s / ^ + line style
+    Fig 7C/D strategies        #0173B2 / #CC78BC / #7F7F7F / #146B3A
+    Fig S4 QC status           success #2E7D5B; failure modes neutral
+                               #8C8C8C / #BFBFBF / #E0E0E0
 
-Why some categories moved off the Okabe-Ito values they used to hold: under
-deuteranopia the orange #DE8F05 and vermillion #D55E00 sit only dE 9 apart, so
-Populus and the false-negative colour both left vermillion; and the old
-confusion palette was byte-identical to the dataset palette (TP == ATLeaf,
-TN == Marine) inside Figure 4. Only about 21 mutually distinguishable
-publication-quality colours exist at all, which is why the figure-local
-vocabularies above are deliberately neutral rather than hued.
+Figure 7's strategy blue is the ATLeaf hex. That reuse is deliberate and safe:
+Figure 7 draws no dataset series at all, so inside that figure the colour
+cannot be read as dataset identity.
+
+Verify any change with an established colour-vision model, not a hand-rolled
+one: naive dichromat simulation clips out-of-gamut results toward white and
+invents collapses that are not real. ``uv run --with colorspacious`` gives
+sRGB1+CVD at severity 100, which reproduces the known weak Okabe-Ito pair
+(orange vs vermillion, dE 18) and the red/green collapse.
+
+Why some categories moved off the Okabe-Ito values they used to hold: Biolog
+orange and the old Populus vermillion sat ~10 dE apart under dichromacy, and
+the old confusion palette was byte-identical to the dataset palette
+(TP == ATLeaf, TN == Marine) inside Figure 4, which also draws datasets.
 """
 
 import matplotlib.pyplot as plt

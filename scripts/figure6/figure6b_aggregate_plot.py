@@ -39,14 +39,15 @@ CONDITION_COLORS: dict[str, str] = {
     "gapmind": "#A23B72",
 }
 
-# The three metrics are a figure-local vocabulary already separated by marker
-# shape (METRIC_MARKERS below) and named in the legend, so they share one
-# neutral ink instead of spending three hues. The previous values duplicated
-# ATLeaf (#1f77b4) and the false-positive amber (#E69F00).
+# Figure-local metric vocabulary, keyed by its own legend. Colour is load
+# bearing here because the per-phenotype dots behind the means have to be
+# separable; marker shape and line style below are redundant backups.
+# Indigo and gold rather than the tab10 blue/orange: those were dE 2.3 and 8.2
+# from the ATLeaf and Biolog bars that panel A of this same figure draws.
 METRIC_COLORS: dict[str, str] = {
-    "balanced_accuracy": "#3F3F3F",
-    "precision": "#3F3F3F",
-    "recall": "#3F3F3F",
+    "balanced_accuracy": "#3B4CC0",
+    "precision": "#F2C230",
+    "recall": "#d62728",
 }
 METRIC_LABELS: dict[str, str] = {
     "balanced_accuracy": "Balanced accuracy",
@@ -58,7 +59,7 @@ METRIC_MARKERS: dict[str, str] = {
     "precision": "s",
     "recall": "^",
 }
-#: Line style backs up the marker now that the three metrics share one ink.
+#: Line style is a second redundant channel behind colour and marker shape.
 METRIC_LINESTYLES: dict[str, str] = {
     "balanced_accuracy": "-",
     "precision": "--",

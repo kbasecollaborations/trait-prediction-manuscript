@@ -468,7 +468,7 @@ def plot_learning_curves(df: pd.DataFrame, output_file: Path) -> None:
     split_colors = {
         "Random Split": "#57BA64",
         "Dataset Split": "#2E86AB",
-        "Out-of-Clade": "#DE8F05",
+        "Out-of-Clade": "#785EF0",
     }
     sample_size_order = get_sample_size_order(sub)
     x_positions = np.arange(len(sample_size_order))

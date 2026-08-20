@@ -69,11 +69,11 @@ def plot_status_breakdown(ax: plt.Axes, df: pd.DataFrame, label: str = "(A)") ->
     status_order = ["success", "no_species", "no_core_genes", "error"]
     counts = df["status"].value_counts().reindex(status_order, fill_value=0)
     colors = {
-        # Genome-QC status is a figure-local vocabulary named on the x axis,
-        # so it takes a neutral ramp rather than hues. The old success green
-        # was the random-split colour and collapsed onto mid grey under
-        # deuteranopia (dE 1.8).
-        "success": "#3A3A3A",
+        # Genome-QC status is a figure-local vocabulary named on the x axis.
+        # Only "success" is coloured: it is the category the figure is about,
+        # and the failure modes read better as a neutral ramp behind it. The
+        # green is deliberately off the Marine dataset hue.
+        "success": "#2E7D5B",
         "no_species": "#8C8C8C",
         "no_core_genes": "#BFBFBF",
         "error": "#E0E0E0",
@@ -134,7 +134,7 @@ def plot_completeness_distribution(
     ax.hist(
         df_success["completeness_pct"],
         bins=bins,
-        color="#8C8C8C",
+        color="#2E7D5B",
         alpha=0.8,
         edgecolor="black",
         linewidth=0.8,
@@ -202,7 +202,7 @@ def plot_completeness_by_species(
         positions=np.arange(len(short_names)),
         tick_labels=short_names,
         patch_artist=True,
-        boxprops=dict(facecolor="#8C8C8C", alpha=0.7, linewidth=1.5),
+        boxprops=dict(facecolor="#2E7D5B", alpha=0.7, linewidth=1.5),
         medianprops=dict(color="black", linewidth=2),
         whiskerprops=dict(linewidth=1.5),
         capprops=dict(linewidth=1.5),
