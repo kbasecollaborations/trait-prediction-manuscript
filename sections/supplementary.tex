@@ -79,7 +79,7 @@ Dataset compositions differ, with Populus showing the narrowest phylogenetic ran
 \includegraphics[width=\textwidth]{figure_s2.pdf}
 \caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
 Minimum cophenetic distance from each held-out test genome to its training set under random-holdout, in-clade, and out-of-clade splits, pooled across five splits per phenotype for the 15 shared phenotypes.
-Boxes show the median and interquartile range, whiskers extend to 1.5 times the interquartile range, and points are individual test genomes (random $n=8{,}289$; in-clade $n=5{,}595$; out-of-clade $n=6{,}212$).
+Boxes are coloured by split type (random, green; in-clade, dark teal; out-of-clade, purple), show the median and interquartile range, and have whiskers extending to 1.5 times the interquartile range; points are individual test genomes (random $n=8{,}289$; in-clade $n=5{,}595$; out-of-clade $n=6{,}212$).
 Random-holdout and in-clade test genomes lie close to the training set (medians 0.009 and 0.000), whereas out-of-clade splits produce much larger distances (median 1.109), validating the intended separation of the evaluation regimes in Figure~\ref{fig:ml_performance}.}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
@@ -89,7 +89,8 @@ Random-holdout and in-clade test genomes lie close to the training set (medians 
 \includegraphics[width=\textwidth]{figure_s3.pdf}
 \caption{\textbf{In-clade versus out-of-clade performance across the 15 shared phenotypes under full-data training.}
 CatBoost balanced accuracy using KOFAM features across four leave-one-dataset-out combinations.
-(\textbf{A}) Test samples sharing a cluster with at least two training samples; (\textbf{B}) test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
+(\textbf{A}) In-clade, test samples sharing a cluster with at least two training samples; (\textbf{B}) out-of-clade, test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
+Points are coloured by held-out test dataset.
 Cells with fewer than 10 test or minority-class samples were excluded (44 of 120, including all Populus-held-out out-of-clade cells).
 Mean out-of-clade balanced accuracy was lower than in-clade accuracy (0.621 versus 0.701).
 Numerals give test-subset sizes.}
@@ -125,7 +126,7 @@ The comprehensive set therefore inherits the same dependence on curation as the 
 \includegraphics[width=0.90\textwidth]{figure_s5.pdf}
 \caption{
 \textbf{Concordant training improves cross-dataset generalisation under KOFAM features.}
-(\textbf{A}) Cross-dataset balanced accuracy of concordance-trained versus full-data KOFAM models on concordant test samples; each point is one phenotype--split combination ($n = 44$).
+(\textbf{A}) Cross-dataset balanced accuracy of concordance-trained versus full-data KOFAM models on concordant test samples; each point is one phenotype--split combination ($n = 44$), and the annotation gives the number of combinations on which concordant training was better.
 (\textbf{B}) Per-phenotype distributions for full-data (grey) and concordant (purple) training; boxes show the median and interquartile range, whiskers extend to 1.5 times the interquartile range, outliers are not shown, and the dotted line marks the 0.5 chance level.
 Each box summarises the one to four cross-dataset splits available for that phenotype, so boxes for phenotypes with a single split appear as a line.
 }
