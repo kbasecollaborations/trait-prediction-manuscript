@@ -332,11 +332,11 @@ def plot_microbe_misclassification_ranking(
     top_20_data: list[dict[str, object]] = []
     for genome_id, count in missclassified_counts.most_common(20):
         if genome_id in cat1_set:
-            color = "#e377c2"
+            color = "#4D4D4D"
         elif genome_id in cat2_set:
-            color = "#17becf"
+            color = "#909090"
         else:
-            color = "#7f7f7f"
+            color = "#C8C8C8"
         top_20_data.append({"genome_id": genome_id, "count": count, "color": color})
 
     top_20_df = pd.DataFrame(top_20_data)
@@ -372,9 +372,9 @@ def plot_microbe_misclassification_ranking(
     from matplotlib.patches import Patch
 
     category_handles = [
-        Patch(facecolor="#e377c2", alpha=0.75, label="No growth"),
-        Patch(facecolor="#17becf", alpha=0.75, label="Universal growth"),
-        Patch(facecolor="#7f7f7f", alpha=0.75, label="Neither"),
+        Patch(facecolor="#4D4D4D", alpha=0.75, label="No growth"),
+        Patch(facecolor="#909090", alpha=0.75, label="Universal growth"),
+        Patch(facecolor="#C8C8C8", alpha=0.75, label="Neither"),
     ]
     ax.legend(
         handles=category_handles,

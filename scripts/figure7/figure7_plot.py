@@ -33,7 +33,6 @@ OUTPUT_FILE = Path("figures/figure7.pdf")
 # Index 0 (blue) is the primary accent; index 3 (vermillion) the secondary.
 _PALETTE = sns.color_palette("colorblind", n_colors=6)
 PRIMARY_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[0])
-ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
 
 # Panel A spans high, intermediate, and low cross-dataset balanced accuracy
 # (0.82, 0.74, 0.64). Panel D draws from the six phenotypes with enough valid
@@ -42,7 +41,19 @@ ACCENT_COLOR: str = "#%02x%02x%02x" % tuple(int(255 * v) for v in _PALETTE[3])
 PANEL_A_PHENOTYPES = ["m-Inositol", "Sucrose", "Glycerol"]
 PANEL_D_PHENOTYPES = ["Histidine", "Mannose", "Glucose"]
 MODEL_LABELS = {"concordant": "Concordant", "full_data": "Full-data"}
-MODEL_COLORS = {"concordant": PRIMARY_COLOR, "full_data": ACCENT_COLOR}
+# Panels C/D: strategies are keyed by hatch on a single neutral fill, so no
+# strategy colour can be mistaken for the full-data grey in panels A/B.
+STRATEGY_FILL = "#BFBFBF"
+STRATEGY_HATCH = {
+    "low_confidence": "//",
+    "diversity": "\\\\",
+    "random": "",
+    "high_ood": "xx",
+}
+# Canonical concordance purple against a neutral reference arm. PRIMARY/ACCENT
+# stay behind the panel C/D strategy palette; reusing them here made
+# "concordant" share a colour with "low confidence" inside one figure.
+MODEL_COLORS = {"concordant": "#6A4C93", "full_data": "#9E9E9E"}
 STRATEGY_LABELS = {
     "low_confidence": "Low confidence",
     "high_ood": "High novelty",
@@ -209,12 +220,10 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
     def _hex(i: int) -> str:
         return "#%02x%02x%02x" % tuple(int(255 * v) for v in palette[i])
 
-    colors = {
-        "low_confidence": PRIMARY_COLOR,
-        "high_ood": _hex(2),
-        "diversity": _hex(4),
-        "random": "0.6",
-    }
+    # Label-selection strategies are a figure-local vocabulary already named on
+    # the x axis, so they spend no hue budget: one neutral fill plus a hatch.
+    # Hatch also survives greyscale print and every form of colour blindness.
+    colors = dict.fromkeys(STRATEGY_HATCH, STRATEGY_FILL)
     budget = int(prior["n_added"].max())
     final = prior[prior["n_added"] == budget]
     order = ["low_confidence", "diversity", "random", "high_ood"]
@@ -238,6 +247,7 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
         body.set_edgecolor("black")
         body.set_linewidth(0.7)
         body.set_alpha(0.65)
+        body.set_hatch(STRATEGY_HATCH[order[i]])
     for key in ("cmedians", "cmaxes", "cmins", "cbars"):
         bar = parts.get(key)
         if bar is not None:
@@ -275,8 +285,8 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     budget = int(prior["n_added"].max())
     final = prior[prior["n_added"] == budget]
     strategies: list[tuple[str, str, str]] = [
-        ("random", "Random", "0.6"),
-        ("low_confidence", "Low-confidence", PRIMARY_COLOR),
+        ("random", "Random", STRATEGY_FILL),
+        ("low_confidence", "Low-confidence", STRATEGY_FILL),
     ]
     box_width = 0.32
     rng = np.random.default_rng(42)
@@ -312,7 +322,11 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
                 widths=box_width,
                 patch_artist=True,
                 boxprops=dict(
-                    facecolor=color, edgecolor="black", linewidth=0.7, alpha=0.7
+                    facecolor=color,
+                    edgecolor="black",
+                    linewidth=0.7,
+                    alpha=0.7,
+                    hatch=STRATEGY_HATCH[strat],
                 ),
                 medianprops=dict(color="black", linewidth=1.0),
                 whiskerprops=dict(color="black", linewidth=0.7),
@@ -345,9 +359,10 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
             edgecolor="black",
             linewidth=0.7,
             alpha=0.7,
+            hatch=STRATEGY_HATCH[strat],
             label=label,
         )
-        for _strat, label, color in strategies
+        for strat, label, color in strategies
     ]
     ax.legend(handles=legend_handles, frameon=False, fontsize=10, loc="upper left")
     _panel_label(ax, "D")

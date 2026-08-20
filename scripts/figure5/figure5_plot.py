@@ -241,7 +241,7 @@ def plot_dataset_split_performance(
             ax.plot(
                 [x_pos - 0.45, x_pos + 0.45],
                 [random_means[phenotype], random_means[phenotype]],
-                color="#06A77D",
+                color="#57BA64",
                 linestyle="-",
                 linewidth=1.6,
                 alpha=0.65,
@@ -271,7 +271,7 @@ def plot_dataset_split_performance(
         Line2D(
             [0],
             [0],
-            color="#06A77D",
+            color="#57BA64",
             linewidth=2,
             alpha=0.7,
             label="Random Split mean (KOFAM)",
@@ -567,7 +567,7 @@ def plot_ml_vs_gapmind_full_test(
     ax.scatter(
         gm_random_mean.loc[common_r].values,
         ml_random_mean.loc[common_r].values,
-        c="#06A77D",
+        c="#57BA64",
         alpha=0.85,
         s=70,
         edgecolors="black",

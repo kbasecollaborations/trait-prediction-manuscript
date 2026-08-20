@@ -271,12 +271,15 @@ def create_confusion_matrix_plots(
         "cellobiose": "Cellobiose",
     }
 
-    # Wong palette: cool colors for correct calls, warm for incorrect.
+    # Cool for correct calls, warm for incorrect. Shifted off the Wong values
+    # because those were byte-identical to the ATLeaf/Marine/Biolog dataset
+    # hues drawn in panel C of this same figure.
     colors = {
-        "TP": "#0072B2",  # Blue (correct)
-        "TN": "#009E73",  # Teal (correct)
-        "FP": "#E69F00",  # Orange (incorrect)
-        "FN": "#D55E00",  # Vermillion (incorrect)
+        "TP": "#499DD4",  # Blue (correct)
+        "TN": "#009E54",  # Green (correct)
+        "FP": "#E1B22F",  # Amber (incorrect)
+        "FN": "#7D083B",  # Wine (incorrect)
+
     }
 
     print("Loading GapMind predictions...")

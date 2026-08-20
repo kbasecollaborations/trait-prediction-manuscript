@@ -9,21 +9,28 @@ from matplotlib.patches import FancyBboxPatch, Rectangle
 plt.style.use(["science", "nature"])
 
 
-COL_TP = "#3a8a83"  # teal
-COL_FN = "#c47a3d"  # amber
-COL_FP = "#a85060"  # rose
-COL_TN = "#5876a0"  # muted blue
+# Confusion-outcome colours, shared with figure 4B so the schematic and the
+# quantification key the same way. Cool = concordant, warm = discordant.
+# These are deliberately NOT the dataset hues: figure 4C draws ATLeaf/Biolog/
+# Marine, and the previous values were byte-identical to them.
+COL_TP = "#499DD4"  # blue
+COL_FN = "#7D083B"  # wine
+COL_FP = "#E1B22F"  # amber
+COL_TN = "#009E54"  # green
 
-BG_TP = "#e8f1ef"
-BG_FN = "#fbf3e9"
-BG_FP = "#f3e6e9"
-BG_TN = "#e7ecf3"
+BG_TP = "#eaf3fa"
+BG_FN = "#f2e7ec"
+BG_FP = "#fcf5e5"
+BG_TN = "#e5f5ec"
 
-CAT_ANNOTATION = "#6f5fb0"  # purple
+# Failure-cause vocabulary, local to this panel and keyed by the inline bold
+# labels. Annotation moved off purple (it collided with the manuscript
+# concordance colour) and media/regulation were pulled apart.
+CAT_ANNOTATION = "#4C5B8A"  # indigo slate
 CAT_BIOLOGY = "#3d6e3f"  # dark green
 CAT_MEASUREMENT = "#6c7a89"  # slate gray
 CAT_MEDIA = "#8a6d3a"  # brown
-CAT_REGULATION = "#9c8a35"  # olive yellow
+CAT_REGULATION = "#B9A227"  # olive yellow
 
 TXT_DARK = "#1f1f1f"
 TXT_BODY = "#333333"
@@ -344,7 +351,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Pathway predicted present (+)",
         fontsize=FS_COL_SUB,
         fontweight="bold",
-        color=COL_TP,
+        color=TXT_DARK,
         ha="center",
         va="center",
     )
@@ -354,7 +361,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Pathway predicted absent (−)",
         fontsize=FS_COL_SUB,
         fontweight="bold",
-        color=COL_FP,
+        color=TXT_DARK,
         ha="center",
         va="center",
     )
@@ -370,7 +377,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "Growth observed (+)",
         fontsize=FS_ROW_LABEL,
         fontweight="bold",
-        color=COL_TP,
+        color=TXT_DARK,
         ha="center",
         va="center",
         rotation=90,
@@ -381,7 +388,7 @@ def create_quadrant_plot(ax: plt.Axes) -> None:
         "No growth (−)",
         fontsize=FS_ROW_LABEL,
         fontweight="bold",
-        color=COL_FP,
+        color=TXT_DARK,
         ha="center",
         va="center",
         rotation=90,

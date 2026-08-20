@@ -294,6 +294,9 @@ def plot_balanced_accuracy_scatter(
 
     markers = {"random_split": "o", "dataset_split": "s"}
     split_labels = {"random_split": "Random Split", "dataset_split": "Dataset Split"}
+    # Split type is a manuscript-wide category, so it takes the same colours
+    # here as in figures 3, 5C and S6B rather than being colour-free.
+    split_colors = {"random_split": "#57BA64", "dataset_split": "#2E86AB"}
     random_p_value = None
     dataset_p_value = None
 
@@ -316,10 +319,10 @@ def plot_balanced_accuracy_scatter(
             combined_vals,
             filtered_vals,
             s=42,
-            alpha=0.7,
-            facecolors="white",
+            alpha=0.75,
+            facecolors=split_colors[split_type],
             edgecolors="black",
-            linewidths=1,
+            linewidths=0.7,
             marker=markers[split_type],
             label=split_labels[split_type],
             zorder=3,

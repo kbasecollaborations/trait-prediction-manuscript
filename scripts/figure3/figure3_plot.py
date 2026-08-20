@@ -74,7 +74,7 @@ def plot_random_split_vs_gapmind(
         widths=0.6,
         patch_artist=True,
         showfliers=True,
-        boxprops=dict(facecolor="#06A77D", alpha=0.7, linewidth=1.5),
+        boxprops=dict(facecolor="#57BA64", alpha=0.7, linewidth=1.5),
         medianprops=dict(color="#044d29", linewidth=2),
         whiskerprops=dict(linewidth=1.5),
         capprops=dict(linewidth=1.5),
@@ -104,7 +104,7 @@ def plot_random_split_vs_gapmind(
     from matplotlib.patches import Patch
 
     legend_handles = [
-        Patch(facecolor="#06A77D", alpha=0.7, label="Random Split"),
+        Patch(facecolor="#57BA64", alpha=0.7, label="Random Split"),
         Line2D(
             [0],
             [0],

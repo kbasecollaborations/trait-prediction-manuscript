@@ -24,9 +24,11 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Colours consistent with the main figures.
-COLOR_FULL = "#7f7f7f"
-COLOR_CONCORDANT = "#2E86AB"
+# Canonical concordance purple against the neutral reference arm (see
+# scripts/visualization.py). The previous grey/#2E86AB pair was identical in
+# greyscale and reused the cross-dataset split colour.
+COLOR_FULL = "#9E9E9E"
+COLOR_CONCORDANT = "#6A4C93"
 
 COMMON_PHENOTYPES = [
     "Alanine",

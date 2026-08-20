@@ -255,8 +255,9 @@ def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
     plt.close(fig)
 
 
-#: Training-type colours, matching ``scripts/figureS6/figureS6_plot.py``.
-TRAINING_COLORS: dict[str, str] = {"Full": "#1f77b4", "Concordant": "#ff7f0e"}
+#: Training-type colours, matching the canonical concordance/neutral pair in
+#: ``scripts/visualization.py`` (also used in figures 7, S5 and S7).
+TRAINING_COLORS: dict[str, str] = {"Full": "#9E9E9E", "Concordant": "#6A4C93"}
 #: Test-subset line styles for the multi-phenotype grid.
 TEST_SUBSET_STYLES: dict[str, tuple[str, str]] = {
     "Full Test": ("-", "o"),
@@ -387,7 +388,7 @@ def plot_training_size_grid(df: pd.DataFrame, output_file: Path) -> None:
     }
     cross = saturation["Cross-dataset"]
     order = sorted(cross, key=lambda p: (size_order.index(cross[p]), p))
-    styles = {"Cross-dataset": ("#2E86AB", "s"), "Random-holdout": ("#06A77D", "o")}
+    styles = {"Cross-dataset": ("#2E86AB", "s"), "Random-holdout": ("#57BA64", "o")}
 
     for row, phenotype in enumerate(order):
         positions = [
@@ -465,7 +466,7 @@ def plot_learning_curves(df: pd.DataFrame, output_file: Path) -> None:
     phenotypes = [p for p in COMMON_PHENOTYPES if p in sub["phenotype"].unique()]
     split_types = ["Random Split", "Dataset Split", "Out-of-Clade"]
     split_colors = {
-        "Random Split": "#06A77D",
+        "Random Split": "#57BA64",
         "Dataset Split": "#2E86AB",
         "Out-of-Clade": "#DE8F05",
     }
@@ -602,7 +603,7 @@ def plot_saturation_summary(df: pd.DataFrame, output_file: Path) -> None:
     ax.scatter(
         random_sizes,
         y_positions - offset,
-        color="#06A77D",
+        color="#57BA64",
         s=44,
         edgecolors="black",
         linewidths=0.4,

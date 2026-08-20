@@ -37,11 +37,14 @@ SPLIT_LABELS = {
     "out-of-clade": "Out-of-clade",
 }
 
-# Okabe-Ito colour-blind-safe palette.
+# Split-type colours. ``random`` carries the canonical random-split green used
+# in figures 3, 5 and S6; the previous blue was the cross-dataset colour, so
+# the same split read as two different things across the manuscript. In-clade
+# and out-of-clade appear as colours only here.
 SPLIT_COLORS = {
-    "random": "#0072B2",  # blue
-    "in-clade": "#E69F00",  # orange
-    "out-of-clade": "#009E73",  # green
+    "random": "#57BA64",  # green
+    "in-clade": "#CA9161",  # brown
+    "out-of-clade": "#785EF0",  # violet
 }
 
 
@@ -67,6 +70,9 @@ def main() -> None:
         hue_order=SPLIT_ORDER,
         palette=palette,
         showfliers=False,
+        # seaborn desaturates box fills to 0.75 by default, which made the
+        # printed boxes differ from the hand-built legend swatches below.
+        saturation=1.0,
         ax=ax,
     )
     sns.stripplot(
@@ -79,7 +85,11 @@ def main() -> None:
         dodge=True,
         alpha=0.35,
         size=2.5,
-        color="black",
+        # Raw points stay neutral; the dodged boxes carry the split-type
+        # colour. Passing ``color`` alongside ``hue`` is deprecated in seaborn
+        # 0.13 and silently builds a ``dark:black`` gradient instead.
+        palette=["black"] * len(SPLIT_ORDER),
+        legend=False,
         ax=ax,
     )
 

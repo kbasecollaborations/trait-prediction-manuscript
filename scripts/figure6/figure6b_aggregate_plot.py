@@ -34,20 +34,19 @@ CONFIG_TO_LABEL: dict[str, str] = {
 }
 
 CONDITION_COLORS: dict[str, str] = {
-    "full_data": "#7F7F7F",
-    "problematic_removed": "#8D6E63",
     "free_balanced": "#A6DBA0",
-    "current": "#5AAE61",
-    "high_mech": "#1B7837",
-    "very_high_mech": "#00441B",
-    "concordant": "#2E86AB",
-    "gapmind": "#8B5CF6",
+    "concordant": "#6A4C93",
+    "gapmind": "#A23B72",
 }
 
+# The three metrics are a figure-local vocabulary already separated by marker
+# shape (METRIC_MARKERS below) and named in the legend, so they share one
+# neutral ink instead of spending three hues. The previous values duplicated
+# ATLeaf (#1f77b4) and the false-positive amber (#E69F00).
 METRIC_COLORS: dict[str, str] = {
-    "balanced_accuracy": "#1f77b4",
-    "precision": "#E69F00",
-    "recall": "#d62728",
+    "balanced_accuracy": "#3F3F3F",
+    "precision": "#3F3F3F",
+    "recall": "#3F3F3F",
 }
 METRIC_LABELS: dict[str, str] = {
     "balanced_accuracy": "Balanced accuracy",
@@ -58,6 +57,12 @@ METRIC_MARKERS: dict[str, str] = {
     "balanced_accuracy": "o",
     "precision": "s",
     "recall": "^",
+}
+#: Line style backs up the marker now that the three metrics share one ink.
+METRIC_LINESTYLES: dict[str, str] = {
+    "balanced_accuracy": "-",
+    "precision": "--",
+    "recall": "-.",
 }
 
 
@@ -209,7 +214,9 @@ def plot_metric_sweep(
         float(gm.groupby("phenotype")["balanced_accuracy"].mean().mean()),
         linestyle=":",
         linewidth=1.2,
-        color=METRIC_COLORS["balanced_accuracy"],
+        # GapMind is the mechanism baseline, not an ML metric, so it takes the
+        # manuscript GapMind magenta rather than the balanced-accuracy colour.
+        color=CONDITION_COLORS["gapmind"],
         alpha=0.8,
         zorder=1,
         label="GapMind (balanced accuracy)",
@@ -228,6 +235,7 @@ def plot_metric_sweep(
             yerr=sweep_sems,
             color=color,
             linewidth=1.6,
+            linestyle=METRIC_LINESTYLES[metric],
             marker=METRIC_MARKERS[metric],
             markersize=6,
             markeredgecolor="black",
