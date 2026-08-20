@@ -23,7 +23,9 @@ Because of its small sample size and narrow phylogenetic breadth, Populus was ex
 
 Generic carbon-source names such as ``glucose'' or ``serine'' do not specify stereochemistry, and the four datasets did not always assay the same isomer under the same name, so each phenotype was bound to one explicit source substrate, retaining the physiologically utilised isomer where a dataset assayed more than one.
 Identities were verified against Table~S1 of Sch\"afer et al.~\cite{Schafer2023-nk} for ATLeaf, Supplementary Table~2 of Gralka et al.~\cite{Gralka2023-ft} for Marine, and the Biolog PM1 and PM2A plate maps for the Biolog and Populus assays. \texttt{substrate\_identity\_common15.csv} in the Zenodo deposit~\cite{ZenodoDeposit} records the resulting bindings, with a companion table covering all 240 carbon sources.
-Two cases warrant comment: the Marine \emph{alanine} well contained DL-alanine rather than the L-alanine assayed elsewhere, so that column is a union trait rather than a different one; and the alpha/beta anomers of D-glucose interconvert by mutarotation and were treated as one substrate, whereas methyl glucosides and galactosides lock the anomeric carbon and were not.
+Two cases warrant comment.
+The Marine \emph{alanine} well contained DL-alanine whereas the other three datasets assayed L-alanine; a racemate well scores positive if either enantiomer is utilised, so the Marine column is a union trait rather than a different trait.
+For \emph{glucose}, the Populus alpha-D-glucose well was retained over the L-glucose well, which these taxa do not catabolise; the anomeric distinction is immaterial in solution because the free sugar interconverts by mutarotation, whereas for methyl glucosides and galactosides the locked acetal makes the two anomers separate traits taken up by different systems.
 
 \subsection*{Supplementary Text S2: Genome Quality Assessment}
 
@@ -74,18 +76,17 @@ The displayed features do not enter the (\% in pathway) statistic, which scores 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s1.pdf}
-\caption{\textbf{Phylogenetic distribution of microbial genomes across datasets.}
+\caption{\textbf{The four datasets span overlapping but unevenly sampled regions of the bacterial tree.}
 Of the 819 input strain records, 629 GTDB-placed tips were retained in the pruned Genome Taxonomy Database reference tree~\cite{Parks2018GTDB}, with distances calculated using ETE 3~\cite{HuertaCepas2016ETE3}.
 The tree is drawn as a cladogram, so branch lengths are not to scale; phylogenetic distances are reported in Figure~\ref{fig:phylogenetic_distance_splits}.
-The inner ring denotes dataset membership and the outer bar the GTDB order, coloured by GTDB class; orders with at least eight tips are labelled with their tip count, and tip labels are omitted for legibility.
-Dataset compositions differ, with Populus showing the narrowest phylogenetic range.}
+The inner ring denotes dataset membership and the outer bar the GTDB order, coloured by GTDB class; orders with at least eight tips are labelled with their tip count, and tip labels are omitted for legibility.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s2.pdf}
-\caption{\textbf{Phylogenetic distance distributions across evaluation split types.}
+\caption{\textbf{Only out-of-clade splits place test genomes far from their training set.}
 Minimum cophenetic distance from each held-out test genome to its training set under random-holdout, in-clade, and out-of-clade splits, pooled across five splits per phenotype for the 15 shared phenotypes.
 Boxes are coloured by split type (random, green; in-clade, dark teal; out-of-clade, purple), show the median and interquartile range, points are individual test genomes (random $n=8{,}289$; in-clade $n=5{,}595$; out-of-clade $n=6{,}212$).
 Random-holdout and in-clade test genomes lie close to the training set (medians 0.009 and 0.000), whereas out-of-clade splits produce much larger distances (median 1.109), validating the intended separation of the evaluation regimes in Figure~\ref{fig:ml_performance}.}
@@ -95,7 +96,7 @@ Random-holdout and in-clade test genomes lie close to the training set (medians 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s3.pdf}
-\caption{\textbf{In-clade versus out-of-clade performance across the 15 shared phenotypes under full-data training.}
+\caption{\textbf{Cross-dataset accuracy is lower for genomes without close training relatives.}
 CatBoost balanced accuracy using KOFAM features across four leave-one-dataset-out combinations.
 (\textbf{A}) In-clade, test samples sharing a cluster with at least two training samples; (\textbf{B}) out-of-clade, test samples sharing a cluster with fewer than two, using the Figure~\ref{fig:ml_performance}C clustering procedure.
 Points are coloured by held-out test dataset.
@@ -108,7 +109,7 @@ Numerals give test-subset sizes.}
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s4.pdf}
-\caption{\textbf{Pangenome-based genome completeness assessment.}
+\caption{\textbf{Pangenome completeness could be assessed for a subset of genomes, nearly all of which were near-complete.}
 Completeness was the fraction of species core genes detected by MMseqs2 at 90\% identity, 80\% coverage, and E-value $10^{-3}$.
 (\textbf{A}) Assessment status.
 (\textbf{B}) Completeness among successfully assessed genomes, most of which exceeded 90\%.}
@@ -156,7 +157,7 @@ Additional samples therefore helped most where transfer was already succeeding, 
 \centering
 \includegraphics[width=\textwidth]{figure_s6.pdf}
 \caption{
-\textbf{Model performance saturates for most phenotypes saturates at 50-100 training samples}.
+\textbf{Cross-dataset performance saturates at 50--100 training samples for most phenotypes.}
 (\textbf{A}) Cross-dataset balanced accuracy at each training-set size, expressed as a percentage of the same phenotype's all-sample value, for full-data (grey) and concordant (purple) training.
 Thin lines are individual phenotypes and bold lines their medians; the dashed line marks the 90\% saturation criterion and the dotted line the all-sample value.
 Values above 100\% arise where an intermediate training-set size outperformed the full set.
@@ -262,7 +263,7 @@ The FB--C comparison did not detect a performance difference and does not establ
 \centering
 \includegraphics[width=\textwidth]{figure_s7.pdf}
 \caption{
-\textbf{Concordance filtering versus added data volume under cross-dataset evaluation.}
+\textbf{Added data volume substitutes for curation on accuracy, but not on feature reproducibility.}
 CatBoost classifiers using KOFAM features were tested on each held-out manuscript dataset under C (concordant), F (full manuscript), and FB (full manuscript plus BacDive~\cite{Schober2025BacDive}) training.
 (\textbf{A}) Cross-dataset balanced accuracy per strategy; the dashed line marks chance (0.5).
 (\textbf{B}) Cross-seed feature stability, the mean pairwise Jaccard of the top-10 CatBoost-importance features across the five seeds; points are individual phenotype--held-out cells.
@@ -307,7 +308,7 @@ Marine  & 175 & 100 & 172 & 157 & 15 & 0.51 & Liquid culture OD \\
 Populus & 58  & 190 & 55  & 55  & 15 & 0.74 & Liquid culture OD \\
 \hline
 \end{tabularx}
-\caption{\textbf{Overview of carbon source utilisation datasets.}
+\caption{\textbf{The four datasets differ in size, growth assay format, and positive-call rate.}
 ``Original'' gives the source-dataset size; ``Retained Phenotype Records'' gives the records with an available genome assembly; ``Feature-linked'' gives phenotype records with matching processed genomic features.
 ``Positive-Call Rate'' is the fraction of non-missing labels scored as growth across the 15 shared phenotypes, the quantity adjusted for in the label-conflict analysis (Supplementary Text~S12).
 All datasets entered aggregated and leave-one-dataset-out analyses; Populus was excluded only from selected feature-stability comparisons.}
@@ -328,7 +329,7 @@ Elastic-Net   & 0.829 & 0.643 & 0.945 & 0.827 \\
 Random Forest & 0.823 & 0.612 & 0.933 & 0.775 \\
 \hline
 \end{tabular}
-\caption{\textbf{Comparison of model families.}
+\caption{\textbf{Model family has little effect on accuracy.}
 Mean balanced accuracy across the 15 shared phenotypes under random-holdout and leave-one-dataset-out evaluation on full and GapMind-concordant subsets.
 All models used KOFAM features and one protocol without early stopping; per-cell standard deviation was approximately 0.05--0.10, and additional families are in the deposited analysis.}
 \label{tab:best_models_counts}

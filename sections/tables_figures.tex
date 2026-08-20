@@ -12,7 +12,7 @@
 \section*{Figures and Tables}
 
 \refstepcounter{figure}\label{fig:dataset_characteristics}%
-\noindent\textbf{Figure \arabic{figure}: Microbial carbon utilisation prediction workflow.}
+\noindent\textbf{Figure \arabic{figure}: Workflow for genome-based carbon utilisation prediction, and the accuracy lost when models move between datasets.}
 (A) Overview of data collection, genome annotation, and machine learning workflow.
 We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 240 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus); analyses focused on the 15 carbon sources shared across all four datasets (panel B).
 Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used in training the classifiers.
@@ -29,7 +29,7 @@ Panel A created in BioRender. Kishore, D. (2026) \url{https://BioRender.com/tz7t
 \par\medskip
 
 \refstepcounter{figure}\label{fig:baseline_predictions}%
-\noindent\textbf{Figure \arabic{figure}: Baseline mechanism- and phylogeny-based predictions show limited accuracy.}
+\noindent\textbf{Figure \arabic{figure}: Neither curated pathway rules nor phylogenetic similarity predicts growth reliably.}
 (A) Bar plot showing balanced accuracy for GapMind predictions across 15 phenotypes.
 GapMind predictions were compared with experimental outcomes using both strict (dark magenta) and permissive (magenta) pathway completeness thresholds.
 Dashed lines show the respective mean values.
@@ -40,7 +40,7 @@ Circles and squares indicate null model performance (Identity and Bernoulli base
 \par\medskip
 
 \refstepcounter{figure}\label{fig:ml_performance}%
-\noindent\textbf{Figure \arabic{figure}: ML models excel within datasets but struggle to generalise across datasets.}
+\noindent\textbf{Figure \arabic{figure}: ML models excel within datasets but not across them, and phylogeny alone does not explain the gap.}
 (A) Box plot showing balanced accuracy under repeated random holdout evaluation for gradient-boosted tree classifiers (using KOFAM features) across 15 phenotypes; each phenotype contributes five values (one per data-split random state 42--46; Methods).
 Boxes show the median and interquartile range.
 The dashed segment over each phenotype indicates that phenotype's mean GapMind permissive-threshold balanced accuracy on the test set across splits.
@@ -55,7 +55,7 @@ Grey dashed horizontal lines mark chance performance (0.5) in panels A and B and
 \par\medskip
 
 \refstepcounter{figure}\label{fig:misclassification_diagnosis}%
-\noindent\textbf{Figure \arabic{figure}: Diagnosing GapMind misclassifications and ML generalisation failures.}
+\noindent\textbf{Figure \arabic{figure}: GapMind--experiment discordance is widespread, and aggregated training learns dataset-specific rather than shared features.}
 (A) Conceptual framework contrasting concordant samples (where GapMind matches experiment) with discordant samples (where GapMind contradicts experiment).
 The concordant quadrants (a, true positive; d, true negative) give the underlying biological state and its interpretation, whereas the discordant quadrants (b, false negative; c, false positive) list possible causes colour-coded by category (annotation, biology, measurement, media, and regulation).
 (B) Stacked bar plots showing per-phenotype (top) and per-dataset (bottom) misclassification patterns.
@@ -91,7 +91,7 @@ Annotation: median ML balanced accuracy on each subset.
 \par\medskip
 
 \refstepcounter{figure}\label{fig:improvement_strategies}%
-\noindent\textbf{Figure \arabic{figure}: Effects of data filtering and feature selection on model performance.}
+\noindent\textbf{Figure \arabic{figure}: Confidence weighting only trades precision for recall, and more features do not beat fewer curated ones.}
 (A) Left: counts of problematic genomes per dataset in two discordant categories: no observed growth despite at least one GapMind growth prediction, and universal observed growth despite incomplete GapMind pathways.
 Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those categories from panel A.
 (B) Cross-dataset balanced accuracy, precision, and recall for recall-prioritised soft-label weighting at $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$, with three reference conditions plotted at the left and right: no-filter ML and problematic-sample removal (left), and concordance training (right).
@@ -108,7 +108,7 @@ The annotation reports split-specific paired Wilcoxon p-values across phenotype 
 \par\medskip
 
 \refstepcounter{figure}\label{fig:selective_prediction}%
-\noindent\textbf{Figure \arabic{figure}: Reliability of genome-based predictions and label-free prioritisation of follow-up experiments.}
+\noindent\textbf{Figure \arabic{figure}: Prediction confidence is uncalibrated but still ranks well enough to guide abstention and to prioritise follow-up experiments.}
 (\textbf{A}) Risk--coverage curves for three phenotypes spanning high, intermediate, and low cross-dataset balanced accuracy (m-Inositol $0.82$, sucrose $0.74$, glycerol $0.64$), comparing the full-data model (grey) and the concordance-trained model (purple).
 Accuracy is shown on the retained subset as a function of coverage, the fraction of held-out genomes the model commits to, with the least-confident genomes abstained on first.
 The grey dashed line marks the phenotype's majority-class rate, the accuracy reached by always predicting the more common outcome.
@@ -121,7 +121,7 @@ Accuracy rather than balanced accuracy is plotted (Methods), so curves are read 
 \par\medskip
 
 \refstepcounter{table}\label{tab:main_feature_comparison}%
-\noindent\textbf{Table \arabic{table}: Per-phenotype feature recovery under concordance filtering.}
+\noindent\textbf{Table \arabic{table}: Concordance filtering recovers features shared across datasets for most, but not all, phenotypes.}
 For each phenotype, two models are compared: a three-dataset model trained on the three non-held-out source datasets pooled together, and a held-out-alone model trained on the held-out dataset alone.
 This pairwise comparison is repeated with each dataset in turn serving as the held-out one, and counts are summed across the retained held-out comparisons.
 The two columns labelled Full $\rightarrow$ Conc. report the same comparison under two training regimes applied to both models: Full uses all training genomes, while Conc. restricts training to GapMind-concordant samples.
@@ -129,7 +129,7 @@ The shared stable-cluster count comprises SHAP-supervised redundancy clusters pr
 The unique stable-cluster count comprises those present only in the held-out-alone model on the same basis.
 The parenthetical (\% in pathway) is the fraction of those clusters whose membership includes at least one KO on the row's assigned KEGG reference pathway map; a cluster counts as pathway-resident when any of its KOs is on the map.
 The final example column reports one or two representative shared concordant-stable features for that phenotype, selected automatically and rendered with their KEGG descriptive names; \texttt{---} marks phenotypes with no shared cluster.
-This column is illustrative rather than exhaustive.
+This column is illustrative rather than exhaustive; the selection rules are given in Supplementary Text~S4.
 Histidine is the worked example (numeric cells in bold); its per-comparison KO lists and the narrower unique-cluster module coverage (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 50\%) appear in Supplementary Table~\ref{tab:feature_comparison} for full-data and concordant training.
 
 \noindent\textbf{Alt text:} Five-column table listing 15 phenotypes with their KEGG pathway map, shared stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), unique stable cluster counts with parenthetical percent-in-pathway (Full to Conc.), and an example shared concordant-stable feature (enzyme, transporter, or regulator). Histidine row shows bold values rising from 4 (75 percent) to 8 (38 percent) shared clusters, with unique clusters falling from 6 (17 percent) to 3 (33 percent).
