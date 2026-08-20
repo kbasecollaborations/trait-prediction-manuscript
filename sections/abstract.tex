@@ -4,14 +4,14 @@
 {
 \noindent
 Microbial carbon utilisation shapes ecological niches, community assembly, and nutrient cycling, yet remains difficult to predict from genomes despite well-characterised pathways.
-Genome-based models often generalise poorly across datasets, a limitation commonly attributed to small or taxonomically biased training sets.
+Genome-based machine-learning models often generalise poorly across datasets, a limitation commonly attributed to small or taxonomically biased training sets.
 We integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets, focusing on 15 shared sources.
-Cross-dataset evaluation reduced balanced accuracy from 0.86 (within datasets) to 0.62, and restricting evaluation to close relatives recovered only 0.03 of this loss.
-Because phylogeny alone could not explain the transfer gap, we restricted training to samples with coherent genotype--phenotype relationships, defined by agreement between experimental labels and annotated pathway predictions.
+Cross-dataset evaluation reduced balanced accuracy from 0.86 (within datasets) to 0.62, and restricting evaluation to in-clade relatives recovered only 0.03 of this loss.
+Because phylogeny alone could not explain the transfer gap, we restricted training to samples with coherent genotype--phenotype relationships, defined by agreement between experimental labels and annotated pathways.
 Concordance filtering doubled the number of carbon sources with reproducible genomic signals across datasets (from 6 to 12 of 15), often recovering known pathway genes, while matched random subsets remained at the unfiltered level.
 The smaller concordant set also approached the cross-dataset performance of models augmented with up to 1800 BacDive genomes per phenotype, demonstrating greater efficiency per sample.
-Concordance-trained models remained bounded specialists but better ranked genomes that pathway rules predicted would not grow, particularly metabolic generalists with broad-specificity transporters and sugar-catabolism regulators.
-Model confidence made these bounds actionable, with abstention improving accuracy where models transferred and low-confidence labelling producing the largest mean gains, especially for weaker phenotypes.
+Concordance-trained models remained bounded specialists, but separated growers from non-growers among genomes the pathway rules called negative, mostly generalists with broad-specificity transporters.
+Model confidence made these bounds actionable, since abstention improved accuracy where models transferred and retraining on newly labelled low-confidence genomes gave the largest gains for weaker phenotypes.
 Collectively, these findings recast generalisation as a problem of label--mechanism agreement and demonstrate how genome-based predictions can be deployed within explicit applicability domains and improved through targeted phenotyping.
 }
 \end{abstract}
