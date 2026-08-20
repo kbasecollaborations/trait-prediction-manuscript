@@ -14,7 +14,6 @@
 \refstepcounter{figure}\label{fig:dataset_characteristics}%
 \noindent\textbf{Figure \arabic{figure}: Microbial carbon utilisation prediction workflow.}
 (A) Overview of data collection, genome annotation, and machine learning workflow.
-Created in BioRender. Kishore, D. (2026) \url{https://BioRender.com/tz7t8n7}.
 We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 240 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus); analyses focused on the 15 carbon sources shared across all four datasets (panel B).
 Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used in training the classifiers.
 (B) Phenotypic distribution for the 15 shared carbon sources across the four datasets before genomic-feature identifier matching.
@@ -24,6 +23,7 @@ Solid bars indicate growth (positive) samples, and patterned bars indicate no-gr
 Bars span the interquartile range across phenotypes, the vertical tick marks the median, and dots show the individual per-phenotype values.
 The combined feature set concatenates the binarised RAST subsystem, KOFAM, and GapMind matrices (approximately 17,000 features).
 The $7.6\times$ for feature combination is the rate at which curated GapMind terms appear among the top-ranked features of the combined-feature models relative to their share of that matrix; ``loses to curated alone'' refers to the phenotype-filtered comparison in Figure~\ref{fig:improvement_strategies}D (Supplementary Text~S5).
+Panel A created in BioRender. Kishore, D. (2026) \url{https://BioRender.com/tz7t8n7}.
 
 \noindent\textbf{Alt text:} Panel A shows a workflow schematic linking microbes and carbon sources to a growth/no-growth matrix, genome annotation via KOFAM, GapMind, RAST, and classifier training, with a table listing genome and phenotype counts for ATLeaf, Biolog, Marine, and Populus datasets. Panel B presents a stacked bar plot of positive and negative sample counts per phenotype across the four datasets. Panel C is a table of five analysis variants, each with its training data, feature set, evaluation, and a balanced-accuracy distribution on a common axis (0.4 to 1.0, with a dashed line at 0.5) drawn as an interquartile-range bar with the median marked and one dot per phenotype: random holdout (median 0.86, interquartile range 0.81-0.87); cross-dataset full-data (median 0.62, 0.60-0.66); concordance filtering (median 0.68, 0.61-0.77); feature combination (median 0.66, 0.60-0.69); and feature filtering (median 0.70, 0.64-0.77). A final column gives a one-line finding for each variant.
 \par\medskip
