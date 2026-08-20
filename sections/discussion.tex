@@ -1,58 +1,58 @@
-%!TEX root = ../main.tex
-
 \section*{Discussion}
 
 Machine learning models that predict microbial phenotypes from genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size, taxonomic bias, or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
 Across four binary growth datasets and the 15 carbon sources assayed in all of them, we identify label--mechanism agreement in the training set as a determinant of cross-dataset generalisation that complements the established roles of sample size, phylogenetic structure, and feature-space choice.
-Models trained on concordant samples behaved as bounded specialists, and their prediction confidence helped prioritise which additional measurements most improved the weakest-transferring phenotypes.
-These results reframe genome-based phenotype prediction as a problem of training-set curation and applicability-domain definition~\cite{Sambasivan2021DataCascades,Zha2025DataCentric}, alongside the data-volume and algorithm-choice axes.
 
 
 \subsection*{Label--Mechanism Agreement Governs Cross-Dataset Transfer Within a Bounded Domain}
 
 Poor cross-dataset performance was better explained by mixed-quality training samples and dataset-specific correlations that did not transfer than by clade structure, which accounted for little of the failure (Figure~\ref{fig:ml_performance}C).
-Restricting training to samples whose experimental labels agreed with mechanistic predictions (concordance filtering) improved cross-dataset feature stability and recovered growth that the pathway rule had missed.
-Models also converged on the same predictors across datasets (Figure~\ref{fig:concordant_analysis}B; Table~\ref{tab:main_feature_comparison}) and although the classifiers have no mechanistic knowledge, concordant training led them to recover curated pathway genes.
+Restricting training to samples whose experimental labels agreed with mechanistic predictions (concordance filtering) improved cross-dataset feature stability.
+Although the classifiers have no mechanistic knowledge, concordant training led them to converge across datasets on curated pathway genes (Figure~\ref{fig:concordant_analysis}B; Table~\ref{tab:main_feature_comparison}).
 
-Discordance has several coexisting causes~\cite{Galperin1998Sources,Bernstein2021Uncertainty}: false negatives may reflect annotation gaps or unknown alternative pathways, whereas false positives may reflect regulatory repression or experimental artefacts, including differences in growth-assay modality across the source datasets, that static genomic features cannot capture (Figure~\ref{fig:misclassification_diagnosis}A).
-The genomes that were recovered were disproportionately metabolic generalists.
-Therefore, in these cases the models capture chiefly lifestyle-correlated genomic signatures rather than substrate-specific mechanisms.
-A broad transporter's presence does not establish that it serves the focal substrate, which is why GapMind excludes such genes.
-Under cross-dataset evaluation the concordance-trained model did not exceed GapMind overall, and on concordant genomes it cannot, since the rule is correct there by definition.
-What it adds is therefore confined to genomes GapMind calls wrongly.
-Within a single GapMind call the rule assigns every genome the same answer, whereas the concordance-trained model still ranks growth outcomes, most clearly among genomes whose annotated pathways looked incomplete (Figure~\ref{fig:concordant_analysis}C,D).
-The model is therefore a complement to the rule rather than a replacement, and when discordant genomes are excluded from training, this signal is discarded along with the noise.
+Discordance has several coexisting causes~\cite{Galperin1998Sources,Bernstein2021Uncertainty}: false negatives may reflect annotation gaps or unknown alternative pathways, whereas false positives may reflect regulatory repression or experimental artefacts such as differences in growth-assay modality across the source datasets, that static genomic features cannot capture (Figure~\ref{fig:misclassification_diagnosis}A).
+The model correctly predicted growth for some of the discordant genomes, most of which were metabolic generalists carrying broad-specificity transporters and sugar-catabolism regulators.
+GapMind excludes such genes by design, since a broad transporter's presence does not establish that it serves the focal substrate.
+Across the whole cross-dataset test set the concordance-trained model did not exceed GapMind, and on concordant genomes it cannot (by definition).
+The gain is therefore limited to the genomes GapMind gets wrong.
+Among those, the rule returns a single verdict and cannot tell them apart, whereas the model assigns higher growth probabilities to the genomes that do grow, most clearly where the annotated pathway looked incomplete (Figure~\ref{fig:concordant_analysis}C,D).
+The model adds to the rule rather than replacing it, and the discordant genomes removed by filtering are the ones that carry this information.
 
 Li et al.\ reported that datasets exceeding approximately 1000 genomes can enable out-of-clade prediction for some traits~\cite{Li2023-up}, whereas Yu et al.\ found that increasing sample size did not rescue generalisation under phylogenetically biased sampling~\cite{Yu2025BiasedSampling}.
 Within our sample-size regime (up to 780 strains), the heterogeneity of training samples rather than their number alone drove shortcut learning, extending that second result from taxonomic to mechanistic heterogeneity.
-Curated data quality is known to improve trait prediction~\cite{Koblitz2025Phenotype}, but concordance is a criterion of a different kind: discordant records are not necessarily erroneous, since a genome may grow through an uncharacterised route or fail to grow despite a complete pathway, so what concordance removes is mechanistic heterogeneity rather than error.
-Adding curated data did not substitute for filtering: $\sim$1800 BacDive genomes per phenotype~\cite{Schober2025BacDive} improved the unfiltered model but did not exceed concordance filtering of a roughly four-fold smaller training set, and reduced feature reproducibility (Supplementary Text~S11).
+Curated data quality is known to improve trait prediction~\cite{Koblitz2025Phenotype}, but concordance is a criterion of a different kind.
+Discordant records are not necessarily erroneous, since a genome may grow through an uncharacterised route or fail to grow despite a complete pathway, so concordance removes mechanistic heterogeneity rather than error.
+Increasing data volume did not improve generalisation, since adding $\sim$1800 BacDive genomes per phenotype~\cite{Schober2025BacDive} did not improve cross-dataset performance over a roughly four-fold smaller concordant training set and reduced feature reproducibility (Supplementary Text~S11).
 
 
 \subsection*{Practical Deployment and Confidence-Guided Experimentation}
 
-Deploying the specialist raises two questions: whether a mechanism-free weighting strategy can substitute when GapMind is unavailable, and how much labelled training data the concordance-trained model requires; both must be answered on cross-dataset tests, since random holdout overestimates generalisation~\cite{Roberts2017CrossValidation}.
-Mechanism-free weighting requires no pathway annotations and increased true-positive recovery over both baselines with little balanced-accuracy change from unfiltered ML, but lower specificity (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
-It is therefore recall-oriented rather than a balanced-accuracy substitute for concordance training.
-This suggests that concordance-trained models encode mechanistic information beyond what label consistency alone captures.
-Alternatively, restricting a full-data model to predictions agreeing with GapMind recovers much of the specialist's cross-dataset accuracy but requires GapMind for every genome (Supplementary Text~S13).
-Turning to the second question, 50 to 100 concordant training samples reached at least 90\% of the all-available-sample performance for most shared phenotypes, although the earliest-saturating phenotypes were also the least predictable, so additional data helped most where transfer already succeeded (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
-The practical question therefore includes both how many samples to acquire and which genomes are most informative to measure.
+Concordance filtering cannot be applied without a mechanistic predictor for the phenotype in question, which exists only for well-characterised pathways.
+One alternative is to weight samples by phylogenetic label agreement, which requires no pathway annotations and increased true-positive recovery, though with lower specificity and little balanced-accuracy change from unfiltered ML (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
+It is therefore recall-oriented rather than a substitute for concordance filtering.
+When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which recovers much of the specialist's cross-dataset accuracy (Supplementary Text~S13).
+A second constraint is how much labelled data these models need, measured on cross-dataset tests since random holdout overestimates generalisation~\cite{Roberts2017CrossValidation}.
+A small concordant training set is enough to indicate whether a phenotype is learnable from genomic features, since 50 to 100 concordant samples reached at least 90\% of the all-available-sample performance for most shared phenotypes (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
+Because the earliest-saturating phenotypes were also the least predictable, further measurement is worth committing mainly where that early signal exists.
 
-Deploying any of these specialists on a new genome whose concordance is unknown requires a per-prediction trust signal (Figure~\ref{fig:selective_prediction}A,B)~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject}; selecting the least-confident genomes for labelling then produced the largest observed mean transfer gain, concentrated in the weakest of the three phenotypes shown (Figure~\ref{fig:selective_prediction}D).
-Emerging high-throughput phenotyping methods~\cite{Nichols2011Landscape,Gralka2023-ft,Huang2023-lh,Kehe2019-vr} could scale this loop by targeting applicability-domain gaps, such as under-sampled clades and the low-confidence genomes selective prediction flags, rather than densifying already-saturated phenotypes.
-However, at the phenotype level no label-free metric we tested correlated with per-phenotype cross-dataset accuracy, suggesting that phenotype difficulty reflects mechanistic learnability rather than the model's own uncertainty.
+Committing that measurement effort and deciding whether to trust a prediction on a genome whose concordance is unknown require a signal that does not depend on GapMind, and model confidence provides one, flagging which predictions to withhold~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject}.
+Among the strategies we compared for choosing genomes to label, selecting the least-confident ones produced the largest mean transfer gain, generally concentrated in the weakest phenotypes, whereas diversity and novelty-based selection did not beat random (Figure~\ref{fig:selective_prediction}C,D).
+High-throughput phenotyping methods~\cite{Nichols2011Landscape,Gralka2023-ft,Huang2023-lh,Kehe2019-vr} could scale this loop, directing new measurements towards low-confidence genomes and under-sampled clades in the weakest-transferring phenotypes rather than adding depth where performance has already saturated.
+At the phenotype level, however, no label-free metric we tested correlated with cross-dataset accuracy.
+Phenotype difficulty appears instead to be a property of the feature space rather than of the model, since confidence reflects agreement among the patterns a model has already seen and cannot register a mechanism that the annotations do not encode or that occurs too rarely to be learned.
 
 \subsection*{Limitations and Future Directions}
 
-Concordance-based training requires mechanistic tools such as GapMind, available only for well-characterised pathways; mechanism-free weighting avoids that requirement but exchanges specificity for recall and still requires experimental labels from multiple sources.
-Concordance filtering also extends the coverage--clarity tradeoff to a taxonomic dimension, favouring pathways in the annotation space and organisms with broadly conserved enzymes while excluding those with alternative enzymes, divergent pathway variants, or complex regulation~\cite{Soucy2015HGT,Glasner2020Promiscuity,Gorke2008CCR}, and may bias towards well-studied genera, though the design decouples feature space from the concordance rule.
-All analyses rely on computational annotations, which carry systematic biases across taxa~\cite{Karlsen2023Genotype,Schnoes2009Annotation,Lobb2020AnnotationCoverage} and may lower apparent concordance in poorly studied lineages through annotation gaps rather than different biology.
-Capturing mechanisms beyond curated rules will require external data such as transcriptomic or regulatory profiles~\cite{Arikan2023MultiOmics}, comparative genomics, and targeted characterisation of out-of-domain organisms, for which the low-confidence ranking of Figure~\ref{fig:selective_prediction} provides a natural starting point.
-Genome-scale metabolic models could in principle extend concordance filtering beyond GapMind's curated pathways to a much larger set of carbon substrates.
-Such an extension would require curated or optimised reconstructions, however, since automatically constructed constraint-based models have been reported to predict carbon utilisation little better than chance for non-model organisms~\cite{Li2023-up}.
+Concordance-based training requires mechanistic tools such as GapMind, available only for well-characterised pathways, and mechanism-free weighting avoids that requirement only by trading specificity for recall while still needing experimental labels.
+Genome-scale metabolic models could extend concordance filtering to a much larger set of carbon substrates, though this would require curated or optimised reconstructions, since automatically constructed constraint-based models have been reported to predict carbon utilisation little better than chance for non-model organisms~\cite{Li2023-up}.
+Filtering also extends the coverage--clarity tradeoff to taxonomy, favouring pathways in the annotation space and organisms with broadly conserved enzymes while excluding those with alternate or unknown enzymes, divergent pathway variants, or complex regulation~\cite{Soucy2015HGT,Glasner2020Promiscuity,Gorke2008CCR}.
+All analyses rely on genomic annotations, which carry systematic biases across taxa~\cite{Karlsen2023Genotype,Schnoes2009Annotation,Lobb2020AnnotationCoverage}.
+Apparent concordance may therefore be lower in poorly studied lineages because of annotation gaps rather than different biology, biasing the approach towards well-studied genera.
+Closing those gaps will require data from outside the annotation space, such as transcriptomic or regulatory profiles~\cite{Arikan2023MultiOmics}, together with targeted characterisation of organisms outside the applicability domain, for which the low-confidence ranking of Figure~\ref{fig:selective_prediction} provides a starting point.
+Sequence-based language models offer a complementary route, since genomic and protein language models learn functional and regulatory relationships directly from sequence rather than from a curated ortholog vocabulary~\cite{Nguyen2024Evo,Hwang2024GenomicLM}, and protein-embedding classifiers have predicted bacterial phenotypes on taxa where database matching fails~\cite{FerrerFlorensa2026PathogenFinder}.
 
-In summary, microbial carbon-utilisation prediction models generalised best when training labels agreed with mechanistic predictions and the feature space matched known pathway biology; concordance-trained models also partly rescued GapMind false negatives.
-This is consistent with our framing of label--mechanism agreement, operationalised through GapMind concordance, as a diagnosable and partially mitigable driver of shortcut learning alongside sample volume and feature-space choice.
-Reliable phenotype prediction will therefore require curating training data with strong label--mechanism agreement and using applicability-domain signals to flag when models extend beyond curated rules.
-Because phylogenetic label consistency did not reproduce what concordance provides, extending mechanism-free weighting towards alternatives such as ensemble disagreement or prediction-confidence-based filtering~\cite{Northcutt2021Confident} could close the recall gap, while transcriptomic or regulatory data~\cite{Arikan2023MultiOmics} will be needed for context-dependence.
+In summary, cross-dataset generalisation improved when training labels agreed with mechanistic predictions, but the resulting models are specialists that complement a curated pathway rule rather than replacing it, adding information mainly where the rule errs.
+Label--mechanism agreement is therefore a diagnosable and partially mitigable driver of shortcut learning, alongside sample volume and feature-space choice.
+Reliable genome-based phenotype prediction will therefore require curating training data on that criterion and reporting the domain in which a model applies.
+Which phenotypes are tractable at all, however, cannot be read from a model's accuracy or its confidence, and must be established empirically.
+Extending the approach beyond well-characterised pathways will require a label-quality criterion that does not depend on a curated mechanistic predictor; phylogenetic agreement alone did not provide one, making ensemble disagreement and confidence-based label filtering~\cite{Northcutt2021Confident} the natural candidates to test.
