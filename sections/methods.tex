@@ -14,7 +14,6 @@ A complementary data-volume comparison for 13 phenotypes additionally drew train
 
 \subsection*{Genome Annotation}
 
-Each genome was annotated with three tools.
 KofamScan v1.3.0 \cite{Aramaki2020KofamKOALA} assigned KEGG Orthologs (KOs) using KOFAM profile hidden Markov models from the KEGG database \cite{Kanehisa2000KEGG}.
 GapMind~\cite{Price2022GapMindCarbon,Price2020GapMind} predicted carbon-utilisation pathway completeness, scored 0 (incomplete) to 2 (high confidence); it was run from the PaperBLAST suite with USEARCH~\cite{Edgar2010} and HMMer~\cite{Eddy2011} (Supplementary Text~S3).
 Rapid Annotations using Subsystems Technology (RAST) \cite{Aziz2008RAST} provided functional predictions, parsed to extract subsystem ontology terms.
@@ -35,7 +34,6 @@ Null baselines comprised an identity model (predicting the most common training 
 
 KOFAM, GapMind, and RAST annotations were converted into binary presence/absence matrices (GapMind pathway scores retained integer values).
 Two unsupervised pre-processing filters were applied to the combined feature matrix across datasets: variance filtering (scikit-learn \cite{Pedregosa2011Sklearn} VarianceThreshold at 0.01) and correlation filtering (Spearman $\rho > 0.95$, graph-based, removing the most connected features).
-KOFAM yielded around 5500 retained features and GapMind around 1000.
 
 \subsection*{Machine Learning Classifiers}
 

@@ -26,11 +26,9 @@ Carbon-utilisation phenotypes sit near the boundary of what genome-derived featu
 The core biochemical transformations of many catabolic pathways are well characterised and conserved, yet their genomic mapping is often ambiguous.
 Transporters and broad-specificity enzymes are difficult to annotate, divergent or uncharacterised genes can perform similar chemistry, and regulatory mechanisms are inconsistently conserved across phylogeny.
 We integrated binary growth outcomes for 819 microbial strains across 240 carbon sources from four independent experimental collections and developed phenotype-specific classifiers for 15 shared phenotypes.
-We then compared feature representations and evaluation strategies designed to test transfer across datasets and clades.
 
 Within the held-out concordant subset, models trained on concordant samples, those whose measured growth matches their annotated pathways, act as specialists.
 They generalise better across datasets, more often recover established pathway genes as top features, and rescue some samples misclassified by GapMind, a pathway-completeness predictor.
 This specialisation comes at the cost of coverage: the discordant samples set aside are precisely those whose genotype--phenotype links fall outside curated pathway definitions, so the resulting models apply to pathway-consistent genomes rather than to the full diversity of genotype--phenotype relationships.
-We also show that this specialisation is data-efficient, as concordance-trained performance for histidine approached its all-sample value with 50 training samples.
 Genome-based phenotype prediction is therefore constrained not only by training-data size but by whether the labels agree with the mechanism being learned.
 Accuracy is consequently conditional on the genomes a model was built to describe, rather than a single value reported per phenotype.
