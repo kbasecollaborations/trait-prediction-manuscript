@@ -10,7 +10,7 @@ Figure~\ref{fig:dataset_characteristics}C provides a guide to the analyses that 
 
 
 To establish baselines, we evaluated GapMind, a mechanistic tool predicting growth from pathway completeness~\cite{Price2022GapMindCarbon,Price2020GapMind,Price2024Improving}, and a phylogeny-based nearest-neighbour classifier ($k=3$; Methods).
-Unlike broad multi-trait predictors such as PICA, Traitar, and MICROPHERRET~\cite{Feldbauer2015PICA,Weimann2016Traitar,Bizzotto2024MICROPHERRET}, GapMind exposes substrate-specific pathway steps, allowing the same mechanistic framework to provide a baseline and define genotype--phenotype concordance.
+GapMind exposes substrate-specific pathway steps, so the same mechanistic framework provides a baseline and defines genotype--phenotype concordance.
 GapMind achieved modest balanced accuracy across the 15 shared phenotypes (strict threshold: $0.66 \pm 0.04$; permissive: $0.70 \pm 0.08$; Figure~\ref{fig:baseline_predictions}A).
 The phylogeny-based approach performed well in random holdout (0.72--0.87) but poorly on phylogenetically distant samples (out-of-clade: 0.46--0.63; Figure~\ref{fig:baseline_predictions}B), approaching null-model levels and indicating that phylogenetic relatedness alone is insufficient across diverse lineages~\cite{Langille2013-fh,Martiny2013-ob,Michener2014Phylogeny,Goberna2016Predicting,CaroQuintero2015HGT}.
 
@@ -22,12 +22,11 @@ The phylogeny-based approach performed well in random holdout (0.72--0.87) but p
 To test whether genome-derived features could surpass these baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$5500 features after correlation filtering; Methods), evaluating all models with balanced accuracy.
 
 Data were aggregated across all four datasets and assessed under four evaluation scenarios that progressively test generalisation: repeated random holdout, cross-dataset (leave-one-dataset-out), and in-clade and out-of-clade phylogenetic splits (Methods).
-Random holdout test samples were drawn from the same phylogenetic clades as training samples (Supplementary Figure~\ref{fig:phylogenetic_distance_splits}).
 
 In repeated random holdout evaluations (Figure~\ref{fig:ml_performance}A), the ML models achieved high balanced accuracy (0.75--0.90) and outperformed the GapMind baseline (paired Wilcoxon across the 15 phenotypes, $p < 0.001$).
 Cross-dataset performance, however, decreased substantially (0.52--0.84; Figure~\ref{fig:ml_performance}B), indicating limited generalisation across experimental contexts~\cite{Pasolli2016MetaAnalysis}.
-The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.03; Figure~\ref{fig:ml_performance}C), so phylogenetic distance alone does not explain the failure; the cause more likely lies in other dataset differences, such as growth-assay modality (Methods), ecology and strain history, and curation.
-Consistent with this, near-identical strains conflict on their growth label far more often across datasets than within a single dataset, and the gap persists after adjusting for each dataset's positive-call rate (Supplementary Text~S12); this inconsistency limits cross-dataset transfer but does not prevent it, since most near-identical strains still agree.
+The gap between regular and in-clade cross-dataset splits was minimal ($\sim$0.03; Figure~\ref{fig:ml_performance}C), so phylogenetic distance alone does not explain the failure.
+Consistent with this, near-identical strains conflict on their growth label far more often across datasets than within a single dataset (Supplementary Text~S12); this inconsistency limits cross-dataset transfer but does not prevent it, since most near-identical strains still agree.
 Out-of-clade counterparts showed similar trends (0.53--0.86; Supplementary Figure~\ref{fig:in_clade_out_clade_performance}), consistent with prior observations that random holdout overestimates cross-context generalisation \cite{Roberts2017CrossValidation,Li2023-up}.
 
 
@@ -36,7 +35,7 @@ Out-of-clade counterparts showed similar trends (0.53--0.86; Supplementary Figur
 \subsection*{Cross-dataset failures reflect dataset-specific signals in aggregated training}
 
 To understand these failures, we first examined GapMind misclassification patterns across phenotypes and datasets (Figure~\ref{fig:misclassification_diagnosis}A,B), which can arise from incomplete annotations, alternative routes, or regulatory mechanisms~\cite{Price2020GapMind,Price2024Improving,Griesemer2018Combining,Pan2018Advances,Gorke2008CCR}.
-Phenotypes varied in GapMind accuracy and datasets varied in overall discordance (Biolog: $\sim$30\%; Populus: $\sim$19\%), but neither showed a consistent directional bias, indicating that discordance does not arise from a single dataset-specific artefact (Figure~\ref{fig:misclassification_diagnosis}B).
+Phenotypes varied in GapMind accuracy and datasets varied in overall discordance, but neither showed a consistent directional bias, indicating that discordance does not arise from a single dataset-specific artefact (Figure~\ref{fig:misclassification_diagnosis}B).
 
 To probe generalisation failures, we performed SHAP-based feature-importance stability analyses, grouping KOs by SHAP-supervised redundancy (Methods) so biologically equivalent features count as a single signal (Figure~\ref{fig:misclassification_diagnosis}C).
 Across random holdout evaluations of the aggregated dataset, at least one stable feature cluster was consistently identified, indicating recovery of recurring predictors when training data is sampled from the same pool (Figure~\ref{fig:misclassification_diagnosis}C, top).
@@ -51,7 +50,7 @@ We therefore hypothesised that restricting training to samples with more consist
 \subsection*{Concordant training produces bounded specialist models}
 
 To test this hypothesis, we restricted training to concordant samples (GapMind predictions matching experimental outcomes) while keeping the feature space, architecture, and evaluation unchanged from Figure~\ref{fig:ml_performance}, so any gain reflects the training data alone (Supplementary Text~S5; Supplementary Figure~\ref{fig:kofam_concordant}).
-Concordant samples likely overrepresent organisms using conserved pathways already captured in annotation databases, and may also overrepresent well-studied taxa the annotation pipeline scores most reliably, so the model is a specialist for mechanistically tractable cases rather than a recoverer of all valid utilisation strategies.
+Concordant samples likely overrepresent organisms using conserved pathways already captured in annotation databases, so the model is a specialist for mechanistically tractable cases rather than a recoverer of all valid utilisation strategies.
 
 On held-out concordant test data (the easier subset, since discordant cases are excluded; full held-out test in Figure~\ref{fig:concordant_analysis}C), the concordance-trained model reached per-phenotype balanced accuracy of 0.91--0.99 under random holdout (median 0.96) and median 0.82 under cross-dataset evaluation (Figure~\ref{fig:concordant_analysis}A).
 We then retrained the same models on the GapMind step features whose rules define concordance, giving a reference for how completely that rule is recovered from the step evidence itself (Figure~\ref{fig:concordant_analysis}A, red dashed lines).
@@ -68,7 +67,7 @@ Under per-phenotype sample-level tests sensitivity gains were matched by signifi
 Stratifying the cross-dataset test set by concordance status separates two regimes (Figure~\ref{fig:concordant_analysis}D).
 Where GapMind already agrees with the measurement it is correct by definition, so the model's median balanced accuracy of 0.82 measures the feature-resolution gap discussed above rather than any gain over the rule.
 The informative cases are those where GapMind is wrong, and there the model's binary predictions corrected few of them (BA 0.34), limited by how often it predicts growth at all.
-We therefore asked whether its predicted growth probability ranks genomes correctly within the set GapMind called positive and the set it called negative, where the rule itself provides no ordering.
+We therefore scored how well its predicted growth probability ordered genomes within each GapMind call, where the rule itself provides no ordering.
 It did so in both sets (pooled AUC 0.67), and concordant training helped specifically where GapMind had missed growth despite an incomplete annotated pathway (0.64 versus 0.53, BH-adjusted $q = 0.003$, 13 of 15 phenotypes), not where it had predicted growth that did not occur ($p = 0.76$).
 These recovered genomes were predominantly metabolic generalists carrying broad-specificity carbohydrate transporters and sugar-catabolism regulators, consistent with transport being the step GapMind most often failed to place (9 of 15 phenotypes; Supplementary Text~S10).
 
@@ -82,7 +81,6 @@ Concordance filtering, however, requires a mechanistic predictor available only 
 \subsection*{Mechanism-free confidence weighting provides a recall-oriented alternative}
 
 Confidence weighting scored each training and validation sample by whether its experimental label agreed with the labels of its nearest phylogenetic neighbours and with GapMind pathway completeness, down-weighting samples where these disagreed. The mechanism-free setting gives GapMind zero weight ($w_{\mathrm{gap}} = 0$), and three comparison settings gave it 0.3 to 0.5 (Methods).
-Held-out test samples were neither weighted nor used in scoring.
 A small number of problematic genomes, discordant with GapMind across many phenotypes, accounted for a disproportionate share of misclassifications (Figure~\ref{fig:improvement_strategies}A) and were tested as an additional filter.
 
 Across the $w_{\mathrm{gap}}$ sweep, mean cross-dataset balanced accuracy varied by less than 0.005 while recall rose and precision fell (Figure~\ref{fig:improvement_strategies}B), a shift towards positive calls rather than greater discrimination.
@@ -91,7 +89,7 @@ Concordant training had the highest mean balanced accuracy (0.680 versus 0.644 f
 Recall against GapMind is the informative axis here, because its errors are predominantly missed growth. Recovering those genomes indicates catabolic capability that the curated pathway does not represent.
 Mechanism-free weighting raised recall slightly over unfiltered ML with no change in balanced accuracy and lower specificity, adding 103 true positives over unfiltered ML and 127 over GapMind on matched positive observations (Supplementary Text~S9).
 Concordant training produced significant phenotype-level recall gains over GapMind for more phenotypes (9 of 15 versus 6), although neither mean recall shift reached significance (Figure~\ref{fig:improvement_strategies}C).
-Recall gains over GapMind were therefore consistent in direction but small when averaged across phenotypes, and the demonstrable advantage is confined to the genomes GapMind calls incorrectly, where the concordance-trained model orders growth outcomes that the GapMind rule cannot (pooled AUC 0.67; Supplementary Text~S10).
+Recall gains were therefore consistent in direction but small on average, with the demonstrable advantage confined to the genomes GapMind calls incorrectly, where the model orders growth outcomes that the rule cannot (pooled AUC 0.67; Supplementary Text~S10).
 
 Curation can also be applied to the features rather than to the samples.
 Phenotype-filtered GapMind features (without correlation filtering; Supplementary Text~S5) matched combined GapMind, KOFAM, and RAST features under random holdout but improved cross-dataset balanced accuracy (paired Wilcoxon $p<0.001$, BH-adjusted $q=0.003$), and the combined-feature models still concentrated on curated GapMind terms, consistent with prior reports favouring biologically relevant over comprehensive feature sets~\cite{Li2023-up} (Figure~\ref{fig:improvement_strategies}D).
@@ -103,8 +101,7 @@ We therefore asked whether a model can flag which of its own predictions to trus
 
 \subsection*{Prediction confidence defines an applicability domain and prioritises follow-up experiments}
 
-The model's own predicted probability is available at inference time without the experimental phenotype.
-Pooled across phenotypes, the model assigned higher confidence to predictions that proved correct than to those that did not, though only modestly (ROC AUC $0.66$ concordance-trained, $0.63$ full-data), and both models were overconfident under cross-dataset shift (Figure~\ref{fig:selective_prediction}B).
+Pooled across phenotypes, the model's predicted probability was higher for predictions that proved correct than for those that did not, though only modestly (ROC AUC $0.66$ concordance-trained, $0.63$ full-data), and both models were overconfident under cross-dataset shift (Figure~\ref{fig:selective_prediction}B).
 Consistent with prior reports~\cite{NiculescuMizil2005Calibration}, confidence therefore supports ranking and abstention rather than calibrated probability estimates.
 Abstaining on the least-confident predictions accordingly helped only where the model had transferable signal to concentrate (Figure~\ref{fig:selective_prediction}A): for sucrose it raised retained-subset accuracy from $0.75$ at full coverage to $0.88$ at half coverage against a majority-class rate of $0.61$, whereas for m-Inositol, already accurate across the full test set, it added little, and for glycerol it added nothing.
 Abstention can therefore define a practical applicability domain~\cite{Weaver2008AppDomain,Geifman2017SelectiveClassification,Hendrickx2024Reject} but cannot substitute for a model that has not learned the phenotype.
