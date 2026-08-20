@@ -15,6 +15,7 @@ Run with::
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import scienceplots  # noqa: F401
 import seaborn as sns
@@ -71,6 +72,9 @@ def main() -> None:
         saturation=1.0,
         ax=ax,
     )
+    # seaborn 0.13 draws the strip jitter from the global numpy RNG and exposes
+    # no seed argument, so seed it here to keep re-runs reproducible.
+    np.random.seed(0)
     sns.stripplot(
         data=df,
         x="phenotype",

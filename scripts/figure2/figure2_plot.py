@@ -151,6 +151,9 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
 
     phenotypes = sorted(df["phenotype"].unique())
 
+    # Seeded so that re-running the script reproduces the same figure byte-wise.
+    rng = np.random.default_rng(0)
+
     for idx, split_type in enumerate(split_order):
         ax = axes[idx]
         split_df = df[df["split"] == split_type]
@@ -163,7 +166,7 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             for _, row in model_df.iterrows():
                 x_pos = phenotypes.index(row["phenotype"])
                 # Jitter so overlapping per-phenotype points are visible
-                x_jitter = x_pos + np.random.uniform(-0.15, 0.15)
+                x_jitter = x_pos + rng.uniform(-0.15, 0.15)
                 x_positions.append(x_jitter)
                 y_values.append(row["balanced_accuracy"])
 
