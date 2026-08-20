@@ -21,7 +21,7 @@ an uncharacterised flag (hypothetical / putative / unknown-function KOs).
 
 Run with::
 
-    uv run python -m scripts.alternate.figure5_diagnostic.fn_feature_discovery [options]
+    uv run python -m scripts.figure5_diagnostic.fn_feature_discovery [options]
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 import scripts.figure5.figure5b_data as f5b
-from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
+from scripts.figure5_diagnostic.fn_mechanism_shap import (
     build_symbol_to_ko,
     canonical_ko_set,
     load_ko_descriptions,

@@ -13,7 +13,7 @@ Writes ``data/outputs/figure5_fn_mechanism/<phenotype>_fn_shap_ranking.csv``.
 
 Run with::
 
-    uv run python -m scripts.alternate.figure5_diagnostic.fn_mechanism_shap [options]
+    uv run python -m scripts.figure5_diagnostic.fn_mechanism_shap [options]
 """
 
 from __future__ import annotations

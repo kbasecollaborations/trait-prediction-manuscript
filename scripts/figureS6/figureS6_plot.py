@@ -6,18 +6,18 @@ against concordant training on both the full and the concordant test subset,
 under cross-dataset and random-holdout evaluation.
 
 Reads the consolidated KOFAM learning curves written by
-``scripts.alternate.figureS7_legacy.figureS7_data`` and writes
+``scripts.figureS6.figureS6_data`` and writes
 ``figures/figure_s6.pdf``.
 
 Run:
-    uv run python -m scripts.figureS6.figureS6_multiphenotype_plot
+    uv run python -m scripts.figureS6.figureS6_plot
 """
 
 from pathlib import Path
 
 import pandas as pd
 
-from scripts.alternate.supplementary_figure_learning_curves import (
+from scripts.figureS6.figureS6_grid import (
     GRID_BLOCKS,
     TEST_SUBSET_STYLES,
     build_training_size_grid,

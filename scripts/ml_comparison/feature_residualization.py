@@ -48,7 +48,7 @@ def _dataset_dummies(genome_ids: list[str]) -> pd.DataFrame:
 def _phylo_pcs_for(genome_ids: list[str], n_pcs: int = 20) -> pd.DataFrame | None:
     """Return top-n_pcs kinship-PCs for the given genomes, or None if too many
     are uncovered by the tree."""
-    from scripts.alternate.ml_comparison.phylo_kinship import (
+    from scripts.ml_comparison.phylo_kinship import (
         _distance_to_kinship,
         _topk_kinship_pcs,
         load_distance_matrix,
@@ -114,7 +114,7 @@ def _apply_residualization(
 
 def _restrict_to_tree(split: dict[str, Any]) -> dict[str, Any] | None:
     """Drop genomes not in the GTDB tree from a split dict (dataset_phylo only)."""
-    from scripts.alternate.ml_comparison.phylo_kinship import restrict_split_to_covered
+    from scripts.ml_comparison.phylo_kinship import restrict_split_to_covered
 
     return restrict_split_to_covered(split)
 

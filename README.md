@@ -49,7 +49,7 @@ produces.
 | Figure 7 | `scripts/figure7/` | Selective prediction / deployment: risk–coverage, calibration, and active learning (`applicability.py`, `figure7d_active_learning.py`). |
 
 Supporting diagnostics for Figure 5A underperformers live in
-`scripts/alternate/figure5_diagnostic/`.
+`scripts/figure5_diagnostic/`.
 
 ## Supplementary figures → code
 
@@ -60,7 +60,7 @@ Supporting diagnostics for Figure 5A underperformers live in
 | Figure S3 | `scripts/figureS3/` | In-clade vs out-of-clade balanced accuracy. |
 | Figure S4 | `scripts/pangenome_completeness/` | Pangenome-based completeness audit. |
 | Figure S5 | `scripts/figureS5/` | KOFAM features on concordant samples. |
-| Figure S6 | `scripts/figureS6/figureS6_multiphenotype_plot.py` | Per-phenotype performance versus training-set size, all 15 shared phenotypes. Source data `data/outputs/learning_curves/`, produced by `scripts/alternate/figureS7_legacy/figureS7_data.py`; the drawing code lives in `scripts/alternate/supplementary_figure_learning_curves.py`. The retired histidine-only grid is in `scripts/alternate/unused/`. |
+| Figure S6 | `scripts/figureS6/figureS6_plot.py` | Per-phenotype performance versus training-set size, all 15 shared phenotypes. Source data `data/outputs/learning_curves/` from `figureS6_data.py`; drawing helpers in `figureS6_grid.py`. |
 | Figure S7 | `scripts/bacdive/`, `scripts/figureS7/` | BacDive data-volume comparison and feature stability (asset `figure_s7.pdf`). |
 
 Unselected, superseded, and exploratory code is kept under `scripts/alternate/`

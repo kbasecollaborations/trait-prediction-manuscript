@@ -15,7 +15,7 @@ Compute-only diagnostic; writes to ``data/outputs/figure5_fn_discovery/``.
 
 Run with::
 
-    uv run python -m scripts.alternate.figure5_diagnostic.fn_transport_gap
+    uv run python -m scripts.figure5_diagnostic.fn_transport_gap
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from scripts.alternate.figure5_diagnostic.fn_mechanism_shap import (
+from scripts.figure5_diagnostic.fn_mechanism_shap import (
     build_symbol_to_ko,
     load_ko_descriptions,
 )

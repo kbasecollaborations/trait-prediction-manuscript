@@ -107,7 +107,7 @@ def _cv_thread_override(model: str, cv_threads: int) -> dict[str, Any]:
 def _build_estimator(model: str, params: dict[str, Any], *, cv_threads: int):
     """Construct the tuned estimator via the shared ``models.py`` factory, so
     the tuning loop and the final evaluation build the same model."""
-    from scripts.alternate.ml_comparison.models import make_alternate
+    from scripts.ml_comparison.models import make_alternate
 
     tuned = dict(params)
     tuned.update(_cv_thread_override(model, cv_threads))

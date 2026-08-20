@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Generate data for Supplementary Figure S7: learning curves for all 15 shared phenotypes.
+Generate data for Supplementary Figure S6: learning curves for all 15 shared phenotypes.
 
-Mirrors scripts/alternate/unused/figureS6_data.py (Histidine and Galactose only) and writes
-to data/outputs/learning_curves/.
+Writes to data/outputs/learning_curves/.
 """
 
 import json

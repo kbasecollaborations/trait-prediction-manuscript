@@ -16,7 +16,7 @@ data/outputs/ml_comparison/
 
 CLI
 ---
-    uv run python -m scripts.alternate.ml_comparison.runner \\
+    uv run python -m scripts.ml_comparison.runner \\
         --models lasso enet lgbm \\
         --subsets full concordant \\
         --split-types random_split dataset_split \\
@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from trait_prediction.pipeline import align_columns, get_scores
 
 from scripts import ml as _ml
-from scripts.alternate.ml_comparison.models import (
+from scripts.ml_comparison.models import (
     importances_from_model,
     patch_make_classifier,
 )
@@ -357,7 +357,7 @@ def _model_extra_kwargs(
 ) -> dict[str, Any]:
     """Per-model extra kwargs, such as groupings or cached tuned parameters."""
     if model == "glasso_kegg":
-        from scripts.alternate.ml_comparison.groupings import (
+        from scripts.ml_comparison.groupings import (
             kegg_module_groupings_for_phenotype,
         )
 
@@ -365,7 +365,7 @@ def _model_extra_kwargs(
     if model == "lgbm_tuned":
         import json
 
-        from scripts.alternate.ml_comparison.lgbm_tuning import cache_path_for
+        from scripts.ml_comparison.lgbm_tuning import cache_path_for
 
         path = cache_path_for(phenotype, subset)
         if path.exists():
@@ -375,7 +375,7 @@ def _model_extra_kwargs(
     if model in ("cb_tuned", "rf_tuned", "enet_tuned"):
         import json
 
-        from scripts.alternate.ml_comparison.hpo_tuning import cache_path_for
+        from scripts.ml_comparison.hpo_tuning import cache_path_for
 
         path = cache_path_for(model, phenotype, subset)
         if path.exists():
@@ -416,35 +416,35 @@ def _maybe_transform_split(
     phylo_glmm restricted to tree-covered genomes).
     """
     if model == "pclr":
-        from scripts.alternate.ml_comparison.phylo_pcs import phylo_pc_adjust
+        from scripts.ml_comparison.phylo_pcs import phylo_pc_adjust
 
         return phylo_pc_adjust(split)
     if model == "phylo_glmm":
-        from scripts.alternate.ml_comparison.phylo_kinship import (
+        from scripts.ml_comparison.phylo_kinship import (
             transform_split_for_phylo_glmm,
         )
 
         return transform_split_for_phylo_glmm(split)
     if model in PHYLO_RESTRICTED_BASELINES:
-        from scripts.alternate.ml_comparison.phylo_kinship import (
+        from scripts.ml_comparison.phylo_kinship import (
             restrict_split_to_covered,
         )
 
         return restrict_split_to_covered(split)
     if model in RESIDUALIZED_DATASET_ONLY:
-        from scripts.alternate.ml_comparison.feature_residualization import (
+        from scripts.ml_comparison.feature_residualization import (
             transform_split_residualize,
         )
 
         return transform_split_residualize(split, mode="dataset_only")
     if model in RESIDUALIZED_DATASET_PHYLO:
-        from scripts.alternate.ml_comparison.feature_residualization import (
+        from scripts.ml_comparison.feature_residualization import (
             transform_split_residualize,
         )
 
         return transform_split_residualize(split, mode="dataset_phylo")
     if model == "tabpfn":
-        from scripts.alternate.ml_comparison.tabpfn_features import (
+        from scripts.ml_comparison.tabpfn_features import (
             select_stable_features,
         )
 

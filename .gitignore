@@ -533,3 +533,12 @@ revisions/
 docs/isme_guidelines.md
 /tools
 exploration/
+
+## Exploratory / non-manuscript output
+figures/alternate/
+scripts/alternate/
+figures/_archive/
+build/
+tmp/
+old_versions/
+prompts/

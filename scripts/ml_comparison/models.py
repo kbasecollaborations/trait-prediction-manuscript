@@ -244,7 +244,7 @@ def _lgbm_tuned(
     """
     if not tuned_params:
         return _lgbm(random_state=random_state)
-    from scripts.alternate.ml_comparison.lgbm_tuning import make_tuned_classifier
+    from scripts.ml_comparison.lgbm_tuning import make_tuned_classifier
 
     return make_tuned_classifier(tuned_params, random_state=random_state)
 

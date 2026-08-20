@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Shared plotting utilities for the supplementary learning-curve figures."""
+"""Learning-curve plotting helpers for Supplementary Figure S6.
+
+The alternate learning-curve figures under scripts/alternate/ also import from
+here.
+"""
 
 from pathlib import Path
 
