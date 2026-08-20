@@ -3,16 +3,16 @@
 \begin{abstract}
 {
 \noindent
-Microbial carbon utilisation is a foundational ecological phenotype that remains difficult to predict from genomes despite well-characterised pathways.
-Machine-learning models generalise poorly across datasets, a failure usually attributed to training-set size and taxonomic bias.
-To test this, we integrated binary growth phenotypes for 819 strains across 240 carbon sources (15 shared) from four datasets.
-Balanced accuracy fell from 0.86 within datasets to 0.62 across them, and testing on close relatives recovered only 0.03 of that drop, implicating non-phylogenetic dataset differences, including mechanistically inconsistent genotype-phenotype relationships.
-Restricting training to concordant samples (measured growth matched their annotated pathway) doubled the carbon sources with reproducible genomic signals across datasets (6 to 12 of 15), often including known pathway genes, whereas matched random subsets did not.
-Adding over 1800 literature-curated BacDive genomes to the training set did not improve cross-dataset performance more than the smaller concordant set, with coherence more efficient per sample.
-A pathway-independent, recall-prioritised alternative combining phylogenetic agreement and experimental labels increased true-positive recovery over unfiltered machine-learning models and GapMind, with little balanced-accuracy change from unfiltered machine-learning models but lower specificity.
-Concordance-trained models were bounded specialists, adding ranking information where the pathway rule under-called (AUC 0.64 versus 0.53 for full-data training), mostly metabolic generalists.
-To locate those bounds, model confidence defined an applicability domain, and prioritising low-confidence genomes for training produced the largest observed gains, especially for the weaker phenotypes.
-This recasts generalisation in biological machine learning as a problem of label-mechanism agreement and applicability-domain definition, alongside data volume and algorithm choice.
+Microbial carbon utilisation shapes ecological niches, community assembly, and nutrient cycling, yet remains difficult to predict from genomes despite well-characterised pathways.
+Genome-based models often generalise poorly across datasets, a limitation commonly attributed to small or taxonomically biased training sets.
+We integrated binary growth phenotypes for 819 strains across 240 carbon sources from four datasets, focusing on 15 shared sources.
+Cross-dataset evaluation reduced balanced accuracy from 0.86 (within datasets) to 0.62, and restricting evaluation to close relatives recovered only 0.03 of this loss.
+Because phylogeny alone could not explain the transfer gap, we restricted training to samples with coherent genotype--phenotype relationships, defined by agreement between experimental labels and annotated pathway predictions.
+Concordance filtering doubled the number of carbon sources with reproducible genomic signals across datasets (from 6 to 12 of 15), often recovering known pathway genes, while matched random subsets remained at the unfiltered level.
+The smaller concordant set also approached the cross-dataset performance of models augmented with up to 1800 BacDive genomes per phenotype, demonstrating greater efficiency per sample.
+Concordance-trained models remained bounded specialists but better ranked genomes that pathway rules predicted would not grow, particularly metabolic generalists with broad-specificity transporters and sugar-catabolism regulators.
+Model confidence made these bounds actionable, with abstention improving accuracy where models transferred and low-confidence labelling producing the largest mean gains, especially for weaker phenotypes.
+Collectively, these findings recast generalisation as a problem of label--mechanism agreement and demonstrate how genome-based predictions can be deployed within explicit applicability domains and improved through targeted phenotyping.
 }
 \end{abstract}
 
