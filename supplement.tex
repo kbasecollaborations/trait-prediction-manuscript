@@ -1,0 +1,47 @@
+% Standalone supplementary information document, built only by `just submit`.
+% ISME requires supplementary material as a file separate from the main
+% manuscript; this wraps sections/supplementary.tex in its own document so it
+% carries a title block, matching line numbering and spacing, and its own
+% bibliography. In the default (combined) build this file is unused and
+% main.tex inputs sections/supplementary.tex directly.
+
+\input{sections/preamble}
+
+% Resolves \ref to main-text figures and tables from build/main.aux. This needs
+% main.tex compiled first, which `just submit` handles. Do NOT compile this file
+% on Overleaf: only the main document is built there, so build/main.aux will not
+% exist and every main-text reference will render as ??.
+\externaldocument{build/main}
+
+\begin{document}
+
+\thispagestyle{empty}
+
+\begin{center}
+  {\huge Supplementary Information}\\[0.8cm]
+  {\large Data coherence over data volume drives generalisable genome-based
+  prediction of microbial carbon utilisation}\\[0.8cm]
+  Dileep Kishore, Priya Ranjan, Christopher Neely, Mikaela Cashman,
+  William Riehl, Marcin P. Joachimiak, Janaka N. Edirisinghe,
+  Jos\'{e} P. Faria, Myra B. Cohen, Zahmeeth Sakkaff, Pamela Weisenhorn,
+  Dale A. Pelletier, Mitchel J. Doktycz, Robert W. Cottingham,
+  Christopher S. Henry, Adam P. Arkin, Paramvir S. Dehal\\[0.5cm]
+  Corresponding author: Paramvir S. Dehal (psdehal@lbl.gov)
+\end{center}
+
+\vspace{1cm}
+
+\linenumbers
+\setlength\linenumbersep{15pt}
+\renewcommand\linenumberfont{\normalfont\footnotesize\sffamily\color{gray}}
+\modulolinenumbers[1]
+
+\doublespacing
+
+\input{sections/supplementary.tex}
+
+\newpage
+\singlespacing
+\printbibliography[title={Supplementary References}]
+
+\end{document}

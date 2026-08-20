@@ -1,0 +1,27 @@
+Supplementary file description for Editorial Manager
+====================================================
+
+ISME requires "a text summary (no more than 50 words) to describe the contents
+of each file and identify the types of files (file formats) submitted."
+
+This is a submission-system field, not a manuscript section. Paste the text
+below into the supplementary-file description field in Editorial Manager.
+
+The reader-facing version lives in the "Supplementary Information" section of
+main.tex (back matter, next to Data Availability). Keep the two in sync: if a
+supplementary text section, figure, or table is added or dropped, both change.
+
+---- supplement.pdf (Supplementary Information) - 38 words ----
+
+Supplementary Information (PDF). Supplementary Texts S1-S13 (dataset
+descriptions, genome quality, model selection, feature recovery, reliability,
+and data-volume analyses), Supplementary Figures S1-S7, Supplementary Tables
+S1-S4, and Supplementary Data 1 (substrate identities). Underlying data and
+code are archived on Zenodo.
+
+---- end ----
+
+Note: analysis data, trained models, and figure source data are deposited on
+Zenodo rather than uploaded as supplementary files, so no .zip data file is
+submitted. If a data file is added later, it needs its own <=50 word summary
+here and in main.tex.

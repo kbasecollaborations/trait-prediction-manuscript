@@ -1,5 +1,15 @@
 \input{sections/preamble}
 
+% Two build modes (see justfile):
+%   COMBINED (default) - supplementary is appended to this document. Use for
+%     Overleaf and co-author review: every \ref resolves natively, no xr needed.
+%   SPLIT (\splitsupp defined) - supplementary becomes its own PDF from
+%     supplement.tex, as ISME submission requires. Cross-document \ref is then
+%     resolved via xr-hyper, which needs both documents compiled (`just submit`).
+\ifdefined\splitsupp
+  \externaldocument{build/supplement}
+\fi
+
 %--------------------------------------------------------%
 % BEGIN DOCUMENT
 %--------------------------------------------------------%
@@ -47,6 +57,14 @@
 % ACKNOWLEDGMENTS
 \input{sections/acknowledgements.tex}
 
+% SUPPLEMENTARY INFORMATION
+% ISME requires a text summary of no more than 50 words describing the contents
+% and file format of each supplementary file. Keep in sync with the Editorial
+% Manager field (see docs/supplementary_description.txt).
+\section*{Supplementary Information}
+
+Supplementary Information (PDF) accompanies this paper: Supplementary Texts~S1--S13 (dataset descriptions, genome quality, model selection, feature recovery, reliability, and data-volume analyses), Supplementary Figures~S1--S7, Supplementary Tables~S1--S4, and Supplementary Data~1 (substrate identities).
+
 % DATA AND CODE AVAILABILITY
 \section*{Data Availability}
 
@@ -80,20 +98,17 @@ The authors declare no competing interests.
 \end{refsection}
 % ============ END MAIN MANUSCRIPT REFERENCES ============
 
-\clearpage
-
-% ============ SUPPLEMENTARY REFERENCES ============
-\begin{refsection}
-\input{sections/supplementary.tex}
-
-%--------------------------------------------------------%
-%   SUPPLEMENTARY REFERENCE LIST
-%--------------------------------------------------------%
-\newpage
-\printbibliography[title={Supplementary References}]
-
-\end{refsection}
-% ============ END SUPPLEMENTARY REFERENCES ============
+% In combined mode the supplementary is appended here; in split mode it is
+% built separately from supplement.tex and omitted.
+\ifdefined\splitsupp
+\else
+  \clearpage
+  \begin{refsection}
+  \input{sections/supplementary.tex}
+  \newpage
+  \printbibliography[title={Supplementary References}]
+  \end{refsection}
+\fi
 
 %--------------------------------------------------------%
 %   END DOCUMENT
