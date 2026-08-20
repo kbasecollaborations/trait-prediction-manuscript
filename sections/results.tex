@@ -63,7 +63,7 @@ Because concordant samples are those where GapMind's pathway call already matche
 
 To quantify what the concordance-trained KOFAM model adds over GapMind, we evaluated the full held-out test set (Figure~\ref{fig:concordant_analysis}C) and decomposed its cross-dataset portion by concordance status (Figure~\ref{fig:concordant_analysis}D).
 Under random holdout the ML model exceeded GapMind on 14 of 15 phenotypes (paired Wilcoxon $p < 0.001$; mean $+0.05$), but under cross-dataset evaluation the mean shift was undetectable across 15 phenotypes (paired Wilcoxon $p = 0.80$, BH-adjusted $q = 0.87$; Figure~\ref{fig:concordant_analysis}C).
-Under per-phenotype sample-level tests sensitivity gains were matched by significantly lower specificity for 8 of 15 phenotypes, so the components largely cancel in balanced accuracy (Supplementary Table~\ref{tab:per_phenotype_mcnemar}).
+Under per-phenotype sample-level tests sensitivity gains were matched by significantly lower specificity for 8 of 15 phenotypes, so the components largely cancel in balanced accuracy.
 Stratifying the cross-dataset test set by concordance status separates two regimes (Figure~\ref{fig:concordant_analysis}D).
 Where GapMind already agrees with the measurement it is correct by definition, so the model's median balanced accuracy of 0.82 measures the feature-resolution gap discussed above rather than any gain over the rule.
 The informative cases are those where GapMind is wrong, and there the model's binary predictions corrected few of them (BA 0.34), limited by how often it predicts growth at all.
@@ -87,7 +87,7 @@ Across the $w_{\mathrm{gap}}$ sweep, mean cross-dataset balanced accuracy varied
 Problematic-genome removal alone gave no measurable improvement.
 Concordant training had the highest mean balanced accuracy (0.680 versus 0.644 for mechanism-free weighting), although the difference was not significant (paired Wilcoxon $p = 0.23$).
 Recall against GapMind is the informative axis here, because its errors are predominantly missed growth. Recovering those genomes indicates catabolic capability that the curated pathway does not represent.
-Mechanism-free weighting raised recall slightly over unfiltered ML with no change in balanced accuracy and lower specificity, adding 103 true positives over unfiltered ML and 127 over GapMind on matched positive observations (Supplementary Text~S9).
+Mechanism-free weighting raised recall slightly over unfiltered ML with no change in balanced accuracy and lower specificity.
 Concordant training produced significant phenotype-level recall gains over GapMind for more phenotypes (9 of 15 versus 6), although neither mean recall shift reached significance (Figure~\ref{fig:improvement_strategies}C).
 Recall gains were therefore consistent in direction but small on average, with the demonstrable advantage confined to the genomes GapMind calls incorrectly, where the model orders growth outcomes that the rule cannot (pooled AUC 0.67; Supplementary Text~S10).
 

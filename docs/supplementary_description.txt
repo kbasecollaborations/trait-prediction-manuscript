@@ -16,7 +16,7 @@ supplementary text section, figure, or table is added or dropped, both change.
 Supplementary Information (PDF). Supplementary Texts S1-S13 (dataset
 descriptions, genome quality, model selection, feature recovery, reliability,
 and data-volume analyses), Supplementary Figures S1-S7, Supplementary Tables
-S1-S4, and Supplementary Data 1 (substrate identities). Underlying data are
+S1-S3. Underlying data are
 archived on Zenodo, and the analysis and manuscript code are available on GitHub.
 
 ---- end ----
