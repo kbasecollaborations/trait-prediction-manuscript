@@ -220,7 +220,7 @@ def plot_balanced_accuracy_scatter(
     ax.set_ylim(0.4, 1.05)
     ax.legend(
         loc="lower right",
-        frameon=True,
+        frameon=False,
         fontsize=10,
         labelspacing=0.6,
         markerscale=0.7,

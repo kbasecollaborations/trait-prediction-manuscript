@@ -15,6 +15,7 @@ from scripts.figure4.style import (
 )
 from scripts.visualization import (
     configure_plot_style,
+    hide_categorical_minor_ticks,
     format_dataset_names,
 )
 
@@ -395,6 +396,7 @@ def create_figure4b(output_file: Path) -> None:
     create_confusion_matrix_plots(ax1, ax2)
 
     plt.tight_layout()
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved plot to {output_file}")
     plt.close()

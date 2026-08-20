@@ -10,7 +10,10 @@ from scripts.figure4.figure4a_quadrant import create_quadrant_plot
 from scripts.figure4.figure4b_plot import create_confusion_matrix_plots
 from scripts.figure4.figure4c_plot import create_panel_c_plots
 from scripts.figure4.style import PANEL_LABEL_SIZE
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -118,6 +121,7 @@ def create_figure4(output_file: Path) -> None:
         ha="left",
     )
 
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved combined figure to {output_file}")
     plt.close()

@@ -22,7 +22,10 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from scripts.create_data_splits import COMMON_PHENOTYPES
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -113,6 +116,7 @@ def main() -> None:
 
     plt.tight_layout()
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    hide_categorical_minor_ticks(fig)
     fig.savefig(OUTPUT_FILE, dpi=300, bbox_inches="tight")
     print(f"Saved figure to {OUTPUT_FILE}")
     plt.close()

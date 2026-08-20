@@ -22,7 +22,10 @@ from scripts.figure6.figure6d_plot import (
     load_results,
     plot_balanced_accuracy_scatter,
 )
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -121,6 +124,7 @@ def create_figure6(output_file: Path) -> None:
             fontsize=14,
         )
 
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"\nSaved combined figure to {output_file}")
     plt.close(fig)

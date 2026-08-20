@@ -13,7 +13,10 @@ import seaborn as sns
 from matplotlib.axes import Axes
 from sklearn.metrics import roc_auc_score
 
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -188,7 +191,16 @@ def plot_calibration(ax: Axes, calib: pd.DataFrame) -> None:
     ax.set_ylabel("Observed growth fraction")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.legend(frameon=False, fontsize=10, loc="lower right")
+    # The models are the subject of the panel, so the "Perfect" reference goes last.
+    handles, labels = ax.get_legend_handles_labels()
+    order = [*range(1, len(handles)), 0]
+    ax.legend(
+        [handles[i] for i in order],
+        [labels[i] for i in order],
+        frameon=False,
+        fontsize=9,
+        loc="upper left",
+    )
     _panel_label(ax, "B", x=-0.22)
 
 
@@ -250,7 +262,7 @@ def plot_prioritization(ax: Axes, prior: pd.DataFrame) -> None:
         )
     ax.set_xticks(range(len(order)))
     ax.set_xticklabels([STRATEGY_LABELS[s] for s in order], rotation=15, ha="right")
-    ax.set_ylabel("$\\Delta$ cross-dataset\nbalanced accuracy")
+    ax.set_ylabel("$\\Delta$ Cross-dataset\nBalanced Accuracy")
     ax.set_xlabel(f"Selection strategy ({budget} labels added)")
     _panel_label(ax, "C")
 
@@ -330,7 +342,7 @@ def plot_phenotype_priority(ax: Axes, prior: pd.DataFrame) -> None:
     ax.set_xticks(range(len(PANEL_D_PHENOTYPES)))
     ax.set_xticklabels(PANEL_D_PHENOTYPES)
     ax.set_xlim(-0.6, len(PANEL_D_PHENOTYPES) - 0.4)
-    ax.set_ylabel(f"$\\Delta$ balanced accuracy\nfrom {budget} added labels")
+    ax.set_ylabel(f"$\\Delta$ Balanced Accuracy\nfrom {budget} added labels")
     ax.set_xlabel("Phenotype (strong $\\rightarrow$ weak generaliser)")
 
     legend_handles = [
@@ -374,6 +386,7 @@ def create_figure(output_file: Path) -> None:
     plot_prioritization(ax_c, prior)
     plot_phenotype_priority(ax_d, prior)
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved figure to {output_file}")
     plt.close()

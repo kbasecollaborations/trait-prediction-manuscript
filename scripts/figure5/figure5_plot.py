@@ -29,6 +29,7 @@ from scripts.minority_filter import (
 )
 from scripts.visualization import (
     configure_plot_style,
+    hide_categorical_minor_ticks,
     format_dataset_names,
     get_dataset_colors,
 )
@@ -589,8 +590,8 @@ def plot_ml_vs_gapmind_full_test(
     )
 
     _panel_scatter_axes(ax, lo=-0.05, hi=1.05)
-    ax.set_xlabel("GapMind balanced accuracy")
-    ax.set_ylabel("Concordant-ML balanced accuracy")
+    ax.set_xlabel("GapMind Balanced Accuracy")
+    ax.set_ylabel("Concordant-ML Balanced Accuracy")
     ax.set_xticks([0.0, 0.25, 0.5, 0.75, 1.0])
     ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
 
@@ -703,8 +704,8 @@ def plot_ml_vs_gapmind_test_subsets(
     )
 
     _panel_scatter_axes(ax, lo=-0.05, hi=1.05)
-    ax.set_xlabel("GapMind balanced accuracy")
-    ax.set_ylabel("Concordant-ML balanced accuracy")
+    ax.set_xlabel("GapMind Balanced Accuracy")
+    ax.set_ylabel("Concordant-ML Balanced Accuracy")
     ax.set_xticks([0.0, 0.5, 1.0])
     ax.set_yticks([0.0, 0.25, 0.5, 0.75, 1.0])
 
@@ -831,6 +832,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     ax_b.set_xticklabels(common_phenotypes, rotation=45, ha="right")
     ax_b.tick_params(axis="x", labelbottom=True)
 
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     plt.close()

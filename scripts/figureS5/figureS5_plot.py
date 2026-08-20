@@ -18,7 +18,10 @@ import pandas as pd
 import scienceplots  # noqa: F401
 import seaborn as sns
 
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -252,6 +255,7 @@ def main() -> None:
     plot_phenotype_boxes(axes[1], plot_data)
 
     plt.tight_layout()
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved figure to {output_file}")
     plt.close()

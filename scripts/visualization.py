@@ -17,7 +17,89 @@ Figure 2B models, 4A failure causes, 6A-right modes, 6B metrics, 7C/D
 strategies and S4 QC status.
 """
 
+import re
+
 import matplotlib.pyplot as plt
+from matplotlib.axis import Axis
+from matplotlib.figure import Figure
+from matplotlib.ticker import FixedLocator, NullLocator
+
+# Under the "science" style, ScalarFormatter renders numbers as mathtext, e.g.
+# "$\mathdefault{0.25}$", and uses a unicode minus.
+_MATHTEXT_LABEL = re.compile(r"^\$\\mathdefault\{(?P<value>.*)\}\$$")
+
+
+def _is_numeric_label(text: str) -> bool:
+    """Return whether a rendered tick label is a number.
+
+    Parameters
+    ----------
+    text : str
+        Tick label text, possibly wrapped in mathtext by the plotting style.
+
+    Returns
+    -------
+    bool
+        ``True`` when the label denotes a number.
+    """
+    match = _MATHTEXT_LABEL.match(text)
+    if match is not None:
+        text = match["value"]
+    text = text.strip("$").replace("\N{MINUS SIGN}", "-").replace(",", "")
+    text = text.removesuffix(r"\%").removesuffix("%")
+    try:
+        float(text)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_categorical_axis(axis: Axis) -> bool:
+    """Return whether an axis carries fixed, non-numeric tick labels.
+
+    A categorical axis is one whose ticks were placed explicitly and whose
+    labels are not numbers. An axis with explicit but numeric tick labels is a
+    continuous scale and is left alone.
+
+    Parameters
+    ----------
+    axis : Axis
+        The ``xaxis`` or ``yaxis`` of an axes.
+
+    Returns
+    -------
+    bool
+        ``True`` when the axis is categorical.
+    """
+    if not isinstance(axis.get_major_locator(), FixedLocator):
+        return False
+    labels = [tick.get_text().strip() for tick in axis.get_ticklabels()]
+    for text in labels:
+        if not text:
+            continue
+        if not _is_numeric_label(text):
+            return True
+    # Every label blank means the labels were deliberately hidden on a shared
+    # categorical axis (e.g. the upper panel of a stacked pair).
+    return not any(labels)
+
+
+def hide_categorical_minor_ticks(fig: Figure) -> None:
+    """Remove minor ticks from every categorical axis in a figure.
+
+    The ``science`` style turns minor ticks on for all axes, but a minor tick
+    between two categories (e.g. two phenotypes) has no meaning. Call this
+    immediately before saving a figure.
+
+    Parameters
+    ----------
+    fig : Figure
+        Figure whose axes should be cleaned up.
+    """
+    for ax in fig.axes:
+        for axis in (ax.xaxis, ax.yaxis):
+            if _is_categorical_axis(axis):
+                axis.set_minor_locator(NullLocator())
 
 
 def configure_plot_style() -> None:

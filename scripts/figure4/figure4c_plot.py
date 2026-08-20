@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
+from matplotlib.ticker import MaxNLocator
 
 from scripts.figure4.style import (
     ANNOTATION_FONT_SIZE,
@@ -97,6 +98,8 @@ def create_feature_stability_plot(ax: Axes, phenotypes: list[str]) -> None:
     ax.set_xlim(bar_center_offset - 0.5, len(phenotypes) - 1 + bar_center_offset + 0.5)
 
     ax.set_ylim(0, 10)
+    # Cluster counts are whole numbers, so fractional y-ticks are meaningless.
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
 
     for i, (bar, count) in enumerate(zip(bars, feature_counts)):
         height = bar.get_height()
@@ -266,6 +269,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
 
     ax.set_xlim(bar_group_center - 0.5, len(phenotypes) - 1 + bar_group_center + 0.5)
     ax.set_ylim(0, 10)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=5))
 
 
 def create_panel_c_plots(ax_top: Axes, ax_bottom: Axes) -> None:

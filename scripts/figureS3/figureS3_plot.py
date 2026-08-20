@@ -23,6 +23,7 @@ from matplotlib.lines import Line2D
 
 from scripts.visualization import (
     configure_plot_style,
+    hide_categorical_minor_ticks,
     format_dataset_names,
     get_dataset_colors,
 )
@@ -221,6 +222,7 @@ def create_figure(data_file: Path, output_file: Path) -> None:
 
     plt.tight_layout()
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close(fig)
 

@@ -10,6 +10,7 @@ import seaborn as sns
 
 from scripts.visualization import (
     configure_plot_style,
+    hide_categorical_minor_ticks,
     format_dataset_names,
     get_dataset_colors,
 )
@@ -506,6 +507,7 @@ def create_figure(data_dir: Path, output_file: Path) -> None:
     axes[1].tick_params(axis="x", labelbottom=False)
 
     plt.tight_layout()
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     plt.close()

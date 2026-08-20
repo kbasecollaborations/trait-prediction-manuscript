@@ -15,7 +15,10 @@ import seaborn as sns
 from matplotlib.lines import Line2D
 
 from scripts.create_data_splits import COMMON_PHENOTYPES
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -254,6 +257,7 @@ def plot_heatmap(df: pd.DataFrame, output_file: Path) -> None:
     cbar.set_label("Balanced Accuracy")
 
     plt.tight_layout()
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved heatmap to {output_file}")
     plt.close(fig)
@@ -447,6 +451,7 @@ def plot_training_size_grid(df: pd.DataFrame, output_file: Path) -> None:
         )
 
     fig.tight_layout()
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved training-size figure to {output_file}")
     plt.close(fig)
@@ -554,6 +559,7 @@ def plot_learning_curves(df: pd.DataFrame, output_file: Path) -> None:
         bbox_to_anchor=(0.5, 0.995),
     )
     plt.tight_layout(rect=[0.04, 0.04, 1, 0.96])
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved learning curves to {output_file}")
     plt.close(fig)
@@ -640,6 +646,7 @@ def plot_saturation_summary(df: pd.DataFrame, output_file: Path) -> None:
         borderaxespad=0.0,
     )
 
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved saturation summary to {output_file}")
     plt.close(fig)

@@ -14,7 +14,10 @@ import pandas as pd
 import scienceplots  # noqa: F401  # Registers the matplotlib styles below.
 import seaborn as sns
 
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -169,6 +172,7 @@ def create_figure(input_path: Path, output_path: Path) -> None:
     plot_completeness_distribution(axes[1], df_success, label="(B)")
     plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Saved figure to {output_path}")

@@ -27,7 +27,10 @@ import scienceplots  # noqa: F401
 import seaborn as sns
 from scipy.stats import wilcoxon
 
-from scripts.visualization import configure_plot_style
+from scripts.visualization import (
+    configure_plot_style,
+    hide_categorical_minor_ticks,
+)
 
 plt.style.use(["science", "nature"])
 sns.set_context("paper")
@@ -254,6 +257,7 @@ def plot_figure(output_file: Path) -> None:
 
     plt.tight_layout()
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    hide_categorical_minor_ticks(fig)
     fig.savefig(output_file, dpi=300, bbox_inches="tight")
     print(f"Saved plot to {output_file}")
     print(

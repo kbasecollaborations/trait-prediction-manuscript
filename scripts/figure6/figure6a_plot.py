@@ -443,7 +443,13 @@ def get_problematic_sample_summary(
         "No growth,\nGM predicts": count_by_dataset(cat1_microbes),
         "Universal growth,\nGM incomplete": count_by_dataset(cat2_microbes),
     }
-    summary_df = pd.DataFrame(category_counts).T.reindex(columns=datasets, fill_value=0)
+    # A category that has no genomes from a given dataset yields NaN, which would
+    # otherwise poison the stacked-bar offsets and drop later segments.
+    summary_df = (
+        pd.DataFrame(category_counts)
+        .T.reindex(columns=datasets, fill_value=0)
+        .fillna(0)
+    )
     summary_df["total"] = summary_df.sum(axis=1)
 
     metadata = {
