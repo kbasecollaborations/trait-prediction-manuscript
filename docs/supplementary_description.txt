@@ -13,7 +13,7 @@ supplementary text section, figure, or table is added or dropped, both change.
 
 ---- supplement.pdf (Supplementary Information) - 46 words ----
 
-Supplementary Information (PDF). Supplementary Texts S1-S13 (dataset
+Supplementary Information (PDF). Supplementary Texts S1-S12 (dataset
 descriptions, genome quality, model selection, feature recovery, reliability,
 and data-volume analyses), Supplementary Figures S1-S7, Supplementary Tables
 S1-S3. Underlying data are

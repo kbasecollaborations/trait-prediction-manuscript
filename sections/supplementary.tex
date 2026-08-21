@@ -78,8 +78,10 @@ The displayed features do not enter the (\% in pathway) statistic, which scores 
 \includegraphics[width=\textwidth]{figure_s1.pdf}
 \caption{\textbf{The four datasets span overlapping but unevenly sampled regions of the bacterial tree.}
 Of the 819 input strain records, 629 GTDB-placed tips were retained in the pruned Genome Taxonomy Database reference tree~\cite{Parks2018GTDB}, with distances calculated using ETE 3~\cite{HuertaCepas2016ETE3}.
-The tree is drawn as a cladogram, so branch lengths are not to scale; phylogenetic distances are reported in Figure~\ref{fig:phylogenetic_distance_splits}.
-The inner ring denotes dataset membership and the outer bar the GTDB order, coloured by GTDB class; orders with at least eight tips are labelled with their tip count, and tip labels are omitted for legibility.}
+The tree is drawn as a cladogram, so branch lengths are not to scale.
+Phylogenetic distances are reported in Figure~\ref{fig:phylogenetic_distance_splits}.
+The inner ring denotes dataset membership and the outer bar the GTDB order, coloured by GTDB class.
+Orders with at least eight tips are labelled with their tip count, and tip labels are omitted for legibility.}
 \label{fig:phylogenetic_distribution}
 \end{figure}
 
@@ -109,7 +111,7 @@ Numerals give test-subset sizes.}
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figure_s4.pdf}
-\caption{\textbf{Pangenome completeness could be assessed for a subset of genomes, nearly all of which were near-complete.}
+\caption{\textbf{Pangenome completeness was assessed for a subset of genomes, nearly all of which were near-complete.}
 Completeness was the fraction of species core genes detected by MMseqs2 at 90\% identity, 80\% coverage, and E-value $10^{-3}$.
 (\textbf{A}) Assessment status.
 (\textbf{B}) Completeness among successfully assessed genomes, most of which exceeded 90\%.}
@@ -252,12 +254,12 @@ CatBoost classifiers using KOFAM features were evaluated on the full labels of e
 The BacDive input was a fixed snapshot of 8{,}501 genomes with KOFAM annotations~\cite{Schober2025BacDive}.
 After label--feature intersection and removal of accessions overlapping the held-out test set, up to approximately 1{,}800 BacDive genomes per phenotype entered training, with balanced class weights applied uniformly because BacDive labels were strongly positive-skewed.
 
-FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p<0.001$, higher for 12 of 13 phenotypes) but was not significantly different from C (0.725 versus 0.706, $p=0.20$; Matthews correlation coefficient $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall.
-Two further arms bound the comparison: BacDive alone matched the concordant set (0.709 versus 0.706, $p=0.53$), whereas adding BacDive to the concordant set exceeded it (0.729 versus 0.706, $p=0.03$ across the 45 phenotype--held-out cells, $p=0.09$ across the 13 phenotype means).
+FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p<0.001$, higher for 12 of 13 phenotypes) but was not significantly different from C (0.725 versus 0.706, $p=0.20$; MCC $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall.
+BacDive alone matched the concordant set (0.709 versus 0.706, $p=0.53$), whereas adding BacDive to the concordant set exceeded it (0.729 versus 0.706, $p=0.03$ across the 45 phenotype--held-out cells, $p=0.09$ across the 13 phenotype means).
 Coherence and volume are therefore complementary rather than alternatives: concordance filtering reached comparable cross-dataset performance from roughly four-fold fewer training samples, and added volume improved on it further only when applied to the already-filtered set.
 
 Feature selection was less reproducible as volume increased (Figure~\ref{fig:bacdive_curation}B,C): mean pairwise top-10 Jaccard similarity was 0.378 for C, 0.316 for F, and 0.253 for FB (C versus FB, $p<10^{-8}$), and concordant models more consistently selected committed-pathway features, although mannose was an exception.
-The FB--C comparison did not detect a performance difference and does not establish equivalence; within this experiment, C used fewer samples and produced more reproducible, mechanism-aligned feature rankings, a pattern consistent with reduced shortcut learning~\cite{Geirhos2020Shortcut}.
+C used fewer samples and produced more reproducible, mechanism-aligned feature rankings, a pattern consistent with reduced shortcut learning~\cite{Geirhos2020Shortcut}.
 
 \begin{figure}[ht]
 \centering
@@ -266,7 +268,7 @@ The FB--C comparison did not detect a performance difference and does not establ
 \textbf{Added data volume substitutes for curation on accuracy, but not on feature reproducibility.}
 CatBoost classifiers using KOFAM features were tested on each held-out manuscript dataset under C (concordant), F (full manuscript), and FB (full manuscript plus BacDive~\cite{Schober2025BacDive}) training.
 (\textbf{A}) Cross-dataset balanced accuracy per strategy; the dashed line marks chance (0.5).
-(\textbf{B}) Cross-seed feature stability, the mean pairwise Jaccard of the top-10 CatBoost-importance features across the five seeds; points are individual phenotype--held-out cells.
+(\textbf{B}) Cross-seed feature stability, the mean pairwise Jaccard of the top-10 CatBoost-importance features across the five seeds; points are individual phenotype--held-out sets.
 (\textbf{C}) Per-strategy cross-dataset balanced accuracy versus feature stability.
 Bars and markers show means, error bars show the standard error across 45 phenotype--held-out cells, and brackets show paired Wilcoxon tests.
 ``n.s.'' denotes not significant and *** denotes $p<0.001$.
@@ -277,16 +279,8 @@ Bars and markers show means, error bars show the standard error across 45 phenot
 \subsection*{Supplementary Text S12: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
 
 At phylogenetic distance $d\leq0.01$, phenotype-specific comparisons between near-identical strains conflicted in 28.0\% of cross-dataset cases (73 of 261) and 10.1\% of within-dataset cases (782 of 7{,}706; odds ratio 3.44), with a monotone excess at stricter thresholds.
-Pair-level logistic adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69), and conditioning on both datasets' rates gave an odds ratio of 1.86.
-Because comparisons reuse strains across pairs and phenotypes, these odds ratios are descriptive and independence-based confidence intervals and $p$-values are not interpreted.
-The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects; the adjustment addresses only positive-call-rate imbalance.
-Most near-identical comparisons nevertheless agreed, so label inconsistency limits rather than prevents transfer, and this pattern is compatible with the data-coherence interpretation without showing that concordance filtering specifically identifies the conflicting pairs.
-
-\subsection*{Supplementary Text S13: Enforcing Concordance in the Training Set Versus in the Predictions}
-
-Concordant training retains roughly 70\% of training samples and then predicts for all new genomes from KOFAM features alone.
-Alternatively, a full-data model can retain only predictions agreeing with GapMind; this retained 72\% of pooled held-out predictions and yielded cross-dataset balanced accuracy 0.77 on that subset, a value conditional on abstention and so not directly comparable with performance on a full evaluation set.
-Prediction-time agreement therefore recovers a higher-accuracy subset but requires GapMind for every genome, whereas concordant training requires it only when assembling the training set.
+Pair-level logistic adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69; 1.86 conditioning on both datasets' rates), and because comparisons reuse strains across pairs and phenotypes these odds ratios are descriptive, with independence-based confidence intervals and $p$-values not interpreted.
+The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects, and does not show that concordance filtering specifically identifies the conflicting pairs.
 
 % ============================================================
 %   SUPPLEMENTARY TABLES (one per page)
