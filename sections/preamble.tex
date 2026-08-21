@@ -159,3 +159,5 @@
   % xr-hyper must precede hyperref; resolves \ref across main.tex <-> supplement.tex
   \usepackage{xr-hyper}
   \usepackage{hyperref}
+  % let long URLs wrap at slashes, hyphens and dots instead of running into the margin
+  \def\UrlBreaks{\do\/\do-\do.}
