@@ -8,6 +8,10 @@ protocol.
 
 Reads the per-sample prediction tables in data/outputs/figure7/; no models are
 trained here. Writes the a1_*.csv tables to data/outputs/agreement_analysis/.
+
+Run with::
+
+    uv run python -m scripts.agreement_analysis.agreement_analysis
 """
 
 from __future__ import annotations

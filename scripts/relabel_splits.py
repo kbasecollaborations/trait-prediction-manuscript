@@ -8,7 +8,9 @@ Use this after :mod:`scripts.harmonize_phenotypes` changes any label, then retra
 full ``create_data_splits`` regeneration is only needed if the split structure itself
 should change (the random split clusters on the label matrix, so a rerun redraws it).
 
-Run with ``uv run python -m scripts.relabel_splits --phenotypes Glucose Galacturonic-Acid``.
+Run with::
+
+    uv run python -m scripts.relabel_splits --phenotypes Glucose Galacturonic-Acid
 """
 
 from __future__ import annotations

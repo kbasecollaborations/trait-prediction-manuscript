@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Plot the supplementary pangenome completeness audit figure."""
+"""Generate Supplementary Figure S4 (pangenome completeness).
+
+Panel A gives the per-genome status breakdown of the completeness calculation
+and panel B the distribution of completeness for the genomes it succeeded on.
+
+Reads ``data/outputs/pangenome_completeness/pangenome_completeness.tsv`` and
+writes ``figures/figure_s4.pdf``.
+
+Run with: uv run python -m scripts.pangenome_completeness.pangenome_completeness_plot
+"""
 
 from __future__ import annotations
 

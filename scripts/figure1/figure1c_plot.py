@@ -11,9 +11,10 @@ from data/outputs/figure6/figure6d_*_results.csv, and concordance from
 data/outputs/figure5/figure5d_full_test.tsv (balanced_accuracy_full). The four
 cross-dataset variants use the full held-out test and apply the
 <10-minority-test exclusion; random holdout is the in-distribution split.
-Sized for inclusion at \\textwidth.
+Sized for inclusion at \textwidth.
 
-Run with:
+Run with::
+
     uv run python -m scripts.figure1.figure1c_plot
 """
 

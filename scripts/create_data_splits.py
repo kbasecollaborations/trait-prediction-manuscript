@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Generate random, leave-one-dataset-out, and phylogeny train/val/test splits."""
+"""Generate random, leave-one-dataset-out, and phylogeny train/val/test splits.
+
+Reads the harmonised labels in ``data/processed/phenotypes`` and the pruned GTDB tree in
+``data/processed/phylogeny``, and writes one ``y_train``/``y_val``/``y_test`` triple per
+split under ``data/processed/train_test_splits``.
+
+Run with::
+
+    uv run python -m scripts.create_data_splits
+"""
 
 from pathlib import Path
 

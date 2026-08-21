@@ -1,6 +1,12 @@
 """Refresh the KEGG module, KO, and pathway mapping files from the KEGG REST API.
 
-Existing files are backed up to ``*.bak`` before being overwritten.
+Writes ``module-definitions.tsv``, ``KO_dictionary.json`` and
+``pathway-ko-membership.tsv`` into ``data/external/mapping/``. Existing files are
+backed up to ``*.bak`` before being overwritten.
+
+Run with::
+
+    uv run python -m scripts.refresh_kegg_data
 """
 
 from __future__ import annotations
@@ -304,7 +310,7 @@ def write_module_tsv(rows: list[tuple[str, int, str, str]], path: Path) -> None:
 
 
 def write_ko_json(term_hash: dict[str, dict[str, str]], path: Path) -> None:
-    """Write the KO dictionary JSON preserving the legacy schema.
+    """Write the KO dictionary JSON in the ``term_hash`` schema its readers expect.
 
     Parameters
     ----------

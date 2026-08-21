@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# Render the figure PDFs and LaTeX tables listed below from the data files
+# under data/outputs/. Run run_data_scripts.sh first if those are stale.
+# Figures not listed here are built by running their plotting module directly.
+#
+# Run with: uv run bash run_figure_scripts.sh (from the repository root)
 
 echo "========================================"
 echo "Running: figure1b_plot"
@@ -30,15 +36,9 @@ echo "========================================"
 
 echo ""
 echo "========================================"
-echo "Running: table1"
+echo "Running: histidine_feature_table"
 echo "========================================"
-python -m scripts.tables.table1
-
-echo ""
-echo "========================================"
-echo "Running: table2"
-echo "========================================"
-python -m scripts.tables.table2
+python -m scripts.tables.histidine_feature_table
 
 echo ""
 echo "========================================"

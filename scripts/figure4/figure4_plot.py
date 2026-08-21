@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""Assemble Figure 4 from panels A, B and C into a single vector PDF.
+
+Panel A is the GapMind-versus-experiment quadrant diagram, panel B the
+confusion-matrix counts by phenotype and by dataset, and panel C the stable
+SHAP feature clusters.
+
+Writes ``figures/figure4.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure4.figure4_plot
+"""
 
 from pathlib import Path
 

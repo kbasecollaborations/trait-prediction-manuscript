@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Generate ML results on GapMind-concordant samples for Figure 5A."""
+"""Generate ML results on GapMind-concordant samples for Figure 5A.
+
+Writes ``data/outputs/figure5/figure5a_concordant_ml_results[_<features>].csv``.
+
+Run with::
+
+    uv run python -m scripts.figure5.figure5a_data [--features kofam]
+"""
 
 from pathlib import Path
 

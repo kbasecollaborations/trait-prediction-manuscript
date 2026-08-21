@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Generate Figure 6C data: metrics before/after removing problematic training samples."""
+"""Generate Figure 6C data: metrics before/after removing problematic training samples.
+
+Writes ``data/outputs/figure6/figure6c_{split_type}_results.csv``, by default
+``figure6c_dataset_split_results.csv``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6c_data
+"""
 
 from collections import Counter, defaultdict
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Re-export the identity null-model classifier for backward compatibility."""
+"""Re-export ``IdentityClassifier`` from ``trait_prediction.classifiers``."""
 
 from trait_prediction.classifiers import IdentityClassifier
 

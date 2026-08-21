@@ -12,11 +12,10 @@
 #SBATCH --output=pangenome_completeness_%j.out
 #SBATCH --error=pangenome_completeness_%j.err
 
-# =============================================================================
-# Pangenome Completeness SLURM Script for NERSC Perlmutter
-# =============================================================================
-# This script calculates genome completeness based on core gene presence from
-# species pangenomes using MMseqs2 for sequence similarity search.
+# Pangenome completeness SLURM script for NERSC Perlmutter.
+#
+# Runs pangenome_completeness.py, which scores genome completeness by the
+# fraction of species core genes recovered by MMseqs2 search.
 #
 # Usage:
 #   sbatch run_pangenome_completeness_nersc.sh
@@ -36,13 +35,10 @@
 # Notes:
 #   - Uses --jobs for parallel genome processing (MMseqs2).
 #   - For ~1000 genomes, expect ~1-2 hours runtime depending on pangenome sizes.
-# =============================================================================
 
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
 # Configuration - modify these as needed
-# -----------------------------------------------------------------------------
 # Directory containing genome protein .faa files
 ALL_SEQS_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/gapmind_analysis/all_seqs"
 
@@ -63,9 +59,7 @@ MIN_IDENTITY=0.90
 MIN_COVERAGE=0.80
 EVALUE=1e-3
 
-# -----------------------------------------------------------------------------
 # Environment setup
-# -----------------------------------------------------------------------------
 echo "=============================================="
 echo "Pangenome Completeness Job Started: $(date)"
 echo "=============================================="
@@ -81,11 +75,7 @@ echo "Min coverage: ${MIN_COVERAGE}"
 echo "E-value: ${EVALUE}"
 echo "=============================================="
 
-# -----------------------------------------------------------------------------
-# Load environment using pixi
-# -----------------------------------------------------------------------------
-# Set path to pixi project directory (where pixi.toml lives)
-# Modify this to point to your pixi project location
+# Pixi project directory (where pixi.toml lives); modify as needed
 PIXI_PROJECT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/pangenome/pangenome_completeness"
 
 if [[ ! -f "${PIXI_PROJECT_DIR}/pixi.toml" ]]; then
@@ -96,12 +86,10 @@ fi
 
 echo "Using pixi project: ${PIXI_PROJECT_DIR}"
 
-# Activate pixi environment by adding it to PATH
+# Activate the pixi environment by adding it to PATH
 eval "$(pixi shell-hook --manifest-path "${PIXI_PROJECT_DIR}/pixi.toml")"
 
-# -----------------------------------------------------------------------------
 # Verify dependencies
-# -----------------------------------------------------------------------------
 if ! command -v mmseqs &>/dev/null; then
 	echo "ERROR: mmseqs command not found. Check your pixi environment."
 	exit 1
@@ -116,9 +104,7 @@ fi
 
 echo "Python version: $(python --version)"
 
-# -----------------------------------------------------------------------------
 # Validate inputs
-# -----------------------------------------------------------------------------
 if [[ ! -d "${ALL_SEQS_DIR}" ]]; then
 	echo "ERROR: All seqs directory does not exist: ${ALL_SEQS_DIR}"
 	exit 1
@@ -153,13 +139,10 @@ fi
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
-# -----------------------------------------------------------------------------
 # Run pangenome completeness calculation
-# -----------------------------------------------------------------------------
 echo ""
 echo "Starting pangenome completeness calculation..."
 
-# Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON_SCRIPT="${SCRIPT_DIR}/pangenome_completeness.py"
 
@@ -199,9 +182,6 @@ python "${PYTHON_SCRIPT}" \
 	--evalue "${EVALUE}" \
 	--jobs "${JOBS}"
 
-# -----------------------------------------------------------------------------
-# Cleanup and summary
-# -----------------------------------------------------------------------------
 # Clean up temp directory if created
 if [[ -n "${TMPDIR:-}" && -d "${TMPDIR}" ]]; then
 	rm -rf "${TMPDIR}"

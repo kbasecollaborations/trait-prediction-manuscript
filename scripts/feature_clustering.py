@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Build per-phenotype KO redundancy clusters for the SHAP stable-feature comparison."""
+"""Build per-phenotype KO redundancy clusters for the SHAP stable-feature comparison.
+
+Writes one ``ko_clusters_{method}.json`` per clustering method to
+``data/outputs/clustering``.
+
+Run with::
+
+    uv run python -m scripts.feature_clustering
+"""
 
 from __future__ import annotations
 

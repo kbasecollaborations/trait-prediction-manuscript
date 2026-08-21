@@ -8,7 +8,7 @@ machinery is complete, else an unexplained residual) to two signals that a
 
 1. Confident genomic-consensus disagreement: the model predicts no-growth at
    confidence >= 0.9 and GapMind also calls 0.
-2. Cross-dataset twin conflict (Supplementary Text S13 data): a near-identical
+2. Cross-dataset twin conflict (Supplementary Text S12 data): a near-identical
    strain (patristic distance <= 0.01) in another dataset carries the opposite
    label.
 

@@ -1,4 +1,4 @@
-"""Re-export the nearest-neighbor null-model classifier for backward compatibility."""
+"""Re-export ``NearestNeighborClassifier`` from ``trait_prediction.classifiers``."""
 
 from trait_prediction.classifiers import NearestNeighborClassifier
 

@@ -11,9 +11,11 @@ Panels: A cross-dataset balanced accuracy, B cross-seed feature stability
 (top-10 importance Jaccard), C the accuracy-versus-stability trade-off.
 
 Reads ``data/outputs/bacdive/head_to_head.csv`` and ``strategy_stability.csv``,
-written by the BacDive analysis subsystem deposited with the manuscript.
+written by ``scripts.bacdive.head_to_head`` and
+``scripts.bacdive.strategy_stability``.
 
-Run:
+Run with::
+
     uv run python -m scripts.figureS7.figureS7_plot
 """
 

@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""Generate the Figure 1B data table (genome counts per phenotype and dataset).
+
+Counts positive and negative genomes for every phenotype shared by the atleaf,
+lit, marine and pmi datasets, and writes
+``data/outputs/figure1/figure1b_data.csv``.
+
+Run with::
+
+    uv run python -m scripts.figure1.figure1b_data
+"""
 
 from collections import defaultdict
 from pathlib import Path

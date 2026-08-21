@@ -1,4 +1,4 @@
-"""Re-export the base classifier class for backward compatibility."""
+"""Re-export the base ``Classifier`` from ``trait_prediction.classifiers``."""
 
 from trait_prediction.classifiers import Classifier
 

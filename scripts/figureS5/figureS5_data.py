@@ -7,6 +7,10 @@ random_split, dataset_split and phylo_ooc, on the full, concordant and
 discordant test subsets.
 
 Writes data/outputs/figureS5/figureS5_kofam_concordant_results.csv.
+
+Run with::
+
+    uv run python -m scripts.figureS5.figureS5_data
 """
 
 import json

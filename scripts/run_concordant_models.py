@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Train CatBoost models on random_split data filtered to GapMind-concordant samples."""
+"""Train CatBoost models on random_split data filtered to GapMind-concordant samples.
+
+Per-fold models, feature importances and metadata are written under
+``data/outputs/concordant_models/<Phenotype>/``, together with a top-level
+``concordant_ml_results.csv`` of test-set scores.
+
+Run with::
+
+    uv run python -m scripts.run_concordant_models
+"""
 
 import json
 import re

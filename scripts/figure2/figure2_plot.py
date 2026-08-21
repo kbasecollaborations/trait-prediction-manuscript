@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""Generate Figure 2 (GapMind confidence thresholds and null-model baselines).
+
+Panel A compares strict and permissive GapMind confidence thresholds per
+phenotype. Panel B compares the nearest-neighbour model against the identity and
+Bernoulli nulls, for the random split and the out-of-clade split.
+
+Reads the metrics tables in ``data/outputs/figure2/`` and writes
+``figures/figure2.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure2.figure2_plot
+"""
 
 from pathlib import Path
 

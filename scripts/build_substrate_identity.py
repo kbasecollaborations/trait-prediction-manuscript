@@ -15,6 +15,10 @@ Outputs
 ``data/zenodo/substrate_identity_common15.csv``
     The 15 phenotypes shared by all four datasets, for the Zenodo deposit and the
     supplementary data listing.
+
+Run with::
+
+    uv run python -m scripts.build_substrate_identity
 """
 
 from __future__ import annotations

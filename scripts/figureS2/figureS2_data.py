@@ -17,8 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 
-# The 15 phenotypes shared across all four datasets; the original figure_s2.png
-# showed 16, including "Trehalose".
+# The 15 phenotypes shared across all four datasets.
 from scripts.create_data_splits import COMMON_PHENOTYPES
 
 SPLITS_DIR = Path("data/processed/train_test_splits")

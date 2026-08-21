@@ -10,6 +10,10 @@ Outputs (under ``data/outputs/concordant_full_models/<Phenotype>/``):
 ``<Phenotype>.cbm``, ``<Phenotype>_metadata.json``,
 ``<Phenotype>_feature_importances.csv``, ``<Phenotype>_selected_features.txt``,
 plus a top-level ``concordant_full_models_summary.csv``.
+
+Run with::
+
+    uv run python -m scripts.train_concordant_full_models
 """
 
 from __future__ import annotations

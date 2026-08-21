@@ -2,7 +2,12 @@
 """Backfill an ``n_minority_test`` column on existing per-cell ML result CSVs.
 
 Rows that lack a resolvable test set (random splits, or phenotypes absent from
-the GapMind / experimental data) are left empty.
+the GapMind / experimental data) are left empty. Each listed CSV under
+``data/outputs/`` is rewritten in place.
+
+Run with::
+
+    uv run python -m scripts.backfill_minority_test
 """
 
 from __future__ import annotations

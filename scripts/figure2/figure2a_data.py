@@ -3,6 +3,10 @@
 """Generate strict and loose GapMind phenotype prediction files and evaluate them.
 
 Strict marks only 'complete' as present; loose also counts 'likely_complete'.
+
+Run with::
+
+    uv run python -m scripts.figure2.figure2a_data
 """
 
 from pathlib import Path

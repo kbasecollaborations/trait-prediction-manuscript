@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Compute KEGG-module coverage for stable feature clusters per phenotype.
 
-Used by the Table S2 / Table S3 generators to append a coverage summary line.
+Holds the phenotype-to-module and phenotype-to-pathway-map assignments used by
+the Table 1 generator (``scripts.tables.main_table1``) and by the supplementary
+stable-feature table generator (``scripts.tables.histidine_feature_table``),
+which appends the coverage line to each phenotype block.
 """
 
 import re

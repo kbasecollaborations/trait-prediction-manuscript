@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Combine GapMind, KOFAM, and RAST features after cross-source correlation filtering."""
+"""Combine GapMind, KOFAM, and RAST features after cross-source correlation filtering.
+
+Reads the per-source matrices in ``data/processed/features_reduced/combined_datasets``
+and writes ``gapmind_kofam_rast.tsv`` alongside ``correlation_removed_features.json.gz``,
+which records the dropped features and the source features they duplicated.
+
+Run with::
+
+    uv run python -m scripts.combine_features
+"""
 
 import gzip
 import json

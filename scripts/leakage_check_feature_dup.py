@@ -8,6 +8,10 @@ feature duplicates across all random splits and bounds them globally.
 Splits come from scripts.ml_splits.load_split_data (random_split) over
 data/processed/features_reduced/combined_datasets/kofam.tsv; the per-split table
 is written to data/outputs/leakage_feature_dup_per_split.csv.
+
+Run with::
+
+    uv run python -m scripts.leakage_check_feature_dup
 """
 
 from __future__ import annotations
@@ -220,6 +224,7 @@ def analyze_split(
 
 
 def main() -> None:
+    """Report the global duplicate bound, then per-split and per-phenotype leakage."""
     feature_file = "data/processed/features_reduced/combined_datasets/kofam.tsv"
 
     print("=" * 70)

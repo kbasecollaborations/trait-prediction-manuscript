@@ -18,7 +18,8 @@ Results are checkpointed to ``data/outputs/bacdive/head_to_head.csv`` after
 every batch, and re-running skips fits already in the checkpoint; ``--fresh``
 starts over.
 
-Run:
+Run with::
+
     uv run python -m scripts.bacdive.head_to_head            # run / resume full sweep
     uv run python -m scripts.bacdive.head_to_head --fresh    # restart
     uv run python -m scripts.bacdive.head_to_head --smoke    # fast reduced grid

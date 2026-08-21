@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Phase 2 sweep: train CatBoost with soft-label sample weights."""
+"""Soft-label weight sweep with ML: train CatBoost with per-sample confidence weights.
+
+Fits one model per split for each weight configuration and writes the per-config
+tables plus ``figure6b_weight_sweep_combined.csv`` to ``data/outputs/figure6/``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6b_weight_sweep
+"""
 
 from __future__ import annotations
 
@@ -444,7 +452,7 @@ def main(
     thread_count: int = 3,
     weighting_mode: WeightingMode = DEFAULT_WEIGHTING_MODE,
 ) -> None:
-    """Run all Phase 2 configs and write a combined CSV.
+    """Run every weight configuration and write a combined CSV.
 
     Parameters
     ----------

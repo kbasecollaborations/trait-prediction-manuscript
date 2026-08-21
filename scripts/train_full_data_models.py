@@ -10,6 +10,10 @@ Outputs (under ``data/outputs/full_data_models/<Phenotype>/``):
 ``<Phenotype>.cbm``, ``<Phenotype>_metadata.json``,
 ``<Phenotype>_feature_importances.csv``, ``<Phenotype>_selected_features.txt``,
 plus a top-level ``full_data_models_summary.csv``.
+
+Run with::
+
+    uv run python -m scripts.train_full_data_models
 """
 
 from __future__ import annotations

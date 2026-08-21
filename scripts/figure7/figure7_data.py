@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
-"""Generate Figure 7 data: per-sample predictions and risk-coverage curves for selective prediction."""
+"""Generate Figure 7 data: per-sample predictions and risk-coverage curves for selective prediction.
+
+Reads the leave-one-dataset-out splits under
+``data/processed/train_test_splits``, the KOFAM feature matrix and the
+loose-mode GapMind predictions. Writes the per-sample prediction tables
+(concordant-trained and full-data models), the calibration table and both
+risk-coverage tables to ``data/outputs/figure7/``.
+
+Run with::
+
+    uv run python -m scripts.figure7.figure7_data
+"""
 
 from __future__ import annotations
 
@@ -482,7 +493,7 @@ def main() -> None:
         OUTPUT_DIR / "figure7_risk_coverage_by_phenotype.tsv", sep="\t", index=False
     )
 
-    print(f"\nSaved Supplementary Figure S15 data to {OUTPUT_DIR}")
+    print(f"\nSaved Figure 7 data to {OUTPUT_DIR}")
     print(f"  pooled held-out test genomes: {len(per_sample)}")
     full = risk_coverage[risk_coverage["coverage"] == 1.0].iloc[0]
     half = risk_coverage.iloc[(risk_coverage["coverage"] - 0.5).abs().argmin()]

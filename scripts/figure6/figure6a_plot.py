@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""Panel drawing functions for Figure 6A (problematic genomes for GapMind).
+
+Compares the experimental phenotypes against the GapMind carbon-source calls to
+count, per dataset, the genomes that never grow yet are predicted to grow and
+the genomes that always grow yet lack a complete pathway, and to rank the twenty
+genomes GapMind misclassifies most often.
+"""
 
 from collections import Counter, defaultdict
 from pathlib import Path

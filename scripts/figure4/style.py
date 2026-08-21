@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Font sizes shared by the Figure 4 panel scripts."""
 
 PANEL_LABEL_SIZE = 14
 

@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""Generate Figure 1B (genome counts per phenotype).
+
+One stacked bar per dataset and phenotype, splitting the genome count into
+phenotype-positive and phenotype-negative genomes.
+
+Reads ``data/outputs/figure1/figure1b_data.csv`` and writes
+``figures/figure1b.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure1.figure1b_plot
+"""
 
 from pathlib import Path
 

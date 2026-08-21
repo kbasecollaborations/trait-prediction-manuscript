@@ -13,6 +13,10 @@ minority-class test samples are recorded with ``excluded=True`` and a reason
 rather than dropped.
 
 Writes ``data/outputs/figureS3/figureS3_data.tsv``.
+
+Run with::
+
+    uv run python -m scripts.figureS3.figureS3_data
 """
 
 from __future__ import annotations

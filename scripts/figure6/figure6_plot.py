@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Compose the four-panel Figure 6 from the per-panel diagnostic plots."""
+"""Compose the four-panel Figure 6 from the per-panel diagnostic plots.
+
+Reads the panel tables in ``data/outputs/figure6/`` and writes
+``figures/figure6.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6_plot
+"""
 
 from pathlib import Path
 
@@ -33,7 +41,7 @@ configure_plot_style()
 
 
 def create_figure6(output_file: Path) -> None:
-    """Create the hybrid four-panel Figure 6.
+    """Create the four-panel Figure 6.
 
     Parameters
     ----------

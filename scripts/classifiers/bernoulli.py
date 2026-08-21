@@ -1,4 +1,4 @@
-"""Re-export the Bernoulli null-model classifier for backward compatibility."""
+"""Re-export ``BernoulliClassifier`` from ``trait_prediction.classifiers``."""
 
 from trait_prediction.classifiers import BernoulliClassifier
 

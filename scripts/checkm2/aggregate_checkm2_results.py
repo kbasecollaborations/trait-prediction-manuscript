@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Aggregate CheckM2 quality reports and split genomes into pass/fail QC lists."""
+"""Aggregate CheckM2 quality reports and split genomes into pass/fail QC lists.
+
+Reads one or more CheckM2 ``quality_report.tsv`` files (or directories holding
+them) and writes an aggregated TSV with MIMAG quality tiers, plus plain-text
+lists of the genome names that pass and fail QC.
+
+Run with: uv run python -m scripts.checkm2.aggregate_checkm2_results <checkm2_output_dir>
+"""
 
 from __future__ import annotations
 

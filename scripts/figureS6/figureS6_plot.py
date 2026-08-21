@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Generate Supplementary Figure S6: per-phenotype training-set-size curves.
 
-Replaces the histidine-only grid with all 15 shared phenotypes, comparing full
-against concordant training on both the full and the concordant test subset,
-under cross-dataset and random-holdout evaluation.
+Panel A gives cross-dataset balanced accuracy for all 15 shared phenotypes as a
+percentage of each phenotype's own all-sample value, under full and concordant
+training. Panel B gives the sample size at which each phenotype first reaches
+90% of that value, under cross-dataset and random-holdout evaluation.
 
 Reads the consolidated KOFAM learning curves written by
 ``scripts.figureS6.figureS6_data`` and writes
 ``figures/figure_s6.pdf``.
 
-Run:
+Run with::
+
     uv run python -m scripts.figureS6.figureS6_plot
 """
 

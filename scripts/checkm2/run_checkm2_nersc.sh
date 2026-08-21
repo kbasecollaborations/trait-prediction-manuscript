@@ -10,11 +10,10 @@
 #SBATCH --output=checkm2_%j.out
 #SBATCH --error=checkm2_%j.err
 
-# =============================================================================
-# CheckM2 SLURM Script for NERSC Perlmutter
-# =============================================================================
-# This script runs CheckM2 on a folder of .faa protein sequence files.
-# CheckM2 uses internal parallelization via --threads.
+# CheckM2 SLURM script for NERSC Perlmutter.
+#
+# Runs CheckM2 on a folder of .faa protein sequence files, then runs
+# aggregate_checkm2_results.py on the resulting quality_report.tsv.
 #
 # Usage:
 #   sbatch run_checkm2_nersc.sh
@@ -24,18 +23,14 @@
 #
 # Notes:
 #   - Perlmutter CPU nodes have 128 cores (2x AMD EPYC 7763)
-#   - CheckM2 handles parallelization internally
-#   - Uses --genes flag since input is protein sequences (.faa)
+#   - CheckM2 parallelises internally via --threads
+#   - Uses --genes because the input is protein sequences (.faa)
 #   - For ~1000 genomes with pre-computed proteins, expect ~30-60 min runtime
-#   - 4-hour limit provides safety margin; can reduce to 2 hours if needed
-#   - After CheckM2 completes, runs Python aggregation script automatically
-# =============================================================================
+#   - The 4-hour limit provides safety margin; can reduce to 2 hours if needed
 
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
 # Configuration - modify these as needed
-# -----------------------------------------------------------------------------
 INPUT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/gapmind_analysis/all_seqs"
 OUTPUT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/gapmind_analysis/checkm2_output"
 
@@ -45,9 +40,7 @@ THREADS="${SLURM_CPUS_PER_TASK:-128}"
 # File extension for protein sequences
 EXTENSION="faa"
 
-# -----------------------------------------------------------------------------
 # Environment setup
-# -----------------------------------------------------------------------------
 echo "=============================================="
 echo "CheckM2 Job Started: $(date)"
 echo "=============================================="
@@ -58,10 +51,7 @@ echo "Input directory: ${INPUT_DIR}"
 echo "Output directory: ${OUTPUT_DIR}"
 echo "=============================================="
 
-# Load environment using pixi
-# -----------------------------------------------------------------------------
-# Set path to pixi project directory (where pixi.toml lives)
-# Modify this to point to your pixi project location
+# Pixi project directory (where pixi.toml lives); modify as needed
 PIXI_PROJECT_DIR="/global/cfs/cdirs/kbase/ke_prototype/traits/gapmind_analysis/checkm2"
 
 if [[ ! -f "${PIXI_PROJECT_DIR}/pixi.toml" ]]; then
@@ -72,10 +62,8 @@ fi
 
 echo "Using pixi project: ${PIXI_PROJECT_DIR}"
 
-# Activate pixi environment by adding it to PATH
-# This uses pixi's shell-hook to set up the environment
+# Activate the pixi environment by adding it to PATH
 eval "$(pixi shell-hook --manifest-path "${PIXI_PROJECT_DIR}/pixi.toml")"
-# -----------------------------------------------------------------------------
 
 # Verify CheckM2 is available
 if ! command -v checkm2 &>/dev/null; then
@@ -90,9 +78,7 @@ if ! python -c "import pandas" &>/dev/null; then
 	echo "WARNING: Python with pandas not found. Aggregation script will use awk fallback."
 fi
 
-# -----------------------------------------------------------------------------
 # Validate inputs
-# -----------------------------------------------------------------------------
 if [[ ! -d "${INPUT_DIR}" ]]; then
 	echo "ERROR: Input directory does not exist: ${INPUT_DIR}"
 	exit 1
@@ -110,9 +96,7 @@ fi
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
-# -----------------------------------------------------------------------------
 # Run CheckM2
-# -----------------------------------------------------------------------------
 echo ""
 echo "Starting CheckM2 predict..."
 echo "Command: checkm2 predict --threads ${THREADS} --genes --input ${INPUT_DIR} --output-directory ${OUTPUT_DIR} -x ${EXTENSION}"
@@ -126,10 +110,7 @@ if [[ -n "${PSCRATCH:-}" ]]; then
 	echo "Using PSCRATCH for temp files: ${TMPDIR}"
 fi
 
-# Run CheckM2
-# --genes: Input files are protein sequences (.faa)
-# --threads: Number of parallel threads
-# -x: File extension
+# --genes: input files are protein sequences rather than assemblies
 checkm2 predict \
 	--threads "${THREADS}" \
 	--genes \
@@ -137,9 +118,6 @@ checkm2 predict \
 	--output-directory "${OUTPUT_DIR}" \
 	-x "${EXTENSION}"
 
-# -----------------------------------------------------------------------------
-# Cleanup and summary
-# -----------------------------------------------------------------------------
 # Clean up temp directory if created
 if [[ -n "${TMPDIR:-}" && -d "${TMPDIR}" ]]; then
 	rm -rf "${TMPDIR}"
@@ -152,10 +130,7 @@ echo "=============================================="
 echo "Output directory: ${OUTPUT_DIR}"
 echo "Quality report: ${OUTPUT_DIR}/quality_report.tsv"
 
-# -----------------------------------------------------------------------------
-# Run Python aggregation script
-# -----------------------------------------------------------------------------
-# Get the directory where this script is located
+# Run the Python aggregation script that sits alongside this one
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGGREGATE_SCRIPT="${SCRIPT_DIR}/aggregate_checkm2_results.py"
 

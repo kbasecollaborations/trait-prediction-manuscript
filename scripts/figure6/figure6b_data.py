@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Generate Figure 6B data: ML on confidence-filtered (y_soft) training samples."""
+"""Generate Figure 6B data: ML on confidence-filtered (y_soft) training samples.
+
+Writes ``data/outputs/figure6/figure6b_confident_ml_results.csv`` and caches the
+soft labels in ``data/outputs/figure6/y_soft.pkl``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6b_data
+"""
 
 import json
 from pathlib import Path
@@ -12,7 +20,7 @@ from tqdm import tqdm
 from scripts.classifiers.nearest_neighbor import NearestNeighborClassifier
 from scripts.ml_splits import load_split_data, perform_split_ml
 
-# Confidence parameters (from notebook)
+# Confidence parameters
 K_NEIGHBORS = 3
 W_PHYLO = 0.2
 W_GAPMIND = 0.3

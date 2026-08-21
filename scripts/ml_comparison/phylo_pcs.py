@@ -1,11 +1,11 @@
-"""Phylogenetic-PC residualisation for the `pclr` model.
+"""Phylogenetic-PC augmentation for the `pclr` model.
 
 Computes the top-k principal components of the KOFAM presence/absence matrix
 and appends them as features alongside the original KOs, so elastic-net LR
 absorbs population-structure variance into the PC columns while the KO
 coefficients pick up phenotype-specific signal. This is the Patterson-2006
-genomic-PC adjustment, used here as a proxy because the repo ships no genome
-tree.
+genomic-PC adjustment, used here as a proxy for tree-derived phylogenetic
+structure.
 """
 
 from __future__ import annotations

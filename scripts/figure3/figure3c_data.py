@@ -3,6 +3,10 @@
 
 Compares full inter-dataset testing against in-clade testing on
 phylogenetically matched test samples.
+
+Run with::
+
+    uv run python -m scripts.figure3.figure3c_data
 """
 
 import warnings

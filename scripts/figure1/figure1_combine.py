@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Combine Figure 1 panels into one single-page vector PDF.
 
-Run with:
+Run with::
+
     uv run python -m scripts.figure1.figure1_combine
 """
 

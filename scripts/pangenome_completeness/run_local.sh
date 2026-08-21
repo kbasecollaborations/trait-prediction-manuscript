@@ -1,22 +1,17 @@
 #!/bin/bash
-# =============================================================================
-# Pangenome Completeness - Local Run Script
-# =============================================================================
-# This script runs the pangenome completeness calculation on local data.
+# Local run of pangenome_completeness.py over the repository data directories,
+# writing data/outputs/pangenome_completeness/pangenome_completeness.tsv.
 #
 # Usage:
 #   ./run_local.sh
 #
 # Prerequisites:
-#   - pixi installed (https://prefix.dev/docs/pixi/overview)
+#   - pixi installed (https://prefix.dev/docs/pixi/overview), or mmseqs on PATH
 #   - Run 'pixi install' first to create the environment
-# =============================================================================
 
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
 # Configuration - paths relative to project root
-# -----------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
@@ -37,9 +32,7 @@ MIN_IDENTITY=0.90
 MIN_COVERAGE=0.80
 EVALUE=1e-3
 
-# -----------------------------------------------------------------------------
 # Environment setup
-# -----------------------------------------------------------------------------
 echo "=============================================="
 echo "Pangenome Completeness - Local Run"
 echo "=============================================="
@@ -54,9 +47,7 @@ echo "E-value: ${EVALUE}"
 echo "Parallel jobs: ${JOBS}"
 echo "=============================================="
 
-# -----------------------------------------------------------------------------
 # Validate inputs
-# -----------------------------------------------------------------------------
 if [[ ! -d "${ALL_SEQS_DIR}" ]]; then
     echo "ERROR: All seqs directory does not exist: ${ALL_SEQS_DIR}"
     exit 1
@@ -92,9 +83,7 @@ fi
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
-# -----------------------------------------------------------------------------
 # Check for pixi environment or system mmseqs
-# -----------------------------------------------------------------------------
 if command -v pixi &>/dev/null && [[ -f "${SCRIPT_DIR}/pixi.toml" ]]; then
     echo ""
     echo "Using pixi environment..."
@@ -141,9 +130,7 @@ else
         --jobs "${JOBS}"
 fi
 
-# -----------------------------------------------------------------------------
 # Summary
-# -----------------------------------------------------------------------------
 echo ""
 echo "=============================================="
 echo "Pangenome Completeness Complete"

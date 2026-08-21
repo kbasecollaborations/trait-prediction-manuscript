@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Generate the merged supplementary stable-feature comparison table."""
+"""Generate the supplementary stable-feature comparison table (histidine).
+
+Writes ``sections/table_feature_comparison.tex``.
+
+Run with::
+
+    uv run python -m scripts.tables.histidine_feature_table
+"""
 
 import json
 from collections import defaultdict

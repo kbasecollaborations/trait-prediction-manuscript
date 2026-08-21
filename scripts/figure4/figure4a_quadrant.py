@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""Draw Figure 4A: the GapMind-versus-experiment quadrant diagram.
+
+Four labelled boxes (true positive, false negative, false positive, true
+negative) give the biological state or the possible causes behind each
+combination of predicted pathway and observed growth. The diagram is drawn
+from the text in this file and reads no data.
+
+Run standalone to write ``figures/figure4a.pdf``:
+    uv run python -m scripts.figure4.figure4a_quadrant
+"""
 
 from pathlib import Path
 

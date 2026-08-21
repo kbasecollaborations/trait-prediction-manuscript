@@ -19,7 +19,6 @@ def imports():
     import pandas as pd
     from pathlib import Path
 
-    # Configure Altair for better performance
     alt.data_transformers.enable("default")
 
     return alt, mo, pd, Path
@@ -50,7 +49,6 @@ def constants(Path):
         "Sucrose",
     ]
 
-    # Datasets
     DATASETS = ["atleaf", "lit", "marine", "pmi"]
 
     # Dataset display names
@@ -187,9 +185,7 @@ def data_loaders(DATA_DIR, pd):
     )
 
 
-# =============================================================================
 # Figure 1B: Genome Counts per Phenotype
-# =============================================================================
 
 
 @app.cell
@@ -225,7 +221,6 @@ def figure1b_chart(
     """Create Figure 1B chart."""
     _df = load_figure1b_data()
 
-    # Filter data
     _selected_phenotypes = fig1b_phenotypes.value
     _selected_datasets = fig1b_datasets.value
 
@@ -234,7 +229,6 @@ def figure1b_chart(
         & (_df["dataset"].isin(_selected_datasets))
     ].copy()
 
-    # Melt to long format
     _df_melted = _df_filtered.melt(
         id_vars=["phenotype", "dataset"],
         value_vars=["positive_count", "negative_count"],
@@ -244,11 +238,9 @@ def figure1b_chart(
     _df_melted["status"] = _df_melted["status"].str.replace("_count", "").str.title()
     _df_melted["dataset_display"] = _df_melted["dataset"].map(DATASET_DISPLAY)
 
-    # Create color scale
     _domain = [DATASET_DISPLAY[d] for d in _selected_datasets if d in DATASET_DISPLAY]
     _range_colors = [DATASET_COLORS[d] for d in _selected_datasets if d in DATASET_COLORS]
 
-    # Base encoding
     if fig1b_stacked.value:
         chart_1b = (
             alt.Chart(_df_melted)
@@ -326,9 +318,7 @@ def figure1b_tab(mo, fig1b_phenotypes, fig1b_datasets, fig1b_stacked, chart_1b):
     return (fig1b_content,)
 
 
-# =============================================================================
 # Figure 2: GapMind Comparison & Baseline Models
-# =============================================================================
 
 
 @app.cell
@@ -554,9 +544,7 @@ def figure2_tab(
     return (fig2_content,)
 
 
-# =============================================================================
 # Figure 3: ML Performance Across Split Types
-# =============================================================================
 
 
 @app.cell
@@ -653,7 +641,6 @@ def figure3_chart(
             chart_3 = chart_3 + _gapmind_ref
 
     else:
-        # Scatter plot for dataset split, colored by test dataset
         # Extract test dataset from key column
         _df_filtered["test_dataset"] = _df_filtered["key"].apply(
             lambda x: x.split("test(")[1].split(")")[0] if "test(" in str(x) else "unknown"
@@ -731,9 +718,7 @@ def figure3_tab(
     return (fig3_content,)
 
 
-# =============================================================================
 # Figure 5: Concordant Samples Analysis
-# =============================================================================
 
 
 @app.cell
@@ -886,7 +871,6 @@ def figure5_chart(
         _df = load_figure5c_data()
         _df_filtered = _df[_df["phenotype"].isin(_selected_phenotypes)].copy()
 
-        # Check if test_type column exists
         if "test_type" in _df_filtered.columns:
             _df_filtered = _df_filtered[_df_filtered["test_type"] == "discordant"]
 
@@ -940,9 +924,7 @@ def figure5_tab(mo, fig5_phenotypes, fig5_panel, fig5_metric, fig5_datasets, cha
     return (fig5_content,)
 
 
-# =============================================================================
 # Figure 6: Confident Samples & Precision-Recall
-# =============================================================================
 
 
 @app.cell
@@ -1034,7 +1016,6 @@ def figure6_chart(
             & (_df["phenotype"].isin(_selected_phenotypes))
         ]
 
-        # Aggregate by phenotype to get mean precision/recall
         _df_agg = (
             _df_filtered.groupby("phenotype")
             .agg({"precision": "mean", "recall": "mean"})
@@ -1056,7 +1037,6 @@ def figure6_chart(
             )
         )
 
-        # Add diagonal reference line
         _line_data = pd.DataFrame({"x": [0, 1], "y": [0, 1]})
         _diagonal = (
             alt.Chart(_line_data)
@@ -1073,7 +1053,6 @@ def figure6_chart(
         _df = load_figure6d_data()
         _df_filtered = _df[_df["phenotype"].isin(_selected_phenotypes)]
 
-        # Check columns available
         if "feature_set" in _df_filtered.columns:
             _scatter = (
                 alt.Chart(_df_filtered)
@@ -1133,9 +1112,7 @@ def figure6_tab(mo, fig6_phenotypes, fig6_panel, fig6_split_type, fig6_metric, c
     return (fig6_content,)
 
 
-# =============================================================================
 # Figure 7: Data Requirements (Sample Size Effects)
-# =============================================================================
 
 
 @app.cell
@@ -1195,7 +1172,6 @@ def figure7_chart(
     _selected_training_types = fig7_training_types.value
     _test_subset = fig7_test_subset.value
 
-    # Map display names
     _split_display = {
         "random_split": "Random Split",
         "dataset_split": "Dataset Split",
@@ -1213,7 +1189,6 @@ def figure7_chart(
     _df_filtered["split_display"] = _df_filtered["split_type"].map(_split_display)
     _df_filtered["training_display"] = _df_filtered["training_type"].map(_training_display)
 
-    # Create line + point chart
     _line = (
         alt.Chart(_df_filtered)
         .mark_line(opacity=0.4)
@@ -1252,7 +1227,6 @@ def figure7_chart(
         )
     )
 
-    # Facet by phenotype and split type
     chart_7 = (
         (_line + _points)
         .properties(width=180, height=150)
@@ -1282,9 +1256,7 @@ def figure7_tab(
     return (fig7_content,)
 
 
-# =============================================================================
 # Main App: Tab Assembly
-# =============================================================================
 
 
 @app.cell

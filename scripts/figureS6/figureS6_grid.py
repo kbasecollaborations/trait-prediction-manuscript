@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Learning-curve plotting helpers for Supplementary Figure S6.
+"""Learning-curve loading, aggregation, and plotting helpers.
 
-The alternate learning-curve figures under scripts/alternate/ also import from
-here.
+Imported by ``scripts.figureS6.figureS6_plot``; reads the consolidated KOFAM
+learning curves at ``data/outputs/learning_curves/learning_curves_kofam.csv``.
 """
 
 from pathlib import Path
@@ -123,9 +123,8 @@ def estimate_saturation_sizes(
     ].copy()
 
     phenotypes = [p for p in COMMON_PHENOTYPES if p in sub["phenotype"].unique()]
-    # Candidate sizes come from the data, not a literal: the grid gained 25 and
-    # dropped 500, and a hardcoded list would skip the smallest size and fall
-    # back to a label that no longer exists.
+    # Candidate sizes come from the data, not a literal, so the criterion
+    # tracks whichever sample-size grid the results were computed on.
     candidate_sizes = [s for s in get_sample_size_order(sub) if s != "full"]
     saturation_sizes: dict[str, str] = {}
 
@@ -150,7 +149,7 @@ def estimate_saturation_sizes(
 
 
 def load_plot_data() -> pd.DataFrame:
-    """Load and normalize the shared learning-curve results used by S8--S10.
+    """Load and normalize the KOFAM learning-curve results.
 
     Applies the minority-class-in-test filter (Methods): rows whose held-out
     test set has fewer than 10 minority-class samples are dropped, using the

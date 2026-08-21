@@ -15,6 +15,8 @@ Outputs (under data/outputs/ml_comparison/ and figures/ml_comparison/):
     cross_dataset_gap_by_model.pdf
 
 Idempotent: the per_fit JSONs are re-read on every run.
+
+Run with: ``uv run python -m scripts.ml_comparison.aggregate``
 """
 
 from __future__ import annotations

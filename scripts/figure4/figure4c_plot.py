@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+"""Draw Figure 4C: stable SHAP feature clusters per phenotype.
+
+The top subplot counts the distinct redundancy clusters among the stable
+features of the all-datasets-combined model; the bottom subplot splits the
+per-dataset counts into clusters shared with the cross-dataset combined-training
+model and clusters unique to the individual dataset.
+
+Reads ``data/outputs/figure4/all_datasets_combined_shap_features.json``,
+``data/outputs/figure4/feature_comparison_summary.csv`` and
+``data/outputs/clustering/ko_clusters_shap_hclust.json``.
+"""
 
 import json
 from pathlib import Path

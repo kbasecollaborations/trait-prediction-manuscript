@@ -140,7 +140,7 @@ def full_test_minority_counts(
     """Minority-class count among all labelled samples per ``(phenotype, dataset)``.
 
     Used for figures whose held-out test set is the full dataset (concordant +
-    discordant pooled), such as Figures 3, 6, and S10.
+    discordant pooled), such as Figures 3 and 6.
     """
     minority: dict[tuple[str, str], int] = {}
     for dataset in datasets:

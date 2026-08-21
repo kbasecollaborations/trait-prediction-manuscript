@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """Recompute every p-value cited in the manuscript and apply BH correction.
 
-Writes a TSV of each test's raw p-value, paired sample size, and BH q-value.
+Writes a TSV of each test's raw p-value, paired sample size, and BH q-value to
+``data/outputs/stats/``, together with the per-phenotype McNemar tables.
+
+Run with::
+
+    uv run python -m scripts.stats.manuscript_pvalues
 """
 
 from __future__ import annotations

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Apply variance and correlation filtering to combined and per-dataset feature matrices."""
+"""Apply variance and correlation filtering to combined and per-dataset feature matrices.
+
+Filtering is fitted once on the four datasets pooled, then the retained columns are
+written back out per dataset so every matrix carries the same feature set. Reads
+``data/interim/features`` and writes ``data/processed/features_reduced``.
+
+Run with::
+
+    uv run python -m scripts.feature_filtering
+"""
 
 import gzip
 import json

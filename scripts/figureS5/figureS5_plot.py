@@ -8,6 +8,15 @@ Produces a two-panel figure:
       combination; the diagonal shows parity.
   (B) Per-phenotype grouped box plots of cross-dataset balanced accuracy for
       full training (grey) vs concordant training (coloured).
+
+Both panels score the concordant subset of the held-out dataset.
+
+Reads ``data/outputs/figureS5/figureS5_kofam_concordant_results.csv`` and writes
+``figures/figure_s5.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figureS5.figureS5_plot
 """
 
 from pathlib import Path
@@ -148,7 +157,7 @@ def plot_parity(ax: plt.Axes, df: pd.DataFrame) -> None:
 
 def plot_phenotype_boxes(ax: plt.Axes, df: pd.DataFrame) -> None:
     """
-    Panel B: grouped box plots per phenotype (cross-dataset, full test).
+    Panel B: grouped box plots per phenotype (cross-dataset, concordant test).
 
     Parameters
     ----------

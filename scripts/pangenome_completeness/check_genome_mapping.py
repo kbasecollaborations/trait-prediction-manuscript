@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Report how many genomes in all_seqs have species assignments and core genes."""
+"""Report how many genomes in all_seqs have species assignments and core genes.
+
+Prints the coverage of the completeness calculation: how many .faa files in
+``data/raw/all_seqs`` appear in the pangenome assignment table, carry a GTDB
+species assignment, and have a matching core-gene file.
+
+Run with: uv run python -m scripts.pangenome_completeness.check_genome_mapping
+"""
 
 from __future__ import annotations
 

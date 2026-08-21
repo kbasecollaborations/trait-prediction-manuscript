@@ -8,6 +8,10 @@ coloured strips, one colour per held-out dataset. Excluded combinations are drop
 from the plot and only counted on stdout.
 
 Reads data/outputs/figureS3/figureS3_data.tsv, writes figures/figure_s3.pdf.
+
+Run with::
+
+    uv run python -m scripts.figureS3.figureS3_plot
 """
 
 from __future__ import annotations

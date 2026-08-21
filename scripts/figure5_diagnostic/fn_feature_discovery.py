@@ -2,10 +2,10 @@
 """Stable features introduced by GapMind false negatives, per phenotype.
 
 Three train-set regimes run through the multi-seed SHAP stable-feature pipeline
-of Figure 5B / Tables S3-S4, differing only in which samples are selected:
+of Figure 5B / Table 1 / Table S3, differing only in which samples are selected:
 
-* ``full``           : all training samples (Figure 4 / Table S3 regime).
-* ``concordant``     : GapMind-concordant samples only (Figure 5B / Table S4).
+* ``full``           : all training samples (Figure 4 regime).
+* ``concordant``     : GapMind-concordant samples only (Figure 5B regime).
 * ``concordant_fn``  : concordant samples plus GapMind false negatives
   (GapMind = 0, experiment = 1).
 

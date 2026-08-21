@@ -7,7 +7,10 @@ from those is excluded and named in :data:`EXCLUDED` with the reason; genome ass
 are retrievable from the accessions in ``genome_accessions.tsv``. Run logs, pickle
 caches, and resume checkpoints are skipped inside archived directories by :func:`ships`.
 
-Run with ``uv run python -m scripts.build_zenodo_deposit`` (add ``--dry-run`` to preview).
+Run with::
+
+    uv run python -m scripts.build_zenodo_deposit
+    uv run python -m scripts.build_zenodo_deposit --dry-run   # preview only
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ INPUTS: Final[tuple[str, ...]] = (
     "data/raw/phenotypes",
     # BacDive phenotypes for the data-volume comparison (Figure S7).
     "data/raw/bacdive_dataset/metabolic_phenotypes.tsv",
-    # KEGG reference mappings behind the feature-annotation tables (Figure 4, Table S4).
+    # KEGG reference mappings behind the feature-annotation tables (Figure 4, Table 1, Table S3).
     "data/external/mapping/KO_dictionary.json",
     "data/external/mapping/pathway-ko-membership.tsv",
     "data/external/mapping/module-definitions.tsv",

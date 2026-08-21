@@ -15,10 +15,12 @@ Three logistic models quantify the cross-dataset excess:
 ``conditional``
     ``conflict ~ 1 + is_cross + max(p1, p2) + min(p1, p2)``.
 
-Run with ``uv run python -m scripts.measurement_reliability.label_conflict``. Pointing
-``--phenotypes`` at ``data/processed/phenotypes_backup_pre_enantiomer_fix`` reproduces the
-retired 2026-06-25 tables exactly, which is what ``--verify-pre-fix`` asserts. Part 2 of
-that analysis (``part2_*.csv``) is not regenerated: it derives from model predictions
+Run with::
+
+    uv run python -m scripts.measurement_reliability.label_conflict
+``--verify-pre-fix`` recomputes the statistics from the pre-enantiomer-fix label
+snapshot and asserts that they match the values stored in ``PRE_FIX_EXPECTED``. Part 2
+of the analysis (``part2_*.csv``) is not regenerated: it derives from model predictions
 rather than labels, and its flagging rules were not recorded.
 """
 
@@ -378,7 +380,7 @@ def write_summary(tables: dict[str, pd.DataFrame], out_dir: Path) -> None:
 
 
 def verify_pre_fix(pairs: pd.DataFrame) -> None:
-    """Assert the retired 2026-06-25 numbers are reproduced from the pre-fix labels.
+    """Assert the stored pre-fix statistics are reproduced from the pre-fix labels.
 
     Parameters
     ----------

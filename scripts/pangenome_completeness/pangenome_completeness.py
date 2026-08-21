@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Calculate genome completeness as the fraction of species core genes recovered
-by MMseqs2 search above identity and coverage thresholds."""
+by MMseqs2 search above identity and coverage thresholds.
+
+Reads genome protein .faa files, the per-species core-gene .faa files, and the
+genome-to-species mapping TSV; writes one row per genome with the core genes
+expected, the core genes present, and the resulting completeness.
+
+Run with: bash scripts/pangenome_completeness/run_local.sh
+"""
 
 from __future__ import annotations
 

@@ -2,6 +2,10 @@
 """Evaluate model performance across train-test split types for Figure 3.
 
 Covers random, dataset, and phylogenetic out-of-clade and in-clade splits.
+
+Run with::
+
+    uv run python -m scripts.figure3.figure3ab_data
 """
 
 from pathlib import Path

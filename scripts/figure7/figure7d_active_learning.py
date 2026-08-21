@@ -3,6 +3,10 @@
 
 Writes data/outputs/figure7/figure7_prioritization.tsv and
 figure7_prioritization_by_phenotype.tsv.
+
+Run with::
+
+    uv run python -m scripts.figure7.figure7d_active_learning
 """
 
 from __future__ import annotations

@@ -155,9 +155,10 @@ def build_filter_masks(
         "concordant": concordant,
         "false_positive": false_positive,
         "false_negative": false_negative,
-        # Keep everything except false positives. Genomes with no GapMind or
-        # experimental call are kept too, matching no_filter behaviour for
-        # samples GapMind cannot speak to.
+        # The set ``fp_only`` mode subtracts from the training index. Genomes
+        # with no GapMind or experimental call never enter it, so they survive
+        # the subtraction, matching no_filter behaviour for samples GapMind
+        # cannot speak to.
         "keep_fp_only": false_positive,
     }
 

@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+#
+# Regenerate the data files under data/outputs/ that the figure plotting
+# scripts read, by running each of the data modules listed below in turn.
+#
+# Run with: uv run bash run_data_scripts.sh (from the repository root)
 
 echo "========================================"
 echo "Running: scripts.figure1.figure1b_data"

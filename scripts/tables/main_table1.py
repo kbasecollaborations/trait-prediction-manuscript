@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Regenerate the main-text Table 1 (concordance-vs-full feature comparison).
 
-Run with ``uv run python -m scripts.tables.main_table1``.
+Run with::
+
+    uv run python -m scripts.tables.main_table1
 """
 
 from __future__ import annotations

@@ -5,7 +5,9 @@ produced by :mod:`scripts.build_substrate_identity`. The script is idempotent: i
 refuses to write if two published columns would share a filename, and it reports
 every file whose contents differ from what is currently on disk.
 
-Run with ``uv run python -m scripts.harmonize_phenotypes``.
+Run with::
+
+    uv run python -m scripts.harmonize_phenotypes
 """
 
 from __future__ import annotations

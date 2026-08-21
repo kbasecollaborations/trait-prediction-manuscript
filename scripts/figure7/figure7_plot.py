@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Plot Figure 7: risk-coverage, calibration, and label-acquisition diagnostics."""
+"""Plot Figure 7: risk-coverage, calibration, and label-acquisition diagnostics.
+
+Reads the per-phenotype risk-coverage, calibration, per-sample and
+prioritization tables in ``data/outputs/figure7/`` and writes
+``figures/figure7.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure7.figure7_plot
+"""
 
 from __future__ import annotations
 

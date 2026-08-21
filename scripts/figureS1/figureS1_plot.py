@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Figure S1: circular phylogeny of the 629 GTDB-placed genomes.
 
-Replaces the iTOL-rendered ``figure_s1.png``. The tree is the pruned GTDB
-reference tree (``data/processed/phylogeny/gtdb-pruned.nwk``) drawn with
-pyCirclize, matching the circular-tree convention used in the traitweaver
-repository (``bin/plot_circular_tree.py``). pyCirclize is matplotlib-based, so
-the dataset colours are the same ``scripts.visualization.get_dataset_colors``
-palette as the main text.
+The tree is the pruned GTDB reference tree
+(``data/processed/phylogeny/gtdb-pruned.nwk``) drawn with pyCirclize. pyCirclize
+is matplotlib-based, so the dataset colours are the same
+``scripts.visualization.get_dataset_colors`` palette as the main text.
 
 Layout follows the usual conventions for a several-hundred-tip tree on one page:
 tip labels are dropped, dataset membership is an inner colour ring, and taxonomy
@@ -20,7 +18,10 @@ GTDB lineages come from the pangenome ANI assignments, bridged to marine strain
 codes via ``marine_strain_genomeid_map.json``; the 152 tips without a lineage
 inherit the majority lineage of their smallest ancestral clade that has one.
 
-Run with:
+Writes ``figures/figure_s1.pdf``.
+
+Run with::
+
     uv run python -m scripts.figureS1.figureS1_plot
 """
 
@@ -86,9 +87,6 @@ CLASS_COLORS: dict[str, str] = {
 UNKNOWN_COLOR = "#BBBBBB"
 
 
-# ---------------------------------------------------------------------------
-# Data
-# ---------------------------------------------------------------------------
 def load_dataset_membership(genomes: list[str]) -> dict[str, str]:
     """Map each genome to the dataset whose phenotype tables contain it.
 
@@ -210,9 +208,6 @@ def contiguous_runs(labels: list[str]) -> list[tuple[str, int, int]]:
     return runs
 
 
-# ---------------------------------------------------------------------------
-# Plot
-# ---------------------------------------------------------------------------
 def plot(membership: dict[str, str], lineages: dict[str, dict[str, str]]) -> plt.Figure:
     """Render the full Figure S1 panel.
 

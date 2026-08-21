@@ -2,6 +2,10 @@
 """Generate baseline predictions (identity, Bernoulli, nearest neighbor) across split types.
 
 Covers random, dataset, and out-of-clade splits.
+
+Run with::
+
+    uv run python -m scripts.figure2.figure2b_data
 """
 
 from pathlib import Path

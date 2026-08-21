@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
-"""Generate SHAP-based feature importance data for Figure 4C."""
+"""Generate SHAP-based feature importance data for Figure 4C.
+
+Trains CatBoost models over 20 seeds on the cross-dataset splits, on each
+dataset alone, and on all datasets combined, keeping the KOs that reach the top
+10 SHAP ranking in at least 70% of seeds, then compares the combined and
+individual feature sets at the KO level and, where
+``data/outputs/clustering/ko_clusters_shap_hclust.json`` is available, at the
+redundancy-cluster level.
+
+Reads ``data/processed/train_test_splits/``,
+``data/processed/features_reduced/`` and ``data/processed/phenotypes/``; writes
+the per-analysis SHAP JSONs plus ``feature_comparison.json`` and
+``feature_comparison_summary.csv`` under ``data/outputs/figure4/``.
+
+Run with::
+
+    uv run python -m scripts.figure4.figure4c_data
+"""
 
 import argparse
 import json

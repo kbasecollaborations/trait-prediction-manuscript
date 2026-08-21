@@ -1,9 +1,12 @@
-# Default build: ONE pdf with the supplementary appended (build/main.pdf).
+# LaTeX build recipes for the manuscript. Invoke with `just <recipe>`;
+# `just` on its own runs the first recipe, `main`.
+
+# Default build: one pdf with the supplementary appended (build/main.pdf).
 # This is what Overleaf and co-authors compile - no xr, no cross-document tricks.
 main:
     latexmk -pdf -f main.tex
 
-# Submission build: TWO pdfs, supplementary split out as ISME requires.
+# Submission build: two pdfs, supplementary split out as ISME requires.
 # main.tex and supplement.tex cross-reference each other via xr-hyper, so each
 # must be compiled after the other's .aux exists - hence the repeated rounds.
 # Note this overwrites build/main.pdf with the split (supplement-free) version.
@@ -13,7 +16,7 @@ submit:
     latexmk -pdf -f -g -usepretex -pretex='\def\splitsupp{}' main.tex
     latexmk -pdf -f -g supplement.tex
 
-# ISME word count. Counts the RENDERED pdf (Introduction..Discussion), which is
+# ISME word count. Counts the rendered pdf (Introduction..Discussion), which is
 # what an editor sees: includes headings, inline math and \ref numbers that
 # texcount/word_count.py silently skip. Strips line numbers and [1-4] citations,
 # since ISME excludes "tables, figures, and references". Needs a current

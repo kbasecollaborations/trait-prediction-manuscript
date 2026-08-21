@@ -2,6 +2,10 @@
 """Compute GapMind metrics on the test-set genomes of each dataset split (Figure 3B).
 
 Evaluating only on the test set keeps GapMind comparable to the ML model.
+
+Run with::
+
+    uv run python -m scripts.figure3.figure3b_gapmind_dataset_split
 """
 
 from pathlib import Path

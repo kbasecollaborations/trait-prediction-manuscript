@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Create Figure 5: performance on GapMind-concordant samples."""
+"""Create Figure 5: performance on GapMind-concordant samples.
+
+Reads ``data/outputs/figure5/`` and the GapMind baseline metrics under
+``data/outputs/figure3/``; writes ``figures/figure5.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure5.figure5_plot
+"""
 
 import warnings
 from pathlib import Path
@@ -38,7 +46,7 @@ plt.style.use(["science", "nature"])
 sns.set_context("paper")
 configure_plot_style()
 
-# Seed for reproducible jitter.
+# Fixed seed for reproducibility.
 np.random.seed(42)
 
 

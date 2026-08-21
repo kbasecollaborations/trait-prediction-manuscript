@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""Draw Figure 4B: GapMind pathway calls against experimental growth.
+
+Stacked TP/TN/FP/FN counts for each of the 15 shared phenotypes (top) and for
+each dataset (bottom).
+
+Reads ``data/processed/gapmind/heatmap_csvs/*_categories.csv`` and the
+phenotype tables under ``data/processed/phenotypes/``. Run standalone to write
+``figures/figure4b.pdf``:
+    uv run python -m scripts.figure4.figure4b_plot
+"""
 
 from collections import defaultdict
 from pathlib import Path

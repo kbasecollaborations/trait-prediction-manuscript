@@ -1,6 +1,14 @@
 """Extract per-phenotype GapMind pathway step scores at several confidence thresholds.
 
 GapMind scores: 2 = high, 1 = medium, 0 = low, -1 = missing.
+
+Writes one matrix per phenotype and confidence threshold under
+``data/processed/gapmind_features``, then a per-dataset ``gapmind.tsv`` under
+``data/interim/features``.
+
+Run with::
+
+    uv run python -m scripts.create_gapmind_features
 """
 
 import json

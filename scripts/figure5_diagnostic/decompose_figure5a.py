@@ -1,6 +1,15 @@
-"""Decompose the Figure 5A cross-dataset performance shortfall into
-majority-class collapse, class-balance shift, random-vs-dataset gap, and
-GapMind-feature rescue. All numbers respect the minority-class filter.
+"""Decompose the Figure 5A cross-dataset performance shortfall.
+
+Attributes the shortfall to majority-class collapse, class-balance shift, the
+random-versus-dataset split gap, and GapMind-feature rescue. All numbers
+respect the minority-class filter.
+
+Writes ``phenotype_summary.csv``, ``fold_detail.csv`` and
+``class_balance_per_fold.csv`` under ``data/outputs/figure5_diagnostic/``.
+
+Run with::
+
+    uv run python -m scripts.figure5_diagnostic.decompose_figure5a
 """
 
 from __future__ import annotations

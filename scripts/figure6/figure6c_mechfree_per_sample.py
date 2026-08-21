@@ -9,7 +9,9 @@ alignment, early stopping and held-out test set match the concordant arm.
 
 Writes ``data/outputs/figure6/figure6c_mechfree_per_sample.tsv``.
 
-Run with ``uv run python -m scripts.figure6.figure6c_mechfree_per_sample``.
+Run with::
+
+    uv run python -m scripts.figure6.figure6c_mechfree_per_sample
 """
 
 from __future__ import annotations

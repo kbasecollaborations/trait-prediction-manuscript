@@ -1,8 +1,8 @@
 """Worker-side code for the parallel BacDive sweep.
 
 Kept out of the ``-m`` ``__main__`` driver so that ``joblib``/``loky`` pickles
-``run_job`` by reference rather than by value and workers resolve the cached
-loaders correctly.
+the worker functions by reference rather than by value and workers resolve the
+cached loaders correctly.
 """
 
 from functools import cache

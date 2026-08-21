@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Phase 1 soft-label weight sweep: report y_soft retention and concordant overlap, no ML."""
+"""Soft-label weight sweep without ML: y_soft retention and concordant overlap.
+
+Scores the eight weight configurations in ``CONFIGS`` and writes
+``phase1_retention_per_phenotype.csv``, ``phase1_retention_pooled.csv`` and
+``phase1_jaccard_filtered_out.csv`` to ``data/outputs/figure6/``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6b_parameter_exploration
+"""
 
 from __future__ import annotations
 
@@ -141,7 +150,7 @@ def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
         to define the concordant set).
     """
     if not fresh and cache_is_fresh(CACHE_FILE, PHENOTYPE_DIR):
-        print(f"Loading cached Phase 1 inputs from {CACHE_FILE} ...")
+        print(f"Loading cached sweep inputs from {CACHE_FILE} ...")
         with open(CACHE_FILE, "rb") as f:
             return cast(dict[str, dict[str, pd.Series]], pickle.load(f))
     if CACHE_FILE.exists():
@@ -150,7 +159,7 @@ def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
             "current labels."
         )
 
-    print("Building Phase 1 inputs (slow: phylogenetic k-NN per phenotype) ...")
+    print("Building sweep inputs (slow: phylogenetic k-NN per phenotype) ...")
     _tree, distance_df = load_phylogenetic_data()
     conf_mech = load_gapmind_confidence()
     gapmind_binary = load_gapmind_data()
@@ -178,7 +187,7 @@ def build_inputs(fresh: bool = False) -> dict[str, dict[str, pd.Series]]:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(CACHE_FILE, "wb") as f:
         pickle.dump(inputs, f)
-    print(f"Cached Phase 1 inputs to {CACHE_FILE}")
+    print(f"Cached sweep inputs to {CACHE_FILE}")
     return inputs
 
 
@@ -298,12 +307,12 @@ def pairwise_jaccard_filtered_out(
 
 
 def main(fresh: bool = False) -> None:
-    """Run Phase 1 sweep and write diagnostic CSVs.
+    """Run the weight sweep and write the retention diagnostic CSVs.
 
     Parameters
     ----------
     fresh : bool, optional
-        Recompute the Phase 1 input cache even if it is up to date.
+        Recompute the cached inputs even if they are up to date.
     """
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     inputs = build_inputs(fresh=fresh)
@@ -409,6 +418,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fresh",
         action="store_true",
-        help="Recompute the Phase 1 input cache even if it is up to date.",
+        help="Recompute the sweep input cache even if it is up to date.",
     )
     main(fresh=parser.parse_args().fresh)

@@ -1,6 +1,15 @@
-"""Diagnose why some KOFAM phenotypes underperform on Figure 5A: per-phenotype
-cross-dataset BA (KOFAM vs GapMind), single-feature AUROC ceiling, and top
+"""Diagnose why some KOFAM phenotypes underperform on Figure 5A.
+
+Reports per-phenotype cross-dataset balanced accuracy (KOFAM versus GapMind),
+the single-feature AUROC ceiling on the pooled concordant subset, and the top
 stable SHAP features per phenotype.
+
+Writes ``ba_table.csv``, ``kofam_signal.csv``, ``gapmind_signal.csv`` and
+``shap_top.csv`` under ``scripts/figure5_diagnostic/``.
+
+Run with::
+
+    uv run python -m scripts.figure5_diagnostic.feature_signal_analysis
 """
 
 from __future__ import annotations

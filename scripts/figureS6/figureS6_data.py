@@ -2,7 +2,12 @@
 """
 Generate data for Supplementary Figure S6: learning curves for all 15 shared phenotypes.
 
-Writes to data/outputs/learning_curves/.
+Writes ``data/outputs/learning_curves/learning_curves_kofam.csv``, with one
+resumable checkpoint CSV per (split type, split key, training type) alongside it.
+
+Run with::
+
+    uv run python -m scripts.figureS6.figureS6_data
 """
 
 import json
@@ -32,9 +37,10 @@ COMMON_PHENOTYPES = [
     "Sucrose",
     "m-Inositol",
 ]
-# 25 replaces the old 50 floor so the saturation knee is inside the measured
-# range; 500 is dropped because it is near-identical to "full" at the ~534
-# train+val samples available per phenotype-split.
+# Sizes bracket the saturation knee: 25 is small enough that the knee falls
+# inside the measured range, and sizes above 200 are omitted because "full" is
+# only about 534 train+val samples per phenotype-split, so they would be
+# near-identical to it.
 SAMPLE_SIZES: list[int | str] = [25, 50, 100, 200, "full"]
 N_REPEATS = 3
 SPLIT_TYPES = ["random_split", "dataset_split"]

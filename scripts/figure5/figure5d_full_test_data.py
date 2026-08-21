@@ -2,6 +2,10 @@
 """Figure 5D data: concordant-trained model on the full held-out test set,
 decomposed by GapMind discordance category. Writes
 ``data/outputs/figure5/figure5d_full_test.tsv``.
+
+Run with::
+
+    uv run python -m scripts.figure5.figure5d_full_test_data
 """
 
 from __future__ import annotations

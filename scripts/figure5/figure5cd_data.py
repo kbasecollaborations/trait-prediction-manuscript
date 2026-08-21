@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Figure 5C ML: train on concordant samples, test on discordant and full sets."""
+"""Figure 5C/D ML: train on concordant samples, test on discordant and full sets.
+
+Writes ``data/outputs/figure5/figure5c_concordant_train_different_test.csv``.
+
+Run with::
+
+    uv run python -m scripts.figure5.figure5cd_data
+"""
 
 from pathlib import Path
 

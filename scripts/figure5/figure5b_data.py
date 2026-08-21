@@ -4,6 +4,14 @@
 KOFAM annotations provide the feature space; GapMind is used only to stratify
 samples. Each phenotype/split is screened to a broad CatBoost-important
 candidate set before seeded SHAP stability analysis.
+
+Writes ``figure5b_combined_splits_shap_features.json``,
+``figure5b_individual_datasets_shap_features.json`` and
+``figure5b_feature_comparison_summary.csv`` under ``data/outputs/figure5/``.
+
+Run with::
+
+    uv run python -m scripts.figure5.figure5b_data [--fresh]
 """
 
 import argparse

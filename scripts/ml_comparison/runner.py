@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Unified runner for the alternative-ML model comparison.
+"""Runner for the alternative-ML model comparison.
 
 For each (model, phenotype, subset, split_type, repeat) combination, fit on
 train+val, evaluate on test, and write the per-fit JSON. A fit is skipped when

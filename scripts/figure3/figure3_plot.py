@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""Generate Figure 3 (split-type performance against the GapMind baseline).
+
+Panel A: random-split balanced accuracy per phenotype, with the GapMind mean.
+Panel B: dataset-split balanced accuracy, coloured by held-out dataset.
+Panel C: difference in balanced accuracy between the full and in-clade test sets.
+
+Reads ``ml_results.csv``, ``figure3c_results.csv`` and the GapMind metrics
+tables in ``data/outputs/figure3/``, and writes ``figures/figure3.pdf``.
+
+Run with::
+
+    uv run python -m scripts.figure3.figure3_plot
+"""
 
 from pathlib import Path
 

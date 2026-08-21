@@ -26,8 +26,8 @@ def load_results(data_file: Path) -> pd.DataFrame:
     Figure 6D evaluates on the full held-out test set, so the minority-class
     rule stated in ``sections/methods.tex`` applies: ``dataset_split`` cells
     whose held-out test set carries fewer than ten minority-class samples are
-    dropped. The standalone panel and the combined Figure 6 composer both read
-    through here.
+    dropped. Figure 6 composition and ``scripts/stats/manuscript_pvalues.py``
+    both read the table through here.
 
     Parameters
     ----------

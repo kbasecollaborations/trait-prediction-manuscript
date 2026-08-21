@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""Grouped bar chart of GapMind (strict) against intra-dataset ML balanced accuracy.
+
+One pair of bars per carbon source, shaded by carbon-source category, with the ML
+bars carrying the cross-validation standard deviation.
+
+Reads ``data/outputs/figure2/gapmind_strict_metrics.tsv`` and
+``data/outputs/figure3/intra_vs_inter/cv_results.csv``; writes
+``figures/misc/gapmind_vs_ml.pdf`` and the matching ``.png``.
+
+Run with::
+
+    uv run python -m scripts.misc.gapmind_vs_ml
+"""
 
 from pathlib import Path
 

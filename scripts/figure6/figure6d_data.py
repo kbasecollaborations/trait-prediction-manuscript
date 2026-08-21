@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Generate Figure 6D data: combined vs phenotype-filtered GapMind feature experiments."""
+"""Generate Figure 6D data: combined vs phenotype-filtered GapMind feature experiments.
+
+Writes ``figure6d_combined_features_results.csv``,
+``figure6d_phenotype_filtered_results.csv`` and ``figure6d_all_results.csv`` to
+``data/outputs/figure6/``.
+
+Run with::
+
+    uv run python -m scripts.figure6.figure6d_data
+"""
 
 from pathlib import Path
 

@@ -144,8 +144,8 @@ def _phylo_glmm(random_state: int = 42) -> BaseEstimator:
 def _pclr(random_state: int = 42, n_pcs: int = 20) -> BaseEstimator:
     """EN-LR head for the phylogeny-aware proxy.
 
-    Features are residualized against the top-k phylogenetic PCs upstream in
-    ``PhyloPCAdjuster`` (see groupings.py); this factory only supplies the
+    The top-k genomic PCs are appended to X upstream by
+    ``phylo_pcs.phylo_pc_adjust``; this factory only supplies the
     class-balanced elastic-net.
     """
     return Pipeline(
