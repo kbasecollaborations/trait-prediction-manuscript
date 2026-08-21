@@ -4,13 +4,18 @@ This record contains the phenotype labels, genome feature matrices, train/test s
 
 CONTENTS
 
-- trait-prediction-data.zip (56 MB, 425 MB unpacked). All derived data: KOFAM, RAST and GapMind feature matrices, harmonised phenotype tables, train/test splits for the random, leave-one-dataset-out and phylogeny-based evaluations, the pruned GTDB tree and distance matrix, KEGG reference mappings, source data for every main-text and supplementary figure and table, and 105 trained CatBoost checkpoints. Unpacks to a data/ tree that mirrors the analysis repository.
+- trait-prediction-data.zip (60 MB, 453 MB unpacked). All derived data: KOFAM, RAST and GapMind feature matrices, harmonised phenotype tables, train/test splits for the random, leave-one-dataset-out and phylogeny-based evaluations, the pruned GTDB tree and distance matrix, KEGG reference mappings, source data for every main-text and supplementary figure and table, and 105 trained CatBoost checkpoints. Unpacks to a data/ tree that mirrors the analysis repository.
 - proteomes_all_seqs.zip (766 MB, 1.4 GB unpacked). Predicted-protein FASTA files for the 822 selected genome records, the input to the KOFAM and GapMind annotation.
 - Per-dataset phenotype matrices and genome tables, provided loose so they can be read without downloading an archive: atleaf (206 genomes x 44 substrates), biolog (362 x 59), marine (172 x 100) and populus (55 x 176).
 - genome_accessions.tsv, mapping all 822 genome records to NCBI, BV-BRC or JGI IMG accessions.
+- biolog_assay_provenance.tsv, recording the assay format and originating source for the deposited Biolog genomes, since that dataset is a compilation across studies rather than a single assay campaign.
 - substrate_identity_common15.csv and substrate_identity_all.csv, binding every phenotype column to the exact compound the originating study assayed, with the Biolog plate well where known.
 - Populus_carbon_source_results.xlsx, the ORNL Plant-Microbe Interfaces Biolog assay as measured by Leah Hochanadel and Dale A. Pelletier, released publicly for the first time with this work and separately deposited at ORNL/OSTI doi:10.25983/PMI/3399550.
 - README.md with the full file-by-file description, dataset provenance, and reproduction instructions. MD5SUMS.txt for verification.
+
+CHANGES IN VERSION 1.1.0
+
+Adds biolog_assay_provenance.tsv. Rebuilds trait-prediction-data.zip so the deposited source data matches the final manuscript: the Figure 6 classifier-weight sweep and per-sample mechanism-free tables, the Figure 7 risk-coverage table, the learning curves, and the significance-test tables were regenerated. MD5SUMS.txt and README.md are updated accordingly. proteomes_all_seqs.zip, the phenotype matrices, the genome tables, the accession table and the substrate identity tables are unchanged from version 1.0.0.
 
 SCOPE
 
@@ -23,6 +28,8 @@ The deployment checkpoints in data/outputs/full_data_models/ and data/outputs/co
 SOURCES AND CITATION
 
 Phenotype data originate with the studies that generated them. Cite those alongside this record: ATLeaf, Schaefer et al. 2023, Science; Marine, Gralka et al. 2023, Nature Microbiology; Populus, ORNL/OSTI doi:10.25983/PMI/3399550; the associated Biolog genome set, KBase/OSTI doi:10.25982/149351.18/3374972. Genome assemblies are not re-hosted and remain available from NCBI, JGI IMG and BV-BRC under the deposited accessions.
+
+Preprint: https://doi.org/10.64898/2026.08.06.743333
 
 Analysis and manuscript code: https://github.com/kbasecollaborations/trait-prediction-manuscript
 
