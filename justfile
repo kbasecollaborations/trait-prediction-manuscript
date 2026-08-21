@@ -28,7 +28,7 @@ words:
     pdf=$(pdftotext -nopgbrk build/main.pdf - \
       | awk '/^Introduction$/{f=1} /^Author Contributions$/{f=0} f' \
       | grep -vxE '[[:space:]]*[0-9]+[[:space:]]*' \
-      | sed -E 's/\[[0-9]+([,–-][0-9]+)*\]//g' | wc -w | tr -d ' ')
+      | sed -E 's/\[[0-9]+([,[:space:]–-]+[0-9]+)*\]//g' | wc -w | tr -d ' ')
     echo "rendered PDF (authoritative): $pdf / 5000  [$(( pdf - 5000 )) over]"
     echo
     uv run python word_count.py
