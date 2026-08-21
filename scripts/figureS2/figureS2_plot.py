@@ -95,7 +95,7 @@ def main() -> None:
     )
 
     ax.set_xlabel("Phenotype")
-    ax.set_ylabel("Minimum cophenetic distance")
+    ax.set_ylabel("Tree distance to nearest training genome")
     ax.set_xticks(range(len(phenotypes)))
     ax.set_xticklabels(phenotypes, rotation=45, ha="right")
     ax.margins(x=0.01)
