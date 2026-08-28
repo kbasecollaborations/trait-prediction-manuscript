@@ -529,7 +529,7 @@ def main() -> None:
     ) -> None:
         """Record one test. ``adjust=False`` keeps it out of the BH family.
 
-        The BH family is the twelve primary tests described in
+        The BH family is the thirteen primary tests described in
         ``sections/methods.tex``; every other comparison is reported unadjusted.
         """
         if result is None:

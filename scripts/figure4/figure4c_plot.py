@@ -208,21 +208,25 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         for i in range(len(datasets))
     ]
 
+    # White, edge-only swatches: this legend keys the fill pattern
+    # (solid vs hatched), not a bar colour, which the dataset legend carries.
     feature_handles = [
         Rectangle(
             (0, 0),
             1,
             1,
-            fc="gray",
-            alpha=0.8,
+            fc="white",
+            ec="#4D4D4D",
+            lw=0.9,
             label="Common",
         ),
         Rectangle(
             (0, 0),
             1,
             1,
-            fc="gray",
-            alpha=0.4,
+            fc="white",
+            ec="#4D4D4D",
+            lw=0.9,
             hatch="//",
             label="Unique to Individual",
         ),

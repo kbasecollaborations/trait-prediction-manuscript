@@ -38,7 +38,7 @@ Two unsupervised pre-processing filters were applied to the combined feature mat
 \subsection*{Machine Learning Classifiers}
 
 We trained gradient-boosted tree classifiers using CatBoost~\cite{Prokhorenkova2018CatBoost} (v1.2.8), which performed as well as or better than a range of alternative model families (Supplementary Table~\ref{tab:best_models_counts}).
-The CatBoost hyperparameters were tuned on performance across all phenotypes (1000 iterations, learning rate 0.03, tree depth 4; Supplementary Text~S3).
+The CatBoost hyperparameters were tuned on performance across all phenotypes (1000 iterations, learning rate 0.03, tree depth 4, used unless stated otherwise; Supplementary Text~S3).
 Random holdout evaluations used five 70:15:15 train/validation/test partitions generated independently for each phenotype and stratified by its binary growth label (Figure~\ref{fig:ml_performance}A).
 Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation partition on the non-test data.
 

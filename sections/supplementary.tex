@@ -246,6 +246,11 @@ Candidate exceptions with greater substrate-specific plausibility included sucro
 Under balanced class weights, retaining these false negatives in training rather than filtering them out increased recall by 0.030 but reduced specificity by 0.088 and balanced accuracy by 0.029 relative to concordance filtering, so it is preferable only when recall is prioritised (\texttt{scripts/figure5/fp\_only\_filter.py}).
 Partitioning false negatives by the genomic presence of their catabolic machinery separated a recoverable fraction from a larger residual lacking such support, which was enriched for confident model--GapMind agreement against the experimental label (odds ratio 3.3), which could be due to experimental mislabelling (Supplementary Text~S12).
 
+\paragraph{Enforcing concordance at prediction time.}
+Concordant training retains roughly 70\% of training samples and then predicts for all new genomes from KOFAM features alone.
+Alternatively, a full-data model can retain only predictions agreeing with GapMind; this retained 72\% of pooled held-out predictions and yielded cross-dataset balanced accuracy 0.77 on that subset, a value conditional on abstention and so not directly comparable with performance on a full evaluation set.
+Prediction-time agreement therefore recovers a higher-accuracy subset but requires GapMind for every genome, whereas concordant training requires it only when assembling the training set.
+
 
 \subsection*{Supplementary Text S11: Adding Data Volume Versus Concordance Filtering}
 

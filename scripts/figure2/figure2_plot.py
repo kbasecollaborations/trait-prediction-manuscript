@@ -151,10 +151,15 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
 
     df["model"] = df["model"].map(model_labels)
 
+    # Nearest neighbour takes a plum from the GapMind family (between strict
+    # #6E2A4E and permissive #A23B72 in panel A) since both are baseline
+    # predictors; the two null models share the neutral grey category, split
+    # by value, and use open (outline-only) markers so co-located points at
+    # ~0.5 stay individually visible instead of occluding each other.
     palette = {
-        "Identity": "#A0A0A0",
-        "Bernoulli": "#707070",
-        "Nearest Neighbor": "#000000",
+        "Identity": "#999999",
+        "Bernoulli": "#4D4D4D",
+        "Nearest Neighbor": "#8A3162",
     }
 
     markers = {
@@ -162,6 +167,8 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
         "Bernoulli": "s",
         "Nearest Neighbor": "^",
     }
+
+    open_markers = {"Identity", "Bernoulli"}
 
     phenotypes = sorted(df["phenotype"].unique())
 
@@ -184,15 +191,34 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
                 x_positions.append(x_jitter)
                 y_values.append(row["balanced_accuracy"])
 
-            ax.scatter(
-                x_positions,
-                y_values,
-                marker=markers[model_name],
-                color=palette[model_name],
-                alpha=0.6,
-                s=50,
-                label=model_name,
-            )
+            if model_name in open_markers:
+                # Identity gets a thinner edge and lower alpha: its five
+                # values per phenotype are nearly identical (~0.5), so the
+                # rings overlap and stacked edges otherwise read as one
+                # thick stroke.
+                is_identity = model_name == "Identity"
+                ax.scatter(
+                    x_positions,
+                    y_values,
+                    marker=markers[model_name],
+                    facecolors="none",
+                    edgecolors=palette[model_name],
+                    linewidths=0.7 if is_identity else 0.9,
+                    alpha=0.6 if is_identity else 0.85,
+                    s=50,
+                    label=model_name,
+                    zorder=3 if is_identity else 2,
+                )
+            else:
+                ax.scatter(
+                    x_positions,
+                    y_values,
+                    marker=markers[model_name],
+                    color=palette[model_name],
+                    alpha=0.6,
+                    s=50,
+                    label=model_name,
+                )
 
         for phenotype in phenotypes:
             phenotype_data = split_df[split_df["phenotype"] == phenotype]
@@ -240,9 +266,11 @@ def plot_baseline_comparison(axes: np.ndarray, data_dir: Path) -> None:
             [0],
             marker=markers[model],
             color="w",
-            markerfacecolor=palette[model],
+            markerfacecolor="none" if model in open_markers else palette[model],
+            markeredgecolor=palette[model],
+            markeredgewidth={"Identity": 0.7, "Bernoulli": 0.9}.get(model, 0.5),
             markersize=8,
-            alpha=0.8,
+            alpha=0.9,
             label=model,
             linestyle="None",
         )

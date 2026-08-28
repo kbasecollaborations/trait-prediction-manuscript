@@ -193,11 +193,13 @@ def plot_balanced_accuracy_scatter(
         combined_vals = [combined.loc[p] for p in common]
         filtered_vals = [filtered.loc[p] for p in common]
 
+        # Transparency lets co-located points darken where they stack
+        # instead of fully occluding each other.
         ax.scatter(
             combined_vals,
             filtered_vals,
             s=42,
-            alpha=0.75,
+            alpha=0.65,
             facecolors=split_colors[split_type],
             edgecolors="black",
             linewidths=0.7,

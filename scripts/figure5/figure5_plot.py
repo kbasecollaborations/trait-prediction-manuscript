@@ -421,21 +421,25 @@ def create_feature_comparison_plot(
         Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
         for i in range(len(datasets))
     ]
+    # White, edge-only swatches: this legend keys the fill pattern
+    # (solid vs hatched), not a bar colour, which the dataset legend carries.
     feature_handles = [
         Rectangle(
             (0, 0),
             1,
             1,
-            fc="gray",
-            alpha=0.8,
+            fc="white",
+            ec="#4D4D4D",
+            lw=0.9,
             label="Common",
         ),
         Rectangle(
             (0, 0),
             1,
             1,
-            fc="gray",
-            alpha=0.4,
+            fc="white",
+            ec="#4D4D4D",
+            lw=0.9,
             hatch="//",
             label="Unique to Individual",
         ),
@@ -573,12 +577,14 @@ def plot_ml_vs_gapmind_full_test(
         set(ml_dataset_mean.index) & set(gm_dataset_mean.index) & set(phenotypes)
     )
 
+    # Slightly smaller, more transparent markers: co-located points darken
+    # where they stack instead of fully occluding each other.
     ax.scatter(
         gm_random_mean.loc[common_r].values,
         ml_random_mean.loc[common_r].values,
         c="#57BA64",
-        alpha=0.85,
-        s=70,
+        alpha=0.7,
+        s=55,
         edgecolors="black",
         linewidths=0.7,
         label="Random holdout",
@@ -588,8 +594,8 @@ def plot_ml_vs_gapmind_full_test(
         gm_dataset_mean.loc[common_d].values,
         ml_dataset_mean.loc[common_d].values,
         c="#2E86AB",
-        alpha=0.85,
-        s=70,
+        alpha=0.7,
+        s=55,
         edgecolors="black",
         linewidths=0.7,
         marker="s",

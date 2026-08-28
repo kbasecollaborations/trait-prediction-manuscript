@@ -87,7 +87,7 @@ class SectionCount:
     section : SectionInfo
         Section metadata.
     words : int
-        Primary text word count reported by ``texcount``.
+        Text plus heading word count reported by ``texcount``.
     """
 
     section: SectionInfo
@@ -286,12 +286,11 @@ def texcount_words(tex_file: pathlib.Path) -> int:
     first_token = output.split()[0] if output else "0"
 
     try:
-        # texcount often returns values like "262+1+0" where the first
-        # number is the body text word count and subsequent numbers
-        # correspond to headers and captions. We take the first part as
-        # the primary word count.
-        primary = first_token.split("+")[0]
-        return int(primary)
+        # texcount returns values like "262+1+0": body text, headers,
+        # captions. Headings count toward the ISME limit, so sum the
+        # first two parts and leave captions out.
+        text_words, header_words = first_token.split("+")[:2]
+        return int(text_words) + int(header_words)
     except ValueError as exc:
         msg = f"Unexpected texcount output for {tex_file}: {output!r}"
         raise RuntimeError(msg) from exc
