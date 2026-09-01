@@ -28,9 +28,9 @@ Increasing data volume did not improve generalisation, since adding $\sim$1800 B
 \subsection*{Practical Deployment and Confidence-Guided Experimentation}
 
 Concordance filtering cannot be applied without a mechanistic predictor for the phenotype in question, which exists only for well-characterised pathways.
-Rule-based, explainable predictors learned from harmonised phenotype data are another route to such a check~\cite{Masa2025MediaPrediction}.
 One alternative is to weight samples by phylogenetic label agreement, which requires no pathway annotations and increased true-positive recovery, though with lower specificity and little balanced-accuracy change from unfiltered ML (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
 When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which recovers much of the specialist's cross-dataset accuracy (Supplementary Text~S10).
+Explainable predictors whose rules are learned from harmonised phenotype data, rather than curated, are another route to such a check~\cite{Masa2025MediaPrediction}.
 A second constraint is how much labelled data these models need, measured on cross-dataset tests since random holdout overestimates generalisation~\cite{Roberts2017CrossValidation}.
 A small concordant training set is enough to indicate whether a phenotype is learnable from genomic features, since 50 to 100 concordant samples reached at least 90\% of the all-available-sample performance for most shared phenotypes (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
 Because the earliest-saturating phenotypes were also the least predictable, further measurement is worth committing mainly where that early signal exists.

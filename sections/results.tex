@@ -19,7 +19,7 @@ The phylogeny-based approach performed well in random holdout (0.72--0.87) but p
 
 \subsection*{Machine learning models predict accurately within but not across datasets}
 
-To test whether genome-derived features could surpass these baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$5200 after correlation filtering; Methods), evaluating all models with balanced accuracy.
+To test whether genome-derived features could surpass these baselines, we trained gradient-boosted tree (CatBoost) classifiers on KOFAM annotations ($\sim$5200 features after correlation filtering; Methods), evaluating all models with balanced accuracy.
 
 Data were aggregated across all four datasets and assessed under four evaluation scenarios: repeated random holdout, cross-dataset (leave-one-dataset-out), and in-clade and out-of-clade phylogenetic splits (Methods).
 
@@ -94,7 +94,7 @@ Recall gains were therefore consistent in direction but small on average, with t
 Curation can also be applied to the features rather than to the samples.
 Phenotype-filtered GapMind features (without correlation filtering; Supplementary Text~S5) matched combined GapMind, KOFAM, and RAST features under random holdout but improved cross-dataset balanced accuracy (paired Wilcoxon $p<0.001$, BH-adjusted $q=0.003$), and the combined-feature models still concentrated on curated GapMind terms, consistent with prior reports favouring biologically relevant over comprehensive feature sets~\cite{Li2023-up} (Figure~\ref{fig:improvement_strategies}D).
 Sample filtering, sample weighting, and feature choice all act at training time and shift average performance; none indicates which individual predictions to trust.
-We therefore asked whether a model can flag its own trustworthy predictions at inference time, without the experimental phenotype.
+We therefore asked whether a model can flag which of its own predictions to trust from information available at inference time, without the experimental phenotype.
 
 
 \FloatBarrier{}
