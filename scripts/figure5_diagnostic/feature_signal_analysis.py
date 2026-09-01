@@ -5,7 +5,9 @@ the single-feature AUROC ceiling on the pooled concordant subset, and the top
 stable SHAP features per phenotype.
 
 Writes ``ba_table.csv``, ``kofam_signal.csv``, ``gapmind_signal.csv`` and
-``shap_top.csv`` under ``scripts/figure5_diagnostic/``.
+``shap_top.csv`` under ``scripts/figure5_diagnostic/``. These derived outputs
+are gitignored; rerun this script to regenerate them from the current
+``data/outputs/`` files.
 
 Run with::
 

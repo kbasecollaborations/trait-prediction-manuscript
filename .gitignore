@@ -542,3 +542,6 @@ build/
 tmp/
 old_versions/
 prompts/
+
+# Derived diagnostic outputs (regenerate with scripts.figure5_diagnostic.feature_signal_analysis)
+scripts/figure5_diagnostic/*.csv
