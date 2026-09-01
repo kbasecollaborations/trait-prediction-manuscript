@@ -247,9 +247,12 @@ Under balanced class weights, retaining these false negatives in training rather
 Partitioning false negatives by the genomic presence of their catabolic machinery separated a recoverable fraction from a larger residual lacking such support, which was enriched for confident model--GapMind agreement against the experimental label (odds ratio 3.3), which could be due to experimental mislabelling (Supplementary Text~S12).
 
 \paragraph{Enforcing concordance at prediction time.}
-Concordant training retains roughly 70\% of training samples and then predicts for all new genomes from KOFAM features alone.
-Alternatively, a full-data model can retain only predictions agreeing with GapMind; this retained 72\% of pooled held-out predictions and yielded cross-dataset balanced accuracy 0.77 on that subset, a value conditional on abstention and so not directly comparable with performance on a full evaluation set.
-Prediction-time agreement therefore recovers a higher-accuracy subset but requires GapMind for every genome, whereas concordant training requires it only when assembling the training set.
+Concordance with GapMind can be enforced at two different points in the pipeline.
+Concordant training, used throughout the main text, filters the training set: it retains the roughly 70\% of training samples whose labels agree with GapMind and then predicts for every new genome from KOFAM features alone, with no GapMind call needed at prediction time.
+Alternatively, concordance can be enforced on the predictions instead: a model trained on all samples predicts for every genome, but only the predictions that agree with that genome's GapMind call are retained, and the rest are withheld.
+On the pooled held-out test sets this retained 72\% of predictions and reached cross-dataset balanced accuracy 0.77 on the retained subset.
+Because the model abstains on the remaining 28\% of genomes, this value describes only the retained predictions and is not directly comparable with performance measured over a full evaluation set.
+Prediction-time agreement therefore buys higher accuracy on the predictions it retains at the cost of making no prediction for the rest, and it requires a GapMind prediction for every genome at deployment, whereas concordant training requires GapMind only once, when the training set is assembled.
 
 
 \subsection*{Supplementary Text S11: Adding Data Volume Versus Concordance Filtering}
