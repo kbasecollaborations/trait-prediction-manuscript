@@ -4,7 +4,7 @@
 
 Microbial nutrient utilisation phenotypes are key determinants of ecological niches and underpin community assembly, nutrient cycling, and biotechnological applications~\cite{Green2008Biogeography,Malik2020Defining,Falkowski2008-bx,Lu2014-zz}.
 Cultivation-based methods underlie most phenotype data but cannot characterise unculturable taxa and remain resource-intensive even for culturable organisms~\cite{Lloyd2018-ar,Barberan2017-xi}.
-Phylogeny has commonly served as a proxy for phenotype prediction, however, it is insufficient for novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Li2023-up,Goberna2016Predicting}.
+Phylogeny has commonly served as a proxy for phenotype prediction, however, it is insufficient for novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Li2023-up,Goberna2016Predicting,Plata2015PhenotypicEvolution}.
 
 Advances in genomics offer a path to overcome these limitations \cite{Quince2017Shotgun,Nayfach2021Catalog}.
 Genome-based predictions provide an alternative, enabling characterisation of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms underlying phenotypic variation.
@@ -14,7 +14,7 @@ Mechanistic approaches such as GapMind and microTrait instead infer metabolic or
 For carbon utilisation specifically, Li et al.\ showed that statistical gene-content models can outperform automatically reconstructed constraint-based metabolic models, while also demonstrating strong phylogenetic confounding and sample-size dependence~\cite{Li2023-up}.
 Together, these approaches establish the feasibility of genome-based phenotype prediction, but leave unresolved how measurements pooled across independent experimental collections affect cross-dataset transfer and whether learned predictors recur as mechanistically relevant features across datasets.
 
-Machine learning (ML) models can capture the nonlinear relationships and high dimensionality common in genomic data~\cite{Greener2022-dy,Zampieri2019MLMetabolic,James2025OpenProblems}.
+Machine learning (ML) models can capture the nonlinear relationships and high dimensionality common in genomic data~\cite{Greener2022-dy,Zampieri2019MLMetabolic,James2025OpenProblems,Park2024SensorTaxonomy}.
 However, their performance and generalisability are constrained by data limitations and evaluation challenges~\cite{Whalen2022Pitfalls,Shi2025OOD}: limited and taxonomically biased training data can cause overfitting and poor applicability to diverse genomes~\cite{Whalen2022Pitfalls,Ramoneda2024-yb,Albright2023-ze}.
 Phylogenetic correlations among genomic features further confound identification of mechanistically relevant predictors~\cite{Bradley2018-rs}, since taxonomically biased models primarily capture phylogenetic signal~\cite{Li2023-up}.
 Increasing sample size can improve out-of-clade prediction~\cite{Li2023-up}, and training on high-quality curated phenotypes can improve broader trait prediction~\cite{Koblitz2025Phenotype}, though such gains are typically established within a single curated source rather than across independent collections.
