@@ -327,6 +327,7 @@ def create_phylogeny_splits(
         print(f"  {len(samples)} samples found in tree (out of {len(y)})")
 
         for split_type in ["in-clade", "out-of-clade"]:
+            # Both phylogeny splitters are unseeded, so reruns can change sample assignments.
             print(f"  Creating {split_type} splits...")
             if split_type == "in-clade":
                 splitter = InCladeSplitter(tree, distance_df, test_set_ratio=0.15)

@@ -50,6 +50,7 @@ We compared gradient-boosted trees, regularised-linear and projection methods, R
 88\% of phenotype--regime cells tied within 0.05 balanced accuracy, with boosted trees strongest and Random Forest the only consistent under-performer (Table~\ref{tab:best_models_counts}).
 This comparison used one protocol without early stopping, so its absolute values differ by $\sim$0.02 BA from the early-stopping CatBoost results.
 CatBoost was retained at 1000 iterations, learning rate 0.03, depth 4, L2 regularisation 15, 10\% random feature subsampling, Bayesian bootstrap, and logloss early stopping with patience 50, because further phenotype-specific tuning did not improve accuracy.
+Figure~\ref{fig:ml_performance}C used a fixed 500-iteration CatBoost model without early stopping.
 The minority-class filter (Methods) was computed on the test subset plotted in each analysis and applied identically to both series in every machine-learning-versus-GapMind comparison (\texttt{scripts/minority\_filter.py}).
 
 \paragraph*{Replicate genomes and random-holdout overlap.}
@@ -173,6 +174,7 @@ Points are means across repeats and across the splits available for each phenoty
 
 Stable features were identified with a fixed 500-iteration CatBoost model trained without early stopping, using 20 random seeds per phenotype--dataset configuration.
 A feature was designated stable when it ranked among the top ten by mean absolute SHAP value in at least 70\% of those runs.
+For the concordance-trained comparison in Figure~\ref{fig:concordant_analysis}B, each configuration was first screened to 300 candidate KOFAM features using CatBoost \texttt{PredictionValuesChange} importance, after which the 20-seed SHAP stability analysis was applied to the candidate set.
 
 Because correlated KOs can represent the same predictive signal, the stable-feature comparisons in Figures~\ref{fig:misclassification_diagnosis}C and~\ref{fig:concordant_analysis}B intersect clusters rather than raw KOs.
 For each phenotype, the union of stable KOs was clustered on the pooled concordant feature matrix across all four datasets with \texttt{shap.utils.hclust} in SHAP v0.50.0~\cite{Lundberg2017SHAP,Lundberg2020TreeSHAP,SHAPhclustDocs}.

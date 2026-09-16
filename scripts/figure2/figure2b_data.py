@@ -76,7 +76,7 @@ def fit_nearest_neighbor(
     ``fit``: the installed ``trait_prediction`` version ignores the ``distances``
     keyword and recomputes every pairwise distance with ``tree.get_distance``,
     which rejects an already-parsed ``Tree`` and costs an O(leaves^2) traversal
-    per split. ``scripts.figure6.figure6b_parameter_exploration.phylo_knn_confidence``
+    per split. ``scripts.figure6.figure6b_weight_sweep.phylo_knn_confidence``
     uses the same bypass.
 
     Parameters

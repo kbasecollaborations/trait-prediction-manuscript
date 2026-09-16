@@ -26,12 +26,12 @@ from catboost import Pool
 from tqdm import tqdm
 
 from scripts.figure5.figure5cd_data import load_gapmind_predictions
-from scripts.figure6.figure6b_data import load_phylogenetic_data
 from scripts.figure6.figure6b_weight_sweep import (
     DEFAULT_WEIGHTING_MODE,
     PHASE2_CONFIGS,
     WeightingMode,
     compute_split_sample_weights,
+    load_phylogenetic_distances,
 )
 from scripts.figure7.figure7_data import (
     GAPMIND_FILE,
@@ -156,7 +156,7 @@ def collect_per_sample_predictions(
         ``gapmind_pred``, matching ``figure7_per_sample.tsv``.
     """
     gapmind_predictions = load_gapmind_predictions(GAPMIND_FILE)
-    _tree, distance_df = load_phylogenetic_data()
+    distance_df = load_phylogenetic_distances()
 
     split_data = load_split_data(
         base_dir=SPLITS_DIR,

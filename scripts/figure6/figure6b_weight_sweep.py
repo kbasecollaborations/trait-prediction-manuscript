@@ -11,6 +11,7 @@ Run with::
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
@@ -22,16 +23,170 @@ import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from scripts.figure6.figure6b_data import (
-    K_NEIGHBORS,
-    load_gapmind_confidence,
-    load_phylogenetic_data,
-)
-from scripts.figure6.figure6b_parameter_exploration import (
-    WeightConfig,
-    phylo_knn_confidence,
-)
+from scripts.io import index_format_func
 from scripts.ml_splits import load_split_data, perform_split_ml
+
+K_NEIGHBORS = 3
+
+GAPMIND_PHENOTYPES: dict[str, str] = {
+    "alanine": "Alanine",
+    "arginine": "Arginine",
+    "histidine": "Histidine",
+    "serine": "Serine",
+    "fructose": "Fructose",
+    "galactose": "Galactose",
+    "glucose": "Glucose",
+    "maltose": "Maltose",
+    "mannose": "Mannose",
+    "sucrose": "Sucrose",
+    "myoinositol": "m-Inositol",
+    "mannitol": "Mannitol",
+    "glycerol": "Glycerol",
+    "galacturonate": "Galacturonic-Acid",
+    "cellobiose": "Cellobiose",
+}
+
+GAPMIND_CONFIDENCE: dict[str, float] = {
+    "complete": 1.0,
+    "likely_complete": 0.9,
+    "steps_missing_medium": 0.6,
+    "steps_missing_low": 0.3,
+    "not_present": 0.1,
+    "no_evidence": 0.0,
+    "uncategorized": 0.0,
+}
+
+
+def load_gapmind_confidence() -> dict[str, pd.Series]:
+    """Load per-phenotype GapMind pathway-confidence scores.
+
+    Returns
+    -------
+    dict[str, pandas.Series]
+        Confidence scores indexed by genome ID.
+    """
+    marine_ids_file = Path("data/interim/features/marine/strain_genomeid_map.json")
+    with marine_ids_file.open() as handle:
+        marine_ids_map = {
+            value.rsplit("_", 2)[0]: key for key, value in json.load(handle).items()
+        }
+
+    columns = [f"Carbon__{phenotype}" for phenotype in GAPMIND_PHENOTYPES]
+    tables = [
+        pd.read_csv(
+            f"data/processed/gapmind/heatmap_csvs/{dataset}_categories.csv"
+        )
+        for dataset in ("s__at-leaf-lit-pmi", "s__marine-seqs")
+    ]
+    gapmind = pd.concat(tables, axis=0)
+    genome_ids = (
+        gapmind["genome_id"]
+        .str.split(" ")
+        .str[-1]
+        .apply(index_format_func)
+        .astype(str)
+    )
+    gapmind.index = pd.Index(
+        [marine_ids_map.get(genome_id, genome_id) for genome_id in genome_ids],
+        name="genomeID",
+    )
+    gapmind = gapmind.loc[:, columns]
+    gapmind.columns = gapmind.columns.str.replace("Carbon__", "", regex=False)
+    gapmind.columns = gapmind.columns.map(GAPMIND_PHENOTYPES)
+
+    return {
+        phenotype: gapmind[phenotype].map(GAPMIND_CONFIDENCE)
+        for phenotype in gapmind.columns
+    }
+
+
+def load_phylogenetic_distances() -> pd.DataFrame:
+    """Load the phylogenetic distance matrix with self-distances excluded.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Square genome distance matrix with an infinite diagonal.
+    """
+    distance_file = Path("data/processed/phylogeny/distance_matrix.tsv")
+    distance_df = pd.read_csv(distance_file, sep="\t", index_col=0)
+    np.fill_diagonal(distance_df.values, np.inf)
+    return distance_df
+
+
+def phylo_knn_confidence(
+    y_reference: pd.Series,
+    distance_df: pd.DataFrame,
+    k: int,
+    query_index: pd.Index | None = None,
+) -> pd.Series:
+    """Score genomes by the mean label of their nearest tree neighbours.
+
+    Parameters
+    ----------
+    y_reference : pandas.Series
+        Binary reference labels indexed by genome ID.
+    distance_df : pandas.DataFrame
+        Pairwise tree distances with an infinite diagonal.
+    k : int
+        Number of nearest neighbours.
+    query_index : pandas.Index | None, optional
+        Genomes to score. The reference genomes are scored when omitted.
+
+    Returns
+    -------
+    pandas.Series
+        Mean neighbour label for each query genome.
+    """
+    reference = y_reference.index.intersection(distance_df.index)
+    queries = (
+        reference
+        if query_index is None
+        else query_index.intersection(distance_df.index)
+    )
+    labels = y_reference.loc[reference].astype(float)
+    distances = distance_df.loc[queries, reference]
+
+    confidence = pd.Series(index=queries, dtype=float)
+    for genome_id in queries:
+        nearest = distances.loc[genome_id].nsmallest(k).index
+        confidence.loc[genome_id] = float(labels.loc[nearest].mean())
+    return confidence
+
+
+@dataclass(frozen=True)
+class WeightConfig:
+    """Weights used to combine phylogenetic, mechanistic, and label evidence.
+
+    Parameters
+    ----------
+    name : str
+        Output-table label.
+    w_phylo : float
+        Weight on phylogenetic neighbour agreement.
+    w_gapmind : float
+        Weight on GapMind confidence.
+    w_exp : float
+        Weight on the experimental label.
+
+    Raises
+    ------
+    ValueError
+        If the weights do not sum to one.
+    """
+
+    name: str
+    w_phylo: float
+    w_gapmind: float
+    w_exp: float
+
+    def __post_init__(self) -> None:
+        total = self.w_phylo + self.w_gapmind + self.w_exp
+        if not np.isclose(total, 1.0):
+            raise ValueError(
+                f"Weights must sum to 1.0; got {total:.4f} for {self.name!r}"
+            )
+
 
 WeightingMode = Literal[
     "label_confidence", "boundary_certainty", "recall_priority"
@@ -470,7 +625,7 @@ def main(
     split_data = load_split_data(base_dir=SPLITS_DIR, split_types=SPLIT_TYPES)
 
     print("Loading phylogenetic distances and GapMind confidence ...")
-    _tree, distance_df = load_phylogenetic_data()
+    distance_df = load_phylogenetic_distances()
     conf_mech = load_gapmind_confidence()
     output_suffix = (
         "" if weighting_mode == DEFAULT_WEIGHTING_MODE else f"_{weighting_mode}"

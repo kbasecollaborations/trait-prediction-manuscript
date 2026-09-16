@@ -104,6 +104,10 @@ EXCLUDED: Final[dict[str, str]] = {
     "data/processed/phenotypes_backup_pre_enantiomer_fix": "rollback copy",
     "data/processed/train_test_splits_backup_pre_enantiomer_fix": "rollback copy",
     "data/outputs/concordance_meta": "exploratory meta-classifier; no figure, table, or reported value uses it",
+    "data/outputs/figure6/figure6b_confident_ml_results.csv": "retired hard-filter analysis; Figure 6 uses the weight sweep",
+    "data/outputs/figure6/phase1_jaccard_filtered_out.csv": "retired weight exploration; not used in the manuscript",
+    "data/outputs/figure6/phase1_retention_per_phenotype.csv": "retired weight exploration; not used in the manuscript",
+    "data/outputs/figure6/phase1_retention_pooled.csv": "retired weight exploration; not used in the manuscript",
     "data/processed/unique_core_faas": "pangenome core-gene FASTAs; regenerable from the proteomes",
     "data/processed/pangenome/old": "superseded pre-mmseqs90 assignments",
 }
@@ -123,9 +127,13 @@ def ships(path: Path) -> bool:
     Returns
     -------
     bool
-        ``False`` for run logs, pickle caches, and resume checkpoints.
+        ``False`` for excluded paths, run logs, pickle caches, and resume checkpoints.
     """
-    return path.suffix not in SKIP_SUFFIXES and not path.stem.endswith("_checkpoint")
+    return (
+        not any(path.is_relative_to(REPO_ROOT / excluded) for excluded in EXCLUDED)
+        and path.suffix not in SKIP_SUFFIXES
+        and not path.stem.endswith("_checkpoint")
+    )
 
 
 #: Per-dataset phenotype matrices published loose alongside the archive.

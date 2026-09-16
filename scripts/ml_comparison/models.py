@@ -23,6 +23,7 @@ ALTERNATE_MODELS = (
     "lasso",
     "enet",
     "glasso_kegg",
+    # Historical deposited identifier; implementation is non-sparse PLS-DA.
     "splsda",
     "lgbm",
     "lgbm_tuned",
@@ -169,10 +170,9 @@ def _pclr(random_state: int = 42, n_pcs: int = 20) -> BaseEstimator:
 
 
 class PLSDAClassifier(ClassifierMixin, BaseEstimator):
-    """Minimal sPLS-DA: PLSRegression on (0,1) y, threshold at 0.5.
+    """PLS-DA using PLS regression with a 0.5 classification threshold.
 
-    The sparse truncation of weak loadings is approximated by keeping only the
-    top ``n_components`` components.
+    This implementation does not impose sparsity on feature loadings.
     """
 
     _estimator_type = "classifier"

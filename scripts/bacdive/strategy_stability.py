@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Cross-dataset accuracy and top-K feature importances for the C / F / FB strategies.
+"""Measure cross-dataset accuracy and top-10 feature stability for C/F/FB.
 
-Re-runs the head-to-head sweep fits and keeps the top-K feature importances per
-fit so feature stability can be measured downstream.
+Re-runs the head-to-head fits and records each model's ten highest-ranked
+features for downstream stability analysis.
 
 Strategies (tested on each held-out manuscript dataset's full labels):
     C   concordant samples of the other 3 manuscript datasets
@@ -41,13 +41,13 @@ SCORING = [
     "roc_auc",
 ]
 STRATEGIES = {"C", "F", "FB"}
-TOP_K = 25
+TOP_K = 10
 OUTPUT = Path("data/outputs/bacdive/strategy_stability.csv")
 N_JOBS = int(os.environ.get("BACDIVE_N_JOBS", os.cpu_count() or 4))
 
 
 def run_feature_job(job: dict[str, Any], thread_count: int = 1) -> dict[str, Any]:
-    """Train one CatBoost fit and keep its top-K feature importances.
+    """Train one CatBoost fit and keep its top-10 feature importances.
 
     Parameters
     ----------
