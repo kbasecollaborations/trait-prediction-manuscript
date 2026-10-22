@@ -7,11 +7,15 @@ CONTENTS
 - trait-prediction-data.zip (60 MB, 453 MB unpacked). All derived data: KOFAM, RAST and GapMind feature matrices, harmonised phenotype tables, train/test splits for the random, leave-one-dataset-out and phylogeny-based evaluations, the pruned GTDB tree and distance matrix, KEGG reference mappings, source data for every main-text and supplementary figure and table, and 105 trained CatBoost checkpoints. Unpacks to a data/ tree that mirrors the analysis repository.
 - proteomes_all_seqs.zip (766 MB, 1.4 GB unpacked). Predicted-protein FASTA files for the 822 selected genome records, the input to the KOFAM and GapMind annotation.
 - Per-dataset phenotype matrices and genome tables, provided loose so they can be read without downloading an archive: atleaf (206 genomes x 44 substrates), biolog (362 x 59), marine (172 x 100) and populus (55 x 176).
-- genome_accessions.tsv, mapping all 822 genome records to NCBI, BV-BRC or JGI IMG accessions.
-- biolog_assay_provenance.tsv, recording the assay format and originating source for the deposited Biolog genomes, since that dataset is a compilation across studies rather than a single assay campaign.
-- substrate_identity_common15.csv and substrate_identity_all.csv, binding every phenotype column to the exact compound the originating study assayed, with the Biolog plate well where known.
+- genome_accessions.tsv, mapping all 822 genome records to NCBI, BV-BRC or JGI IMG accessions, with public KBase download links for the 166 Cedar Creek (CCESR) Biolog genomes.
+- biolog_assay_provenance.tsv, recording for each of the 362 Biolog genomes the assay type (Biolog plate or other assay), the originating source (source-study PMIDs for 193; the Cedar Creek (CCESR) isolate collection for 166; unpublished contributions for 2; not recorded for 1) and how the genome is paired with its phenotype record, since that dataset is a compilation rather than a single assay campaign.
+- substrate_identity_common15.csv and substrate_identity_all.csv, binding every phenotype column to the exact compound the originating study assayed, with a Biolog PM1/PM2A well position that identifies the compound (for the Biolog compilation, a compound reference rather than the well each source study used).
 - Populus_carbon_source_results.xlsx, the ORNL Plant-Microbe Interfaces Biolog assay as measured by Leah Hochanadel and Dale A. Pelletier, released publicly for the first time with this work and separately deposited at ORNL/OSTI doi:10.25983/PMI/3399550.
 - README.md with the full file-by-file description, dataset provenance, and reproduction instructions. MD5SUMS.txt for verification.
+
+CHANGES IN VERSION 1.2.0
+
+Extends biolog_assay_provenance.tsv to all 362 Biolog genomes, with standard source labels, a genome_match column (exact, shared-record or proxy pairing) and public KBase phenotype-set references for the Cedar Creek isolates. Adds public KBase assembly references and download links for the 166 Cedar Creek (CCESR) Biolog genomes to genome_accessions.tsv. Corrects the README's description of the Biolog sources and genome locations, and regenerates MD5SUMS.txt. The phenotype matrices, genome tables, proteomes, data archive and substrate identity tables are unchanged.
 
 CHANGES IN VERSION 1.1.0
 
@@ -19,7 +23,7 @@ Adds biolog_assay_provenance.tsv. Rebuilds trait-prediction-data.zip so the depo
 
 SCOPE
 
-Four carbon-source utilisation datasets were harmonised: ATLeaf (Arabidopsis thaliana leaf isolates), Biolog (a compilation of published studies), Marine (heterotrophic marine bacteria) and Populus (Populus deltoides root isolates). Analyses focus on the 15 carbon sources shared by all four, drawn from 240 carbon sources in total. Carbon source names are bound explicitly to single compounds rather than harmonised by stripping stereochemical descriptors, so distinct isomers are never merged.
+Four carbon-source utilisation datasets were harmonised: ATLeaf (Arabidopsis thaliana leaf isolates), Biolog (a compilation of published studies and unpublished contributions), Marine (heterotrophic marine bacteria) and Populus (Populus deltoides root isolates). Analyses focus on the 15 carbon sources shared by all four, drawn from 240 carbon sources in total. Carbon source names are bound explicitly to single compounds rather than harmonised by stripping stereochemical descriptors, so distinct isomers are never merged.
 
 REUSE
 
@@ -27,7 +31,7 @@ The deployment checkpoints in data/outputs/full_data_models/ and data/outputs/co
 
 SOURCES AND CITATION
 
-Phenotype data originate with the studies that generated them. Cite those alongside this record: ATLeaf, Schaefer et al. 2023, Science; Marine, Gralka et al. 2023, Nature Microbiology; Populus, ORNL/OSTI doi:10.25983/PMI/3399550; the associated Biolog genome set, KBase/OSTI doi:10.25982/149351.18/3374972. Genome assemblies are not re-hosted and remain available from NCBI, JGI IMG and BV-BRC under the deposited accessions.
+Phenotype data originate with the studies that generated them. Cite those alongside this record: ATLeaf, Schaefer et al. 2023, Science; Marine, Gralka et al. 2023, Nature Microbiology; Populus, ORNL/OSTI doi:10.25983/PMI/3399550; Biolog, the source studies listed in biolog_assay_provenance.tsv and the associated genome set, KBase/OSTI doi:10.25982/149351.18/3374972. The assemblies of all 362 Biolog genomes are public, under the same genome IDs, in KBase narratives https://kbase.us/n/89638/239/ (196 genomes) and https://kbase.us/n/89639/218/ (the 166 Cedar Creek (CCESR) genomes). Genome assemblies are not re-hosted; genome_accessions.tsv gives the source repository and accession for each genome record, and proteomes_all_seqs.zip holds the predicted proteomes of all 822 records.
 
 Preprint: https://doi.org/10.64898/2026.08.06.743333
 
@@ -35,7 +39,7 @@ Analysis and manuscript code: https://github.com/kbasecollaborations/trait-predi
 
 Machine learning pipeline and library: https://github.com/kbasecollaborations/trait-prediction
 
-Corresponding author: Paramvir S. Dehal (psdehal@lbl.gov)
+Corresponding authors: Paramvir S. Dehal (psdehal@lbl.gov), Christopher S. Henry (chenry@anl.gov), Mitchel J. Doktycz (doktyczmj@ornl.gov), Adam P. Arkin (aparkin@lbl.gov)
 
 Licensed CC-BY-4.0. Third-party phenotype and genome data remain subject to their original licences.
 

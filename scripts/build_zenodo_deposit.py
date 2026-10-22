@@ -4,7 +4,7 @@ The manifest is curated rather than a wholesale copy of ``data/``: the inputs th
 analysis scripts consume but cannot regenerate, the figure source data needed to redraw
 every panel without retraining, and the trained model checkpoints. Anything rebuildable
 from those is excluded and named in :data:`EXCLUDED` with the reason; genome assemblies
-are retrievable from the accessions in ``genome_accessions.tsv``. Run logs, pickle
+are retrievable from the accessions and KBase links in ``genome_accessions.tsv``. Run logs, pickle
 caches, and resume checkpoints are skipped inside archived directories by :func:`ships`.
 
 Run with::
@@ -98,7 +98,7 @@ MODELS: Final[tuple[str, ...]] = (
 EXCLUDED: Final[dict[str, str]] = {
     "data/processed/gapmind/pmi_gapmind_output_files": "raw GapMind output; derived features are included",
     "data/raw/all_seqs": "proteomes ship as a separate archive",
-    "data/raw/genomes_w_phenotype": "assemblies retrievable from the deposited accessions",
+    "data/raw/genomes_w_phenotype": "assemblies retrievable from the deposited accessions and KBase links",
     "data/outputs_backup_pre_enantiomer_fix": "rollback copy from the substrate identity correction",
     "data/outputs/learning_curves_histidine": "retired histidine-only learning-curve run; the current Figure S6 is drawn from data/outputs/learning_curves",
     "data/processed/phenotypes_backup_pre_enantiomer_fix": "rollback copy",
