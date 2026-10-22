@@ -4,8 +4,9 @@
 Panel A gives the per-genome status breakdown of the completeness calculation
 and panel B the distribution of completeness for the genomes it succeeded on.
 
-Reads ``data/outputs/pangenome_completeness/pangenome_completeness.tsv`` and
-writes ``figures/figure_s4.pdf``.
+Reads ``data/outputs/pangenome_completeness/pangenome_completeness.tsv``, keeps
+the study genomes listed in the combined KOFAM feature matrix, and writes
+``figures/figure_s4.pdf``.
 
 Run with: uv run python -m scripts.pangenome_completeness.pangenome_completeness_plot
 """
@@ -23,6 +24,7 @@ import pandas as pd
 import scienceplots  # noqa: F401  # Registers the matplotlib styles below.
 import seaborn as sns
 
+from scripts.create_gapmind_features import load_marine_ids_map
 from scripts.visualization import (
     configure_plot_style,
     hide_categorical_minor_ticks,
@@ -38,6 +40,7 @@ configure_plot_style()
 # Default paths (relative to project root)
 DEFAULT_INPUT = Path("data/outputs/pangenome_completeness/pangenome_completeness.tsv")
 DEFAULT_OUTPUT = Path("figures/figure_s4.pdf")
+STUDY_GENOMES_FILE = Path("data/processed/features_reduced/combined_datasets/kofam.tsv")
 
 
 def load_completeness_data(input_path: Path) -> pd.DataFrame:
@@ -62,7 +65,45 @@ def load_completeness_data(input_path: Path) -> pd.DataFrame:
     """
     if not input_path.exists():
         raise FileNotFoundError(f"Completeness results not found: {input_path}")
-    return pd.read_csv(input_path, sep="\t")
+    # IDs such as 110932.16 would otherwise parse as floats.
+    return pd.read_csv(input_path, sep="\t", dtype={"genome_id": str})
+
+
+def restrict_to_study_genomes(df: pd.DataFrame, genomes_path: Path) -> pd.DataFrame:
+    """Keep only the genomes analysed in the study.
+
+    The completeness run also covered seven genomes outside the study. The
+    combined KOFAM feature matrix lists exactly the study genomes, with marine
+    genomes under their strain IDs.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Completeness table with a 'genome_id' column.
+    genomes_path : Path
+        Feature matrix whose first column holds the study genome IDs.
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows of ``df`` for the study genomes.
+
+    Raises
+    ------
+    ValueError
+        If not every study genome has a completeness row.
+    """
+    study_ids = set(
+        pd.read_csv(genomes_path, sep="\t", usecols=[0], dtype=str).iloc[:, 0]
+    )
+    genome_to_strain = load_marine_ids_map()
+    keep = df["genome_id"].map(lambda g: genome_to_strain.get(g, g)).isin(study_ids)
+    if keep.sum() != len(study_ids):
+        raise ValueError(
+            f"Matched {keep.sum()} of {len(study_ids)} study genomes in the "
+            "completeness table; genome ID formats may have changed."
+        )
+    return df[keep]
 
 
 def plot_status_breakdown(ax: plt.Axes, df: pd.DataFrame, label: str = "(A)") -> None:
@@ -172,7 +213,9 @@ def create_figure(input_path: Path, output_path: Path) -> None:
     output_path : Path
         Path for output PDF (e.g. figures/figure_s4.pdf).
     """
-    df = load_completeness_data(input_path)
+    df = restrict_to_study_genomes(
+        load_completeness_data(input_path), STUDY_GENOMES_FILE
+    )
     df_success = df[df["status"] == "success"]
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
