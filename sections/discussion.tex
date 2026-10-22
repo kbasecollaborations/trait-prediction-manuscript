@@ -15,21 +15,21 @@ The model correctly predicted growth for some of the discordant genomes, most of
 GapMind excludes such genes by design, since a broad transporter's presence does not establish that it serves the focal substrate.
 Across the whole cross-dataset test set the concordance-trained model did not exceed GapMind, and on concordant genomes it cannot (by definition).
 The gain is therefore limited to the genomes GapMind gets wrong.
-Among those, the rule returns a single verdict and cannot tell them apart, whereas the model assigns higher growth probabilities to the genomes that do grow, most clearly where the annotated pathway looked incomplete (Figure~\ref{fig:concordant_analysis}C,D).
+Among those, the rule returns a single verdict and cannot tell them apart, whereas the model assigns higher growth probabilities to the genomes that do grow, most clearly where the annotated pathway looked incomplete (Supplementary Text~S10).
 The model adds to the rule rather than replacing it, and the discordant genomes removed by filtering are the ones that carry this information.
 
 Li et al.\ reported that datasets exceeding approximately 1000 genomes can enable out-of-clade prediction for some traits~\cite{Li2023-up}, whereas Yu et al.\ found that increasing sample size did not rescue generalisation under phylogenetically biased sampling~\cite{Yu2025BiasedSampling}.
 Within our sample-size regime (up to 780 strains), the heterogeneity of training samples rather than their number alone drove shortcut learning, extending that second result from taxonomic to mechanistic heterogeneity.
 Curated data quality is known to improve trait prediction~\cite{Koblitz2025Phenotype}, but concordance is a criterion of a different kind.
 Discordant records are not necessarily erroneous, since a genome may grow through an uncharacterised route or fail to grow despite a complete pathway, so concordance removes mechanistic heterogeneity rather than error.
-Increasing data volume did not improve generalisation, since adding $\sim$1800 BacDive genomes per phenotype~\cite{Schober2025BacDive} did not improve cross-dataset performance over a roughly four-fold smaller concordant training set and reduced feature reproducibility (Supplementary Text~S11).
+Adding up to $\sim$1800 BacDive genomes per phenotype~\cite{Schober2025BacDive} improved cross-dataset performance over full-data training but not significantly beyond a roughly four-fold smaller concordant training set, and reduced feature reproducibility (Supplementary Text~S11).
 
 
 \subsection*{Practical Deployment and Confidence-Guided Experimentation}
 
 Concordance filtering cannot be applied without a mechanistic predictor for the phenotype in question, which exists only for well-characterised pathways.
 One alternative is to weight samples by phylogenetic label agreement, which requires no pathway annotations and increased true-positive recovery, though with lower specificity and little balanced-accuracy change from unfiltered ML (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
-When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which recovers much of the specialist's cross-dataset accuracy (Supplementary Text~S10).
+When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which reached balanced accuracy 0.77 on the 72\% it retained (Supplementary Text~S10).
 Explainable predictors whose rules are learned from harmonised phenotype data, rather than curated, are another route to such a check~\cite{Masa2025MediaPrediction}.
 A second constraint is how much labelled data these models need, measured on cross-dataset tests since random holdout overestimates generalisation~\cite{Roberts2017CrossValidation}.
 A small concordant training set is enough to indicate whether a phenotype is learnable from genomic features, since 50 to 100 concordant samples reached at least 90\% of the all-available-sample performance for most shared phenotypes (Supplementary Figure~\ref{fig:sample_size_phenotypes}).

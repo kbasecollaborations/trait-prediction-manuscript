@@ -7,7 +7,7 @@ Cultivation-based methods underlie most phenotype data but cannot characterise u
 Phylogeny has commonly served as a proxy for phenotype prediction, however, it is insufficient for novel organisms with limited phylogenetic context or for traits that are not phylogenetically conserved \cite{Li2023-up,Goberna2016Predicting,Plata2015PhenotypicEvolution}.
 
 Advances in genomics offer a path to overcome these limitations \cite{Quince2017Shotgun,Nayfach2021Catalog}.
-Genome-based predictions provide an alternative, enabling characterisation of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms underlying phenotypic variation.
+Genome-based predictions provide an alternative, enabling characterisation of both cultured and uncultured taxa while potentially uncovering the genetic mechanisms underlying phenotypic variation~\cite{Ramoneda2024-yb,Hoffert2026PeriodicTable}.
 Early comparative-genomics and machine-learning systems, including PICA and Traitar, learned broad panels of microbial phenotypes from gene or protein-family patterns and linked predictive features to traits~\cite{Feldbauer2015PICA,Weimann2016Traitar,Brbic2016Landscape,Karlsen2023Genotype,Lees2020Pangenome}.
 More recent multi-trait models such as MICROPHERRET and BacDiveAI extend phenotype coverage or draw on high-quality curated training data, while metaTraits integrates culture-derived records with outputs from multiple genome-based prediction systems at genome-catalogue scale~\cite{Bizzotto2024MICROPHERRET,Koblitz2025Phenotype,Podlesny2026MetaTraits}, and knowledge graphs such as KG-Microbe harmonise strain phenotype, growth condition, and taxonomy data across sources~\cite{Santangelo2026KGMicrobe}.
 Mechanistic approaches such as GapMind and microTrait instead infer metabolic or ecological capabilities from curated genes, pathways, and logical rules~\cite{Price2020GapMind,Price2022GapMindCarbon,Karaoz2022MicroTrait}.
@@ -27,8 +27,8 @@ The core biochemical transformations of many catabolic pathways are well charact
 Transporters and broad-specificity enzymes are difficult to annotate, divergent or uncharacterised genes can perform similar chemistry, and regulatory mechanisms are inconsistently conserved across phylogeny.
 We integrated binary growth outcomes for 819 microbial strains across 240 carbon sources from four independent experimental collections and developed phenotype-specific classifiers for 15 shared phenotypes.
 
-Within the held-out concordant subset, models trained on concordant samples, those whose measured growth matches their annotated pathways, act as specialists.
-They generalise better across datasets, more often recover established pathway genes as top features, and rescue some samples misclassified by GapMind, a pathway-completeness predictor.
+Models trained on concordant samples, those whose measured growth matches their annotated pathways, act as specialists.
+On held-out concordant samples they generalise better across datasets; they also more often recover established pathway genes as top features and rescue some samples misclassified by GapMind, a pathway-completeness predictor.
 This specialisation comes at the cost of coverage: the discordant samples set aside are precisely those whose genotype--phenotype links fall outside curated pathway definitions, so the resulting models apply to pathway-consistent genomes rather than to the full diversity of genotype--phenotype relationships.
 Genome-based phenotype prediction is therefore constrained not only by training-data size but by whether the labels agree with the mechanism being learned.
 Accuracy is consequently conditional on the genomes a model was built to describe, rather than a single value reported per phenotype.

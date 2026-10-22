@@ -16,7 +16,7 @@
 
 We harmonised four experimental carbon source utilisation datasets spanning phylogenetically and ecologically diverse bacteria; analyses used the 15 phenotypes shared across all four datasets (Table~\ref{tab:dataset_overview}).
 ATLeaf~\cite{Schafer2023-nk} tested \textit{Arabidopsis thaliana} leaf-surface isolates on minimal agar medium.
-Biolog~\cite{BiologDatasetCitation} was compiled from multiple published studies; growth calls derive predominantly from Biolog Phenotype MicroArray colourimetric tetrazolium assays in 96-well plates, with a subset from other published growth-assay formats, and per-strain sources are given in the deposited metadata~\cite{ZenodoDeposit}.
+Biolog~\cite{BiologDatasetCitation} was compiled from multiple published studies and unpublished contributions; growth calls derive from Biolog 96-well plate assays (GEN III, GN2 or Phenotype MicroArray, depending on the source), with a subset from other published growth-assay formats, and source studies for the published strains are given in the deposited metadata~\cite{ZenodoDeposit}.
 Marine~\cite{Gralka2023-ft} assessed heterotrophic marine bacteria.
 Populus~\cite{PopulusDatasetCitation} is a Biolog carbon-source assay of ORNL Plant-Microbe Interfaces isolates from the \textit{Populus deltoides} rhizosphere and endosphere, recording optical density in MOPS minimal medium.
 Because of its small sample size and narrow phylogenetic breadth, Populus was excluded from selected feature-stability comparisons.
@@ -62,8 +62,8 @@ Because both pre-processing filters are label-free, applying them across the ful
 
 Table~\ref{tab:feature_comparison} gives the histidine worked example under full-data and concordant training.
 Stable features ranked among the top 10 by mean absolute SHAP value in at least 70\% of 20 runs, with cluster labels denoting SHAP-supervised redundancy groups (Methods).
-Under full-data training, core histidine enzymes other than K01712 appeared among dataset-specific stable features but not in the aggregated dataset.
-Under concordant training, the cluster containing K01468 (imidazolonepropionase), K01712 (urocanate hydratase), and K05836 (histidine-utilisation repressor) was recovered across datasets, the shared-cluster count rose from 4 to 8, the held-out-alone count fell from 6 to 3, and pathway concentration on map00340 rose from 17\% to 33\%.
+Under full-data training, the cluster containing K01468 and K01712 was already shared in all three comparisons (both KOs for ATLeaf and Biolog, K01712 alone for Marine), whereas K01745 and K05603 appeared only among dataset-specific stable features.
+Under concordant training, both K01468 (imidazolonepropionase) and K01712 (urocanate hydratase) were shared in all three comparisons, K05836 (histidine-utilisation repressor) became a shared feature in all three, the shared-cluster count rose from 4 to 8, the held-out-alone count fell from 6 to 3, and pathway concentration on map00340 rose from 17\% to 33\%.
 
 
 The example shared feature column of Table~\ref{tab:main_feature_comparison} shows a shared KO where the two models select the same feature outright, and otherwise a representative KO from each shared redundancy cluster; at most two are listed, so the column is illustrative rather than exhaustive, and it is empty only where no cluster is shared.
@@ -148,7 +148,7 @@ Each box summarises the one to four cross-dataset splits available for that phen
 
 \subsection*{Supplementary Text S6: Learning Curves for the Shared Phenotypes}
 
-Across the 15 shared phenotypes, concordance-trained KOFAM performance approached its all-available-sample value within 50 to 100 training samples (Figure~\ref{fig:sample_size_phenotypes}).
+For most of the 15 shared phenotypes, concordance-trained KOFAM performance approached its all-available-sample value within 50 to 100 training samples (Figure~\ref{fig:sample_size_phenotypes}).
 Under cross-dataset evaluation, 11 of 15 phenotypes reached 90\% of their all-sample balanced accuracy with 50 samples and 14 of 15 with 100, fructose alone requiring 200.
 Median performance at 50 samples was 93.6\% of the all-sample value for concordant training and 91.0\% for full-data training.
 Early saturation does not by itself indicate a well-predicted phenotype.
@@ -219,7 +219,7 @@ The asymmetric weighting prioritised recall while ensuring that every phylogenet
 In the mechanism-free setting, complete phylogenetic conflicts remained in training with weights 0.60 for positive labels and 0.20 for negative labels, while complete agreements received 0.99 and 0.98, respectively.
 Four weight configurations $(w_{\mathrm{phylo}}, w_{\mathrm{gap}}, w_{\mathrm{exp}})$ were evaluated: the mechanism-free $(0.40, 0.00, 0.60)$ and three GapMind-weighted settings $(0.20, 0.30, 0.50)$, $(0.15, 0.40, 0.45)$, and $(0.10, 0.50, 0.40)$.
 All weights were applied to training and validation samples only; held-out test labels were not used to calculate them, and held-out test samples were unchanged.
-The mechanism-free analysis therefore retained $80\%$ of samples as rows ($n\approx 427$; summed sample weight $\approx374$), compared with $n\approx 534$ without filtering and $n\approx385$ under concordance filtering.
+Only genomes placed in the phylogenetic tree could be scored, so the mechanism-free analysis retained $80\%$ of samples as rows ($n\approx 427$; summed sample weight $\approx374$), compared with $n\approx 534$ without filtering and $n\approx385$ under concordance filtering.
 
 \paragraph{Performance across the weight sweep.}
 Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.005, while mean recall rose from 0.759 at $w_{\mathrm{gap}}=0$ to 0.826 at $w_{\mathrm{gap}}=0.5$ as precision declined from 0.733 to 0.701.
@@ -307,7 +307,7 @@ The analysis cannot distinguish assay differences, ecological or strain-history 
 \textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \makecell[r]{\textbf{Positive-} \\ \textbf{Call Rate}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 206 & 15 & 0.47 & Agar plate \\
-Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog PM and related assays \\
+Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog plates and related assays \\
 Marine  & 175 & 100 & 172 & 157 & 15 & 0.51 & Liquid culture OD \\
 Populus & 58  & 190 & 55  & 55  & 15 & 0.74 & Liquid culture OD \\
 \hline
