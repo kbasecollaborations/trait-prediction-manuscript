@@ -11,7 +11,7 @@ dependencies = [
     "pandas",
     "matplotlib",
     "seaborn",
-    "trait_prediction @ git+ssh://git@github.com/kbasecollaborations/trait-prediction.git@main",
+    "trait_prediction @ git+https://github.com/kbasecollaborations/trait-prediction.git@d5360dc80abec577f69ddf6d745fb1008c077b52",
     "statsmodels",
     "pyqt5",
     "scikit-bio>=0.7.0",

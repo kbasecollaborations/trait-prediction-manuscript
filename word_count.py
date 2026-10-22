@@ -4,7 +4,7 @@
 This script parses ``main.tex`` to find manuscript ``\\input{sections/...}``
 lines and uses the external ``texcount`` tool to compute LaTeX-aware word
 counts for each manuscript section. It then reports counts against the ISME
-Original Article limits documented in ``docs/isme_guidelines.md``.
+Original Article limits documented in ``docs/isme_guidelines/isme_guidelines.md``.
 
 Run from the repository root as::
 
@@ -31,7 +31,7 @@ import subprocess
 from dataclasses import dataclass
 
 
-DEFAULT_GUIDELINES_PATH = pathlib.Path("docs/isme_guidelines.md")
+DEFAULT_GUIDELINES_PATH = pathlib.Path("docs/isme_guidelines/isme_guidelines.md")
 MAIN_BODY_SECTION_STEMS = ("introduction", "methods", "results", "discussion")
 REPORT_SECTION_STEMS = (
     "abstract",
@@ -442,7 +442,7 @@ def main() -> None:
         "--guidelines",
         type=pathlib.Path,
         default=DEFAULT_GUIDELINES_PATH,
-        help="Path to the ISME guidelines file (default: docs/isme_guidelines.md)",
+        help="Path to the ISME guidelines file (default: docs/isme_guidelines/isme_guidelines.md)",
     )
     args = parser.parse_args()
 
