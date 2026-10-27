@@ -31,12 +31,12 @@ import pandas as pd
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 RAW_DIR: Final[Path] = REPO_ROOT / "data/raw/phenotypes"
-LEGACY_NAME_MAP: Final[Path] = RAW_DIR / "phenotype_common_names_legacy.csv"
+NAME_MAP: Final[Path] = RAW_DIR / "phenotype_common_names.csv"
 FULL_OUT: Final[Path] = REPO_ROOT / "data/processed/substrate_identity.csv"
 ALL_OUT: Final[Path] = REPO_ROOT / "data/zenodo/substrate_identity_all.csv"
 COMMON15_OUT: Final[Path] = REPO_ROOT / "data/zenodo/substrate_identity_common15.csv"
 
-#: Datasets keyed by the raw handoff file stem and the legacy name-map column.
+#: Datasets keyed by the raw handoff file stem and the name-map column.
 DATASETS: Final[dict[str, str]] = {
     "lit": "Lit",
     "atleaf": "AT Leaf",
@@ -61,63 +61,65 @@ COMMON_PHENOTYPES: Final[list[str]] = [
     "m-Inositol",
 ]
 
-#: Corrected bindings, keyed by ``(dataset, published phenotype)``.
+#: Reviewed bindings, keyed by ``(dataset, published phenotype)``.
 #:
 #: ``source`` is the exact raw column header to bind to. ``rename_to`` renames the
-#: published file where the generic name cannot denote a single molecule. Every entry
-#: differs from the original pipeline's choice.
+#: published file where the generic name cannot denote a single molecule. ``note`` is
+#: published as ``binding_note``, so it states the evidence for the binding only.
 CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
     # Populus: columns bound to the wrong molecule by last-wins.
     ("pmi", "Glucose"): {
         "source": "a-D-Glucose",
-        "reason": "L-glucose (PM2A C2, 0/58) is not catabolised by these taxa; "
-        "alpha-D-glucose (PM1 C9, 58/58) is the substrate every other dataset uses.",
+        "note": "No Populus profile grows on L-glucose (PM2A C2, 0/58); alpha-D-glucose (PM1 "
+        "C9, 58/58) is D-glucose, the substrate every other dataset assays.",
     },
     ("pmi", "Arabinose"): {
         "source": "L-Arabinose",
-        "reason": "L-arabinose (PM1 A2, 51/58) is the plant pentose assayed by ATLeaf "
-        "(arab__L) and Marine (L-Arabinose); D-arabinose (PM2A B5, 13/58) is the outlier.",
+        "note": "L-arabinose (PM1 A2, 51/58) is the plant pentose that ATLeaf and Marine assay; "
+        "D-arabinose (PM2A B5, 13/58) is the outlier.",
     },
     ("pmi", "Aspartic-Acid"): {
         "source": "L-Aspartic Acid",
-        "reason": "L-aspartate (PM1 A7, 44/58) is the proteinogenic, anaplerotic form and "
-        "is what the literature dataset retained; D-aspartate (PM1 D2, 9/58) needs a racemase.",
+        "note": "L-aspartate (PM1 A7, 44/58) is the proteinogenic, anaplerotic form and "
+        "the one bound in the Biolog compilation; D-aspartate (PM1 D2, 9/58) needs a racemase.",
     },
     ("pmi", "Fucose"): {
         "source": "L-Fucose",
-        "reason": "L-fucose (PM1 B4, 31/58) is the abundant deoxyhexose modelled by GapMind; "
+        "note": "L-fucose (PM1 B4, 31/58) is the abundant deoxyhexose modelled by GapMind; "
         "D-fucose (PM2A B11, 5/58) is rare and often only a gratuitous inducer.",
     },
     ("pmi", "Arabitol"): {
         "source": "D-Arabitol",
-        "reason": "D-arabitol (PM2A B6, 52/58) is the widespread form and the one the "
-        "literature dataset assayed; L-arabitol (PM2A B7, 19/58) is the outlier.",
+        "note": "D-arabitol (PM2A B6, 52/58) is the widespread form and the one the "
+        "Biolog compilation assayed; L-arabitol (PM2A B7, 19/58) is the outlier.",
     },
     ("pmi", "Galactonic-Acid-g-Lactone"): {
         "source": "D-Galactonic Acid-g-Lactone",
-        "reason": "D-galactonate (PM1 C2, 40/58) is the dgo-pathway substrate and the only "
-        "galactonolactone in the literature dataset; L- (PM1 H9, 13/58) is the outlier.",
+        "note": "D-galactonolactone (PM1 C2, 40/58), which yields the dgo-pathway substrate "
+        "D-galactonate, is the only galactonolactone in the Biolog compilation; "
+        "L-galactonolactone (PM1 H9, 13/58) is the outlier.",
     },
     ("pmi", "Methyl-D-Glucoside"): {
         "source": "b-Methyl-D-Glucoside",
-        "reason": "beta-methyl-D-glucoside (PM1 E8, 23/58) is the form the literature dataset "
-        "assayed; the anomers do not interconvert (locked methyl acetal) and use different "
-        "uptake systems, so the alpha- well (PM2A C6, 4/58) is a separate trait.",
+        "note": "beta-methyl-D-glucoside (PM1 E8, 23/58) is the form the Biolog compilation "
+        "assayed; the anomers do not interconvert (locked methyl acetal) and use "
+        "different uptake systems, so the alpha- well (PM2A C6, 4/58) is a different "
+        "trait and is listed in discarded.",
     },
     # Populus: constitutional isomers that no generic name can denote.
     ("pmi", "Hydroxy-Butyric-Acid"): {
         "source": "g-Hydroxy Butyric Acid",
         "rename_to": "g-Hydroxy-Butyric-Acid",
-        "reason": "alpha/beta/gamma-hydroxybutyrate are 2-, 3- and 4-hydroxybutyrate: "
-        "constitutional isomers on unrelated pathways. Binding is unchanged (gamma, matching "
-        "the literature dataset) but the generic name is not defensible.",
+        "note": "alpha/beta/gamma-hydroxybutyrate are 2-, 3- and 4-hydroxybutyrate: "
+        "constitutional isomers on unrelated pathways. Bound to the gamma isomer (PM2A "
+        "E9), as in the Biolog compilation.",
     },
     ("pmi", "Cyclodextrin"): {
         "source": "g-Cyclodextrin",
         "rename_to": "g-Cyclodextrin",
-        "reason": "alpha/beta/gamma-cyclodextrin are cyclic glucans of 6, 7 and 8 units with "
-        "different formulae. Binding is unchanged (gamma) but the generic name collided with "
-        "the alpha- well while b-Cyclodextrin.tsv was left separate.",
+        "note": "alpha/beta/gamma-cyclodextrin are cyclic glucans of 6, 7 and 8 glucose units "
+        "with different formulae. Bound to gamma-cyclodextrin (PM2A A5); "
+        "beta-cyclodextrin is published as a separate column.",
     },
     # Populus: the workbook names PM1 D8 'b-Methyl-D-Galactoside', but Biolog Cat. #12111,
     # the opm R package and DuctApe (CAS 3396-99-4 = PubChem CID 76935) all give that well
@@ -126,49 +128,53 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
     ("pmi", "b-Methyl-D-Galactoside"): {
         "source": "b-Methyl-D-Galactoside",
         "rename_to": "a-Methyl-D-Galactoside",
-        "reason": "Workbook row 47 is PM1 well D8, which is alpha-methyl-D-galactoside "
-        "(a MelB/MelA substrate). The ORNL sheet transcribed PM2A C7's name onto it.",
+        "note": "Workbook row 47 lies between a-Keto-Butyric Acid (PM1 D7) and a-D-Lactose "
+        "(PM1 D9), so it is PM1 well D8, alpha-methyl-D-galactoside (a MelB/MelA "
+        "substrate); the workbook labels it 'b-Methyl-D-Galactoside', the name of PM2A C7.",
     },
     ("pmi", "b-Methyl-D-Galactoside.1"): {
         "source": "b-Methyl-D-Galactoside.1",
         "rename_to": "b-Methyl-D-Galactoside",
-        "reason": "Workbook row 131 is PM2A well C7, the genuine beta anomer (a LacY/LacZ "
-        "substrate). The '.1' suffix was a pandas duplicate-column artefact baked into the "
-        "legacy name map.",
+        "note": "Workbook row 131 is PM2A well C7, beta-methyl-D-galactoside (a LacY/LacZ "
+        "substrate). The raw Populus matrix, data/raw/phenotypes/pmi_phenotypes.tsv, "
+        "repeats the header 'b-Methyl-D-Galactoside', and source_column names this "
+        "second copy 'b-Methyl-D-Galactoside.1'.",
     },
     # Literature: columns bound to the wrong molecule.
     ("lit", "Malic-Acid"): {
         "source": "Carbon-L-Malic-Acid",
-        "reason": "L-malate (226/270) is the TCA intermediate and is what Populus retained; "
-        "D-malate (151/305) is the narrow DmlA trait.",
+        "note": "L-malate (226/270) is the TCA intermediate and the isomer bound in Populus; "
+        "D-malate (151/305) is a separate trait that depends on the D-malate "
+        "dehydrogenase DmlA.",
     },
     ("lit", "Fucose"): {
         "source": "Carbon-L-Fucose",
-        "reason": "L-fucose is the canonical deoxyhexose; the original pipeline kept D-fucose "
-        "in both Biolog and Populus, so both were consistently wrong.",
+        "note": "L-fucose is the canonical deoxyhexose modelled by GapMind and the isomer "
+        "bound in Populus.",
     },
     ("lit", "Hydroxy-Butyric-Acid"): {
         "source": "Carbon-g-Hydroxy-Butyric-Acid",
         "rename_to": "g-Hydroxy-Butyric-Acid",
-        "reason": "Constitutional isomers, as for Populus. Binding unchanged (gamma).",
+        "note": "alpha- and gamma-hydroxybutyric acid (2- and 4-hydroxybutyrate) are "
+        "constitutional isomers; bound to the gamma isomer, as in Populus.",
     },
     # Literature: N-Acetyl- was stripped, changing the compound.
     ("lit", "Glucosamine"): {
         "source": "Carbon-N-Acetyl-D-Glucosamine",
         "rename_to": "N-Acetyl-D-Glucosamine",
-        "reason": "lit_func stripped 'N-Acetyl-', so this column held GlcNAc under the name of "
-        "free glucosamine. Populus and Marine both keep the two apart; renaming merges this "
-        "column with their N-Acetyl-D-Glucosamine columns.",
+        "note": "N-acetyl-D-glucosamine (GlcNAc), the compound of the Populus "
+        "N-Acetyl-D-Glucosamine column.",
     },
     ("lit", "Galactosamine"): {
         "source": "Carbon-N-Acetyl-D-Galactosamine",
         "rename_to": "N-Acetyl-D-Galactosamine",
-        "reason": "As above: the column held N-acetyl-D-galactosamine, not free galactosamine.",
+        "note": "N-acetyl-D-galactosamine (GalNAc), the compound of the Populus "
+        "N-Acetyl-D-Galactosamine column.",
     },
     ("lit", "Neuraminic-Acid"): {
         "source": "Carbon-N-Acetyl-Neuraminic-Acid",
         "rename_to": "N-Acetyl-Neuraminic-Acid",
-        "reason": "As above: the column held N-acetylneuraminic acid (sialic acid).",
+        "note": "N-acetylneuraminic acid (sialic acid).",
     },
     # Marine: the original notebook hardcoded 'Galacturonate-lmw' -> 'Galacturonic-Acid',
     # binding the shared name to the pectin polysaccharide. ``marine_published_name`` no
@@ -176,11 +182,17 @@ CORRECTIONS: Final[dict[tuple[str, str], dict[str, str]]] = {
     ("marine", "Galacturonate"): {
         "source": "galacturonate",
         "rename_to": "Galacturonic-Acid",
-        "reason": "'D-Galacturonic acid sodium salt' (Gralka 2023 SI Table 2 row 80, 0.5 M, "
-        "6 C atoms) is the monomer ATLeaf, Biolog and Populus assay. The shared name "
-        "previously held 'Galacturonate polysaccharides LM from apple' (row 137, dosed in %, "
-        "no C-atom count), a pectin polysaccharide.",
+        "note": "'D-Galacturonic acid sodium salt' (Gralka 2023 SI Table 2 row 80, 0.5 M, "
+        "6 C atoms) is the monomer ATLeaf, Biolog and Populus assay. 'Galacturonate "
+        "polysaccharides LM from apple' (row 137, dosed in %, no C-atom count) is a "
+        "pectin polysaccharide, published as the separate column Galacturonate-lmw.",
     },
+}
+
+#: Populus molecule names where the workbook column name is not the compound.
+PMI_MOLECULES: Final[dict[str, str]] = {
+    "a-Methyl-D-Galactoside": "a-Methyl-D-Galactoside",
+    "b-Methyl-D-Galactoside": "b-Methyl-D-Galactoside",
 }
 
 #: Biolog plate wells for the substrates that matter to the shared analysis or that were
@@ -263,9 +275,9 @@ ATLEAF_MOLECULES: Final[dict[str, str]] = {
     "m-Inositol": "Myo-inositol, 5 mM (Schaefer Table S1)",
     "Arabinose": "L-arabinose, 6 mM (Schaefer Table S1)",
     "Xylose": "D-xylose, 6 mM (Schaefer Table S1)",
-    "Glucote": "Gluconic acid sodium salt, 5 mM (Schaefer Table S1; our filename corrupts 'Gluconate')",
-    "Succite": "Succinic acid disodium salt, 7.5 mM (Schaefer Table S1; our filename corrupts 'Succinate')",
-    "Beoate": "Potassium benzoate, 4.3 mM (Schaefer Table S1; our filename corrupts 'Bensoate')",
+    "Glucote": "Gluconic acid sodium salt, 5 mM (Schaefer Table S1)",
+    "Succite": "Succinic acid disodium salt, 7.5 mM (Schaefer Table S1)",
+    "Beoate": "Potassium benzoate, 4.3 mM (Schaefer Table S1)",
     "Methanol_La3": "Methanol with 20 uM LaCl3, 30 mM (Schaefer Table S1)",
     "Coniferyl_alcohol": "Coniferyl alcohol, 3 mM (Schaefer Table S1; no isomer given)",
     "Aspartate": "L-Asparic acid [sic] sodium salt, 7.5 mM (Schaefer Table S1)",
@@ -328,7 +340,7 @@ def legacy_published_name(dataset: str, index: int, legacy: pd.DataFrame) -> str
     index
         Positional index of the source column.
     legacy
-        The legacy 191x3 name map, read with ``dtype=str``.
+        The 191x3 name map, read with ``dtype=str``.
 
     Returns
     -------
@@ -390,8 +402,8 @@ def build() -> pd.DataFrame:
     -------
     pandas.DataFrame
         One row per (dataset, published phenotype), including the source column it binds
-        to, the molecule, the Biolog well where applicable, and whether the binding was
-        corrected relative to the original pipeline.
+        to, the molecule, the Biolog well where applicable, and the evidence for reviewed
+        bindings.
 
     Raises
     ------
@@ -399,7 +411,7 @@ def build() -> pd.DataFrame:
         If any dataset would emit two published files under the same name, or if a
         correction names a source column that does not exist.
     """
-    legacy = pd.read_csv(LEGACY_NAME_MAP, dtype=str)
+    legacy = pd.read_csv(NAME_MAP, dtype=str)
     rows: list[dict[str, object]] = []
 
     for dataset in ("lit", "atleaf", "pmi", "marine"):
@@ -424,16 +436,17 @@ def build() -> pd.DataFrame:
                 f"{dataset}: unknown source column {source!r}"
             )
             final_name = correction.get("rename_to", published)
-            molecule = source
+            molecule = source.removeprefix("Carbon-") if dataset == "lit" else source
             if dataset == "atleaf":
                 molecule = ATLEAF_MOLECULES.get(published, source)
             elif dataset == "marine":
                 molecule = MARINE_MOLECULES.get(final_name, source)
+            elif dataset == "pmi":
+                molecule = PMI_MOLECULES.get(final_name, source)
             rows.append(
                 {
                     "dataset": dataset,
                     "phenotype": final_name,
-                    "legacy_phenotype": published,
                     "source_column": source,
                     "molecule": molecule,
                     "biolog_well": biolog_well(source)
@@ -441,8 +454,7 @@ def build() -> pd.DataFrame:
                     else "",
                     "collapsed_group": "; ".join(members) if len(members) > 1 else "",
                     "discarded": "; ".join(m for m in members if m != source),
-                    "corrected": bool(correction),
-                    "correction_reason": correction.get("reason", ""),
+                    "binding_note": correction.get("note", ""),
                     "in_common15": final_name in COMMON_PHENOTYPES,
                 }
             )
@@ -472,20 +484,19 @@ def main() -> None:
             "biolog_well",
             "collapsed_group",
             "discarded",
-            "corrected",
         ]
     ].sort_values(["phenotype", "dataset"], ignore_index=True)
     common.to_csv(COMMON15_OUT, index=False)
 
-    print(
-        f"{FULL_OUT}: {len(table)} rows, {int(table.corrected.sum())} corrected bindings"
-    )
+    reviewed = table.binding_note.ne("")
+    print(f"{FULL_OUT}: {len(table)} rows, {int(reviewed.sum())} reviewed bindings")
     print(
         f"{COMMON15_OUT}: {len(common)} rows ({common.phenotype.nunique()} phenotypes x 4 datasets)"
     )
     for dataset, group in table.groupby("dataset"):
         print(
-            f"  {dataset}: {len(group)} published phenotypes, {int(group.corrected.sum())} corrected"
+            f"  {dataset}: {len(group)} published phenotypes, "
+            f"{int(group.binding_note.ne('').sum())} reviewed"
         )
 
 

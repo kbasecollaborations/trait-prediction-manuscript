@@ -138,12 +138,14 @@ def build() -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        One row per deposited genome, in the genome table's original order.
-        ``data_source`` holds PMIDs or a standard label for a source without one,
-        ``genome_match`` whether the phenotype record names this genome
-        (``exact``), is shared with other deposited genomes (``shared_record``),
-        or comes from another strain (``proxy``), and ``kbase_phenotypeset``
-        the public KBase copy of a CCESR genome's growth calls.
+        One row per deposited genome, in the genome table's original order,
+        without the internal ``provenance_source`` and
+        ``genome_original_source`` columns. ``data_source`` holds PMIDs or a
+        standard label for a source without one, ``genome_match`` whether the
+        phenotype record names this genome (``exact``), is shared with other
+        deposited genomes (``shared_record``), or comes from another strain
+        (``proxy``), and ``kbase_phenotypeset`` the public KBase copy of a
+        CCESR genome's growth calls.
 
     Raises
     ------
@@ -193,11 +195,13 @@ def build() -> pd.DataFrame:
     out.loc[proxy | out["genome_id"].isin(PROXY_IDS), "genome_match"] = "proxy"
     out["kbase_phenotypeset"] = out["genome_id"].map(links["kbase_phenotypeset"])
 
-    out = out.drop(columns="record_key")
+    # Spreadsheet labels and curator notes drive the logic above but are not deposited.
+    out = out.drop(
+        columns=["record_key", "provenance_source", "genome_original_source"]
+    )
     ordered = [
         "genome_id",
         "organism",
-        "provenance_source",
         "assay_type",
         "data_source",
         "genome_match",
@@ -212,7 +216,7 @@ def main() -> None:
     table.to_csv(OUTPUT_FILE, sep="\t", index=False)
 
     print(f"Wrote {OUTPUT_FILE} ({len(table)} genomes)")
-    for column in ("assay_type", "provenance_source", "genome_match"):
+    for column in ("assay_type", "genome_match"):
         print(f"\n  by {column}:")
         print(table[column].value_counts(dropna=False).to_string())
 

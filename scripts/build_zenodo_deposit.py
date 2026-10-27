@@ -32,7 +32,7 @@ ARCHIVE_NAME: Final[str] = "trait-prediction-data.zip"
 #: (KOFAM, RAST, GapMind), which are deposited for reuse even where no published panel
 #: reads them.
 INPUTS: Final[tuple[str, ...]] = (
-    # Source phenotype tables, including the legacy name map the harmonisation reads.
+    # Source phenotype tables and the column-name map build_substrate_identity reads.
     "data/raw/phenotypes",
     # BacDive phenotypes for the data-volume comparison (Figure S7).
     "data/raw/bacdive_dataset/metabolic_phenotypes.tsv",
