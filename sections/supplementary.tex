@@ -48,7 +48,7 @@ Reverse searches validated candidates, and required-step matches, alternative ro
 \paragraph*{Model family and hyperparameters.}
 We compared gradient-boosted trees, regularised-linear and projection methods, Random Forest, and a phylogeny-aware model across 15 phenotypes and four evaluation regimes.
 88\% of phenotype--regime cells tied within 0.05 balanced accuracy, with boosted trees strongest and Random Forest the only consistent under-performer (Table~\ref{tab:best_models_counts}).
-This comparison used one protocol without early stopping, so its absolute values differ by $\sim$0.02 BA from the early-stopping CatBoost results.
+This comparison used one protocol without early stopping, so its absolute values differ by $\sim$0.02 in balanced accuracy from the early-stopping CatBoost results.
 CatBoost was retained at 1000 iterations, learning rate 0.03, depth 4, L2 regularisation 15, 10\% random feature subsampling, Bayesian bootstrap, and logloss early stopping with patience 50, because further phenotype-specific tuning did not improve accuracy.
 Figure~\ref{fig:ml_performance}C used a fixed 500-iteration CatBoost model without early stopping.
 The minority-class filter (Methods) was computed on the test subset plotted in each analysis and applied identically to both series in every machine-learning-versus-GapMind comparison (\texttt{scripts/minority\_filter.py}).
@@ -195,7 +195,7 @@ The high-novelty strategy took the candidates ranked highest on this measure; th
 Each eligible held-out dataset was split approximately 50:50 into candidate and evaluation pools, stratified where possible, and 25 candidate labels were added to the concordant training set.
 Models used 120 CatBoost iterations, depth 4, and learning rate 0.05 without evaluation-set early stopping, across three seeds and four held-out datasets.
 Because the random baseline also adds labels from the held-out dataset, it carries the benefit of initial exposure, and the other strategies are credited only with improvement beyond it.
-After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, BH-adjusted $q=0.052$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
+After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidence selection exceeded random selection ($p=0.024$, Benjamini--Hochberg-adjusted $q=0.052$); across the six phenotype means, four favoured low-confidence selection and the paired test was not significant ($p=0.156$).
 
 \subsection*{Supplementary Text S9: Composite Confidence Weighting}
 

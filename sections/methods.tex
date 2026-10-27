@@ -46,9 +46,9 @@ Cross-dataset and phylogenetic evaluations used a single 85:15 train:validation 
 
 \subsubsection*{Random Holdout and Cross-Dataset Testing}
 
-Performance was evaluated under four scenarios: random holdout within the aggregated dataset; leave-one-dataset-out cross-dataset; and in-clade and out-of-clade phylogenetic splits.
+Performance was evaluated by balanced accuracy (BA) under four scenarios: random holdout within the aggregated dataset; leave-one-dataset-out cross-dataset; and in-clade and out-of-clade phylogenetic splits.
 Exact-duplicate feature vectors were rare and did not produce train--test overlap in leave-one-dataset-out evaluation (Supplementary Text~S3).
-Phenotype--dataset combinations with fewer than 10 minority-class test samples were excluded to prevent balanced-accuracy collapse; cross-dataset missing features were imputed as zero.
+Phenotype--dataset combinations with fewer than 10 minority-class test samples were excluded to prevent BA collapse; cross-dataset missing features were imputed as zero.
 
 \subsubsection*{Phylogenetic Partitioning}
 
@@ -79,15 +79,15 @@ Subsets that retained only one class were skipped.
 
 \subsection*{Reliability and Experiment-Prioritisation Analyses}
 
-For full-data and concordance-trained models, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error (ECE).
+For full-data and concordance-trained models, prediction confidence was defined as $\max(p,\,1-p)$ and used as a ranking score; calibration was reported separately via reliability diagrams and expected calibration error.
 The receiver operating characteristic area under the curve (ROC AUC) for confidence-based discrimination of correct from incorrect predictions was pooled across phenotypes~\cite{Pedregosa2011Sklearn}.
-Risk--coverage curves retained genomes in decreasing order of confidence, scoring the retained subset by accuracy against the phenotype's majority-class rate, since balanced accuracy is undefined when the most-confident genomes share one true class.
-Mean confidence and the fraction of high-confidence predictions were Spearman-correlated with per-phenotype cross-dataset balanced accuracy (Supplementary Text~S8).
+Risk--coverage curves retained genomes in decreasing order of confidence, scoring the retained subset by accuracy against the phenotype's majority-class rate, since BA is undefined when the most-confident genomes share one true class.
+Mean confidence and the fraction of high-confidence predictions were Spearman-correlated with per-phenotype cross-dataset BA (Supplementary Text~S8).
 
 \subsection*{Statistical Analysis}
 
-Paired comparisons of balanced accuracy, precision, and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.\allowbreak wilcoxon}; Figures~\ref{fig:ml_performance}, \ref{fig:concordant_analysis}, and \ref{fig:improvement_strategies}).
+Paired comparisons of BA, precision, and recall across phenotypes used two-sided Wilcoxon signed-rank tests on phenotype-level means (\texttt{scipy.stats.\allowbreak wilcoxon}; Figures~\ref{fig:ml_performance}, \ref{fig:concordant_analysis}, and \ref{fig:improvement_strategies}).
 For the experiment-prioritisation comparison (Figure~\ref{fig:selective_prediction}C,D), seeds were averaged within phenotype--held-out-dataset cells, with a paired test of the six phenotype means as a sensitivity analysis.
-Per-phenotype label-free aggregates were related to cross-dataset balanced accuracy by Spearman rank correlation (\texttt{scipy.stats.\allowbreak spearmanr}; Supplementary Text~S8).
-Thirteen primary tests (eleven Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg procedure at a false-discovery rate of 0.05; raw $p$-values are reported in the main text with adjusted $q$-values for borderline tests, and comparisons outside this family are unadjusted.
+Per-phenotype label-free aggregates were related to cross-dataset BA by Spearman rank correlation (\texttt{scipy.stats.\allowbreak spearmanr}; Supplementary Text~S8).
+Thirteen primary tests (eleven Wilcoxon, two Spearman) were jointly adjusted by the Benjamini--Hochberg (BH) procedure at a false-discovery rate of 0.05; raw $p$-values are reported in the main text with adjusted $q$-values for borderline tests, and comparisons outside this family are unadjusted.
 Summary statistics are mean $\pm$ standard deviation across folds or repeats unless otherwise noted.

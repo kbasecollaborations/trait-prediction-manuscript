@@ -1,6 +1,6 @@
 \section*{Discussion}
 
-Machine learning models that predict microbial phenotypes from genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size, taxonomic bias, or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
+ML models that predict microbial phenotypes from genomic features generalise poorly across datasets~\cite{Pasolli2016MetaAnalysis,Whalen2022Pitfalls}, a limitation typically attributed to limited sample size, taxonomic bias, or feature-space artefacts~\cite{Li2023-up,Yu2025BiasedSampling,Leek2010BatchEffects}.
 Across four binary growth datasets and the 15 carbon sources assayed in all of them, we identify label--mechanism agreement in the training set as a determinant of cross-dataset generalisation that complements the established roles of sample size, phylogenetic structure, and feature-space choice.
 
 
@@ -28,8 +28,8 @@ Adding up to $\sim$1800 BacDive genomes per phenotype~\cite{Schober2025BacDive} 
 \subsection*{Practical Deployment and Confidence-Guided Experimentation}
 
 Concordance filtering cannot be applied without a mechanistic predictor for the phenotype in question, which exists only for well-characterised pathways.
-One alternative is to weight samples by phylogenetic label agreement, which requires no pathway annotations and increased true-positive recovery, though with lower specificity and little balanced-accuracy change from unfiltered ML (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
-When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which reached balanced accuracy 0.77 on the 72\% it retained (Supplementary Text~S10).
+One alternative is to weight samples by phylogenetic label agreement, which requires no pathway annotations and increased true-positive recovery, though with lower specificity and little BA change from unfiltered ML (Figure~\ref{fig:improvement_strategies}B,C)~\cite{Northcutt2021Confident,Bernhardt2022LabelCleaning}.
+When GapMind is available for every genome, a simpler option is to restrict a full-data model to the predictions that agree with it, which reached BA 0.77 on the 72\% it retained (Supplementary Text~S10).
 Explainable predictors whose rules are learned from harmonised phenotype data, rather than curated, are another route to such a check~\cite{Masa2025MediaPrediction}.
 A second constraint is how much labelled data these models need, measured on cross-dataset tests since random holdout overestimates generalisation~\cite{Roberts2017CrossValidation}.
 A small concordant training set is enough to indicate whether a phenotype is learnable from genomic features, since 50 to 100 concordant samples reached at least 90\% of the all-available-sample performance for most shared phenotypes (Supplementary Figure~\ref{fig:sample_size_phenotypes}).
