@@ -34,7 +34,7 @@ Panel A created in BioRender. Kishore, D. (2026) \url{https://BioRender.com/tz7t
 (A) Bar plot showing balanced accuracy for GapMind predictions across 15 phenotypes.
 GapMind predictions were compared with experimental outcomes using both strict (dark magenta) and permissive (magenta) pathway completeness thresholds.
 Dashed lines show the respective mean values.
-(B) Dot plot showing balanced accuracy for phylogeny-based nearest neighbour (k=3) predictions across 15 phenotypes under two evaluation scenarios: random split (top panel) and out-of-clade split (bottom panel).
+(B) Dot plot showing balanced accuracy for phylogeny-based nearest-neighbour ($k=3$) predictions across 15 phenotypes under two evaluation scenarios: random split (top panel) and out-of-clade split (bottom panel).
 Circles and squares indicate null model performance (Identity and Bernoulli baselines) and triangles indicate nearest-neighbour performance.
 Each phenotype contributes five splits per model, and the short horizontal bar within each group marks the mean of those five values.
 
@@ -101,11 +101,11 @@ Annotation: median ML balanced accuracy on each subset.
 (A) Left: counts of problematic genomes per dataset in two discordant categories: no observed growth despite at least one GapMind growth prediction, and universal observed growth despite incomplete GapMind pathways.
 Right: top-20 microbes ranked by number of phenotypes on which GapMind disagrees with the experimental label, coloured by membership in those categories from panel A.
 (B) Cross-dataset balanced accuracy, precision, and recall for soft-label weighting at $w_{\mathrm{gap}} \in \{0, 0.3, 0.4, 0.5\}$, with three reference conditions plotted at the left and right: no-filter ML and problematic-sample removal (left), and concordance training (right).
-Large markers show the mean across the 15 phenotype-level values, error bars show the standard error of the mean across those values, the small dots are the per-phenotype. The mean train+val sample size per phenotype-split is annotated below each tick.
+Large markers show the mean across the 15 phenotype-level values, error bars show the standard error of the mean across those values, and the small dots are the per-phenotype values. The mean train+val sample size per phenotype-split is annotated below each tick.
 The $w_{\mathrm{gap}} = 0$ setting is the mechanism-free configuration, and all conditions are evaluated on the same full held-out cross-dataset test set.
 The dotted horizontal line marks the GapMind permissive-threshold rule-based baseline on the same test set.
 (C) Per-phenotype $\Delta$ recall (ML minus GapMind) on the same test set for concordance-filtered (purple) and mechanism-free-weighted ML (light green); phenotypes are sorted by concordant-ML $\Delta$ recall, and mean train+val sample sizes are given in the legend.
-Each bar is the difference in recall pooled over the true-positive genomes of all four leave-one-dataset-out test sets, and asterisks mark the bars whose difference is significant at BH-adjusted $q < 0.05$ by an exact McNemar test on those same paired predictions.
+Each bar is the difference in recall pooled over the genomes with observed growth in all four leave-one-dataset-out test sets, and asterisks mark the bars whose difference is significant at BH-adjusted $q < 0.05$ by an exact McNemar test on those same paired predictions.
 Annotation: the number of phenotypes each strategy significantly beats or loses to GapMind on.
 (D) Balanced-accuracy scatter under random holdout (green circles) and cross-dataset evaluation (blue squares) comparing combined (GapMind + KOFAM + RAST) and phenotype-filtered (the focal phenotype's GapMind columns only) features.
 Points above the diagonal (equal performance, dashed) indicate that phenotype-filtered features outperform the combined set.
@@ -120,7 +120,7 @@ The annotation reports split-specific paired Wilcoxon p-values across phenotype 
 Accuracy is shown on the retained subset as a function of coverage (the fraction of held-out genomes the model commits to) with the least-confident genomes abstained on first.
 The grey dashed line marks the phenotype's majority-class rate, the accuracy reached by always predicting the more common outcome.
 Accuracy rather than balanced accuracy is plotted (Methods), so curves are read against the majority-class line rather than against $0.5$.
-(\textbf{B}) Reliability diagram for both models on the cross-dataset held-out test set, pooled across phenotypes (10 equal-width probability bins) shows mean predicted probability of growth against the observed growth fraction within each confidence bin.
+(\textbf{B}) Reliability diagram for both models on the cross-dataset held-out test set, pooled across phenotypes (10 equal-width probability bins), shows mean predicted probability of growth against the observed growth fraction within each confidence bin.
 The dashed diagonal marks perfect calibration, and the expected calibration error (ECE) and the pooled ROC AUC for confidence-based discrimination of correct from incorrect predictions are given in the legend.
 (\textbf{C}) Change in cross-dataset balanced accuracy after adding 25 held-out genome labels to the concordant training set, by label-free selection strategy (low confidence, diversity, random, high feature-novelty).
 Each strategy was run on six phenotypes with up to four held-out datasets and three seeds each, yielding 68 valid runs after excluding runs whose evaluation set contained a single class.
@@ -129,7 +129,7 @@ Violins show the distribution across these runs (horizontal bar, median; vertica
 These three come from the six phenotypes included in panel C and so differ from those in panel A.
 Boxes show the median and interquartile range, overlaid points show individual runs, and thin grey lines connect matched (held-out dataset, seed) runs across the two strategies ($n=12$ for histidine, $n=11$ for mannose, and $n=9$ for glucose).
 
-\noindent\textbf{Alt text:} Panel A: three risk-coverage line plots, for m-Inositol, sucrose, and glycerol, each comparing the concordance-trained and full-data models against a dashed majority-class baseline. The m-Inositol curves are flat and well above the baseline, the sucrose curves rise steeply as coverage tightens, and for glycerol the concordance-trained curve hovers at the baseline while the full-data curve runs well below it and declines further at the tightest coverages. Panel B: reliability diagram in which both curves are flatter than the dashed diagonal, lying above it at low predicted probabilities and below it at high ones, indicating overconfidence. Panel C: violin plots with overlaid jittered points for the four selection strategies. Panel D: side-by-side box plots for histidine, mannose, and glucose comparing the random and low-confidence strategies, with thin grey lines connecting matched runs. The low-confidence boxes sit above the random boxes for mannose and glucose and level with it for histidine.
+\noindent\textbf{Alt text:} Panel A: three risk-coverage line plots, for m-Inositol, sucrose, and glycerol, each comparing the concordance-trained and full-data models against a dashed majority-class baseline. The m-Inositol curves are flat and well above the baseline, the sucrose curves rise steeply as coverage tightens, and for glycerol the concordance-trained curve hovers at the baseline while the full-data curve runs well below it and declines further at the tightest coverages. Panel B: reliability diagram in which both curves are flatter than the dashed diagonal, lying above it at low predicted probabilities and below it at high ones, indicating overconfidence. Panel C: violin plots with overlaid jittered points for the four selection strategies. Panel D: side-by-side box plots for histidine, mannose, and glucose comparing the random and low-confidence strategies, with thin grey lines connecting matched runs. The low-confidence boxes sit above the random boxes for mannose and glucose and level with them for histidine.
 \par\medskip
 
 \refstepcounter{table}\label{tab:main_feature_comparison}%
@@ -143,7 +143,7 @@ The unique stable-cluster count comprises those present only in the held-out-alo
 The parenthetical (\% in pathway) is the fraction of those clusters whose membership includes at least one KO on the row's assigned KEGG reference pathway map.
 A cluster counts as pathway-resident when any of its KOs is on the map.
 The final example column reports one or two representative shared concordant-stable features for that phenotype, selected automatically and rendered with their KEGG descriptive names.
-\texttt{---} marks phenotypes with no shared cluster.
+An em dash (---) marks phenotypes with no shared cluster.
 This column is illustrative rather than exhaustive; the selection rules are given in Supplementary Text~S4.
 Histidine is the worked example (numeric cells in bold); its per-comparison KO lists and the narrower unique-cluster module coverage (M00045 \textit{histidine degradation}: 29\% $\rightarrow$ 50\%) appear in Supplementary Table~\ref{tab:feature_comparison} for full-data and concordant training.
 

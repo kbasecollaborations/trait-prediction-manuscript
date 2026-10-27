@@ -11,12 +11,12 @@ The reader-facing version lives in the "Supplementary Information" section of
 main.tex (back matter, next to Data Availability). Keep the two in sync: if a
 supplementary text section, figure, or table is added or dropped, both change.
 
----- supplement.pdf (Supplementary Information) - 46 words ----
+---- supplement.pdf (Supplementary Information) - 41 words ----
 
 Supplementary Information (PDF). Supplementary Texts S1-S12 (dataset
 descriptions, genome quality, model selection, feature recovery, reliability,
-and data-volume analyses), Supplementary Figures S1-S7, Supplementary Tables
-S1-S3. Underlying data are
+and data-volume analyses), Supplementary Figures S1-S7, and Supplementary
+Tables S1-S3. Underlying data are
 archived on Zenodo, and the analysis and manuscript code are available on GitHub.
 
 ---- end ----

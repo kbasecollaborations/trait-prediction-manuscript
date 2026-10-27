@@ -24,7 +24,7 @@ Because of its small sample size and narrow phylogenetic breadth, Populus was ex
 Generic carbon-source names such as ``glucose'' or ``serine'' do not specify stereochemistry, and the four datasets did not always assay the same isomer under the same name, so each phenotype was bound to one explicit source substrate, retaining the physiologically utilised isomer where a dataset assayed more than one.
 Identities were verified against Table~S1 of Sch\"afer et al.~\cite{Schafer2023-nk} for ATLeaf, Supplementary Table~2 of Gralka et al.~\cite{Gralka2023-ft} for Marine, and the Biolog PM1 and PM2A plate maps for the Biolog and Populus assays. \texttt{substrate\_identity\_common15.csv} in the Zenodo deposit~\cite{ZenodoDeposit} records the resulting bindings, with a companion table covering all 240 carbon sources.
 Two cases warrant comment.
-The Marine \emph{alanine} well contained DL-alanine whereas the other three datasets assayed L-alanine; a racemate well scores positive if either enantiomer is utilised, so the Marine column is a union trait rather than a different trait.
+The Marine \emph{alanine} well contained DL-alanine, whereas the other three datasets assayed L-alanine; a racemate well scores positive if either enantiomer is utilised, so the Marine column is a union trait rather than a different trait.
 For \emph{glucose}, the Populus alpha-D-glucose well was retained over the L-glucose well, which these taxa do not catabolise; the anomeric distinction is immaterial in solution because the free sugar interconverts by mutarotation, whereas for methyl glucosides and galactosides the locked acetal makes the two anomers separate traits taken up by different systems.
 
 \subsection*{Supplementary Text S2: Genome Quality Assessment}
@@ -67,7 +67,7 @@ Under concordant training, both K01468 (imidazolonepropionase) and K01712 (uroca
 
 
 The example shared feature column of Table~\ref{tab:main_feature_comparison} shows a shared KO where the two models select the same feature outright, and otherwise a representative KO from each shared redundancy cluster; at most two are listed, so the column is illustrative rather than exhaustive, and it is empty only where no cluster is shared.
-Features are ranked by the number of held-out comparisons in which they recur, and those whose redundancy cluster touches the row's KEGG map are listed first; off-pathway transporters or regulators appear only where no shared cluster touches the map (for Glycerol, the glpF facilitator and the glpR repressor; for Arginine, off-pathway choline/betaine and sarcosine-oxidase clusters).
+Features are ranked by the number of held-out comparisons in which they recur, and those whose redundancy cluster touches the row's KEGG map are listed first; off-pathway transporters or regulators appear only where no shared cluster touches the map (for glycerol, the \emph{glpF} facilitator and the \emph{glpR} repressor; for arginine, off-pathway choline/betaine and sarcosine-oxidase clusters).
 The displayed features do not enter the (\% in pathway) statistic, which scores canonical pathway-map residency across all shared clusters rather than the one or two shown.
 
 % ============================================================
@@ -91,7 +91,7 @@ Orders with at least eight tips are labelled with their tip count, and tip label
 \includegraphics[width=\textwidth]{figure_s2.pdf}
 \caption{\textbf{Only out-of-clade splits place test genomes far from their training set.}
 Tree distance (summed branch lengths) from each held-out test genome to its nearest training genome under random-holdout, in-clade, and out-of-clade splits, pooled across five splits per phenotype for the 15 shared phenotypes.
-Boxes are coloured by split type (random, green; in-clade, dark teal; out-of-clade, purple), show the median and interquartile range, points are individual test genomes (random $n=8{,}289$; in-clade $n=5{,}595$; out-of-clade $n=6{,}212$).
+Boxes are coloured by split type (random, green; in-clade, dark teal; out-of-clade, purple) and show the median and interquartile range; points are individual test genomes (random $n=8{,}289$; in-clade $n=5{,}595$; out-of-clade $n=6{,}212$).
 Random-holdout and in-clade test genomes lie close to the training set (medians 0.009 and 0.000), whereas out-of-clade splits produce much larger distances (median 1.109), validating the intended separation of the evaluation regimes in Figure~\ref{fig:ml_performance}.}
 \label{fig:phylogenetic_distance_splits}
 \end{figure}
@@ -125,9 +125,9 @@ GapMind concordance selected training samples, whereas KOFAM annotations supplie
 Under the same KOFAM feature space, concordant training improved cross-dataset balanced accuracy on concordant test samples for most phenotype--split combinations (Figure~\ref{fig:kofam_concordant}).
 The feature-recovery analysis nevertheless remains biologically related to the selection rule, since GapMind and KOFAM annotate the same genomes.
 However, GapMind scores curated reference proteins rather than KEGG modules, SHAP stability across datasets is not entailed by the selection rule, and several phenotypes recovered predominantly off-map features.
-A size and class-matched random-subset control recovered $0.38 \pm 0.03$ shared clusters (mean $\pm$ SD across ten draws), similar to full-data training (0.5) and below concordant training (1.3), indicating that the stability gain was specific to concordance rather than sample count (\texttt{scripts/figure5/figure5b\_random\_control.py}).
+A size- and class-matched random-subset control recovered $0.38 \pm 0.03$ shared clusters (mean $\pm$ SD across ten draws), similar to full-data training (0.5) and below concordant training (1.3), indicating that the stability gain was specific to concordance rather than sample count (\texttt{scripts/figure5/figure5b\_random\_control.py}).
 
-Raw, uncorrelated GapMind features were used for the rule-reconstruction reference (Figure~\ref{fig:concordant_analysis}A) and the phenotype-filtered comparison (Figure~\ref{fig:improvement_strategies}D) because the standard 0.95 correlation filter collapses repeated phenotype-prefixed representations of the same gene and can deplete individual pathway feature sets.
+Raw GapMind features without correlation filtering were used for the rule-reconstruction reference (Figure~\ref{fig:concordant_analysis}A) and the phenotype-filtered comparison (Figure~\ref{fig:improvement_strategies}D) because the standard 0.95 correlation filter collapses repeated phenotype-prefixed representations of the same gene and can deplete individual pathway feature sets.
 Because these features are the evidence the concordance rule itself is computed from, this reference bounds how far that rule can be reconstructed by the ML model from its own inputs, and is not an estimate of annotation quality.
 
 Feature selection within the combined matrix indicates why concatenating annotation types did not improve transfer (Figure~\ref{fig:dataset_characteristics}C).
@@ -201,7 +201,7 @@ After averaging seeds within 23 phenotype--held-out-dataset cells, low-confidenc
 
 The composite score used to weight training and validation samples (Figure~\ref{fig:improvement_strategies}B) was calculated as follows:
 \begin{equation*}
-    y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gap}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp},
+    y_{\mathrm{soft}} = w_{\mathrm{phylo}} \cdot \mathrm{phylo} + w_{\mathrm{gap}} \cdot \mathrm{GapMind} + w_{\mathrm{exp}} \cdot \mathrm{exp}.
 \end{equation*}
 Within each split, the phylogenetic component was the mean experimental label among the $k=3$ nearest training genomes and therefore took values 0, $1/3$, $2/3$, or 1.
 The training genome was excluded from its own neighbours.
@@ -223,7 +223,7 @@ Only genomes placed in the phylogenetic tree could be scored, so the mechanism-f
 
 \paragraph{Performance across the weight sweep.}
 Across the four settings, mean cross-dataset balanced accuracy on the full held-out test set varied by less than 0.005, while mean recall rose from 0.759 at $w_{\mathrm{gap}}=0$ to 0.826 at $w_{\mathrm{gap}}=0.5$ as precision declined from 0.733 to 0.701.
-At $w_{\mathrm{gap}}=0.5$ recall exceeded GapMind by a mean 0.089 ($p=0.010$) but precision was lower by 0.066 ($p=0.010$) and specificity by 0.198 ($p<0.001$), so the endpoint shifted the operating point towards positive calls rather than adding discriminative information.
+At $w_{\mathrm{gap}}=0.5$ recall exceeded GapMind by a mean of 0.089 ($p=0.010$) but precision was lower by 0.066 ($p=0.010$) and specificity by 0.198 ($p<0.001$), so the endpoint shifted the operating point towards positive calls rather than adding discriminative information.
 Mean balanced accuracy was 0.68 for concordant training and 0.644 for mechanism-free weighting (paired Wilcoxon $p=0.23$), against 0.646 without filtering and 0.69 for GapMind.
 Mechanism-free weighting increased mean recall by 0.011 over unfiltered ML (higher for 12 of 15 phenotypes, $p=0.11$) while reducing mean specificity by 0.015.
 Against GapMind on the same held-out genomes, concordant training recovered significantly more true positives for 9 of 15 phenotypes and fewer for 4, whereas mechanism-free weighting was higher for 6 and lower for 6; neither mean recall shift was significant ($p=0.095$ and $p=0.56$, respectively).
@@ -289,7 +289,7 @@ Bars and markers show means, error bars show the standard error across 45 phenot
 \subsection*{Supplementary Text S12: Cross-Dataset Label Inconsistency Among Near-Identical Strains}
 
 At phylogenetic distance $d\leq0.01$, phenotype-specific comparisons between near-identical strains conflicted in 28.0\% of cross-dataset cases (73 of 261) and 10.1\% of within-dataset cases (782 of 7{,}706; odds ratio 3.44), with a monotone excess at stricter thresholds.
-Pair-level logistic adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69; 1.86 conditioning on both datasets' rates), and because comparisons reuse strains across pairs and phenotypes these odds ratios are descriptive, with independence-based confidence intervals and $p$-values not interpreted.
+Pair-level logistic adjustment for dataset positive-call rates reduced but did not remove the association (adjusted odds ratio 2.69; 1.86 conditioning on both datasets' rates), and because comparisons reuse strains across pairs and phenotypes, these odds ratios are descriptive, with independence-based confidence intervals and $p$-values not interpreted.
 The analysis cannot distinguish assay differences, ecological or strain-history divergence, accessory-gene or regulatory differences, and curation effects, and does not show that concordance filtering specifically identifies the conflicting pairs.
 
 % ============================================================
