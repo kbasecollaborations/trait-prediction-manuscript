@@ -17,7 +17,7 @@ The manuscript turns these findings into practical guidance. Where a curated pat
 
 These results recast generalisation as a problem of agreement between training labels and known mechanism, alongside data volume and feature-space choice, and they respond to calls to validate genome-based trait inferences (Ramoneda et al., 2024). The work therefore speaks to the journal's broad readership: microbial ecologists who assign metabolic functions to uncultured taxa, developers of genome-to-phenotype methods, and groups planning high-throughput phenotyping.
 
-This manuscript reports original research. It has not been published previously, is not under consideration elsewhere, and has not been considered for publication by another journal. An identical version of this manuscript has been posted as a preprint on bioRxiv (version [VERSION NUMBER], posted [DATE OF UPDATED PREPRINT]; DOI: https://doi.org/10.64898/2026.08.06.743333); it updates an earlier version of the same preprint posted on 12 August 2026. The accompanying Zenodo record contains only data and no manuscript text. Apart from the preprint and this data record, the authors have no related or overlapping preprints, dissertations, manuscripts, or reports. All authors have approved the submitted manuscript.
+This manuscript reports original research. It has not been published previously, is not under consideration elsewhere, and has not been considered for publication by another journal. An identical version of this manuscript has been posted as a preprint on bioRxiv (version [VERSION NUMBER], posted [DATE OF UPDATED PREPRINT]; DOI: https://doi.org/10.64898/2026.08.06.743333). The accompanying Zenodo record contains only data and no manuscript text. Four of the authors are also co-authors of a bioRxiv preprint (Edirisinghe et al., 2023) that trains within-dataset phenotype classifiers on a genome set that forms part of our Biolog dataset; it addresses a different question and shares no analyses or text with this manuscript. Apart from these preprints and this data record, the authors have no related or overlapping preprints, dissertations, manuscripts, or reports. All authors have approved the submitted manuscript.
 
 Competing interests: The authors declare no competing interests.
 
@@ -28,9 +28,10 @@ Use of artificial intelligence tools: Anthropic Claude (large language model) wa
 Thank you for considering our manuscript. We look forward to hearing from you.
 
 References cited in this letter:
+Edirisinghe JN, Goyal S, Brace A, et al. Machine learning-driven phenotype predictions based on genome annotations. bioRxiv 2023; version 2 posted 7 October 2026. https://doi.org/10.1101/2023.08.11.552879
 Hoffert M, Gorman E, Lladser ME, Fierer N. Constructing a "periodic table" of bacteria to map diversity in trait space. ISME J 2026;20:wraf289. https://doi.org/10.1093/ismejo/wraf289
 Ramoneda J, Hoffert M, Stallard-Olivera E, Casamayor EO, Fierer N. Leveraging genomic information to predict environmental preferences of bacteria. ISME J 2024;18:wrae195. https://doi.org/10.1093/ismejo/wrae195
-Stone BWG, Dijkstra P, Finley BK, et al. Life history strategies among soil bacteria-dichotomy for few, continuum for many. ISME J 2023;17:611-619. https://doi.org/10.1038/s41396-022-01354-0
+Stone BWG, Dijkstra P, Finley BK, et al. Life history strategies among soil bacteria—dichotomy for few, continuum for many. ISME J 2023;17:611-619. https://doi.org/10.1038/s41396-022-01354-0
 Weissman JL, Walling A, Ducklow H, Zakem EJ. Genomic traits associated with copiotrophy decouple from maximum growth rate predictions along temperature gradients. ISME J 2026;20:wrag147. https://doi.org/10.1093/ismejo/wrag147
 
 Primary corresponding author:
