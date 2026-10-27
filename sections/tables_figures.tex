@@ -17,6 +17,7 @@
 We collected growth phenotypes (growth vs.\ no-growth) of microbial isolates across 240 carbon sources from four datasets (ATLeaf, Biolog, Marine, and Populus).
 Analyses focused on the 15 carbon sources shared across all four datasets.
 Genome sequences were annotated using RAST, KOFAM, and GapMind, and the resulting feature matrices were used in training the classifiers.
+The table in panel A gives the strain and carbon-source counts of each source dataset (Supplementary Table~\ref{tab:dataset_overview}).
 (B) Phenotypic distribution for the 15 shared carbon sources across the four datasets.
 The bar plot displays sample counts and class distributions for each phenotype.
 Solid bars indicate growth (positive) samples, and patterned bars indicate no-growth (negative) samples.
@@ -26,7 +27,7 @@ The combined feature set concatenates the binarised RAST subsystem, KOFAM, and G
 The $7.6\times$ for feature combination is the rate at which curated GapMind terms appear among the top-ranked features of the combined-feature models relative to their share of that matrix; ``loses to curated alone'' refers to the phenotype-filtered set (last row).
 Panel A created in BioRender. Kishore, D. (2026) \url{https://BioRender.com/tz7t8n7}.
 
-\noindent\textbf{Alt text:} Panel A: workflow schematic linking microbial isolates and carbon sources to a growth or no-growth matrix, then to genome annotation with KOFAM, GapMind, and RAST and to classifier training, beside a table of genome and phenotype counts for the ATLeaf, Biolog, Marine, and Populus datasets. Panel B: stacked bar chart of positive and negative sample counts for each phenotype in each of the four datasets. Panel C: table-style chart with one row per analysis variant, each row plotting balanced accuracy on a shared axis from 0.4 to 1.0 with a dashed line at 0.5, drawn as an interquartile-range bar with the median marked and one dot per phenotype. Medians and interquartile ranges are 0.86 and 0.81 to 0.87 for random holdout, 0.62 and 0.60 to 0.66 for cross-dataset full-data training, 0.68 and 0.61 to 0.77 for concordance filtering, 0.66 and 0.60 to 0.69 for feature combination, and 0.70 and 0.64 to 0.77 for feature filtering. A final column gives a one-line finding for each variant.
+\noindent\textbf{Alt text:} Panel A: workflow schematic linking microbial isolates and carbon sources to a growth or no-growth matrix, then to genome annotation with KOFAM, GapMind, and RAST and to classifier training, beside a table of strain and carbon-source counts for the ATLeaf, Biolog, Marine, and Populus datasets. Panel B: stacked bar chart of positive and negative sample counts for each phenotype in each of the four datasets. Panel C: table-style chart with one row per analysis variant, each row plotting balanced accuracy on a shared axis from 0.4 to 1.0 with a dashed line at 0.5, drawn as an interquartile-range bar with the median marked and one dot per phenotype. Medians and interquartile ranges are 0.86 and 0.81 to 0.87 for random holdout, 0.62 and 0.60 to 0.66 for cross-dataset full-data training, 0.68 and 0.61 to 0.77 for concordance filtering, 0.66 and 0.60 to 0.69 for feature combination, and 0.70 and 0.64 to 0.77 for feature filtering. A final column gives a one-line finding for each variant.
 \par\medskip
 
 \refstepcounter{figure}\label{fig:baseline_predictions}%

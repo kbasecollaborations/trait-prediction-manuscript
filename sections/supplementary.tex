@@ -32,7 +32,7 @@ For \emph{glucose}, the Populus alpha-D-glucose well was retained over the L-glu
 Genome quality was assessed with CheckM2 v1.1.0~\cite{Chklovski2023CheckM2} and recorded as a covariate rather than applied as an exclusion criterion, so that performance reflects the assemblies a user would realistically supply.
 Of the 755 modelled strains with a CheckM2 record, 689 met the MIMAG high-quality thresholds (completeness $\geq$90\%, contamination $\leq$5\%) and 732 met the medium-quality thresholds (completeness $\geq$50\%, contamination $\leq$10\%).
 Repeating the CatBoost KOFAM analysis for all 15 shared phenotypes with training, validation, and test sets each restricted to a quality tier left balanced accuracy essentially unchanged.
-Relative to the unfiltered data, the high-quality tier shifted it by a median of $+0.004$ under random splits (75 phenotype-fold pairs, Wilcoxon $p = 0.03$) and $+0.015$ under cross-dataset splits (58 pairs, $p = 0.003$), and the medium-quality tier by $-0.000$ ($p = 0.72$) and $+0.005$ ($p = 0.05$).
+Relative to the unfiltered data, the high-quality tier shifted it by a median of $+0.004$ under random splits (75 phenotype-fold pairs, Wilcoxon $p = 0.03$) and $+0.015$ under cross-dataset splits (58 pairs, $p = 0.003$), and the medium-quality tier by less than 0.001 ($p = 0.72$) and $+0.005$ ($p = 0.05$).
 These shifts are more than an order of magnitude smaller than the gap between random and cross-dataset splits, so genome quality filtering does not alter any conclusion reported here.
 
 As an independent secondary audit, we measured pangenome completeness as the fraction of species-specific core genes detected by MMseqs2~\cite{Steinegger2017MMseqs2} at 90\% identity, 80\% coverage, and E-value $10^{-3}$.
@@ -42,7 +42,7 @@ As an independent secondary audit, we measured pangenome completeness as the fra
 
 \paragraph*{GapMind pathway annotation.}
 Carbon-utilisation pathway completeness was computed with GapMind~\cite{Price2022GapMindCarbon,Price2020GapMind} from the PaperBLAST suite (\url{https://github.com/morgannprice/PaperBLAST}, commit 1033662, accessed May 2025).
-For each pathway step, candidate genes were found by USEARCH v11.0.667~\cite{Edgar2010} against curated reference databases (minimum 30\% identity) and by HMMer v3.3.1 profile search~\cite{Eddy2011}.
+For each pathway step, candidate genes were found by USEARCH v11.0.667~\cite{Edgar2010} against curated reference databases (minimum 30\% identity) and by HMMER v3.3.1 profile search~\cite{Eddy2011}.
 Reverse searches validated candidates, and required-step matches, alternative routes, and isofunctional enzymes determined the 0--2 pathway-completeness scores and the Methods thresholds.
 
 \paragraph*{Model family and hyperparameters.}
@@ -232,12 +232,12 @@ Against GapMind on the same held-out genomes, concordant training recovered sign
 
 \paragraph{GapMind-feature glucose gap.}
 The largest feature-resolution gap between GapMind and KOFAM feature models was glucose, for which GapMind-feature and KOFAM cross-dataset balanced accuracy were 0.77 and 0.51, respectively.
-GapMind uses organism-specific identifiers such as \verb|MFS-glucose|, \verb|SSS-glucose|, and \verb|ptsG-crr| that lack direct KOFAM equivalents.
+GapMind uses substrate-specific transporter steps such as \verb|MFS-glucose|, \verb|SSS-glucose|, and \verb|ptsG-crr| that lack direct KOFAM equivalents.
 
 \paragraph{Discrimination within a GapMind call.}
 Rescue rates, the fractions of GapMind errors on the discordant cross-dataset subset that the concordance-trained model classified correctly, appeared higher for false negatives than false positives (42\% versus 20\%, paired Wilcoxon $p = 0.018$), but the difference vanished once each phenotype's marginal model-call rate was subtracted ($-0.19$ versus $-0.19$, $p = 0.98$), because a hard-call rescue rate is bounded by how often the model emits that class at all.
 We therefore scored discrimination within each GapMind call by the predicted growth probability, which is threshold-free and on which GapMind scores 0.5 by construction, its call being constant within a stratum.
-The concordance-trained model separated growers from non-growers in both strata (per-phenotype mean AUC 0.636 among GapMind-negative and 0.656 among GapMind-positive genomes), but improved on full-data training only in the negative stratum (0.636 versus 0.534, higher for 13 of 15 phenotypes, $p < 0.001$, Benjamini--Hochberg $q = 0.003$; positive stratum 0.656 versus 0.646, 8 of 15, $p = 0.76$).
+The concordance-trained model separated growers from non-growers in both strata (pooled AUC 0.674 among GapMind-negative and 0.676 among GapMind-positive genomes; per-phenotype means 0.636 and 0.656), but improved on full-data training only in the negative stratum (0.636 versus 0.534, higher for 13 of 15 phenotypes, $p < 0.001$, Benjamini--Hochberg $q = 0.003$; positive stratum 0.656 versus 0.646, 8 of 15, $p = 0.76$).
 This matches the expected genomic basis of the two error types: growth despite an incomplete annotated pathway leaves genomic content that concordant training sharpens, whereas a complete but unexpressed pathway does not.
 Three phenotypes fell below 0.5 in the GapMind-negative stratum (glycerol 0.455, arginine 0.443, serine 0.258).
 
@@ -264,7 +264,7 @@ CatBoost classifiers using KOFAM features were evaluated on the full labels of e
 The BacDive input was a fixed snapshot of 8{,}501 genomes with KOFAM annotations~\cite{Schober2025BacDive}.
 After label--feature intersection and removal of accessions overlapping the held-out test set, up to approximately 1{,}800 BacDive genomes per phenotype entered training, with balanced class weights applied uniformly because BacDive labels were strongly positive-skewed.
 
-FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p<0.001$, higher for 12 of 13 phenotypes) but was not significantly different from C (0.725 versus 0.706, $p=0.20$; MCC $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall.
+FB improved balanced accuracy over F (Figure~\ref{fig:bacdive_curation}A; 0.725 versus 0.677, paired Wilcoxon $p<0.001$, higher for 12 of 13 phenotypes) but was not significantly different from C (0.725 versus 0.706, $p=0.20$; Matthews correlation coefficient $p=0.53$; area under the ROC curve $p=0.99$), with higher precision offset by lower recall.
 BacDive alone matched the concordant set (0.709 versus 0.706, $p=0.53$), whereas adding BacDive to the concordant set exceeded it (0.729 versus 0.706, $p=0.03$ across the 45 phenotype--held-out cells, $p=0.09$ across the 13 phenotype means).
 Coherence and volume are therefore complementary rather than alternatives: concordance filtering reached comparable cross-dataset performance from roughly four-fold fewer training samples, and added volume improved on it further only when applied to the already-filtered set.
 
@@ -304,7 +304,7 @@ The analysis cannot distinguish assay differences, ecological or strain-history 
 \setlength{\tabcolsep}{4pt}
 \begin{tabularx}{\textwidth}{lrrrrrrX}
 \hline
-\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Substrates}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \makecell[r]{\textbf{Positive-} \\ \textbf{Call Rate}} & \textbf{Growth Assay} \\
+\textbf{Dataset} & \makecell[r]{\textbf{Original} \\ \textbf{Strains}} & \makecell[r]{\textbf{Original} \\ \textbf{Carbon} \\ \textbf{Sources}} & \makecell[r]{\textbf{Retained} \\ \textbf{Phenotype} \\ \textbf{Records}} & \makecell[r]{\textbf{Feature-linked} \\ \textbf{Strains}} & \makecell[r]{\textbf{Shared} \\ \textbf{Phenotypes}} & \makecell[r]{\textbf{Positive-} \\ \textbf{Call Rate}} & \textbf{Growth Assay} \\
 \hline
 ATLeaf  & 224 & 45  & 206 & 206 & 15 & 0.47 & Agar plate \\
 Biolog  & 362 & 64  & 362 & 362 & 15 & 0.65 & Biolog plates and related assays \\
