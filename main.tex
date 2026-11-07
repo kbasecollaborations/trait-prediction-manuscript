@@ -6,6 +6,8 @@
 %   SPLIT (\splitsupp defined) - supplementary becomes its own PDF from
 %     supplement.tex, as ISME submission requires. Cross-document \ref is then
 %     resolved via xr-hyper, which needs both documents compiled (`just submit`).
+%     The main-figure image pages are also left out, since ISME takes each
+%     figure as a separate upload; legends, alt text and Table 1 remain.
 \ifdefined\splitsupp
   \externaldocument{build/supplement}
 \fi

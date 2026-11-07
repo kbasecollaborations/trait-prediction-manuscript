@@ -84,7 +84,7 @@ a SLURM cluster).
 
 | Figure | Folder | Content |
 | --- | --- | --- |
-| Figure 1 | `scripts/figure1/` | Dataset characteristics: phenotype class distributions (1B, `figure1b_data.py` + `figure1b_plot.py`) and the analysis-variant performance ladder (1C, `figure1c_plot.py`, which reads the Figure 3, 5 and 6 outputs). Panel 1A is a BioRender illustration (no script); `figure1_combine.py` stacks the three panel PDFs. |
+| Figure 1 | `scripts/figure1/` | Dataset characteristics: phenotype class distributions (1B, `figure1b_data.py` + `figure1b_plot.py`) and the analysis-variant performance ladder (1C, `figure1c_plot.py`, which reads the Figure 3, 5 and 6 outputs). Panel 1A is a BioRender illustration (no script); `figure1_combine.py` stacks the three panel PDFs, and `graphical_abstract.py` stacks 1A and 1C into the graphical abstract (`figures/graphical_abstract.pdf`). |
 | Figure 2 | `scripts/figure2/` | Baselines: GapMind (2A) and phylogeny-based nearest-neighbor (2B). |
 | Figure 3 | `scripts/figure3/` | Model performance across train/test split strategies (random, dataset, phylogenetic), compared with GapMind (`figure3a_gapmind_random_split.py`, `figure3b_gapmind_dataset_split.py`). |
 | Figure 4 | `scripts/figure4/` | GapMind–experiment discordance and cross-dataset feature stability: concordance quadrants (4A, `figure4a_quadrant.py`), GapMind outcome counts by phenotype and dataset (4B, `figure4b_plot.py`), and stable SHAP feature clusters, shared versus dataset-specific (4C, `figure4c_data.py` + `figure4c_plot.py`). `figure4_plot.py` assembles the figure. |

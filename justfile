@@ -9,7 +9,8 @@ main:
 # Submission build: two pdfs, supplementary split out as ISME requires.
 # main.tex and supplement.tex cross-reference each other via xr-hyper, so each
 # must be compiled after the other's .aux exists - hence the repeated rounds.
-# Note this overwrites build/main.pdf with the split (supplement-free) version.
+# Note this overwrites build/main.pdf with the split version, which also leaves
+# out the main-figure image pages (upload figures/figure1-7.pdf separately).
 submit:
     latexmk -pdf -f -g -usepretex -pretex='\def\splitsupp{}' main.tex
     latexmk -pdf -f -g supplement.tex

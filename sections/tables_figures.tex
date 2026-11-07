@@ -156,10 +156,13 @@ Histidine is the worked example (numeric cells in bold); its per-comparison KO l
 %   The \caption*{} (asterisked, no auto-numbering) just labels each
 %   figure with its number for the reader; counters were already
 %   advanced in the Legends section above so \ref{} resolves correctly.
+%   The split submission build omits the figure pages: ISME takes each
+%   figure as a separate file, with legends and alt text in the manuscript.
 %--------------------------------------------------------%
 
 \clearpage
 
+\ifdefined\splitsupp\else
 \begin{figure}[p]
 \centering
 \includegraphics[width=0.97\textwidth]{figure1a.pdf}\\[0.3cm]
@@ -203,5 +206,6 @@ Histidine is the worked example (numeric cells in bold); its per-comparison KO l
 \includegraphics[width=\textwidth]{figure7.pdf}
 \caption*{\textbf{Figure 7}}
 \end{figure}
+\fi
 
 \input{sections/table_main_feature_comparison.tex}
