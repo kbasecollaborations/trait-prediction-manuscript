@@ -1,0 +1,1 @@
+Workflow schematic: growth phenotypes of microbial isolates on carbon sources from four datasets (ATLeaf, Biolog, Marine and Populus) are paired with genome annotations (KOFAM, GapMind and RAST) to train classifiers. A summary chart below compares balanced accuracy across the analysis variants; concordance filtering recovers pathway genes and transfers for 12 of 15 phenotypes.
