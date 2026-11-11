@@ -231,11 +231,8 @@ def plot(membership: dict[str, str], lineages: dict[str, dict[str, str]]) -> plt
         r_lim=R_TREE,
         ladderize=True,
         leaf_label_size=0,  # 629 tips: per-tip labels would be unreadable
-        # Drawn as a cladogram. The figure's claim is about which clades each
-        # dataset occupies, not about divergence, and Figure S2 reports the
-        # distances numerically. Flush tips also let the dataset ring sit
-        # directly against them, and correctly signal to the reader that no
-        # branch length here is meant to be measured, so no scale bar belongs.
+        # Cladogram: the figure shows which clades each dataset occupies and Figure S2
+        # reports distances; flush tips let the dataset ring sit against them.
         ignore_branch_length=True,
         line_kws=dict(lw=0.3, color="#333333"),
     )

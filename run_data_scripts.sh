@@ -30,7 +30,7 @@ python -m scripts.figure3.figure3a_gapmind_random_split
 
 echo ""
 echo "========================================"
-echo "Running: scripts.figure3.figure3a_gapmind_dataset_split"
+echo "Running: scripts.figure3.figure3b_gapmind_dataset_split"
 echo "========================================"
 python -m scripts.figure3.figure3b_gapmind_dataset_split
 

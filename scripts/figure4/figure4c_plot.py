@@ -145,7 +145,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     dataset_colors = [dataset_color_map[d] for d in datasets]
     dataset_display_names = format_dataset_names(datasets)
 
-    # Hatching patterns for feature types (matching Figure 1C).
+    # Hatching patterns for feature types (matching Figure 1B).
     patterns = {
         "common": "",  # solid
         "unique_individual": "//",  # diagonal hatching
@@ -166,7 +166,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
     )
 
     x_pos = np.arange(len(phenotypes))
-    bar_width = 0.8 / len(datasets)  # Match Figure 1C bar width calculation
+    bar_width = 0.8 / len(datasets)  # Match Figure 1B bar width calculation
 
     for i, dataset in enumerate(datasets):
         dataset_df = df[df["test_dataset"] == dataset].set_index("phenotype")
@@ -202,7 +202,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
             hatch="//",
         )
 
-    # Separate legends for datasets and feature types (matching Figure 1C).
+    # Separate legends for datasets and feature types (matching Figure 1B).
     dataset_handles = [
         Rectangle((0, 0), 1, 1, fc=dataset_colors[i], alpha=0.8)
         for i in range(len(datasets))
@@ -276,7 +276,7 @@ def create_feature_comparison_plot(ax: Axes, phenotypes: list[str]) -> None:
         labelpad=1,
     )
     ax.set_xlabel("Phenotype", fontsize=AXIS_LABEL_SIZE)
-    # Center x-tick labels under each group of bars (matching Figure 1C).
+    # Center x-tick labels under each group of bars (matching Figure 1B).
     ax.set_xticks(x_pos + bar_group_center)
     ax.set_xticklabels(phenotypes, rotation=45, ha="right", fontsize=TICK_LABEL_SIZE)
     ax.tick_params(axis="x", which="both", top=False, bottom=True)

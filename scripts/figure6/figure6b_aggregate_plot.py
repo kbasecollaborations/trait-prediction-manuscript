@@ -76,7 +76,7 @@ def _load_long_form(data_dir: Path, phenotypes: list[str]) -> pd.DataFrame:
     -------
     pd.DataFrame
         Columns ``config``, ``phenotype``, ``balanced_accuracy``, ``precision``,
-        ``recall``, ``n_train``, ``n_val``. The six configs are the four
+        ``recall``, ``n_train``, ``n_val``. The seven configs are the four
         soft-label weight settings plus ``full_data``, ``concordant``, and
         ``problematic_removed``.
     """

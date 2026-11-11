@@ -204,7 +204,7 @@ def collect_per_sample_predictions(
     records: list[dict[str, object]] = []
     splits = split_data["dataset_split"]
 
-    for key, split in tqdm(splits.items(), total=len(splits), desc="S15 splits"):
+    for key, split in tqdm(splits.items(), total=len(splits), desc="dataset splits"):
         held_out = parse_held_out_dataset(key)
         if held_out is None:
             continue

@@ -4,7 +4,7 @@ $dvi_mode = $postscript_mode = 0;
 $out_dir = 'build';
 $pdf_previewer = 'zathura';
 
-# Force continuation on errors and set interaction mode
+# Non-interactive run that stops at the first error
 $pdflatex = 'pdflatex -interaction=nonstopmode -file-line-error -halt-on-error %O %S';
 
 # Custom dependency and function for nomencl package

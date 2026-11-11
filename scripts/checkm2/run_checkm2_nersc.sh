@@ -40,7 +40,6 @@ THREADS="${SLURM_CPUS_PER_TASK:-128}"
 # File extension for protein sequences
 EXTENSION="faa"
 
-# Environment setup
 echo "=============================================="
 echo "CheckM2 Job Started: $(date)"
 echo "=============================================="
@@ -84,7 +83,6 @@ if [[ ! -d "${INPUT_DIR}" ]]; then
 	exit 1
 fi
 
-# Count input files
 NUM_FILES=$(find "${INPUT_DIR}" -maxdepth 1 -name "*.${EXTENSION}" -type f | wc -l)
 echo "Found ${NUM_FILES} .${EXTENSION} files in input directory"
 
@@ -93,10 +91,8 @@ if [[ "${NUM_FILES}" -eq 0 ]]; then
 	exit 1
 fi
 
-# Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
-# Run CheckM2
 echo ""
 echo "Starting CheckM2 predict..."
 echo "Command: checkm2 predict --threads ${THREADS} --genes --input ${INPUT_DIR} --output-directory ${OUTPUT_DIR} -x ${EXTENSION}"
@@ -118,7 +114,6 @@ checkm2 predict \
 	--output-directory "${OUTPUT_DIR}" \
 	-x "${EXTENSION}"
 
-# Clean up temp directory if created
 if [[ -n "${TMPDIR:-}" && -d "${TMPDIR}" ]]; then
 	rm -rf "${TMPDIR}"
 fi
@@ -157,13 +152,13 @@ if [[ -f "${OUTPUT_DIR}/quality_report.tsv" ]]; then
 		echo "Total genomes processed: ${TOTAL}"
 
 		awk -F'\t' 'NR>1 {
-            if ($2 >= 90 && $3 < 5) high++;
-            else if ($2 >= 50 && $3 < 10) med++;
+            if ($2 >= 90 && $3 <= 5) high++;
+            else if ($2 >= 50 && $3 <= 10) med++;
             else low++;
         }
         END {
-            print "High quality (>=90% complete, <5% contamination): " high+0;
-            print "Medium quality (>=50% complete, <10% contamination): " med+0;
+            print "High quality (>=90% complete, <=5% contamination): " high+0;
+            print "Medium quality (>=50% complete, <=10% contamination): " med+0;
             print "Low quality (other): " low+0;
         }' "${OUTPUT_DIR}/quality_report.tsv"
 
@@ -171,7 +166,7 @@ if [[ -f "${OUTPUT_DIR}/quality_report.tsv" ]]; then
 		echo ""
 		echo "Generating genome lists..."
 		awk -F'\t' 'NR>1 && ($2 < 50 || $3 > 10) {print $1}' "${OUTPUT_DIR}/quality_report.tsv" >"${OUTPUT_DIR}/failed_genomes.txt"
-		awk -F'\t' 'NR>1 && ($2 >= 50 && $3 <= 10) {print $2}' "${OUTPUT_DIR}/quality_report.tsv" >"${OUTPUT_DIR}/passed_genomes.txt"
+		awk -F'\t' 'NR>1 && ($2 >= 50 && $3 <= 10) {print $1}' "${OUTPUT_DIR}/quality_report.tsv" >"${OUTPUT_DIR}/passed_genomes.txt"
 		echo "Failed genomes: ${OUTPUT_DIR}/failed_genomes.txt"
 		echo "Passed genomes: ${OUTPUT_DIR}/passed_genomes.txt"
 	fi

@@ -30,7 +30,7 @@ python -m scripts.figure4.figure4_plot
 
 echo ""
 echo "========================================"
-echo "Running: figure5_plot"
+echo "Skipping: figure5_plot"
 echo "========================================"
 # python -m scripts.figure5.figure5_plot
 

@@ -173,12 +173,12 @@ def main() -> None:
         f"OR={odds:.2f}, p={p:.2e}"
     )
 
-    print("\n-- Cross-dataset twin conflict (S13, distance<=0.01) corroboration --")
+    print("\n-- Cross-dataset twin conflict (S12, distance<=0.01) corroboration --")
     tw = rate_table(merged, "twin_conflict")
     print(tw.to_string(index=False))
     print(
-        f"  Note: cross-dataset near-identical twins are sparse (S13 reports ~18 "
-        f"cross pairs), so twin coverage here is {int(merged['twin_conflict'].sum())} "
+        f"  Note: cross-dataset near-identical twins are sparse, "
+        f"so twin coverage here is {int(merged['twin_conflict'].sum())} "
         f"of {n_matched} matched FN; treat as thin corroboration only."
     )
 

@@ -168,7 +168,7 @@ def single_feature_auroc(
             auc = roc_auc_score(y_.values, x)
         except Exception:
             continue
-        # One-sided AUROC: either direction is informative for a single feature.
+        # Direction-free AUROC: either direction is informative for a single feature.
         scores.append((col, max(auc, 1.0 - auc)))
     if not scores:
         return float("nan"), []

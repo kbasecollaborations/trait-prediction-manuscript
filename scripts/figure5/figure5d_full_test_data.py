@@ -339,7 +339,7 @@ def main() -> None:
         )
     else:
         print(
-            f"Wave-1C counts file not found at {S8_COUNTS_FILE}; "
+            f"Concordance counts file not found at {S8_COUNTS_FILE}; "
             "recomputing discordance categories from raw loaders."
         )
 
