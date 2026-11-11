@@ -1,4 +1,4 @@
-[DATE OF SUBMISSION]
+11 November 2026
 
 Editors-in-Chief
 The ISME Journal
@@ -23,7 +23,7 @@ Competing interests: The authors declare no competing interests.
 
 Data and code availability: Details are given in the Data Availability and Code Availability statements of the manuscript.
 
-Use of artificial intelligence tools: Anthropic Claude (Claude Opus 4.5 to Claude Opus 5.5, used through Claude Code and Cursor between December 2025 and November 2026) was used during manuscript preparation to assist with English-language editing of author-drafted text, to refactor analysis and figure-generation code from Jupyter notebooks into scripts, to improve the visual aesthetics of matplotlib figures, and to audit journal-format compliance. OpenAI Codex (OpenAI GPT-5.2 to GPT-6.1, including GPT-6 Astra, used between December 2025 and November 2026) was used to audit journal-format compliance and to assist with limited editing of author-drafted text. The authors directed the use of these tools, reviewed and validated all code, data, scientific content, data interpretation, and final wording, and are responsible for the accuracy and integrity of the work. The same disclosure appears in the Acknowledgements of the manuscript.
+Use of artificial intelligence tools: Anthropic Claude (Claude Opus 4.5 to Claude Opus 5.5) and OpenAI Codex (GPT-5.2 to GPT-6.1) were used between December 2025 and November 2026 to assist with English-language editing of author-drafted text, refactoring of analysis code, styling of figures, and journal-format checks. The authors reviewed and validated all outputs and are responsible for the work. The full statement appears in the Acknowledgements.
 
 Thank you for considering our manuscript. We look forward to hearing from you.
 
